@@ -103,6 +103,14 @@ async def get_matches(
             .first()
         )
 
+        # Get opening odds (first snapshot)
+        opening_odds = (
+            db.query(OddsSnapshot)
+            .filter(OddsSnapshot.match_id == match.id)
+            .order_by(OddsSnapshot.fetched_at.asc())
+            .first()
+        )
+
         odds_count = (
             db.query(func.count(OddsSnapshot.id))
             .filter(OddsSnapshot.match_id == match.id)
@@ -119,6 +127,9 @@ async def get_matches(
             current_home_odds=latest_odds.home_odds if latest_odds else None,
             current_draw_odds=latest_odds.draw_odds if latest_odds else None,
             current_away_odds=latest_odds.away_odds if latest_odds else None,
+            opening_home_odds=opening_odds.home_odds if opening_odds else None,
+            opening_draw_odds=opening_odds.draw_odds if opening_odds else None,
+            opening_away_odds=opening_odds.away_odds if opening_odds else None,
             odds_count=odds_count
         ))
 

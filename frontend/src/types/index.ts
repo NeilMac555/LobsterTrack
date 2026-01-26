@@ -15,6 +15,9 @@ export interface MatchSummary {
   current_home_odds: number | null;
   current_draw_odds: number | null;
   current_away_odds: number | null;
+  opening_home_odds: number | null;
+  opening_draw_odds: number | null;
+  opening_away_odds: number | null;
   odds_count: number;
 }
 

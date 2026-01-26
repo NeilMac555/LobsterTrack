@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import type { MatchSummary } from '../types';
 import { LEAGUE_CONFIG } from '../types';
-import OddsDisplay from './OddsDisplay';
+import { OddsDisplayWithMovement, calculateMovement, getBiggestMover } from './OddsWithMovement';
 import LeagueLogo from './LeagueLogo';
 
 interface MatchCardProps {
@@ -12,6 +12,11 @@ interface MatchCardProps {
 export default function MatchCard({ match }: MatchCardProps) {
   const leagueConfig = LEAGUE_CONFIG[match.sport_key];
   const matchDate = new Date(match.commence_time);
+
+  const homeMovement = calculateMovement(match.current_home_odds, match.opening_home_odds);
+  const drawMovement = calculateMovement(match.current_draw_odds, match.opening_draw_odds);
+  const awayMovement = calculateMovement(match.current_away_odds, match.opening_away_odds);
+  const biggestMover = getBiggestMover(homeMovement, drawMovement, awayMovement);
 
   return (
     <Link
@@ -24,8 +29,19 @@ export default function MatchCard({ match }: MatchCardProps) {
           <LeagueLogo sportKey={match.sport_key} size="sm" />
           <span className="text-sm text-slate-400">{leagueConfig?.name || match.league_name}</span>
         </div>
-        <div className="text-xs text-slate-500">
-          {match.odds_count} snapshot{match.odds_count !== 1 ? 's' : ''}
+        <div className="flex items-center gap-2">
+          {biggestMover && (
+            <span className={`text-xs px-1.5 py-0.5 rounded ${
+              biggestMover.direction === 'up'
+                ? 'bg-emerald-500/20 text-emerald-400'
+                : 'bg-red-500/20 text-red-400'
+            } ${Math.abs(biggestMover.percentage) >= 5 ? 'font-bold' : ''}`}>
+              {biggestMover.outcome} {biggestMover.direction === 'up' ? '↑' : '↓'} {Math.abs(biggestMover.percentage).toFixed(1)}%
+            </span>
+          )}
+          <div className="text-xs text-slate-500">
+            {match.odds_count} snap{match.odds_count !== 1 ? 's' : ''}
+          </div>
         </div>
       </div>
 
@@ -53,13 +69,16 @@ export default function MatchCard({ match }: MatchCardProps) {
           </div>
         </div>
 
-        {/* Odds */}
+        {/* Odds with Movement */}
         <div className="flex items-center justify-between pt-3 border-t border-slate-700">
           <div className="text-xs text-slate-500 uppercase tracking-wide">1 X 2</div>
-          <OddsDisplay
+          <OddsDisplayWithMovement
             home={match.current_home_odds}
             draw={match.current_draw_odds}
             away={match.current_away_odds}
+            openingHome={match.opening_home_odds}
+            openingDraw={match.opening_draw_odds}
+            openingAway={match.opening_away_odds}
           />
         </div>
       </div>

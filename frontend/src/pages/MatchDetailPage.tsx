@@ -6,6 +6,7 @@ import type { MatchDetail } from '../types';
 import { LEAGUE_CONFIG } from '../types';
 import OddsChart from '../components/OddsChart';
 import LeagueLogo from '../components/LeagueLogo';
+import OddsWithMovement from '../components/OddsWithMovement';
 
 export default function MatchDetailPage() {
   const { matchId } = useParams<{ matchId: string }>();
@@ -58,26 +59,6 @@ export default function MatchDetailPage() {
   const latestOdds = match.odds_history[match.odds_history.length - 1];
   const firstOdds = match.odds_history[0];
 
-  // Calculate odds movement
-  const calcMovement = (current: number | null, initial: number | null) => {
-    if (!current || !initial) return null;
-    return current - initial;
-  };
-
-  const homeMovement = calcMovement(latestOdds?.home_odds, firstOdds?.home_odds);
-  const drawMovement = calcMovement(latestOdds?.draw_odds, firstOdds?.draw_odds);
-  const awayMovement = calcMovement(latestOdds?.away_odds, firstOdds?.away_odds);
-
-  const MovementIndicator = ({ value }: { value: number | null }) => {
-    if (value === null || Math.abs(value) < 0.01) return null;
-    const isUp = value > 0;
-    return (
-      <span className={`text-xs ml-1 ${isUp ? 'text-emerald-400' : 'text-red-400'}`}>
-        {isUp ? '↑' : '↓'}{Math.abs(value).toFixed(2)}
-      </span>
-    );
-  };
-
   return (
     <div>
       {/* Back Button */}
@@ -121,37 +102,51 @@ export default function MatchDetailPage() {
         </div>
       </div>
 
-      {/* Current Odds */}
+      {/* Current Odds with Movement */}
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 text-center">
-          <div className="text-slate-400 text-sm mb-2">Home</div>
-          <div className="text-3xl font-bold text-emerald-400 font-mono">
-            {latestOdds?.home_odds?.toFixed(2) ?? '-'}
-          </div>
-          <MovementIndicator value={homeMovement} />
-          <div className="text-slate-500 text-xs mt-2">{match.home_team}</div>
-        </div>
-        <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 text-center">
-          <div className="text-slate-400 text-sm mb-2">Draw</div>
-          <div className="text-3xl font-bold text-yellow-400 font-mono">
-            {latestOdds?.draw_odds?.toFixed(2) ?? '-'}
-          </div>
-          <MovementIndicator value={drawMovement} />
-          <div className="text-slate-500 text-xs mt-2">X</div>
-        </div>
-        <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 text-center">
-          <div className="text-slate-400 text-sm mb-2">Away</div>
-          <div className="text-3xl font-bold text-red-400 font-mono">
-            {latestOdds?.away_odds?.toFixed(2) ?? '-'}
-          </div>
-          <MovementIndicator value={awayMovement} />
-          <div className="text-slate-500 text-xs mt-2">{match.away_team}</div>
-        </div>
+        <OddsWithMovement
+          current={latestOdds?.home_odds ?? null}
+          opening={firstOdds?.home_odds ?? null}
+          label="Home"
+          colorClass="text-emerald-400"
+          bgClass="bg-slate-800 border border-slate-700 rounded-xl"
+        />
+        <OddsWithMovement
+          current={latestOdds?.draw_odds ?? null}
+          opening={firstOdds?.draw_odds ?? null}
+          label="Draw"
+          colorClass="text-yellow-400"
+          bgClass="bg-slate-800 border border-slate-700 rounded-xl"
+        />
+        <OddsWithMovement
+          current={latestOdds?.away_odds ?? null}
+          opening={firstOdds?.away_odds ?? null}
+          label="Away"
+          colorClass="text-red-400"
+          bgClass="bg-slate-800 border border-slate-700 rounded-xl"
+        />
       </div>
+
+      {/* Opening Odds Reference */}
+      {firstOdds && (
+        <div className="bg-slate-800/50 rounded-xl border border-slate-700 p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <span className="text-slate-400 text-sm">Opening Odds</span>
+            <div className="flex gap-4 text-sm font-mono">
+              <span className="text-emerald-400/70">{firstOdds.home_odds?.toFixed(2) ?? '-'}</span>
+              <span className="text-yellow-400/70">{firstOdds.draw_odds?.toFixed(2) ?? '-'}</span>
+              <span className="text-red-400/70">{firstOdds.away_odds?.toFixed(2) ?? '-'}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Odds History Chart */}
       <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 mb-6">
-        <h2 className="text-xl font-bold text-white mb-4">Odds Movement</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-white">Odds Movement</h2>
+          <span className="text-xs text-slate-500">Dotted lines = opening prices</span>
+        </div>
         <OddsChart
           data={match.odds_history}
           homeTeam={match.home_team}
@@ -184,28 +179,32 @@ export default function MatchDetailPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700">
-              {[...match.odds_history].reverse().map((point, index) => (
-                <tr key={index} className="hover:bg-slate-700/30">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-                    {format(new Date(point.timestamp), 'MMM d, yyyy HH:mm:ss')}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <span className="font-mono text-emerald-400">
-                      {point.home_odds?.toFixed(2) ?? '-'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <span className="font-mono text-yellow-400">
-                      {point.draw_odds?.toFixed(2) ?? '-'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <span className="font-mono text-red-400">
-                      {point.away_odds?.toFixed(2) ?? '-'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {[...match.odds_history].reverse().map((point, index) => {
+                const isFirst = index === match.odds_history.length - 1;
+                return (
+                  <tr key={index} className={`hover:bg-slate-700/30 ${isFirst ? 'bg-slate-700/20' : ''}`}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                      {format(new Date(point.timestamp), 'MMM d, yyyy HH:mm:ss')}
+                      {isFirst && <span className="ml-2 text-xs text-slate-500">(Opening)</span>}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <span className="font-mono text-emerald-400">
+                        {point.home_odds?.toFixed(2) ?? '-'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <span className="font-mono text-yellow-400">
+                        {point.draw_odds?.toFixed(2) ?? '-'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <span className="font-mono text-red-400">
+                        {point.away_odds?.toFixed(2) ?? '-'}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

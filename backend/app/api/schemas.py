@@ -22,6 +22,9 @@ class MatchSummary(BaseModel):
     current_home_odds: Optional[float] = None
     current_draw_odds: Optional[float] = None
     current_away_odds: Optional[float] = None
+    opening_home_odds: Optional[float] = None
+    opening_draw_odds: Optional[float] = None
+    opening_away_odds: Optional[float] = None
     odds_count: int = 0
 
     class Config:

@@ -7,6 +7,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  ReferenceLine,
 } from 'recharts';
 import { format } from 'date-fns';
 import type { OddsPoint } from '../types';
@@ -23,6 +24,9 @@ export default function OddsChart({ data, homeTeam, awayTeam }: OddsChartProps) 
     time: format(new Date(point.timestamp), 'MMM d, HH:mm'),
     timestamp: new Date(point.timestamp).getTime(),
   }));
+
+  // Get opening odds for reference lines
+  const openingOdds = data.length > 0 ? data[0] : null;
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -81,6 +85,33 @@ export default function OddsChart({ data, homeTeam, awayTeam }: OddsChartProps) 
             wrapperStyle={{ paddingTop: '20px' }}
             formatter={(value) => <span className="text-slate-300">{value}</span>}
           />
+
+          {/* Opening price reference lines (dotted) */}
+          {openingOdds?.home_odds && (
+            <ReferenceLine
+              y={openingOdds.home_odds}
+              stroke="#22c55e"
+              strokeDasharray="5 5"
+              strokeOpacity={0.5}
+            />
+          )}
+          {openingOdds?.draw_odds && (
+            <ReferenceLine
+              y={openingOdds.draw_odds}
+              stroke="#eab308"
+              strokeDasharray="5 5"
+              strokeOpacity={0.5}
+            />
+          )}
+          {openingOdds?.away_odds && (
+            <ReferenceLine
+              y={openingOdds.away_odds}
+              stroke="#ef4444"
+              strokeDasharray="5 5"
+              strokeOpacity={0.5}
+            />
+          )}
+
           <Line
             type="stepAfter"
             dataKey="home_odds"
