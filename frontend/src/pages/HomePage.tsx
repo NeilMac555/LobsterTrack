@@ -131,7 +131,7 @@ export default function HomePage() {
   }, [league]);
 
   const groupedMatches = useMemo(() => groupMatchesByDay(matches), [matches]);
-  const biggestMovers = useMemo(() => getBiggestMovers(matches, 10), [matches]);
+  const biggestMovers = useMemo(() => getBiggestMovers(matches, 4), [matches]);
   const leagueConfig = league ? LEAGUE_CONFIG[league] : null;
 
   if (loading) {
