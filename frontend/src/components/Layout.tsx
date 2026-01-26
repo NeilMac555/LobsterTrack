@@ -20,7 +20,7 @@ export default function Layout() {
                 <span role="img" aria-label="check">✅</span>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">LobsterTrack</h1>
+                <h1 className="text-xl font-bold text-white">PinnacleWatch</h1>
                 <p className="text-xs text-slate-400">Pinnacle Odds Tracker</p>
               </div>
             </Link>
