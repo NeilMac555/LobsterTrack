@@ -1,16 +1,27 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { format, isToday, isTomorrow, startOfDay } from 'date-fns';
-import { getMatches, getStats } from '../api';
-import type { MatchSummary, Stats } from '../types';
+import { getMatches } from '../api';
+import type { MatchSummary } from '../types';
 import { LEAGUE_CONFIG } from '../types';
 import MatchCard from '../components/MatchCard';
 import LeagueLogo from '../components/LeagueLogo';
+import { calculateMovement } from '../components/OddsWithMovement';
 
 interface GroupedMatches {
   label: string;
   date: Date;
   matches: MatchSummary[];
+}
+
+interface MoverData {
+  match: MatchSummary;
+  outcome: 'H' | 'D' | 'A';
+  outcomeName: string;
+  percentage: number;
+  direction: 'up' | 'down';
+  currentOdds: number;
+  openingOdds: number;
 }
 
 function groupMatchesByDay(matches: MatchSummary[]): GroupedMatches[] {
@@ -42,12 +53,63 @@ function groupMatchesByDay(matches: MatchSummary[]): GroupedMatches[] {
     });
 }
 
+function getBiggestMovers(matches: MatchSummary[], limit: number = 10): MoverData[] {
+  const movers: MoverData[] = [];
+
+  for (const match of matches) {
+    const movements = [
+      {
+        outcome: 'H' as const,
+        outcomeName: match.home_team,
+        ...calculateMovement(match.current_home_odds, match.opening_home_odds),
+        currentOdds: match.current_home_odds,
+        openingOdds: match.opening_home_odds,
+      },
+      {
+        outcome: 'D' as const,
+        outcomeName: 'Draw',
+        ...calculateMovement(match.current_draw_odds, match.opening_draw_odds),
+        currentOdds: match.current_draw_odds,
+        openingOdds: match.opening_draw_odds,
+      },
+      {
+        outcome: 'A' as const,
+        outcomeName: match.away_team,
+        ...calculateMovement(match.current_away_odds, match.opening_away_odds),
+        currentOdds: match.current_away_odds,
+        openingOdds: match.opening_away_odds,
+      },
+    ];
+
+    // Find the biggest move for this match
+    const biggest = movements.reduce((max, curr) =>
+      Math.abs(curr.percentage) > Math.abs(max.percentage) ? curr : max
+    );
+
+    if (biggest.direction !== 'none' && biggest.currentOdds !== null && biggest.openingOdds !== null) {
+      movers.push({
+        match,
+        outcome: biggest.outcome,
+        outcomeName: biggest.outcomeName,
+        percentage: biggest.percentage,
+        direction: biggest.direction,
+        currentOdds: biggest.currentOdds,
+        openingOdds: biggest.openingOdds,
+      });
+    }
+  }
+
+  // Sort by absolute percentage change (biggest first)
+  return movers
+    .sort((a, b) => Math.abs(b.percentage) - Math.abs(a.percentage))
+    .slice(0, limit);
+}
+
 export default function HomePage() {
   const [searchParams] = useSearchParams();
   const league = searchParams.get('league');
 
   const [matches, setMatches] = useState<MatchSummary[]>([]);
-  const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,12 +118,8 @@ export default function HomePage() {
       setLoading(true);
       setError(null);
       try {
-        const [matchesData, statsData] = await Promise.all([
-          getMatches({ league: league || undefined, limit: 200 }),
-          getStats(),
-        ]);
+        const matchesData = await getMatches({ league: league || undefined, limit: 200 });
         setMatches(matchesData);
-        setStats(statsData);
       } catch (err) {
         setError('Failed to load data. Is the backend running?');
         console.error(err);
@@ -73,6 +131,7 @@ export default function HomePage() {
   }, [league]);
 
   const groupedMatches = useMemo(() => groupMatchesByDay(matches), [matches]);
+  const biggestMovers = useMemo(() => getBiggestMovers(matches, 10), [matches]);
   const leagueConfig = league ? LEAGUE_CONFIG[league] : null;
 
   if (loading) {
@@ -99,24 +158,111 @@ export default function HomePage() {
 
   return (
     <div>
-      {/* Stats Bar */}
-      {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
-            <div className="text-2xl font-bold text-white">{stats.total_matches}</div>
-            <div className="text-sm text-slate-400">Total Matches</div>
+      {/* Biggest Movers Table */}
+      {biggestMovers.length > 0 && (
+        <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden mb-8">
+          <div className="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-white">Biggest Movers</h2>
+              <p className="text-slate-400 text-sm">Matches with significant line movement</p>
+            </div>
+            <span className="text-xs text-slate-500">Sharp money indicators</span>
           </div>
-          <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
-            <div className="text-2xl font-bold text-white">{stats.upcoming_matches}</div>
-            <div className="text-sm text-slate-400">Upcoming</div>
-          </div>
-          <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
-            <div className="text-2xl font-bold text-white">{stats.total_odds_snapshots}</div>
-            <div className="text-sm text-slate-400">Odds Snapshots</div>
-          </div>
-          <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
-            <div className="text-2xl font-bold text-white">{stats.tracked_leagues.length}</div>
-            <div className="text-sm text-slate-400">Leagues</div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-slate-700/50">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    Match
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    League
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    Outcome Moved
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    % Change
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    Opening
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    Current
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-700">
+                {biggestMovers.map((mover, index) => {
+                  const isSignificant = Math.abs(mover.percentage) >= 5;
+                  const matchDate = new Date(mover.match.commence_time);
+                  const leagueInfo = LEAGUE_CONFIG[mover.match.sport_key];
+
+                  return (
+                    <tr key={`${mover.match.id}-${index}`} className="hover:bg-slate-700/30">
+                      <td className="px-6 py-4">
+                        <Link
+                          to={`/match/${mover.match.id}`}
+                          className="text-white hover:text-blue-400 transition-colors"
+                        >
+                          <div className="font-medium">
+                            {mover.match.home_team} vs {mover.match.away_team}
+                          </div>
+                          <div className="text-xs text-slate-500">
+                            {format(matchDate, 'EEE, MMM d HH:mm')}
+                          </div>
+                        </Link>
+                      </td>
+                      <td className="px-4 py-4 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <LeagueLogo sportKey={mover.match.sport_key} size="sm" />
+                          <span className="text-slate-400 text-sm hidden lg:inline">
+                            {leagueInfo?.shortName || ''}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-0.5 rounded text-xs font-bold ${
+                            mover.outcome === 'H' ? 'bg-emerald-500/20 text-emerald-400' :
+                            mover.outcome === 'D' ? 'bg-yellow-500/20 text-yellow-400' :
+                            'bg-red-500/20 text-red-400'
+                          }`}>
+                            {mover.outcome}
+                          </span>
+                          <span className="text-slate-300 text-sm truncate max-w-[120px]">
+                            {mover.outcomeName}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-center">
+                        <span className={`font-mono font-bold ${
+                          mover.direction === 'up' ? 'text-emerald-400' : 'text-red-400'
+                        } ${isSignificant ? 'text-lg' : ''}`}>
+                          {isSignificant && '🔥 '}
+                          {mover.direction === 'up' ? '↑' : '↓'}
+                          {mover.direction === 'up' ? '+' : ''}{mover.percentage.toFixed(1)}%
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 text-center">
+                        <span className="font-mono text-slate-500">
+                          {mover.openingOdds.toFixed(2)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 text-center">
+                        <span className={`font-mono font-semibold ${
+                          mover.outcome === 'H' ? 'text-emerald-400' :
+                          mover.outcome === 'D' ? 'text-yellow-400' :
+                          'text-red-400'
+                        }`}>
+                          {mover.currentOdds.toFixed(2)}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
