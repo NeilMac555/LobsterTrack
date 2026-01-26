@@ -1,0 +1,37 @@
+from pydantic_settings import BaseSettings
+from functools import lru_cache
+
+
+class Settings(BaseSettings):
+    # Database - defaults to SQLite for local testing
+    database_url: str = "sqlite:///./lobstertrack.db"
+
+    # The Odds API
+    odds_api_key: str = ""
+    odds_api_base_url: str = "https://api.the-odds-api.com/v4"
+
+    # Scheduler
+    fetch_interval_minutes: int = 15
+
+    # Logging
+    log_level: str = "INFO"
+
+    # League mappings for The Odds API
+    # Format: sport_key for the API
+    leagues: dict = {
+        "soccer_epl": "English Premier League",
+        "soccer_spain_la_liga": "La Liga",
+        "soccer_germany_bundesliga": "Bundesliga",
+        "soccer_france_ligue_one": "Ligue 1",
+        "soccer_italy_serie_a": "Serie A",
+        "soccer_uefa_champs_league": "Champions League"
+    }
+
+    class Config:
+        env_file = ".env"
+        extra = "ignore"
+
+
+@lru_cache()
+def get_settings() -> Settings:
+    return Settings()

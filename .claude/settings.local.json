@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker:*)",
+      "Bash(where:*)",
+      "Bash(python -m venv:*)",
+      "Bash(.venvScriptspip.exe install -r requirements.txt)",
+      "Bash(\".venv/Scripts/pip.exe\" install -r requirements.txt)",
+      "Bash(\".venv/Scripts/python.exe\" -c \"from app.models.database import Base, engine; Base.metadata.create_all\\(bind=engine\\); print\\(''Database tables created!''\\)\")",
+      "Bash(curl:*)",
+      "Bash(ls:*)",
+      "Bash(\".venv/Scripts/python.exe\":*)",
+      "Bash(pkill:*)",
+      "Bash(taskkill:*)",
+      "Bash(kill:*)",
+      "Bash(python -m json.tool:*)",
+      "Bash(npm create:*)",
+      "Bash(npm install:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}
