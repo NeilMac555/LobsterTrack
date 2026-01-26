@@ -10,14 +10,14 @@ const sizes = {
   lg: 'w-12 h-12',
 };
 
-// Flag image paths for each league
+// Flag CDN URLs (flagcdn.com)
 const flags: Record<string, string> = {
-  soccer_epl: '/flags/uk-en-circle-01.png',
-  soccer_spain_la_liga: '/flags/es-circle-01.png',
-  soccer_germany_bundesliga: '/flags/de-circle-01.png',
-  soccer_france_ligue_one: '/flags/fr-circle-01.png',
-  soccer_italy_serie_a: '/flags/it-circle-01.png',
-  soccer_uefa_champs_league: '/flags/org-eu-circle-01.png',
+  soccer_epl: 'https://flagcdn.com/w80/gb-eng.png',
+  soccer_spain_la_liga: 'https://flagcdn.com/w80/es.png',
+  soccer_germany_bundesliga: 'https://flagcdn.com/w80/de.png',
+  soccer_france_ligue_one: 'https://flagcdn.com/w80/fr.png',
+  soccer_italy_serie_a: 'https://flagcdn.com/w80/it.png',
+  soccer_uefa_champs_league: 'https://flagcdn.com/w80/eu.png',
 };
 
 export default function LeagueLogo({ sportKey, size = 'md', className = '' }: LeagueLogoProps) {
@@ -36,7 +36,7 @@ export default function LeagueLogo({ sportKey, size = 'md', className = '' }: Le
     <img
       src={flagSrc}
       alt={sportKey}
-      className={`${sizeClass} ${className} rounded-full object-cover`}
+      className={`${sizeClass} ${className} rounded object-cover`}
     />
   );
 }
