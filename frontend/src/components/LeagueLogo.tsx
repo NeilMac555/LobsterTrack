@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 interface LeagueLogoProps {
   sportKey: string;
   size?: 'sm' | 'md' | 'lg';
@@ -14,9 +16,8 @@ export default function LeagueLogo({ sportKey, size = 'md', className = '' }: Le
   const sizeClass = sizes[size];
 
   // League-specific colors and designs
-  const logos: Record<string, JSX.Element> = {
+  const logos: Record<string, ReactNode> = {
     soccer_epl: (
-      // Premier League - Purple lion
       <svg viewBox="0 0 40 40" className={`${sizeClass} ${className}`}>
         <circle cx="20" cy="20" r="18" fill="#3D195B" />
         <path
@@ -28,7 +29,6 @@ export default function LeagueLogo({ sportKey, size = 'md', className = '' }: Le
     ),
 
     soccer_spain_la_liga: (
-      // La Liga - Orange/red with ball
       <svg viewBox="0 0 40 40" className={`${sizeClass} ${className}`}>
         <circle cx="20" cy="20" r="18" fill="#FF4B44" />
         <circle cx="20" cy="20" r="10" fill="#FF6B35" stroke="#fff" strokeWidth="1.5" />
@@ -43,7 +43,6 @@ export default function LeagueLogo({ sportKey, size = 'md', className = '' }: Le
     ),
 
     soccer_germany_bundesliga: (
-      // Bundesliga - Red with football
       <svg viewBox="0 0 40 40" className={`${sizeClass} ${className}`}>
         <circle cx="20" cy="20" r="18" fill="#D20515" />
         <circle cx="20" cy="20" r="10" fill="none" stroke="#fff" strokeWidth="2" />
@@ -55,7 +54,6 @@ export default function LeagueLogo({ sportKey, size = 'md', className = '' }: Le
     ),
 
     soccer_france_ligue_one: (
-      // Ligue 1 - Navy blue
       <svg viewBox="0 0 40 40" className={`${sizeClass} ${className}`}>
         <circle cx="20" cy="20" r="18" fill="#091C3E" />
         <text
@@ -74,7 +72,6 @@ export default function LeagueLogo({ sportKey, size = 'md', className = '' }: Le
     ),
 
     soccer_italy_serie_a: (
-      // Serie A - Blue with letter A
       <svg viewBox="0 0 40 40" className={`${sizeClass} ${className}`}>
         <circle cx="20" cy="20" r="18" fill="#024494" />
         <path
@@ -89,19 +86,17 @@ export default function LeagueLogo({ sportKey, size = 'md', className = '' }: Le
     ),
 
     soccer_uefa_champs_league: (
-      // Champions League - Dark blue with stars
       <svg viewBox="0 0 40 40" className={`${sizeClass} ${className}`}>
         <circle cx="20" cy="20" r="18" fill="#071D49" />
         <circle cx="20" cy="20" r="12" fill="none" stroke="#fff" strokeWidth="1" />
-        {/* Stars around the circle */}
-        {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => {
-          const rad = (angle * Math.PI) / 180;
-          const x = 20 + 14 * Math.cos(rad);
-          const y = 20 + 14 * Math.sin(rad);
-          return (
-            <circle key={i} cx={x} cy={y} r="1.5" fill="#fff" />
-          );
-        })}
+        <circle cx="20" cy="6" r="1.5" fill="#fff" />
+        <circle cx="29.9" cy="10.1" r="1.5" fill="#fff" />
+        <circle cx="34" cy="20" r="1.5" fill="#fff" />
+        <circle cx="29.9" cy="29.9" r="1.5" fill="#fff" />
+        <circle cx="20" cy="34" r="1.5" fill="#fff" />
+        <circle cx="10.1" cy="29.9" r="1.5" fill="#fff" />
+        <circle cx="6" cy="20" r="1.5" fill="#fff" />
+        <circle cx="10.1" cy="10.1" r="1.5" fill="#fff" />
         <path
           d="M20 12l1.5 4.5h4.5l-3.5 2.5 1.5 4.5-4-3-4 3 1.5-4.5-3.5-2.5h4.5z"
           fill="#fff"
@@ -118,5 +113,5 @@ export default function LeagueLogo({ sportKey, size = 'md', className = '' }: Le
     </svg>
   );
 
-  return logos[sportKey] || fallback;
+  return <>{logos[sportKey] || fallback}</>;
 }
