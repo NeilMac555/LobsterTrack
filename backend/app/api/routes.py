@@ -4,7 +4,7 @@ from sqlalchemy import func, desc, text
 from datetime import datetime, timedelta
 from typing import Optional
 
-from app.models import get_db, Match, OddsSnapshot
+from app.models import get_db, Match, OddsSnapshot, SteamMove
 from app.config import get_settings
 from app.services.scheduler import odds_scheduler
 from .schemas import (
@@ -13,7 +13,9 @@ from .schemas import (
     OddsPoint,
     LeagueSummary,
     FetchStatus,
-    HealthResponse
+    HealthResponse,
+    SteamMoveResponse,
+    SteamMoveStats
 )
 
 router = APIRouter()
@@ -223,3 +225,81 @@ async def get_stats(db: Session = Depends(get_db)):
         "newest_data": newest_snapshot,
         "tracked_leagues": list(settings.leagues.keys())
     }
+
+
+@router.get("/steam-moves", response_model=SteamMoveStats)
+async def get_steam_moves(db: Session = Depends(get_db)):
+    """
+    Get statistics and sample data about steam moves (late sharp money movements).
+    """
+    # Total counts
+    total_moves = db.query(func.count(SteamMove.id)).scalar() or 0
+    moves_with_results = (
+        db.query(func.count(SteamMove.id))
+        .filter(SteamMove.result_updated == True)
+        .scalar() or 0
+    )
+    moves_pending_results = (
+        db.query(func.count(SteamMove.id))
+        .filter(SteamMove.result_updated == False)
+        .scalar() or 0
+    )
+
+    # Win/loss stats
+    total_wins = (
+        db.query(func.count(SteamMove.id))
+        .filter(SteamMove.result_updated == True, SteamMove.won == True)
+        .scalar() or 0
+    )
+    total_losses = (
+        db.query(func.count(SteamMove.id))
+        .filter(SteamMove.result_updated == True, SteamMove.won == False)
+        .scalar() or 0
+    )
+
+    # Calculate win rate
+    win_rate = None
+    if moves_with_results > 0:
+        win_rate = (total_wins / moves_with_results) * 100
+
+    # Average movement percent
+    avg_movement = db.query(func.avg(SteamMove.movement_percent)).scalar()
+
+    # Get sample moves (most recent 10)
+    sample_moves = (
+        db.query(SteamMove)
+        .order_by(desc(SteamMove.detected_at))
+        .limit(10)
+        .all()
+    )
+
+    return SteamMoveStats(
+        total_moves=total_moves,
+        moves_with_results=moves_with_results,
+        moves_pending_results=moves_pending_results,
+        total_wins=total_wins,
+        total_losses=total_losses,
+        win_rate=win_rate,
+        avg_movement_percent=avg_movement,
+        sample_moves=[
+            SteamMoveResponse(
+                id=m.id,
+                match_id=m.match_id,
+                sport_key=m.sport_key,
+                outcome=m.outcome,
+                team_name=m.team_name,
+                opening_odds=m.opening_odds,
+                previous_odds=m.previous_odds,
+                current_odds=m.current_odds,
+                movement_percent=m.movement_percent,
+                detected_at=m.detected_at,
+                match_commence_time=m.match_commence_time,
+                minutes_before_kickoff=m.minutes_before_kickoff,
+                result_updated=m.result_updated,
+                won=m.won,
+                home_score=m.home_score,
+                away_score=m.away_score
+            )
+            for m in sample_moves
+        ]
+    )

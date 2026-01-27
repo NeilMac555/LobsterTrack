@@ -70,3 +70,38 @@ class HealthResponse(BaseModel):
     database: str
     scheduler: str
     timestamp: datetime
+
+
+class SteamMoveResponse(BaseModel):
+    """Steam move record for API response"""
+    id: int
+    match_id: str
+    sport_key: str
+    outcome: str
+    team_name: str
+    opening_odds: float
+    previous_odds: float
+    current_odds: float
+    movement_percent: float
+    detected_at: datetime
+    match_commence_time: datetime
+    minutes_before_kickoff: int
+    result_updated: bool
+    won: Optional[bool] = None
+    home_score: Optional[int] = None
+    away_score: Optional[int] = None
+
+    class Config:
+        from_attributes = True
+
+
+class SteamMoveStats(BaseModel):
+    """Statistics about steam moves"""
+    total_moves: int
+    moves_with_results: int
+    moves_pending_results: int
+    total_wins: int
+    total_losses: int
+    win_rate: Optional[float] = None
+    avg_movement_percent: Optional[float] = None
+    sample_moves: list[SteamMoveResponse]
