@@ -5,6 +5,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 
 from app.config import get_settings
 from app.services.odds_fetcher import odds_fetcher
+from app.services.results_fetcher import results_fetcher
 
 logger = structlog.get_logger()
 settings = get_settings()
@@ -32,10 +33,27 @@ class OddsScheduler:
                 "Scheduled fetch complete",
                 matches=summary["matches_found"],
                 odds=summary["odds_stored"],
+                steam_moves=summary.get("steam_moves", 0),
                 errors=len(summary["errors"])
             )
         except Exception as e:
             logger.error("Scheduled fetch failed", error=str(e))
+
+    async def results_job(self):
+        """
+        Job function that updates steam move results.
+        Runs less frequently than odds fetching.
+        """
+        try:
+            logger.info("Starting scheduled results update")
+            summary = await results_fetcher.update_steam_move_results()
+            logger.info(
+                "Results update complete",
+                steam_moves_updated=summary["steam_moves_updated"],
+                errors=len(summary["errors"])
+            )
+        except Exception as e:
+            logger.error("Results update failed", error=str(e))
 
     def start(self):
         """
@@ -47,7 +65,7 @@ class OddsScheduler:
 
         interval_minutes = settings.fetch_interval_minutes
 
-        # Add the fetch job
+        # Add the odds fetch job
         self.scheduler.add_job(
             self.fetch_job,
             trigger=IntervalTrigger(minutes=interval_minutes),
@@ -58,9 +76,20 @@ class OddsScheduler:
             coalesce=True  # Combine missed runs
         )
 
+        # Add the results update job (runs every hour)
+        self.scheduler.add_job(
+            self.results_job,
+            trigger=IntervalTrigger(hours=1),
+            id="results_update",
+            name="Update Steam Move Results",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True
+        )
+
         self.scheduler.start()
         self._is_running = True
-        logger.info("Scheduler started", interval_minutes=interval_minutes)
+        logger.info("Scheduler started", odds_interval_minutes=interval_minutes, results_interval_hours=1)
 
     def stop(self):
         """

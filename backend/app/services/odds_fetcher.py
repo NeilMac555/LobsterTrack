@@ -1,15 +1,20 @@
 import httpx
 import structlog
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from sqlalchemy.orm import Session
+from sqlalchemy import and_
 
 from app.config import get_settings
-from app.models import Match, OddsSnapshot
+from app.models import Match, OddsSnapshot, SteamMove
 from app.models.database import SessionLocal
 
 logger = structlog.get_logger()
 settings = get_settings()
+
+# Constants for steam detection
+STEAM_THRESHOLD_PERCENT = 5.0  # Movement > 5% is considered significant
+LATE_STEAM_WINDOW_HOURS = 2    # Within 2 hours of kickoff
 
 
 class OddsFetcher:
@@ -88,10 +93,12 @@ class OddsFetcher:
         """
         Store fetched odds in the database.
         Creates matches if they don't exist, adds odds snapshots.
+        Also detects and records late steam moves (>5% within 2 hours of kickoff).
         """
         db = SessionLocal()
         try:
             odds_stored = 0
+            steam_moves_recorded = 0
             fetch_time = datetime.utcnow()
 
             for event in events:
@@ -102,6 +109,12 @@ class OddsFetcher:
                 pinnacle_odds = self._extract_pinnacle_odds(event)
 
                 if pinnacle_odds:
+                    # Check for late steam before adding new snapshot
+                    steam_count = self._detect_late_steam(
+                        db, match, pinnacle_odds, fetch_time, sport_key
+                    )
+                    steam_moves_recorded += steam_count
+
                     snapshot = OddsSnapshot(
                         match_id=match.id,
                         bookmaker="pinnacle",
@@ -115,13 +128,131 @@ class OddsFetcher:
                     odds_stored += 1
 
             db.commit()
-            return {"matches": len(events), "odds_stored": odds_stored}
+
+            if steam_moves_recorded > 0:
+                logger.info(
+                    "Late steam moves detected",
+                    sport_key=sport_key,
+                    count=steam_moves_recorded
+                )
+
+            return {"matches": len(events), "odds_stored": odds_stored, "steam_moves": steam_moves_recorded}
 
         except Exception as e:
             db.rollback()
             raise e
         finally:
             db.close()
+
+    def _detect_late_steam(
+        self,
+        db: Session,
+        match: Match,
+        current_odds: dict,
+        fetch_time: datetime,
+        sport_key: str
+    ) -> int:
+        """
+        Detect if current odds represent a significant late move (>5% within 2 hours of kickoff).
+        Records any detected steam moves to the database.
+        Returns count of steam moves recorded.
+        """
+        # Make commence_time timezone-aware if it isn't
+        commence_time = match.commence_time
+        if commence_time.tzinfo is None:
+            commence_time = commence_time.replace(tzinfo=timezone.utc)
+
+        fetch_time_aware = fetch_time
+        if fetch_time_aware.tzinfo is None:
+            fetch_time_aware = fetch_time_aware.replace(tzinfo=timezone.utc)
+
+        # Check if we're within the late steam window
+        time_to_kickoff = commence_time - fetch_time_aware
+        if time_to_kickoff.total_seconds() < 0:
+            # Match already started
+            return 0
+        if time_to_kickoff > timedelta(hours=LATE_STEAM_WINDOW_HOURS):
+            # Not within late steam window
+            return 0
+
+        minutes_before_kickoff = int(time_to_kickoff.total_seconds() / 60)
+
+        # Get the opening odds (first snapshot)
+        opening_snapshot = (
+            db.query(OddsSnapshot)
+            .filter(OddsSnapshot.match_id == match.id)
+            .order_by(OddsSnapshot.fetched_at.asc())
+            .first()
+        )
+
+        if not opening_snapshot:
+            # No previous odds to compare
+            return 0
+
+        # Get the most recent snapshot (to compare against)
+        previous_snapshot = (
+            db.query(OddsSnapshot)
+            .filter(OddsSnapshot.match_id == match.id)
+            .order_by(OddsSnapshot.fetched_at.desc())
+            .first()
+        )
+
+        steam_count = 0
+        outcomes = [
+            ("home", match.home_team, opening_snapshot.home_odds, previous_snapshot.home_odds if previous_snapshot else None, current_odds.get("home")),
+            ("draw", "Draw", opening_snapshot.draw_odds, previous_snapshot.draw_odds if previous_snapshot else None, current_odds.get("draw")),
+            ("away", match.away_team, opening_snapshot.away_odds, previous_snapshot.away_odds if previous_snapshot else None, current_odds.get("away")),
+        ]
+
+        for outcome, team_name, opening, previous, current in outcomes:
+            if not opening or not current or not previous:
+                continue
+
+            # Calculate movement from opening
+            movement_percent = ((current - opening) / opening) * 100
+
+            # Check if this is a significant move (>5% from opening)
+            if abs(movement_percent) >= STEAM_THRESHOLD_PERCENT:
+                # Check if we already recorded this move (avoid duplicates)
+                existing = (
+                    db.query(SteamMove)
+                    .filter(
+                        and_(
+                            SteamMove.match_id == match.id,
+                            SteamMove.outcome == outcome,
+                            SteamMove.current_odds == current
+                        )
+                    )
+                    .first()
+                )
+
+                if not existing:
+                    steam_move = SteamMove(
+                        match_id=match.id,
+                        sport_key=sport_key,
+                        outcome=outcome,
+                        team_name=team_name,
+                        opening_odds=opening,
+                        previous_odds=previous,
+                        current_odds=current,
+                        movement_percent=movement_percent,
+                        detected_at=fetch_time,
+                        match_commence_time=match.commence_time,
+                        minutes_before_kickoff=minutes_before_kickoff
+                    )
+                    db.add(steam_move)
+                    steam_count += 1
+
+                    logger.info(
+                        "Late steam detected",
+                        match=f"{match.home_team} vs {match.away_team}",
+                        outcome=outcome,
+                        team=team_name,
+                        movement=f"{movement_percent:+.1f}%",
+                        minutes_before=minutes_before_kickoff
+                    )
+
+        return steam_count
 
     def _upsert_match(self, db: Session, event: dict, sport_key: str, league_name: str) -> Match:
         """
