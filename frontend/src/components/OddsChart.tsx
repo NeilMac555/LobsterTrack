@@ -39,13 +39,13 @@ export default function OddsChart({ data, homeTeam, awayTeam }: OddsChartProps) 
     if (openingOdds) {
       return {
         ...baseData,
-        home_pct: openingOdds.home_odds
+        home_pct: openingOdds.home_odds && point.home_odds !== null
           ? ((point.home_odds - openingOdds.home_odds) / openingOdds.home_odds) * 100
           : 0,
-        draw_pct: openingOdds.draw_odds
+        draw_pct: openingOdds.draw_odds && point.draw_odds !== null
           ? ((point.draw_odds - openingOdds.draw_odds) / openingOdds.draw_odds) * 100
           : 0,
-        away_pct: openingOdds.away_odds
+        away_pct: openingOdds.away_odds && point.away_odds !== null
           ? ((point.away_odds - openingOdds.away_odds) / openingOdds.away_odds) * 100
           : 0,
       };
@@ -111,7 +111,6 @@ export default function OddsChart({ data, homeTeam, awayTeam }: OddsChartProps) 
   }
 
   const isPercentView = viewMode === 'percent';
-  const dataKeyPrefix = isPercentView ? '_pct' : '_odds';
 
   return (
     <div className="h-full w-full flex flex-col">
