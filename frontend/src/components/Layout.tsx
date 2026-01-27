@@ -40,15 +40,37 @@ export default function Layout() {
       <header className="bg-slate-800/80 backdrop-blur-md border-b border-slate-700/50 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14 sm:h-16">
-            <Link to="/" className="flex items-center gap-2 sm:gap-3 group">
-              <div className="flex items-center text-xl sm:text-2xl">
-                <span role="img" aria-label="steam">💨</span>
-                <span role="img" aria-label="chart">📈</span>
-              </div>
-              <div>
-                <h1 className="text-lg sm:text-xl font-bold text-white group-hover:text-blue-400 transition-colors">SteamWatch</h1>
-                <p className="text-[10px] sm:text-xs text-slate-400 hidden xs:block">Track Sharp Money Movement</p>
-              </div>
+            <Link to="/" className="flex items-center gap-2.5 sm:gap-3 group">
+              {/* SVG Logo */}
+              <svg
+                viewBox="0 0 32 32"
+                className="w-8 h-8 sm:w-9 sm:h-9"
+                fill="none"
+              >
+                {/* Background circle */}
+                <circle cx="16" cy="16" r="15" className="fill-slate-700/50 stroke-slate-600" strokeWidth="1"/>
+                {/* Trend line chart */}
+                <path
+                  d="M7 22 L12 17 L17 19 L25 10"
+                  className="stroke-emerald-400"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                />
+                {/* Arrow head */}
+                <path
+                  d="M22 10 L25 10 L25 13"
+                  className="stroke-emerald-400"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                />
+              </svg>
+              <span className="text-lg sm:text-xl font-bold text-white group-hover:text-blue-400 transition-colors">
+                SteamWatch
+              </span>
             </Link>
 
             {/* Desktop Navigation */}
