@@ -32,7 +32,7 @@ export default function MatchCard({ match }: MatchCardProps) {
         <div className="flex items-center gap-2">
           {biggestMover && (
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-              biggestMover.direction === 'up'
+              biggestMover.direction === 'down'
                 ? 'bg-emerald-500/20 text-emerald-400'
                 : 'bg-red-500/20 text-red-400'
             } ${Math.abs(biggestMover.percentage) >= 5 ? 'font-bold' : ''}`}>

@@ -40,6 +40,11 @@ export default function OddsWithMovement({
   const movement = calculateMovement(current, opening);
   const isSignificant = Math.abs(movement.percentage) >= 5;
 
+  // Color logic: Green = shortening (down), Red = drifting (up)
+  // Shortening odds = sharp money backing = good signal
+  // Drifting odds = money leaving = bad signal
+  const movementColorClass = movement.direction === 'down' ? 'text-emerald-400' : 'text-red-400';
+
   return (
     <div className={`px-3 py-2 rounded ${bgClass} text-center min-w-[80px]`}>
       <div className="text-xs text-slate-400 mb-1">{label}</div>
@@ -48,16 +53,14 @@ export default function OddsWithMovement({
           {formatOdds(current)}
         </span>
         {movement.direction === 'up' && (
-          <span className="text-emerald-400 text-sm">↑</span>
+          <span className="text-red-400 text-sm">↑</span>
         )}
         {movement.direction === 'down' && (
-          <span className="text-red-400 text-sm">↓</span>
+          <span className="text-emerald-400 text-sm">↓</span>
         )}
       </div>
       {movement.direction !== 'none' && (
-        <div className={`text-xs mt-0.5 ${
-          movement.direction === 'up' ? 'text-emerald-400' : 'text-red-400'
-        } ${isSignificant ? 'font-bold' : ''}`}>
+        <div className={`text-xs mt-0.5 ${movementColorClass} ${isSignificant ? 'font-bold' : ''}`}>
           {movement.direction === 'up' ? '+' : ''}{movement.percentage.toFixed(1)}%
         </div>
       )}
@@ -108,6 +111,7 @@ export function OddsDisplayWithMovement({
   ) => {
     const isSignificant = Math.abs(movement.percentage) >= 5;
 
+    // Color logic: Green = shortening (down), Red = drifting (up)
     return (
       <div
         className={`${sizeClasses[size]} rounded ${bgClass} ${textClass} font-mono font-semibold flex items-center gap-0.5`}
@@ -117,10 +121,10 @@ export function OddsDisplayWithMovement({
           {formatOdds(current)}
         </span>
         {movement.direction === 'up' && (
-          <span className="text-emerald-400 text-[10px]">↑</span>
+          <span className="text-red-400 text-[10px]">↑</span>
         )}
         {movement.direction === 'down' && (
-          <span className="text-red-400 text-[10px]">↓</span>
+          <span className="text-emerald-400 text-[10px]">↓</span>
         )}
       </div>
     );

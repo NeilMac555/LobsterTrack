@@ -237,7 +237,7 @@ export default function HomePage() {
                       </td>
                       <td className="px-4 py-4 text-center">
                         <span className={`font-mono font-bold ${
-                          mover.direction === 'up' ? 'text-emerald-400' : 'text-red-400'
+                          mover.direction === 'down' ? 'text-emerald-400' : 'text-red-400'
                         } ${isSignificant ? 'text-lg' : ''}`}>
                           {isSignificant && '🔥 '}
                           {mover.direction === 'up' ? '↑' : '↓'}

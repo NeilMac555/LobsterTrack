@@ -261,7 +261,7 @@ function OddsHistoryTable({ oddsHistory, showChangesOnly, onToggleShowChanges }:
                       {point.home_odds?.toFixed(2) ?? '-'}
                     </span>
                     {homeChanged && prevPoint?.home_odds && (
-                      <span className={`ml-2 text-xs ${point.home_odds! > prevPoint.home_odds ? 'text-emerald-500' : 'text-red-500'}`}>
+                      <span className={`ml-2 text-xs ${point.home_odds! < prevPoint.home_odds ? 'text-emerald-500' : 'text-red-500'}`}>
                         {point.home_odds! > prevPoint.home_odds ? '↑' : '↓'}
                       </span>
                     )}
@@ -271,7 +271,7 @@ function OddsHistoryTable({ oddsHistory, showChangesOnly, onToggleShowChanges }:
                       {point.draw_odds?.toFixed(2) ?? '-'}
                     </span>
                     {drawChanged && prevPoint?.draw_odds && (
-                      <span className={`ml-2 text-xs ${point.draw_odds! > prevPoint.draw_odds ? 'text-emerald-500' : 'text-red-500'}`}>
+                      <span className={`ml-2 text-xs ${point.draw_odds! < prevPoint.draw_odds ? 'text-emerald-500' : 'text-red-500'}`}>
                         {point.draw_odds! > prevPoint.draw_odds ? '↑' : '↓'}
                       </span>
                     )}
@@ -281,7 +281,7 @@ function OddsHistoryTable({ oddsHistory, showChangesOnly, onToggleShowChanges }:
                       {point.away_odds?.toFixed(2) ?? '-'}
                     </span>
                     {awayChanged && prevPoint?.away_odds && (
-                      <span className={`ml-2 text-xs ${point.away_odds! > prevPoint.away_odds ? 'text-emerald-500' : 'text-red-500'}`}>
+                      <span className={`ml-2 text-xs ${point.away_odds! < prevPoint.away_odds ? 'text-emerald-500' : 'text-red-500'}`}>
                         {point.away_odds! > prevPoint.away_odds ? '↑' : '↓'}
                       </span>
                     )}
