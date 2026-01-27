@@ -19,9 +19,11 @@ interface OddsChartProps {
 }
 
 type ViewMode = 'odds' | 'percent';
+type SelectedOutcome = 'all' | 'home' | 'draw' | 'away';
 
 export default function OddsChart({ data, homeTeam, awayTeam }: OddsChartProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('odds');
+  const [selectedOutcome, setSelectedOutcome] = useState<SelectedOutcome>('all');
 
   // Get opening odds for reference lines and percentage calculations
   const openingOdds = data.length > 0 ? data[0] : null;
@@ -52,6 +54,20 @@ export default function OddsChart({ data, homeTeam, awayTeam }: OddsChartProps) 
     }
     return { ...baseData, home_pct: 0, draw_pct: 0, away_pct: 0 };
   });
+
+  // Handle legend click - toggle between single outcome and all
+  const handleLegendClick = (outcome: 'home' | 'draw' | 'away') => {
+    if (selectedOutcome === outcome) {
+      setSelectedOutcome('all');
+    } else {
+      setSelectedOutcome(outcome);
+    }
+  };
+
+  // Check if an outcome should be visible
+  const isVisible = (outcome: 'home' | 'draw' | 'away') => {
+    return selectedOutcome === 'all' || selectedOutcome === outcome;
+  };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -140,20 +156,59 @@ export default function OddsChart({ data, homeTeam, awayTeam }: OddsChartProps) 
           </button>
         </div>
 
-        {/* Legend - above graph on mobile */}
-        <div className="flex items-center gap-4 text-xs">
-          <div className="flex items-center gap-1.5">
+        {/* Clickable Legend */}
+        <div className="flex items-center gap-2 sm:gap-3 text-xs">
+          <button
+            onClick={() => handleLegendClick('home')}
+            className={`flex items-center gap-1.5 px-2 py-1 rounded-md transition-all ${
+              selectedOutcome === 'home'
+                ? 'bg-emerald-500/20 ring-1 ring-emerald-500/50'
+                : selectedOutcome === 'all'
+                ? 'hover:bg-slate-700/50'
+                : 'opacity-40 hover:opacity-70'
+            }`}
+          >
             <div className="w-3 h-0.5 bg-emerald-500 rounded-full"></div>
-            <span className="text-slate-400">{homeTeam}</span>
-          </div>
-          <div className="flex items-center gap-1.5">
+            <span className={`${
+              selectedOutcome === 'home' ? 'text-emerald-400 font-semibold' : 'text-slate-400'
+            } truncate max-w-[80px] sm:max-w-none`}>
+              {homeTeam}
+            </span>
+          </button>
+          <button
+            onClick={() => handleLegendClick('draw')}
+            className={`flex items-center gap-1.5 px-2 py-1 rounded-md transition-all ${
+              selectedOutcome === 'draw'
+                ? 'bg-yellow-500/20 ring-1 ring-yellow-500/50'
+                : selectedOutcome === 'all'
+                ? 'hover:bg-slate-700/50'
+                : 'opacity-40 hover:opacity-70'
+            }`}
+          >
             <div className="w-3 h-0.5 bg-yellow-500 rounded-full"></div>
-            <span className="text-slate-400">Draw</span>
-          </div>
-          <div className="flex items-center gap-1.5">
+            <span className={`${
+              selectedOutcome === 'draw' ? 'text-yellow-400 font-semibold' : 'text-slate-400'
+            }`}>
+              Draw
+            </span>
+          </button>
+          <button
+            onClick={() => handleLegendClick('away')}
+            className={`flex items-center gap-1.5 px-2 py-1 rounded-md transition-all ${
+              selectedOutcome === 'away'
+                ? 'bg-red-500/20 ring-1 ring-red-500/50'
+                : selectedOutcome === 'all'
+                ? 'hover:bg-slate-700/50'
+                : 'opacity-40 hover:opacity-70'
+            }`}
+          >
             <div className="w-3 h-0.5 bg-red-500 rounded-full"></div>
-            <span className="text-slate-400">{awayTeam}</span>
-          </div>
+            <span className={`${
+              selectedOutcome === 'away' ? 'text-red-400 font-semibold' : 'text-slate-400'
+            } truncate max-w-[80px] sm:max-w-none`}>
+              {awayTeam}
+            </span>
+          </button>
         </div>
       </div>
 
@@ -179,13 +234,13 @@ export default function OddsChart({ data, homeTeam, awayTeam }: OddsChartProps) 
               tick={{ fill: '#94a3b8', fontSize: 9, fontFamily: 'Inter' }}
               tickLine={{ stroke: '#475569' }}
               axisLine={{ stroke: '#475569' }}
-              domain={isPercentView ? ['auto', 'auto'] : ['auto', 'auto']}
+              domain={['auto', 'auto']}
               tickFormatter={(value) =>
                 isPercentView
                   ? `${value >= 0 ? '+' : ''}${value.toFixed(0)}%`
-                  : value.toFixed(1)
+                  : value.toFixed(2)
               }
-              width={isPercentView ? 45 : 35}
+              width={isPercentView ? 45 : 40}
             />
             <Tooltip
               content={<CustomTooltip />}
@@ -204,8 +259,8 @@ export default function OddsChart({ data, homeTeam, awayTeam }: OddsChartProps) 
               />
             )}
 
-            {/* Opening price reference lines for odds view */}
-            {!isPercentView && openingOdds?.home_odds && (
+            {/* Opening price reference lines for odds view - only show for visible outcomes */}
+            {!isPercentView && openingOdds?.home_odds && isVisible('home') && (
               <ReferenceLine
                 y={openingOdds.home_odds}
                 stroke="#22c55e"
@@ -213,7 +268,7 @@ export default function OddsChart({ data, homeTeam, awayTeam }: OddsChartProps) 
                 strokeOpacity={0.25}
               />
             )}
-            {!isPercentView && openingOdds?.draw_odds && (
+            {!isPercentView && openingOdds?.draw_odds && isVisible('draw') && (
               <ReferenceLine
                 y={openingOdds.draw_odds}
                 stroke="#eab308"
@@ -221,7 +276,7 @@ export default function OddsChart({ data, homeTeam, awayTeam }: OddsChartProps) 
                 strokeOpacity={0.25}
               />
             )}
-            {!isPercentView && openingOdds?.away_odds && (
+            {!isPercentView && openingOdds?.away_odds && isVisible('away') && (
               <ReferenceLine
                 y={openingOdds.away_odds}
                 stroke="#ef4444"
@@ -230,43 +285,59 @@ export default function OddsChart({ data, homeTeam, awayTeam }: OddsChartProps) 
               />
             )}
 
-            <Line
-              type="monotone"
-              dataKey={isPercentView ? 'home_pct' : 'home_odds'}
-              name={homeTeam}
-              stroke="#22c55e"
-              strokeWidth={2.5}
-              dot={{ fill: '#22c55e', strokeWidth: 0, r: 2 }}
-              activeDot={{ r: 5, fill: '#22c55e', stroke: '#fff', strokeWidth: 2 }}
-            />
-            <Line
-              type="monotone"
-              dataKey={isPercentView ? 'draw_pct' : 'draw_odds'}
-              name="Draw"
-              stroke="#eab308"
-              strokeWidth={2.5}
-              dot={{ fill: '#eab308', strokeWidth: 0, r: 2 }}
-              activeDot={{ r: 5, fill: '#eab308', stroke: '#fff', strokeWidth: 2 }}
-            />
-            <Line
-              type="monotone"
-              dataKey={isPercentView ? 'away_pct' : 'away_odds'}
-              name={awayTeam}
-              stroke="#ef4444"
-              strokeWidth={2.5}
-              dot={{ fill: '#ef4444', strokeWidth: 0, r: 2 }}
-              activeDot={{ r: 5, fill: '#ef4444', stroke: '#fff', strokeWidth: 2 }}
-            />
+            {/* Lines - conditionally rendered based on selection */}
+            {isVisible('home') && (
+              <Line
+                type="monotone"
+                dataKey={isPercentView ? 'home_pct' : 'home_odds'}
+                name={homeTeam}
+                stroke="#22c55e"
+                strokeWidth={2.5}
+                dot={{ fill: '#22c55e', strokeWidth: 0, r: 2 }}
+                activeDot={{ r: 5, fill: '#22c55e', stroke: '#fff', strokeWidth: 2 }}
+                animationDuration={300}
+              />
+            )}
+            {isVisible('draw') && (
+              <Line
+                type="monotone"
+                dataKey={isPercentView ? 'draw_pct' : 'draw_odds'}
+                name="Draw"
+                stroke="#eab308"
+                strokeWidth={2.5}
+                dot={{ fill: '#eab308', strokeWidth: 0, r: 2 }}
+                activeDot={{ r: 5, fill: '#eab308', stroke: '#fff', strokeWidth: 2 }}
+                animationDuration={300}
+              />
+            )}
+            {isVisible('away') && (
+              <Line
+                type="monotone"
+                dataKey={isPercentView ? 'away_pct' : 'away_odds'}
+                name={awayTeam}
+                stroke="#ef4444"
+                strokeWidth={2.5}
+                dot={{ fill: '#ef4444', strokeWidth: 0, r: 2 }}
+                activeDot={{ r: 5, fill: '#ef4444', stroke: '#fff', strokeWidth: 2 }}
+                animationDuration={300}
+              />
+            )}
           </LineChart>
         </ResponsiveContainer>
       </div>
 
-      {/* Percent view helper text */}
-      {isPercentView && (
-        <p className="text-[10px] text-slate-500 text-center mt-2">
-          Percentage change from opening odds • Negative = odds shortening (steam)
-        </p>
-      )}
+      {/* Helper text */}
+      <div className="text-[10px] text-slate-500 text-center mt-2">
+        {selectedOutcome !== 'all' && (
+          <span className="text-slate-400">Click legend again to show all • </span>
+        )}
+        {isPercentView && (
+          <span>Negative = odds shortening (steam)</span>
+        )}
+        {!isPercentView && selectedOutcome === 'all' && (
+          <span>Click a team to isolate and auto-scale Y-axis</span>
+        )}
+      </div>
     </div>
   );
 }
