@@ -200,9 +200,7 @@ export default function HomePage() {
                         <span className={`font-mono font-bold ${
                           mover.direction === 'down' ? 'text-emerald-400' : 'text-red-400'
                         } ${isSignificant ? 'text-lg' : ''}`}>
-                          {isSignificant && '🔥 '}
-                          {mover.direction === 'up' ? '↑' : '↓'}
-                          {mover.direction === 'up' ? '+' : ''}{mover.movement_percent.toFixed(1)}%
+                          {mover.direction === 'up' ? '↑+' : '↓'}{mover.movement_percent.toFixed(1)}%
                         </span>
                       </td>
                       <td className="px-4 py-4 text-center">
@@ -262,9 +260,7 @@ export default function HomePage() {
                       <div className={`font-mono font-bold ${
                         mover.direction === 'down' ? 'text-emerald-400' : 'text-red-400'
                       } ${isSignificant ? 'text-lg' : 'text-base'}`}>
-                        {isSignificant && '🔥'}
-                        {mover.direction === 'up' ? '↑' : '↓'}
-                        {Math.abs(mover.movement_percent).toFixed(1)}%
+                        {mover.direction === 'up' ? '↑+' : '↓'}{Math.abs(mover.movement_percent).toFixed(1)}%
                       </div>
                       <div className="text-xs text-slate-500 mt-1">
                         {mover.opening_odds.toFixed(2)} → <span className="text-white font-semibold">{mover.current_odds.toFixed(2)}</span>
