@@ -22,6 +22,7 @@ export default function OddsChart({ data, homeTeam, awayTeam }: OddsChartProps) 
   const chartData = data.map((point) => ({
     ...point,
     time: format(new Date(point.timestamp), 'MMM d, HH:mm'),
+    fullTime: format(new Date(point.timestamp), 'MMM d, yyyy HH:mm'),
     timestamp: new Date(point.timestamp).getTime(),
   }));
 
@@ -30,23 +31,45 @@ export default function OddsChart({ data, homeTeam, awayTeam }: OddsChartProps) 
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
+      const dataPoint = payload[0]?.payload;
       return (
-        <div className="bg-slate-800/95 backdrop-blur-sm border border-slate-600 rounded-xl p-4 shadow-2xl">
-          <p className="text-slate-400 text-xs font-medium mb-2 uppercase tracking-wide">{label}</p>
-          {payload.map((entry: any, index: number) => (
-            <div key={index} className="flex items-center justify-between gap-4 text-sm py-1">
-              <div className="flex items-center gap-2">
-                <div
-                  className="w-2.5 h-2.5 rounded-full"
-                  style={{ backgroundColor: entry.color }}
-                />
-                <span className="text-slate-300">{entry.name}</span>
+        <div
+          className="bg-slate-900/95 backdrop-blur-md border border-slate-600/50 rounded-xl shadow-2xl overflow-hidden"
+          style={{
+            animation: 'fadeIn 0.15s ease-out',
+            boxShadow: '0 20px 40px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+          }}
+        >
+          {/* Header with timestamp */}
+          <div className="px-4 py-2.5 bg-slate-800/50 border-b border-slate-700/50">
+            <p className="text-slate-300 text-xs font-semibold">
+              {dataPoint?.fullTime || label}
+            </p>
+          </div>
+
+          {/* Odds values */}
+          <div className="p-3 space-y-1.5">
+            {payload.map((entry: any, index: number) => (
+              <div
+                key={index}
+                className="flex items-center justify-between gap-6 px-1"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div
+                    className="w-2.5 h-2.5 rounded-full ring-2 ring-white/10"
+                    style={{ backgroundColor: entry.color }}
+                  />
+                  <span className="text-slate-400 text-sm font-medium">{entry.name}</span>
+                </div>
+                <span
+                  className="font-mono font-bold text-lg tabular-nums"
+                  style={{ color: entry.color }}
+                >
+                  {entry.value?.toFixed(2) ?? '-'}
+                </span>
               </div>
-              <span className="font-mono font-bold text-base" style={{ color: entry.color }}>
-                {entry.value?.toFixed(2) ?? '-'}
-              </span>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       );
     }
@@ -85,7 +108,12 @@ export default function OddsChart({ data, homeTeam, awayTeam }: OddsChartProps) 
             tickFormatter={(value) => value.toFixed(1)}
             width={45}
           />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip
+            content={<CustomTooltip />}
+            cursor={{ stroke: '#64748b', strokeWidth: 1, strokeDasharray: '4 4' }}
+            offset={15}
+            allowEscapeViewBox={{ x: false, y: true }}
+          />
           <Legend
             wrapperStyle={{ paddingTop: '16px' }}
             formatter={(value) => <span className="text-slate-300 text-sm">{value}</span>}

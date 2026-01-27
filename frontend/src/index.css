@@ -59,3 +59,21 @@ h1, h2, h3, h4, h5, h6 {
 .card-shadow-lg {
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
 }
+
+/* Chart tooltip animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Recharts tooltip container override */
+.recharts-tooltip-wrapper {
+  transition: transform 0.1s ease-out !important;
+  pointer-events: none;
+}
