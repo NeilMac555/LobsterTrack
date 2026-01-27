@@ -130,84 +130,82 @@ export default function OddsChart({ data, homeTeam, awayTeam }: OddsChartProps) 
 
   return (
     <div className="h-full w-full flex flex-col">
-      {/* Toggle + Legend row */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
-        {/* View Toggle */}
-        <div className="flex bg-slate-800 rounded-lg p-1 self-start">
-          <button
-            onClick={() => setViewMode('odds')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
-              viewMode === 'odds'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Odds
-          </button>
-          <button
-            onClick={() => setViewMode('percent')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
-              viewMode === 'percent'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            % Change
-          </button>
+      {/* Controls row */}
+      <div className="flex flex-col gap-2 mb-3">
+        {/* Top row: View Toggle + Hint */}
+        <div className="flex items-center justify-between">
+          <div className="flex bg-slate-800 rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('odds')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                viewMode === 'odds'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Odds
+            </button>
+            <button
+              onClick={() => setViewMode('percent')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                viewMode === 'percent'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              % Change
+            </button>
+          </div>
+
+          {/* Hint text - more prominent */}
+          <span className="text-[10px] sm:text-xs text-slate-400 flex items-center gap-1">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+            </svg>
+            {selectedOutcome === 'all' ? 'Click to isolate' : 'Click again for all'}
+          </span>
         </div>
 
-        {/* Clickable Legend */}
-        <div className="flex items-center gap-2 sm:gap-3 text-xs">
+        {/* Clickable Legend - styled as filter pills */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <button
             onClick={() => handleLegendClick('home')}
-            className={`flex items-center gap-1.5 px-2 py-1 rounded-md transition-all ${
+            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full border text-xs font-medium cursor-pointer transition-all duration-200 ${
               selectedOutcome === 'home'
-                ? 'bg-emerald-500/20 ring-1 ring-emerald-500/50'
+                ? 'bg-emerald-500/30 border-emerald-500/60 text-emerald-300 shadow-sm shadow-emerald-500/20'
                 : selectedOutcome === 'all'
-                ? 'hover:bg-slate-700/50'
-                : 'opacity-40 hover:opacity-70'
+                ? 'bg-slate-800/80 border-slate-600/50 text-slate-300 hover:bg-slate-700 hover:border-slate-500 hover:scale-105'
+                : 'bg-slate-800/40 border-slate-700/30 text-slate-500 hover:bg-slate-700/50 hover:text-slate-400'
             }`}
           >
-            <div className="w-3 h-0.5 bg-emerald-500 rounded-full"></div>
-            <span className={`${
-              selectedOutcome === 'home' ? 'text-emerald-400 font-semibold' : 'text-slate-400'
-            } truncate max-w-[80px] sm:max-w-none`}>
-              {homeTeam}
-            </span>
+            <div className={`w-2 h-2 rounded-full ${selectedOutcome === 'home' ? 'bg-emerald-400' : 'bg-emerald-500'}`}></div>
+            <span className="truncate max-w-[70px] sm:max-w-[100px]">{homeTeam}</span>
           </button>
           <button
             onClick={() => handleLegendClick('draw')}
-            className={`flex items-center gap-1.5 px-2 py-1 rounded-md transition-all ${
+            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full border text-xs font-medium cursor-pointer transition-all duration-200 ${
               selectedOutcome === 'draw'
-                ? 'bg-yellow-500/20 ring-1 ring-yellow-500/50'
+                ? 'bg-yellow-500/30 border-yellow-500/60 text-yellow-300 shadow-sm shadow-yellow-500/20'
                 : selectedOutcome === 'all'
-                ? 'hover:bg-slate-700/50'
-                : 'opacity-40 hover:opacity-70'
+                ? 'bg-slate-800/80 border-slate-600/50 text-slate-300 hover:bg-slate-700 hover:border-slate-500 hover:scale-105'
+                : 'bg-slate-800/40 border-slate-700/30 text-slate-500 hover:bg-slate-700/50 hover:text-slate-400'
             }`}
           >
-            <div className="w-3 h-0.5 bg-yellow-500 rounded-full"></div>
-            <span className={`${
-              selectedOutcome === 'draw' ? 'text-yellow-400 font-semibold' : 'text-slate-400'
-            }`}>
-              Draw
-            </span>
+            <div className={`w-2 h-2 rounded-full ${selectedOutcome === 'draw' ? 'bg-yellow-400' : 'bg-yellow-500'}`}></div>
+            <span>Draw</span>
           </button>
           <button
             onClick={() => handleLegendClick('away')}
-            className={`flex items-center gap-1.5 px-2 py-1 rounded-md transition-all ${
+            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full border text-xs font-medium cursor-pointer transition-all duration-200 ${
               selectedOutcome === 'away'
-                ? 'bg-red-500/20 ring-1 ring-red-500/50'
+                ? 'bg-red-500/30 border-red-500/60 text-red-300 shadow-sm shadow-red-500/20'
                 : selectedOutcome === 'all'
-                ? 'hover:bg-slate-700/50'
-                : 'opacity-40 hover:opacity-70'
+                ? 'bg-slate-800/80 border-slate-600/50 text-slate-300 hover:bg-slate-700 hover:border-slate-500 hover:scale-105'
+                : 'bg-slate-800/40 border-slate-700/30 text-slate-500 hover:bg-slate-700/50 hover:text-slate-400'
             }`}
           >
-            <div className="w-3 h-0.5 bg-red-500 rounded-full"></div>
-            <span className={`${
-              selectedOutcome === 'away' ? 'text-red-400 font-semibold' : 'text-slate-400'
-            } truncate max-w-[80px] sm:max-w-none`}>
-              {awayTeam}
-            </span>
+            <div className={`w-2 h-2 rounded-full ${selectedOutcome === 'away' ? 'bg-red-400' : 'bg-red-500'}`}></div>
+            <span className="truncate max-w-[70px] sm:max-w-[100px]">{awayTeam}</span>
           </button>
         </div>
       </div>
@@ -326,18 +324,12 @@ export default function OddsChart({ data, homeTeam, awayTeam }: OddsChartProps) 
         </ResponsiveContainer>
       </div>
 
-      {/* Helper text */}
-      <div className="text-[10px] text-slate-500 text-center mt-2">
-        {selectedOutcome !== 'all' && (
-          <span className="text-slate-400">Click legend again to show all • </span>
-        )}
-        {isPercentView && (
-          <span>Negative = odds shortening (steam)</span>
-        )}
-        {!isPercentView && selectedOutcome === 'all' && (
-          <span>Click a team to isolate and auto-scale Y-axis</span>
-        )}
-      </div>
+      {/* Helper text - only show for percent view */}
+      {isPercentView && (
+        <p className="text-[10px] text-slate-500 text-center mt-2">
+          Negative = odds shortening (steam)
+        </p>
+      )}
     </div>
   );
 }
