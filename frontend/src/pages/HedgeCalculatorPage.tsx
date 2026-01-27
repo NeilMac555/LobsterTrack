@@ -82,20 +82,20 @@ export default function HedgeCalculatorPage() {
   return (
     <div className="max-w-2xl mx-auto">
       {/* Page Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">Hedging Calculator</h1>
-        <p className="text-slate-400">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Hedging Calculator</h1>
+        <p className="text-slate-400 text-sm sm:text-base">
           Calculate the optimal hedge bet amount to lock in guaranteed profit regardless of outcome.
         </p>
       </div>
 
       {/* Calculator Card */}
-      <div className="bg-slate-800 rounded-2xl border border-slate-700/80 card-shadow overflow-hidden">
+      <div className="bg-slate-800 rounded-xl sm:rounded-2xl border border-slate-700/80 card-shadow overflow-hidden">
         {/* Input Section */}
-        <div className="p-6 border-b border-slate-700/50">
-          <h2 className="text-lg font-semibold text-white mb-5">Your Bets</h2>
+        <div className="p-4 sm:p-6 border-b border-slate-700/50">
+          <h2 className="text-base sm:text-lg font-semibold text-white mb-4 sm:mb-5">Your Bets</h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             {/* Original Bet */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-3">
@@ -111,7 +111,7 @@ export default function HedgeCalculatorPage() {
                   min="1.01"
                   value={originalOdds}
                   onChange={(e) => setOriginalOdds(e.target.value)}
-                  className="w-full bg-slate-900/50 border border-slate-600 rounded-xl px-4 py-3 text-white font-mono text-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                  className="w-full bg-slate-900/50 border border-slate-600 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-white font-mono text-base sm:text-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                   placeholder="3.50"
                 />
               </div>
@@ -124,7 +124,7 @@ export default function HedgeCalculatorPage() {
                   min="0"
                   value={originalStake}
                   onChange={(e) => setOriginalStake(e.target.value)}
-                  className="w-full bg-slate-900/50 border border-slate-600 rounded-xl px-4 py-3 text-white font-mono text-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                  className="w-full bg-slate-900/50 border border-slate-600 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-white font-mono text-base sm:text-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                   placeholder="100"
                 />
               </div>
@@ -145,7 +145,7 @@ export default function HedgeCalculatorPage() {
                   min="1.01"
                   value={hedgeOdds}
                   onChange={(e) => setHedgeOdds(e.target.value)}
-                  className="w-full bg-slate-900/50 border border-slate-600 rounded-xl px-4 py-3 text-white font-mono text-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                  className="w-full bg-slate-900/50 border border-slate-600 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-white font-mono text-base sm:text-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                   placeholder="2.10"
                 />
               </div>
@@ -160,7 +160,7 @@ export default function HedgeCalculatorPage() {
                   min="0"
                   value={customHedgeAmount || (calculation?.hedgeAmount.toFixed(2) ?? '')}
                   onChange={(e) => setCustomHedgeAmount(e.target.value)}
-                  className="w-full bg-slate-900/50 border border-slate-600 rounded-xl px-4 py-3 text-white font-mono text-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                  className="w-full bg-slate-900/50 border border-slate-600 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-white font-mono text-base sm:text-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                   placeholder="Auto"
                 />
                 {calculation && !customHedgeAmount && (
@@ -183,69 +183,69 @@ export default function HedgeCalculatorPage() {
 
         {/* Results Section */}
         {calculation && (
-          <div className="p-6 bg-slate-800/50">
-            <h2 className="text-lg font-semibold text-white mb-5">Results</h2>
+          <div className="p-4 sm:p-6 bg-slate-800/50">
+            <h2 className="text-base sm:text-lg font-semibold text-white mb-4 sm:mb-5">Results</h2>
 
             {/* Optimal Hedge Amount */}
-            <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 mb-5">
-              <div className="flex items-center justify-between">
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 sm:p-4 mb-4 sm:mb-5">
+              <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm text-blue-400 font-medium">Optimal Hedge Amount</p>
-                  <p className="text-xs text-slate-400 mt-0.5">Bet this amount to guarantee equal profit</p>
+                  <p className="text-xs sm:text-sm text-blue-400 font-medium">Optimal Hedge Amount</p>
+                  <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5">Bet this amount for equal profit</p>
                 </div>
-                <p className="text-2xl font-bold text-blue-400 font-mono">
+                <p className="text-xl sm:text-2xl font-bold text-blue-400 font-mono">
                   ${calculation.hedgeAmount.toFixed(2)}
                 </p>
               </div>
             </div>
 
             {/* Payout Scenarios */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
-              <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700/50">
-                <div className="flex items-center gap-2 mb-2">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-5">
+              <div className="bg-slate-900/50 rounded-xl p-3 sm:p-4 border border-slate-700/50">
+                <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
                   <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                  <p className="text-sm text-slate-400">If Original Wins</p>
+                  <p className="text-xs sm:text-sm text-slate-400">If Original Wins</p>
                 </div>
-                <p className="text-xl font-bold text-white font-mono mb-1">
+                <p className="text-lg sm:text-xl font-bold text-white font-mono mb-0.5 sm:mb-1">
                   ${calculation.payoutOriginalWins.toFixed(2)}
                 </p>
-                <p className={`text-sm font-mono ${calculation.originalProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {formatCurrency(calculation.originalProfit)} profit
+                <p className={`text-xs sm:text-sm font-mono ${calculation.originalProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {formatCurrency(calculation.originalProfit)}
                 </p>
               </div>
 
-              <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700/50">
-                <div className="flex items-center gap-2 mb-2">
+              <div className="bg-slate-900/50 rounded-xl p-3 sm:p-4 border border-slate-700/50">
+                <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
                   <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                  <p className="text-sm text-slate-400">If Hedge Wins</p>
+                  <p className="text-xs sm:text-sm text-slate-400">If Hedge Wins</p>
                 </div>
-                <p className="text-xl font-bold text-white font-mono mb-1">
+                <p className="text-lg sm:text-xl font-bold text-white font-mono mb-0.5 sm:mb-1">
                   ${calculation.payoutHedgeWins.toFixed(2)}
                 </p>
-                <p className={`text-sm font-mono ${calculation.hedgeProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {formatCurrency(calculation.hedgeProfit)} profit
+                <p className={`text-xs sm:text-sm font-mono ${calculation.hedgeProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {formatCurrency(calculation.hedgeProfit)}
                 </p>
               </div>
             </div>
 
             {/* Guaranteed Profit */}
-            <div className={`rounded-xl p-5 border ${
+            <div className={`rounded-xl p-4 sm:p-5 border ${
               calculation.guaranteedProfit >= 0
                 ? 'bg-emerald-500/10 border-emerald-500/30'
                 : 'bg-red-500/10 border-red-500/30'
             }`}>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className={`text-sm font-medium ${
+                  <p className={`text-xs sm:text-sm font-medium ${
                     calculation.guaranteedProfit >= 0 ? 'text-emerald-400' : 'text-red-400'
                   }`}>
                     {calculation.guaranteedProfit >= 0 ? 'Guaranteed Profit' : 'Guaranteed Loss'}
                   </p>
-                  <p className="text-xs text-slate-400 mt-0.5">
+                  <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5">
                     Minimum return regardless of outcome
                   </p>
                 </div>
-                <p className={`text-3xl font-bold font-mono ${
+                <p className={`text-2xl sm:text-3xl font-bold font-mono ${
                   calculation.guaranteedProfit >= 0 ? 'text-emerald-400' : 'text-red-400'
                 }`}>
                   {formatCurrency(calculation.guaranteedProfit)}
@@ -278,9 +278,9 @@ export default function HedgeCalculatorPage() {
       </div>
 
       {/* Help Section */}
-      <div className="mt-6 bg-slate-800/50 rounded-2xl border border-slate-700/50 p-5">
-        <h3 className="text-sm font-semibold text-slate-300 mb-3">How it works</h3>
-        <ul className="space-y-2 text-sm text-slate-400">
+      <div className="mt-4 sm:mt-6 bg-slate-800/50 rounded-xl sm:rounded-2xl border border-slate-700/50 p-4 sm:p-5">
+        <h3 className="text-xs sm:text-sm font-semibold text-slate-300 mb-2 sm:mb-3">How it works</h3>
+        <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm text-slate-400">
           <li className="flex items-start gap-2">
             <span className="text-blue-400 mt-0.5">1.</span>
             Enter your original bet's odds and stake amount

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { format, isToday, isTomorrow, startOfDay } from 'date-fns';
-import { getMatches } from '../api';
+import { format, isToday, isTomorrow, startOfDay, formatDistanceToNow } from 'date-fns';
+import { getMatches, getStats } from '../api';
 import type { MatchSummary } from '../types';
 import { LEAGUE_CONFIG } from '../types';
 import MatchCard from '../components/MatchCard';
@@ -112,14 +112,21 @@ export default function HomePage() {
   const [matches, setMatches] = useState<MatchSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
       setError(null);
       try {
-        const matchesData = await getMatches({ league: league || undefined, limit: 200 });
+        const [matchesData, statsData] = await Promise.all([
+          getMatches({ league: league || undefined, limit: 200 }),
+          getStats()
+        ]);
         setMatches(matchesData);
+        if (statsData.newest_data) {
+          setLastUpdated(new Date(statsData.newest_data));
+        }
       } catch (err) {
         setError('Failed to load data. Is the backend running?');
         console.error(err);
@@ -158,17 +165,29 @@ export default function HomePage() {
 
   return (
     <div>
-      {/* Biggest Movers Table */}
-      {biggestMovers.length > 0 && (
-        <div className="bg-slate-800/80 rounded-2xl border border-slate-700/50 overflow-hidden mb-10 card-shadow">
-          <div className="px-6 py-5 border-b border-slate-700/50 flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-white">Biggest Movers</h2>
-              <p className="text-slate-400 text-sm mt-0.5">Matches with significant line movement</p>
-            </div>
-            <span className="text-xs text-slate-500 font-medium">Sharp money indicators</span>
+      {/* Last Updated Indicator */}
+      {lastUpdated && (
+        <div className="flex items-center justify-end mb-4 sm:mb-6">
+          <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500">
+            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+            <span>Updated {formatDistanceToNow(lastUpdated, { addSuffix: true })}</span>
           </div>
-          <div className="overflow-x-auto">
+        </div>
+      )}
+
+      {/* Biggest Movers - Mobile Card / Desktop Table */}
+      {biggestMovers.length > 0 && (
+        <div className="bg-slate-800/80 rounded-2xl border border-slate-700/50 overflow-hidden mb-6 sm:mb-10 card-shadow">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-700/50 flex items-center justify-between">
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold text-white">Biggest Movers</h2>
+              <p className="text-slate-400 text-xs sm:text-sm mt-0.5">Significant line movement</p>
+            </div>
+            <span className="text-[10px] sm:text-xs text-slate-500 font-medium hidden sm:block">Sharp money indicators</span>
+          </div>
+
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="bg-slate-700/30">
@@ -260,46 +279,99 @@ export default function HomePage() {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile Cards */}
+          <div className="md:hidden divide-y divide-slate-700/50">
+            {biggestMovers.map((mover, index) => {
+              const isSignificant = Math.abs(mover.percentage) >= 5;
+              const matchDate = new Date(mover.match.commence_time);
+              const leagueInfo = LEAGUE_CONFIG[mover.match.sport_key];
+
+              return (
+                <Link
+                  key={`${mover.match.id}-${index}`}
+                  to={`/match/${mover.match.id}`}
+                  className="block p-4 hover:bg-slate-700/20 active:bg-slate-700/30 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <LeagueLogo sportKey={mover.match.sport_key} size="sm" />
+                        <span className="text-xs text-slate-500">{leagueInfo?.shortName}</span>
+                        <span className="text-xs text-slate-600">•</span>
+                        <span className="text-xs text-slate-500">{format(matchDate, 'EEE HH:mm')}</span>
+                      </div>
+                      <div className="text-white font-semibold text-sm truncate">
+                        {mover.match.home_team} vs {mover.match.away_team}
+                      </div>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className={`px-2 py-0.5 rounded text-xs font-bold ${
+                          mover.outcome === 'H' ? 'bg-emerald-500/20 text-emerald-400' :
+                          mover.outcome === 'D' ? 'bg-yellow-500/20 text-yellow-400' :
+                          'bg-red-500/20 text-red-400'
+                        }`}>
+                          {mover.outcome}
+                        </span>
+                        <span className="text-slate-400 text-xs truncate">{mover.outcomeName}</span>
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <div className={`font-mono font-bold ${
+                        mover.direction === 'down' ? 'text-emerald-400' : 'text-red-400'
+                      } ${isSignificant ? 'text-lg' : 'text-base'}`}>
+                        {isSignificant && '🔥'}
+                        {mover.direction === 'up' ? '↑' : '↓'}
+                        {Math.abs(mover.percentage).toFixed(1)}%
+                      </div>
+                      <div className="text-xs text-slate-500 mt-1">
+                        {mover.openingOdds.toFixed(2)} → <span className="text-white font-semibold">{mover.currentOdds.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
         </div>
       )}
 
       {/* Page Header */}
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold text-white flex items-center gap-4">
+      <div className="mb-6 sm:mb-8">
+        <h2 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-3 sm:gap-4">
           {league && leagueConfig ? (
             <>
               <LeagueLogo sportKey={league} size="lg" />
-              {leagueConfig.name}
+              <span className="truncate">{leagueConfig.name}</span>
             </>
           ) : (
             'All Matches'
           )}
         </h2>
-        <p className="text-slate-400 mt-2 text-base">
+        <p className="text-slate-400 mt-1 sm:mt-2 text-sm sm:text-base">
           {matches.length} upcoming match{matches.length !== 1 ? 'es' : ''} with Pinnacle odds
         </p>
       </div>
 
       {/* Matches by Day */}
       {groupedMatches.length === 0 ? (
-        <div className="bg-slate-800/50 rounded-2xl border border-slate-700/50 p-16 text-center">
-          <p className="text-slate-400 text-lg">No upcoming matches found</p>
+        <div className="bg-slate-800/50 rounded-2xl border border-slate-700/50 p-8 sm:p-16 text-center">
+          <p className="text-slate-400 text-base sm:text-lg">No upcoming matches found</p>
         </div>
       ) : (
-        <div className="space-y-10">
+        <div className="space-y-6 sm:space-y-10">
           {groupedMatches.map((group) => (
             <section key={group.date.toISOString()}>
               {/* Day Header */}
-              <div className="flex items-center gap-4 mb-5">
-                <h3 className="text-xl font-bold text-white">{group.label}</h3>
+              <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-5">
+                <h3 className="text-lg sm:text-xl font-bold text-white whitespace-nowrap">{group.label}</h3>
                 <div className="flex-1 h-px bg-gradient-to-r from-slate-700 to-transparent"></div>
-                <span className="text-sm text-slate-500 font-medium">
+                <span className="text-xs sm:text-sm text-slate-500 font-medium whitespace-nowrap">
                   {group.matches.length} match{group.matches.length !== 1 ? 'es' : ''}
                 </span>
               </div>
 
               {/* Matches Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
                 {group.matches.map((match) => (
                   <MatchCard key={match.id} match={match} />
                 ))}

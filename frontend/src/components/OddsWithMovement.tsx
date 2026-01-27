@@ -45,21 +45,21 @@ export default function OddsWithMovement({
   const movementColorClass = movement.direction === 'down' ? 'text-emerald-400' : 'text-red-400';
 
   return (
-    <div className={`px-3 py-2 rounded ${bgClass} text-center min-w-[80px]`}>
-      <div className="text-xs text-slate-400 mb-1">{label}</div>
-      <div className="text-lg font-bold text-white font-mono flex items-center justify-center gap-1">
+    <div className={`px-2 sm:px-3 py-2 sm:py-3 rounded ${bgClass} text-center min-w-[60px] sm:min-w-[80px]`}>
+      <div className="text-[10px] sm:text-xs text-slate-400 mb-0.5 sm:mb-1">{label}</div>
+      <div className="text-base sm:text-lg font-bold text-white font-mono flex items-center justify-center gap-0.5 sm:gap-1">
         <span className={isSignificant ? 'underline decoration-2' : ''}>
           {formatOdds(current)}
         </span>
         {movement.direction === 'up' && (
-          <span className="text-red-400 text-sm">↑</span>
+          <span className="text-red-400 text-xs sm:text-sm">↑</span>
         )}
         {movement.direction === 'down' && (
-          <span className="text-emerald-400 text-sm">↓</span>
+          <span className="text-emerald-400 text-xs sm:text-sm">↓</span>
         )}
       </div>
       {movement.direction !== 'none' && (
-        <div className={`text-xs mt-0.5 ${movementColorClass} ${isSignificant ? 'font-bold' : ''}`}>
+        <div className={`text-[10px] sm:text-xs mt-0.5 ${movementColorClass} ${isSignificant ? 'font-bold' : ''}`}>
           {movement.direction === 'up' ? '+' : ''}{movement.percentage.toFixed(1)}%
         </div>
       )}

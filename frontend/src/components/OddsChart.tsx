@@ -78,35 +78,36 @@ export default function OddsChart({ data, homeTeam, awayTeam }: OddsChartProps) 
 
   if (data.length === 0) {
     return (
-      <div className="h-96 flex items-center justify-center bg-slate-800/50 rounded-2xl border border-slate-700">
-        <p className="text-slate-500">No odds history available</p>
+      <div className="h-64 sm:h-96 flex items-center justify-center bg-slate-800/50 rounded-xl sm:rounded-2xl border border-slate-700">
+        <p className="text-slate-500 text-sm sm:text-base">No odds history available</p>
       </div>
     );
   }
 
   return (
-    <div className="h-96 w-full p-2">
+    <div className="h-full w-full">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={chartData}
-          margin={{ top: 24, right: 32, left: 8, bottom: 8 }}
+          margin={{ top: 16, right: 8, left: -10, bottom: 8 }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#334155" strokeOpacity={0.5} />
           <XAxis
             dataKey="time"
             stroke="#64748b"
-            tick={{ fill: '#94a3b8', fontSize: 11, fontFamily: 'Inter' }}
+            tick={{ fill: '#94a3b8', fontSize: 10, fontFamily: 'Inter' }}
             tickLine={{ stroke: '#475569' }}
             axisLine={{ stroke: '#475569' }}
+            interval="preserveStartEnd"
           />
           <YAxis
             stroke="#64748b"
-            tick={{ fill: '#94a3b8', fontSize: 11, fontFamily: 'Inter' }}
+            tick={{ fill: '#94a3b8', fontSize: 10, fontFamily: 'Inter' }}
             tickLine={{ stroke: '#475569' }}
             axisLine={{ stroke: '#475569' }}
             domain={['auto', 'auto']}
             tickFormatter={(value) => value.toFixed(1)}
-            width={45}
+            width={40}
           />
           <Tooltip
             content={<CustomTooltip />}
@@ -115,8 +116,8 @@ export default function OddsChart({ data, homeTeam, awayTeam }: OddsChartProps) 
             allowEscapeViewBox={{ x: false, y: true }}
           />
           <Legend
-            wrapperStyle={{ paddingTop: '16px' }}
-            formatter={(value) => <span className="text-slate-300 text-sm">{value}</span>}
+            wrapperStyle={{ paddingTop: '8px', fontSize: '12px' }}
+            formatter={(value) => <span className="text-slate-300 text-xs sm:text-sm">{value}</span>}
           />
 
           {/* Opening price reference lines (subtle dotted) */}

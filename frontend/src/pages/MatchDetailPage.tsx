@@ -46,8 +46,8 @@ export default function MatchDetailPage() {
 
   if (error || !match) {
     return (
-      <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-8 text-center">
-        <p className="text-red-400 text-lg">{error || 'Match not found'}</p>
+      <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-6 sm:p-8 text-center">
+        <p className="text-red-400 text-base sm:text-lg">{error || 'Match not found'}</p>
         <Link to="/" className="text-blue-400 hover:text-blue-300 mt-4 inline-block font-medium">
           ← Back to matches
         </Link>
@@ -65,7 +65,7 @@ export default function MatchDetailPage() {
       {/* Back Button */}
       <Link
         to={`/?league=${match.sport_key}`}
-        className="inline-flex items-center gap-2 text-slate-400 hover:text-white mb-8 transition-colors duration-200 font-medium"
+        className="inline-flex items-center gap-2 text-slate-400 hover:text-white mb-6 sm:mb-8 transition-colors duration-200 font-medium text-sm sm:text-base"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -74,66 +74,70 @@ export default function MatchDetailPage() {
       </Link>
 
       {/* Match Header */}
-      <div className="bg-slate-800/80 rounded-2xl border border-slate-700/50 overflow-hidden mb-8 card-shadow">
+      <div className="bg-slate-800/80 rounded-2xl border border-slate-700/50 overflow-hidden mb-6 sm:mb-8 card-shadow">
         {/* League Bar */}
-        <div className="px-6 py-4 bg-slate-700/30 border-b border-slate-700/50 flex items-center gap-3">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 bg-slate-700/30 border-b border-slate-700/50 flex items-center gap-2 sm:gap-3">
           <LeagueLogo sportKey={match.sport_key} size="md" />
-          <span className="text-slate-300 font-semibold">{leagueConfig?.name || match.league_name}</span>
+          <span className="text-slate-300 font-semibold text-sm sm:text-base">{leagueConfig?.name || match.league_name}</span>
         </div>
 
         {/* Teams and Date */}
-        <div className="p-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
-            <div className="flex-1 space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="w-4 h-4 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/30"></div>
-                <h1 className="text-3xl font-bold text-white">{match.home_team}</h1>
+        <div className="p-4 sm:p-8">
+          <div className="flex flex-col gap-4 sm:gap-8">
+            {/* Teams */}
+            <div className="flex-1 space-y-3 sm:space-y-4">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/30 flex-shrink-0"></div>
+                <h1 className="text-xl sm:text-3xl font-bold text-white truncate">{match.home_team}</h1>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="w-4 h-4 rounded-full bg-red-500 shadow-lg shadow-red-500/30"></div>
-                <h1 className="text-3xl font-bold text-white">{match.away_team}</h1>
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-red-500 shadow-lg shadow-red-500/30 flex-shrink-0"></div>
+                <h1 className="text-xl sm:text-3xl font-bold text-white truncate">{match.away_team}</h1>
               </div>
             </div>
 
-            <div className="text-center md:text-right">
-              <div className="text-slate-400 mb-2 font-medium">{format(matchDate, 'EEEE, MMMM d, yyyy')}</div>
-              <div className="text-5xl font-bold text-white">{format(matchDate, 'HH:mm')}</div>
+            {/* Date/Time */}
+            <div className="flex items-center justify-between sm:justify-end gap-4 pt-3 sm:pt-0 border-t border-slate-700/50 sm:border-0">
+              <div className="text-slate-400 text-sm sm:text-base font-medium">
+                {format(matchDate, 'EEE, MMM d')}
+              </div>
+              <div className="text-3xl sm:text-5xl font-bold text-white">{format(matchDate, 'HH:mm')}</div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Current Odds with Movement */}
-      <div className="grid grid-cols-3 gap-5 mb-8">
+      <div className="grid grid-cols-3 gap-2 sm:gap-5 mb-6 sm:mb-8">
         <OddsWithMovement
           current={latestOdds?.home_odds ?? null}
           opening={firstOdds?.home_odds ?? null}
           label="Home"
           colorClass="text-emerald-400"
-          bgClass="bg-slate-800/80 border border-slate-700/50 rounded-2xl card-shadow"
+          bgClass="bg-slate-800/80 border border-slate-700/50 rounded-xl sm:rounded-2xl card-shadow"
         />
         <OddsWithMovement
           current={latestOdds?.draw_odds ?? null}
           opening={firstOdds?.draw_odds ?? null}
           label="Draw"
           colorClass="text-yellow-400"
-          bgClass="bg-slate-800/80 border border-slate-700/50 rounded-2xl card-shadow"
+          bgClass="bg-slate-800/80 border border-slate-700/50 rounded-xl sm:rounded-2xl card-shadow"
         />
         <OddsWithMovement
           current={latestOdds?.away_odds ?? null}
           opening={firstOdds?.away_odds ?? null}
           label="Away"
           colorClass="text-red-400"
-          bgClass="bg-slate-800/80 border border-slate-700/50 rounded-2xl card-shadow"
+          bgClass="bg-slate-800/80 border border-slate-700/50 rounded-xl sm:rounded-2xl card-shadow"
         />
       </div>
 
       {/* Opening Odds Reference */}
       {firstOdds && (
-        <div className="bg-slate-800/50 rounded-2xl border border-slate-700/50 p-5 mb-8">
+        <div className="bg-slate-800/50 rounded-xl sm:rounded-2xl border border-slate-700/50 p-4 sm:p-5 mb-6 sm:mb-8">
           <div className="flex items-center justify-between">
-            <span className="text-slate-400 text-sm font-medium">Opening Odds</span>
-            <div className="flex gap-6 text-sm font-mono font-semibold">
+            <span className="text-slate-400 text-xs sm:text-sm font-medium">Opening Odds</span>
+            <div className="flex gap-4 sm:gap-6 text-xs sm:text-sm font-mono font-semibold">
               <span className="text-slate-300">{firstOdds.home_odds?.toFixed(2) ?? '-'}</span>
               <span className="text-slate-300">{firstOdds.draw_odds?.toFixed(2) ?? '-'}</span>
               <span className="text-slate-300">{firstOdds.away_odds?.toFixed(2) ?? '-'}</span>
@@ -143,16 +147,18 @@ export default function MatchDetailPage() {
       )}
 
       {/* Odds History Chart */}
-      <div className="bg-slate-800/80 rounded-2xl border border-slate-700/50 p-6 mb-8 card-shadow">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-xl font-bold text-white">Odds Movement</h2>
-          <span className="text-xs text-slate-500 font-medium">Dotted lines = opening prices</span>
+      <div className="bg-slate-800/80 rounded-xl sm:rounded-2xl border border-slate-700/50 p-4 sm:p-6 mb-6 sm:mb-8 card-shadow">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+          <h2 className="text-lg sm:text-xl font-bold text-white">Odds Movement</h2>
+          <span className="text-[10px] sm:text-xs text-slate-500 font-medium">Dotted lines = opening prices</span>
         </div>
-        <OddsChart
-          data={match.odds_history}
-          homeTeam={match.home_team}
-          awayTeam={match.away_team}
-        />
+        <div className="h-64 sm:h-96 -mx-2 sm:mx-0">
+          <OddsChart
+            data={match.odds_history}
+            homeTeam={match.home_team}
+            awayTeam={match.away_team}
+          />
+        </div>
       </div>
 
       {/* Odds History Table */}
@@ -189,11 +195,11 @@ function OddsHistoryTable({ oddsHistory, showChangesOnly, onToggleShowChanges }:
   const displayHistory = [...filteredHistory].reverse();
 
   return (
-    <div className="bg-slate-800/80 rounded-2xl border border-slate-700/50 overflow-hidden card-shadow">
-      <div className="px-6 py-5 border-b border-slate-700/50 flex items-center justify-between">
+    <div className="bg-slate-800/80 rounded-xl sm:rounded-2xl border border-slate-700/50 overflow-hidden card-shadow">
+      <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-700/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-white">Odds History</h2>
-          <p className="text-slate-400 text-sm mt-0.5">
+          <h2 className="text-lg sm:text-xl font-bold text-white">Odds History</h2>
+          <p className="text-slate-400 text-xs sm:text-sm mt-0.5">
             {showChangesOnly
               ? `${filteredHistory.length} changes out of ${oddsHistory.length} snapshots`
               : `${oddsHistory.length} snapshots recorded`}
@@ -201,7 +207,7 @@ function OddsHistoryTable({ oddsHistory, showChangesOnly, onToggleShowChanges }:
         </div>
         <button
           onClick={onToggleShowChanges}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+          className={`flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 ${
             showChangesOnly
               ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
               : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
@@ -215,10 +221,13 @@ function OddsHistoryTable({ oddsHistory, showChangesOnly, onToggleShowChanges }:
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
           </svg>
-          {showChangesOnly ? 'Changes Only' : 'Show All'}
+          <span className="hidden xs:inline">{showChangesOnly ? 'Changes Only' : 'Show All'}</span>
+          <span className="xs:hidden">{showChangesOnly ? 'Changes' : 'All'}</span>
         </button>
       </div>
-      <div className="overflow-x-auto">
+
+      {/* Desktop Table */}
+      <div className="hidden sm:block overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr className="bg-slate-700/30">
@@ -292,6 +301,67 @@ function OddsHistoryTable({ oddsHistory, showChangesOnly, onToggleShowChanges }:
           </tbody>
         </table>
       </div>
+
+      {/* Mobile Cards */}
+      <div className="sm:hidden divide-y divide-slate-700/50">
+        {displayHistory.map((point, displayIndex) => {
+          const originalIndex = oddsHistory.findIndex(p => p.timestamp === point.timestamp);
+          const isOpening = originalIndex === 0;
+          const prevPoint = originalIndex > 0 ? oddsHistory[originalIndex - 1] : null;
+
+          const homeChanged = prevPoint && point.home_odds !== prevPoint.home_odds;
+          const drawChanged = prevPoint && point.draw_odds !== prevPoint.draw_odds;
+          const awayChanged = prevPoint && point.away_odds !== prevPoint.away_odds;
+
+          return (
+            <div
+              key={displayIndex}
+              className={`p-4 ${isOpening ? 'bg-slate-700/20' : ''}`}
+            >
+              <div className="text-xs text-slate-400 mb-2 flex items-center gap-2">
+                {format(new Date(point.timestamp), 'MMM d, HH:mm')}
+                {isOpening && <span className="text-slate-500 font-semibold">(Opening)</span>}
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="text-center">
+                  <div className="text-[10px] text-slate-500 uppercase mb-1">Home</div>
+                  <div className={`font-mono font-bold text-sm ${homeChanged ? 'text-white bg-slate-600/40 px-1 py-0.5 rounded' : 'text-white'}`}>
+                    {point.home_odds?.toFixed(2) ?? '-'}
+                    {homeChanged && prevPoint?.home_odds && (
+                      <span className={`ml-1 text-xs ${point.home_odds! < prevPoint.home_odds ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {point.home_odds! > prevPoint.home_odds ? '↑' : '↓'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-[10px] text-slate-500 uppercase mb-1">Draw</div>
+                  <div className={`font-mono font-bold text-sm ${drawChanged ? 'text-white bg-slate-600/40 px-1 py-0.5 rounded' : 'text-white'}`}>
+                    {point.draw_odds?.toFixed(2) ?? '-'}
+                    {drawChanged && prevPoint?.draw_odds && (
+                      <span className={`ml-1 text-xs ${point.draw_odds! < prevPoint.draw_odds ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {point.draw_odds! > prevPoint.draw_odds ? '↑' : '↓'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-[10px] text-slate-500 uppercase mb-1">Away</div>
+                  <div className={`font-mono font-bold text-sm ${awayChanged ? 'text-white bg-slate-600/40 px-1 py-0.5 rounded' : 'text-white'}`}>
+                    {point.away_odds?.toFixed(2) ?? '-'}
+                    {awayChanged && prevPoint?.away_odds && (
+                      <span className={`ml-1 text-xs ${point.away_odds! < prevPoint.away_odds ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {point.away_odds! > prevPoint.away_odds ? '↑' : '↓'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
       {filteredHistory.length === 0 && (
         <div className="px-6 py-8 text-center text-slate-500">
           No odds changes recorded yet
