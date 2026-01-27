@@ -21,17 +21,17 @@ export default function MatchCard({ match }: MatchCardProps) {
   return (
     <Link
       to={`/match/${match.id}`}
-      className="block bg-slate-800 rounded-xl border border-slate-700 hover:border-blue-500/50 transition-all hover:shadow-lg hover:shadow-blue-500/10 overflow-hidden group"
+      className="block bg-slate-800 rounded-2xl border border-slate-700/80 hover:border-blue-500/50 transition-all duration-200 ease-out hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-0.5 overflow-hidden group card-shadow"
     >
       {/* League Header */}
-      <div className="px-4 py-2 bg-slate-700/50 border-b border-slate-700 flex items-center justify-between">
+      <div className="px-4 py-2.5 bg-slate-700/30 border-b border-slate-700/50 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <LeagueLogo sportKey={match.sport_key} size="sm" />
-          <span className="text-sm text-slate-400">{leagueConfig?.name || match.league_name}</span>
+          <span className="text-sm text-slate-400 font-medium">{leagueConfig?.name || match.league_name}</span>
         </div>
         <div className="flex items-center gap-2">
           {biggestMover && (
-            <span className={`text-xs px-1.5 py-0.5 rounded ${
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
               biggestMover.direction === 'up'
                 ? 'bg-emerald-500/20 text-emerald-400'
                 : 'bg-red-500/20 text-red-400'
@@ -46,32 +46,32 @@ export default function MatchCard({ match }: MatchCardProps) {
       </div>
 
       {/* Match Info */}
-      <div className="p-4">
+      <div className="p-5">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-              <span className="text-white font-medium">{match.home_team}</span>
+          <div className="flex-1 space-y-2">
+            <div className="flex items-center gap-2.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50"></span>
+              <span className="text-white font-semibold text-base">{match.home_team}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-red-500"></span>
-              <span className="text-white font-medium">{match.away_team}</span>
+            <div className="flex items-center gap-2.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-sm shadow-red-500/50"></span>
+              <span className="text-white font-semibold text-base">{match.away_team}</span>
             </div>
           </div>
 
           <div className="text-right">
-            <div className="text-sm text-slate-400">
+            <div className="text-sm text-slate-400 font-medium">
               {format(matchDate, 'EEE, MMM d')}
             </div>
-            <div className="text-lg font-semibold text-white">
+            <div className="text-xl font-bold text-white">
               {format(matchDate, 'HH:mm')}
             </div>
           </div>
         </div>
 
         {/* Odds with Movement */}
-        <div className="flex items-center justify-between pt-3 border-t border-slate-700">
-          <div className="text-xs text-slate-500 uppercase tracking-wide">1 X 2</div>
+        <div className="flex items-center justify-between pt-4 border-t border-slate-700/50">
+          <div className="text-xs text-slate-500 uppercase tracking-wider font-medium">1 X 2</div>
           <OddsDisplayWithMovement
             home={match.current_home_odds}
             draw={match.current_draw_odds}
@@ -84,7 +84,7 @@ export default function MatchCard({ match }: MatchCardProps) {
       </div>
 
       {/* Hover indicator */}
-      <div className="h-1 bg-gradient-to-r from-blue-500 to-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
+      <div className="h-1 bg-gradient-to-r from-blue-500 to-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left"></div>
     </Link>
   );
 }

@@ -9,32 +9,32 @@ export default function Layout() {
   const currentLeague = new URLSearchParams(location.search).get('league');
 
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div className="min-h-screen">
       {/* Header */}
-      <header className="bg-slate-800 border-b border-slate-700 sticky top-0 z-50">
+      <header className="bg-slate-800/80 backdrop-blur-md border-b border-slate-700/50 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Link to="/" className="flex items-center gap-3">
+            <Link to="/" className="flex items-center gap-3 group">
               <div className="flex items-center text-2xl">
                 <span role="img" aria-label="stats">📊</span>
                 <span role="img" aria-label="check">✅</span>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">PinnacleWatch</h1>
+                <h1 className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors">PinnacleWatch</h1>
                 <p className="text-xs text-slate-400">Pinnacle Odds Tracker</p>
               </div>
             </Link>
 
             <nav className="flex items-center gap-2">
-              <span className="text-sm text-slate-400 mr-2 hidden sm:inline">Leagues:</span>
+              <span className="text-sm text-slate-400 mr-2 hidden sm:inline font-medium">Leagues:</span>
               {leagues.map(([key, config]) => (
                 <Link
                   key={key}
                   to={`/?league=${key}`}
-                  className={`p-1.5 rounded-lg transition-all ${
+                  className={`p-2 rounded-xl transition-all duration-200 ${
                     currentLeague === key
-                      ? 'bg-blue-600 ring-2 ring-blue-400'
-                      : 'bg-slate-700 hover:bg-slate-600'
+                      ? 'bg-blue-600 ring-2 ring-blue-400/50 shadow-lg shadow-blue-500/20'
+                      : 'bg-slate-700/80 hover:bg-slate-600 hover:scale-105'
                   }`}
                   title={config.name}
                 >
@@ -43,10 +43,10 @@ export default function Layout() {
               ))}
               <Link
                 to="/"
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
                   !currentLeague
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
+                    : 'bg-slate-700/80 text-slate-300 hover:bg-slate-600 hover:text-white'
                 }`}
               >
                 All
@@ -57,14 +57,14 @@ export default function Layout() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <Outlet />
       </main>
 
       {/* Footer */}
-      <footer className="bg-slate-800 border-t border-slate-700 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <p className="text-center text-slate-500 text-sm">
+      <footer className="bg-slate-800/50 border-t border-slate-700/50 mt-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <p className="text-center text-slate-500 text-sm font-medium">
             Data from Pinnacle via The Odds API • Updates every 15 minutes
           </p>
         </div>

@@ -160,55 +160,55 @@ export default function HomePage() {
     <div>
       {/* Biggest Movers Table */}
       {biggestMovers.length > 0 && (
-        <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden mb-8">
-          <div className="px-6 py-4 border-b border-slate-700 flex items-center justify-between">
+        <div className="bg-slate-800/80 rounded-2xl border border-slate-700/50 overflow-hidden mb-10 card-shadow">
+          <div className="px-6 py-5 border-b border-slate-700/50 flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-white">Biggest Movers</h2>
-              <p className="text-slate-400 text-sm">Matches with significant line movement</p>
+              <p className="text-slate-400 text-sm mt-0.5">Matches with significant line movement</p>
             </div>
-            <span className="text-xs text-slate-500">Sharp money indicators</span>
+            <span className="text-xs text-slate-500 font-medium">Sharp money indicators</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-slate-700/50">
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                <tr className="bg-slate-700/30">
+                  <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
                     Match
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-slate-400 uppercase tracking-wider">
+                  <th className="px-4 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
                     League
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
+                  <th className="px-4 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
                     Outcome Moved
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-slate-400 uppercase tracking-wider">
+                  <th className="px-4 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
                     % Change
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-slate-400 uppercase tracking-wider">
+                  <th className="px-4 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
                     Opening
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-slate-400 uppercase tracking-wider">
+                  <th className="px-4 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
                     Current
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-700">
+              <tbody className="divide-y divide-slate-700/50">
                 {biggestMovers.map((mover, index) => {
                   const isSignificant = Math.abs(mover.percentage) >= 5;
                   const matchDate = new Date(mover.match.commence_time);
                   const leagueInfo = LEAGUE_CONFIG[mover.match.sport_key];
 
                   return (
-                    <tr key={`${mover.match.id}-${index}`} className="hover:bg-slate-700/30">
+                    <tr key={`${mover.match.id}-${index}`} className="hover:bg-slate-700/20 transition-colors duration-150">
                       <td className="px-6 py-4">
                         <Link
                           to={`/match/${mover.match.id}`}
                           className="text-white hover:text-blue-400 transition-colors"
                         >
-                          <div className="font-medium">
+                          <div className="font-semibold text-base">
                             {mover.match.home_team} vs {mover.match.away_team}
                           </div>
-                          <div className="text-xs text-slate-500">
+                          <div className="text-xs text-slate-500 mt-0.5">
                             {format(matchDate, 'EEE, MMM d HH:mm')}
                           </div>
                         </Link>
@@ -216,21 +216,21 @@ export default function HomePage() {
                       <td className="px-4 py-4 text-center">
                         <div className="flex items-center justify-center gap-2">
                           <LeagueLogo sportKey={mover.match.sport_key} size="sm" />
-                          <span className="text-slate-400 text-sm hidden lg:inline">
+                          <span className="text-slate-400 text-sm hidden lg:inline font-medium">
                             {leagueInfo?.shortName || ''}
                           </span>
                         </div>
                       </td>
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-2">
-                          <span className={`px-2 py-0.5 rounded text-xs font-bold ${
+                          <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
                             mover.outcome === 'H' ? 'bg-emerald-500/20 text-emerald-400' :
                             mover.outcome === 'D' ? 'bg-yellow-500/20 text-yellow-400' :
                             'bg-red-500/20 text-red-400'
                           }`}>
                             {mover.outcome}
                           </span>
-                          <span className="text-slate-300 text-sm truncate max-w-[120px]">
+                          <span className="text-slate-300 text-sm truncate max-w-[120px] font-medium">
                             {mover.outcomeName}
                           </span>
                         </div>
@@ -245,12 +245,12 @@ export default function HomePage() {
                         </span>
                       </td>
                       <td className="px-4 py-4 text-center">
-                        <span className="font-mono text-slate-500">
+                        <span className="font-mono text-slate-500 font-medium">
                           {mover.openingOdds.toFixed(2)}
                         </span>
                       </td>
                       <td className="px-4 py-4 text-center">
-                        <span className={`font-mono font-semibold ${
+                        <span className={`font-mono font-bold ${
                           mover.outcome === 'H' ? 'text-emerald-400' :
                           mover.outcome === 'D' ? 'text-yellow-400' :
                           'text-red-400'
@@ -268,8 +268,8 @@ export default function HomePage() {
       )}
 
       {/* Page Header */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+      <div className="mb-8">
+        <h2 className="text-3xl font-bold text-white flex items-center gap-4">
           {league && leagueConfig ? (
             <>
               <LeagueLogo sportKey={league} size="lg" />
@@ -279,31 +279,31 @@ export default function HomePage() {
             'All Matches'
           )}
         </h2>
-        <p className="text-slate-400 mt-1">
+        <p className="text-slate-400 mt-2 text-base">
           {matches.length} upcoming match{matches.length !== 1 ? 'es' : ''} with Pinnacle odds
         </p>
       </div>
 
       {/* Matches by Day */}
       {groupedMatches.length === 0 ? (
-        <div className="bg-slate-800/50 rounded-xl border border-slate-700 p-12 text-center">
-          <p className="text-slate-400">No upcoming matches found</p>
+        <div className="bg-slate-800/50 rounded-2xl border border-slate-700/50 p-16 text-center">
+          <p className="text-slate-400 text-lg">No upcoming matches found</p>
         </div>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-10">
           {groupedMatches.map((group) => (
             <section key={group.date.toISOString()}>
               {/* Day Header */}
-              <div className="flex items-center gap-4 mb-4">
+              <div className="flex items-center gap-4 mb-5">
                 <h3 className="text-xl font-bold text-white">{group.label}</h3>
-                <div className="flex-1 h-px bg-slate-700"></div>
-                <span className="text-sm text-slate-500">
+                <div className="flex-1 h-px bg-gradient-to-r from-slate-700 to-transparent"></div>
+                <span className="text-sm text-slate-500 font-medium">
                   {group.matches.length} match{group.matches.length !== 1 ? 'es' : ''}
                 </span>
               </div>
 
               {/* Matches Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {group.matches.map((match) => (
                   <MatchCard key={match.id} match={match} />
                 ))}
