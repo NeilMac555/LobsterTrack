@@ -250,11 +250,7 @@ export default function HomePage() {
                         </span>
                       </td>
                       <td className="px-4 py-4 text-center">
-                        <span className={`font-mono font-bold ${
-                          mover.outcome === 'H' ? 'text-emerald-400' :
-                          mover.outcome === 'D' ? 'text-yellow-400' :
-                          'text-red-400'
-                        }`}>
+                        <span className="font-mono font-bold text-white">
                           {mover.currentOdds.toFixed(2)}
                         </span>
                       </td>

@@ -134,9 +134,9 @@ export default function MatchDetailPage() {
           <div className="flex items-center justify-between">
             <span className="text-slate-400 text-sm font-medium">Opening Odds</span>
             <div className="flex gap-6 text-sm font-mono font-semibold">
-              <span className="text-emerald-400/70">{firstOdds.home_odds?.toFixed(2) ?? '-'}</span>
-              <span className="text-yellow-400/70">{firstOdds.draw_odds?.toFixed(2) ?? '-'}</span>
-              <span className="text-red-400/70">{firstOdds.away_odds?.toFixed(2) ?? '-'}</span>
+              <span className="text-slate-300">{firstOdds.home_odds?.toFixed(2) ?? '-'}</span>
+              <span className="text-slate-300">{firstOdds.draw_odds?.toFixed(2) ?? '-'}</span>
+              <span className="text-slate-300">{firstOdds.away_odds?.toFixed(2) ?? '-'}</span>
             </div>
           </div>
         </div>
@@ -257,31 +257,31 @@ function OddsHistoryTable({ oddsHistory, showChangesOnly, onToggleShowChanges }:
                     {isOpening && <span className="ml-2 text-xs text-slate-500 font-semibold">(Opening)</span>}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <span className={`font-mono font-bold ${homeChanged ? 'text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded' : 'text-emerald-400'}`}>
+                    <span className={`font-mono font-bold ${homeChanged ? 'text-white bg-slate-600/40 px-2 py-0.5 rounded' : 'text-white'}`}>
                       {point.home_odds?.toFixed(2) ?? '-'}
                     </span>
                     {homeChanged && prevPoint?.home_odds && (
-                      <span className={`ml-2 text-xs ${point.home_odds! < prevPoint.home_odds ? 'text-emerald-500' : 'text-red-500'}`}>
+                      <span className={`ml-2 text-xs ${point.home_odds! < prevPoint.home_odds ? 'text-emerald-400' : 'text-red-400'}`}>
                         {point.home_odds! > prevPoint.home_odds ? '↑' : '↓'}
                       </span>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <span className={`font-mono font-bold ${drawChanged ? 'text-yellow-300 bg-yellow-500/20 px-2 py-0.5 rounded' : 'text-yellow-400'}`}>
+                    <span className={`font-mono font-bold ${drawChanged ? 'text-white bg-slate-600/40 px-2 py-0.5 rounded' : 'text-white'}`}>
                       {point.draw_odds?.toFixed(2) ?? '-'}
                     </span>
                     {drawChanged && prevPoint?.draw_odds && (
-                      <span className={`ml-2 text-xs ${point.draw_odds! < prevPoint.draw_odds ? 'text-emerald-500' : 'text-red-500'}`}>
+                      <span className={`ml-2 text-xs ${point.draw_odds! < prevPoint.draw_odds ? 'text-emerald-400' : 'text-red-400'}`}>
                         {point.draw_odds! > prevPoint.draw_odds ? '↑' : '↓'}
                       </span>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <span className={`font-mono font-bold ${awayChanged ? 'text-red-300 bg-red-500/20 px-2 py-0.5 rounded' : 'text-red-400'}`}>
+                    <span className={`font-mono font-bold ${awayChanged ? 'text-white bg-slate-600/40 px-2 py-0.5 rounded' : 'text-white'}`}>
                       {point.away_odds?.toFixed(2) ?? '-'}
                     </span>
                     {awayChanged && prevPoint?.away_odds && (
-                      <span className={`ml-2 text-xs ${point.away_odds! < prevPoint.away_odds ? 'text-emerald-500' : 'text-red-500'}`}>
+                      <span className={`ml-2 text-xs ${point.away_odds! < prevPoint.away_odds ? 'text-emerald-400' : 'text-red-400'}`}>
                         {point.away_odds! > prevPoint.away_odds ? '↑' : '↓'}
                       </span>
                     )}

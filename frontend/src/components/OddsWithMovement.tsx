@@ -29,7 +29,6 @@ export default function OddsWithMovement({
   current,
   opening,
   label,
-  colorClass,
   bgClass
 }: OddsWithMovementProps) {
   const formatOdds = (odds: number | null) => {
@@ -48,7 +47,7 @@ export default function OddsWithMovement({
   return (
     <div className={`px-3 py-2 rounded ${bgClass} text-center min-w-[80px]`}>
       <div className="text-xs text-slate-400 mb-1">{label}</div>
-      <div className={`text-lg font-bold ${colorClass} font-mono flex items-center justify-center gap-1`}>
+      <div className="text-lg font-bold text-white font-mono flex items-center justify-center gap-1">
         <span className={isSignificant ? 'underline decoration-2' : ''}>
           {formatOdds(current)}
         </span>
@@ -106,15 +105,16 @@ export function OddsDisplayWithMovement({
     current: number | null,
     movement: ReturnType<typeof calculateMovement>,
     bgClass: string,
-    textClass: string,
+    _textClass: string,
     title: string
   ) => {
     const isSignificant = Math.abs(movement.percentage) >= 5;
 
     // Color logic: Green = shortening (down), Red = drifting (up)
+    // Odds values are white, only movement indicators are colored
     return (
       <div
-        className={`${sizeClasses[size]} rounded ${bgClass} ${textClass} font-mono font-semibold flex items-center gap-0.5`}
+        className={`${sizeClasses[size]} rounded ${bgClass} text-white font-mono font-semibold flex items-center gap-0.5`}
         title={title}
       >
         <span className={isSignificant ? 'font-bold' : ''}>
