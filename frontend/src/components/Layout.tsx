@@ -1,12 +1,32 @@
+import { useState, useRef, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { LEAGUE_CONFIG } from '../types';
 import LeagueLogo from './LeagueLogo';
 
 const leagues = Object.entries(LEAGUE_CONFIG);
 
+const tools = [
+  { name: 'Hedging Calculator', path: '/tools/hedge-calculator', icon: '🧮' },
+];
+
 export default function Layout() {
   const location = useLocation();
   const currentLeague = new URLSearchParams(location.search).get('league');
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setToolsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const isToolsPage = location.pathname.startsWith('/tools');
 
   return (
     <div className="min-h-screen">
@@ -44,13 +64,59 @@ export default function Layout() {
               <Link
                 to="/"
                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                  !currentLeague
+                  !currentLeague && !isToolsPage
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
                     : 'bg-slate-700/80 text-slate-300 hover:bg-slate-600 hover:text-white'
                 }`}
               >
                 All
               </Link>
+
+              {/* Divider */}
+              <div className="w-px h-6 bg-slate-600 mx-2 hidden sm:block"></div>
+
+              {/* Tools Dropdown */}
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setToolsOpen(!toolsOpen)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                    isToolsPage
+                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
+                      : 'bg-slate-700/80 text-slate-300 hover:bg-slate-600 hover:text-white'
+                  }`}
+                >
+                  Tools
+                  <svg
+                    className={`w-4 h-4 transition-transform duration-200 ${toolsOpen ? 'rotate-180' : ''}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {/* Dropdown Menu */}
+                {toolsOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-slate-800 border border-slate-700 rounded-xl shadow-xl shadow-black/20 overflow-hidden z-50">
+                    {tools.map((tool) => (
+                      <Link
+                        key={tool.path}
+                        to={tool.path}
+                        onClick={() => setToolsOpen(false)}
+                        className={`flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
+                          location.pathname === tool.path
+                            ? 'bg-blue-600/20 text-blue-400'
+                            : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                        }`}
+                      >
+                        <span className="text-lg">{tool.icon}</span>
+                        <span className="font-medium">{tool.name}</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
             </nav>
           </div>
         </div>
