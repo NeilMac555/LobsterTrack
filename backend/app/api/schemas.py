@@ -105,3 +105,22 @@ class SteamMoveStats(BaseModel):
     win_rate: Optional[float] = None
     avg_movement_percent: Optional[float] = None
     sample_moves: list[SteamMoveResponse]
+
+
+class BiggestMover(BaseModel):
+    """A match with significant odds movement"""
+    match_id: str
+    home_team: str
+    away_team: str
+    sport_key: str
+    league_name: str
+    commence_time: datetime
+    outcome: str  # 'home', 'draw', 'away'
+    outcome_name: str  # Team name or 'Draw'
+    opening_odds: float
+    current_odds: float
+    movement_percent: float
+    direction: str  # 'up' or 'down'
+
+    class Config:
+        from_attributes = True

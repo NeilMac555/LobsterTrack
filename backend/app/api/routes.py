@@ -15,7 +15,8 @@ from .schemas import (
     FetchStatus,
     HealthResponse,
     SteamMoveResponse,
-    SteamMoveStats
+    SteamMoveStats,
+    BiggestMover
 )
 
 router = APIRouter()
@@ -82,6 +83,7 @@ async def get_matches(
 ):
     """
     Get list of matches with current odds.
+    Optimized to use batch queries instead of N+1 (was 343 queries, now 4).
     """
     query = db.query(Match)
 
@@ -95,29 +97,87 @@ async def get_matches(
 
     matches = query.offset(offset).limit(limit).all()
 
+    if not matches:
+        return []
+
+    match_ids = [m.id for m in matches]
+
+    # Batch query: Get latest odds for all matches using window function
+    latest_subq = (
+        db.query(
+            OddsSnapshot.match_id,
+            OddsSnapshot.home_odds,
+            OddsSnapshot.draw_odds,
+            OddsSnapshot.away_odds,
+            func.row_number().over(
+                partition_by=OddsSnapshot.match_id,
+                order_by=OddsSnapshot.fetched_at.desc()
+            ).label('rn')
+        )
+        .filter(OddsSnapshot.match_id.in_(match_ids))
+        .subquery()
+    )
+
+    latest_odds_query = (
+        db.query(latest_subq)
+        .filter(latest_subq.c.rn == 1)
+        .all()
+    )
+    latest_odds_map = {
+        row.match_id: {
+            'home': row.home_odds,
+            'draw': row.draw_odds,
+            'away': row.away_odds
+        }
+        for row in latest_odds_query
+    }
+
+    # Batch query: Get opening odds (first snapshot) for all matches
+    opening_subq = (
+        db.query(
+            OddsSnapshot.match_id,
+            OddsSnapshot.home_odds,
+            OddsSnapshot.draw_odds,
+            OddsSnapshot.away_odds,
+            func.row_number().over(
+                partition_by=OddsSnapshot.match_id,
+                order_by=OddsSnapshot.fetched_at.asc()
+            ).label('rn')
+        )
+        .filter(OddsSnapshot.match_id.in_(match_ids))
+        .subquery()
+    )
+
+    opening_odds_query = (
+        db.query(opening_subq)
+        .filter(opening_subq.c.rn == 1)
+        .all()
+    )
+    opening_odds_map = {
+        row.match_id: {
+            'home': row.home_odds,
+            'draw': row.draw_odds,
+            'away': row.away_odds
+        }
+        for row in opening_odds_query
+    }
+
+    # Batch query: Get odds count for all matches
+    odds_counts_query = (
+        db.query(
+            OddsSnapshot.match_id,
+            func.count(OddsSnapshot.id).label('count')
+        )
+        .filter(OddsSnapshot.match_id.in_(match_ids))
+        .group_by(OddsSnapshot.match_id)
+        .all()
+    )
+    odds_count_map = {row.match_id: row.count for row in odds_counts_query}
+
     result = []
     for match in matches:
-        # Get latest odds
-        latest_odds = (
-            db.query(OddsSnapshot)
-            .filter(OddsSnapshot.match_id == match.id)
-            .order_by(OddsSnapshot.fetched_at.desc())
-            .first()
-        )
-
-        # Get opening odds (first snapshot)
-        opening_odds = (
-            db.query(OddsSnapshot)
-            .filter(OddsSnapshot.match_id == match.id)
-            .order_by(OddsSnapshot.fetched_at.asc())
-            .first()
-        )
-
-        odds_count = (
-            db.query(func.count(OddsSnapshot.id))
-            .filter(OddsSnapshot.match_id == match.id)
-            .scalar()
-        )
+        latest = latest_odds_map.get(match.id, {})
+        opening = opening_odds_map.get(match.id, {})
 
         result.append(MatchSummary(
             id=match.id,
@@ -126,13 +186,13 @@ async def get_matches(
             league_name=match.league_name,
             sport_key=match.sport_key,
             commence_time=match.commence_time,
-            current_home_odds=latest_odds.home_odds if latest_odds else None,
-            current_draw_odds=latest_odds.draw_odds if latest_odds else None,
-            current_away_odds=latest_odds.away_odds if latest_odds else None,
-            opening_home_odds=opening_odds.home_odds if opening_odds else None,
-            opening_draw_odds=opening_odds.draw_odds if opening_odds else None,
-            opening_away_odds=opening_odds.away_odds if opening_odds else None,
-            odds_count=odds_count
+            current_home_odds=latest.get('home'),
+            current_draw_odds=latest.get('draw'),
+            current_away_odds=latest.get('away'),
+            opening_home_odds=opening.get('home'),
+            opening_draw_odds=opening.get('draw'),
+            opening_away_odds=opening.get('away'),
+            odds_count=odds_count_map.get(match.id, 0)
         ))
 
     return result
@@ -225,6 +285,137 @@ async def get_stats(db: Session = Depends(get_db)):
         "newest_data": newest_snapshot,
         "tracked_leagues": list(settings.leagues.keys())
     }
+
+
+@router.get("/biggest-movers", response_model=list[BiggestMover])
+async def get_biggest_movers(
+    db: Session = Depends(get_db),
+    limit: int = Query(4, le=20, description="Number of movers to return")
+):
+    """
+    Get matches with the biggest odds movements.
+    Optimized server-side calculation - much faster than fetching all matches.
+    Uses only 3 database queries regardless of match count.
+    """
+    now = datetime.utcnow()
+
+    # Get upcoming matches
+    matches = (
+        db.query(Match)
+        .filter(Match.commence_time > now)
+        .all()
+    )
+
+    if not matches:
+        return []
+
+    match_ids = [m.id for m in matches]
+    match_map = {m.id: m for m in matches}
+
+    # Batch query: Get latest odds for all upcoming matches
+    latest_subq = (
+        db.query(
+            OddsSnapshot.match_id,
+            OddsSnapshot.home_odds,
+            OddsSnapshot.draw_odds,
+            OddsSnapshot.away_odds,
+            func.row_number().over(
+                partition_by=OddsSnapshot.match_id,
+                order_by=OddsSnapshot.fetched_at.desc()
+            ).label('rn')
+        )
+        .filter(OddsSnapshot.match_id.in_(match_ids))
+        .subquery()
+    )
+
+    latest_odds_query = (
+        db.query(latest_subq)
+        .filter(latest_subq.c.rn == 1)
+        .all()
+    )
+    latest_odds_map = {row.match_id: row for row in latest_odds_query}
+
+    # Batch query: Get opening odds for all upcoming matches
+    opening_subq = (
+        db.query(
+            OddsSnapshot.match_id,
+            OddsSnapshot.home_odds,
+            OddsSnapshot.draw_odds,
+            OddsSnapshot.away_odds,
+            func.row_number().over(
+                partition_by=OddsSnapshot.match_id,
+                order_by=OddsSnapshot.fetched_at.asc()
+            ).label('rn')
+        )
+        .filter(OddsSnapshot.match_id.in_(match_ids))
+        .subquery()
+    )
+
+    opening_odds_query = (
+        db.query(opening_subq)
+        .filter(opening_subq.c.rn == 1)
+        .all()
+    )
+    opening_odds_map = {row.match_id: row for row in opening_odds_query}
+
+    # Calculate movements for all outcomes
+    movers = []
+    for match_id, match in match_map.items():
+        latest = latest_odds_map.get(match_id)
+        opening = opening_odds_map.get(match_id)
+
+        if not latest or not opening:
+            continue
+
+        # Check each outcome
+        outcomes = [
+            ('home', match.home_team, opening.home_odds, latest.home_odds),
+            ('draw', 'Draw', opening.draw_odds, latest.draw_odds),
+            ('away', match.away_team, opening.away_odds, latest.away_odds),
+        ]
+
+        best_move = None
+        best_pct = 0
+
+        for outcome, name, open_odds, curr_odds in outcomes:
+            if open_odds and curr_odds and open_odds > 0:
+                pct = ((curr_odds - open_odds) / open_odds) * 100
+                if abs(pct) > abs(best_pct):
+                    best_pct = pct
+                    best_move = {
+                        'match': match,
+                        'outcome': outcome,
+                        'outcome_name': name,
+                        'opening_odds': open_odds,
+                        'current_odds': curr_odds,
+                        'movement_percent': pct,
+                        'direction': 'down' if pct < 0 else 'up'
+                    }
+
+        if best_move and abs(best_pct) > 0.1:  # Only include if >0.1% movement
+            movers.append(best_move)
+
+    # Sort by absolute movement and take top N
+    movers.sort(key=lambda x: abs(x['movement_percent']), reverse=True)
+    top_movers = movers[:limit]
+
+    return [
+        BiggestMover(
+            match_id=m['match'].id,
+            home_team=m['match'].home_team,
+            away_team=m['match'].away_team,
+            sport_key=m['match'].sport_key,
+            league_name=m['match'].league_name,
+            commence_time=m['match'].commence_time,
+            outcome=m['outcome'],
+            outcome_name=m['outcome_name'],
+            opening_odds=m['opening_odds'],
+            current_odds=m['current_odds'],
+            movement_percent=m['movement_percent'],
+            direction=m['direction']
+        )
+        for m in top_movers
+    ]
 
 
 @router.get("/steam-moves", response_model=SteamMoveStats)

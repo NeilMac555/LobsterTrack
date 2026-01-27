@@ -48,6 +48,21 @@ export interface Stats {
   tracked_leagues: string[];
 }
 
+export interface BiggestMover {
+  match_id: string;
+  home_team: string;
+  away_team: string;
+  sport_key: string;
+  league_name: string;
+  commence_time: string;
+  outcome: 'home' | 'draw' | 'away';
+  outcome_name: string;
+  opening_odds: number;
+  current_odds: number;
+  movement_percent: number;
+  direction: 'up' | 'down';
+}
+
 export const LEAGUE_CONFIG: Record<string, { name: string; shortName: string; color: string }> = {
   soccer_epl: { name: 'Premier League', shortName: 'EPL', color: '#3D195B' },
   soccer_spain_la_liga: { name: 'La Liga', shortName: 'LAL', color: '#EE8707' },
