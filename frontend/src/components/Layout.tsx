@@ -42,12 +42,12 @@ export default function Layout() {
           <div className="flex items-center justify-between h-14 sm:h-16">
             <Link to="/" className="flex items-center gap-2 sm:gap-3 group">
               <div className="flex items-center text-xl sm:text-2xl">
-                <span role="img" aria-label="stats">📊</span>
-                <span role="img" aria-label="check">✅</span>
+                <span role="img" aria-label="steam">💨</span>
+                <span role="img" aria-label="chart">📈</span>
               </div>
               <div>
-                <h1 className="text-lg sm:text-xl font-bold text-white group-hover:text-blue-400 transition-colors">PinnacleWatch</h1>
-                <p className="text-[10px] sm:text-xs text-slate-400 hidden xs:block">Pinnacle Odds Tracker</p>
+                <h1 className="text-lg sm:text-xl font-bold text-white group-hover:text-blue-400 transition-colors">SteamWatch</h1>
+                <p className="text-[10px] sm:text-xs text-slate-400 hidden xs:block">Track Sharp Money Movement</p>
               </div>
             </Link>
 
@@ -214,7 +214,7 @@ export default function Layout() {
       <footer className="bg-slate-800/50 border-t border-slate-700/50 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <p className="text-center text-slate-500 text-xs sm:text-sm font-medium">
-            Data from Pinnacle via The Odds API • Updates every 15 minutes
+            Pinnacle odds via The Odds API • Updates every 15 minutes
           </p>
         </div>
       </footer>
