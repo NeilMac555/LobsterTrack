@@ -147,12 +147,12 @@ export default function MatchDetailPage() {
       )}
 
       {/* Odds History Chart */}
-      <div className="bg-slate-800/80 rounded-xl sm:rounded-2xl border border-slate-700/50 p-4 sm:p-6 mb-6 sm:mb-8 card-shadow">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-          <h2 className="text-lg sm:text-xl font-bold text-white">Odds Movement</h2>
-          <span className="text-[10px] sm:text-xs text-slate-500 font-medium">Dotted lines = opening prices</span>
+      <div className="bg-slate-800/80 rounded-xl sm:rounded-2xl border border-slate-700/50 p-3 sm:p-6 mb-6 sm:mb-8 card-shadow">
+        <div className="flex items-center justify-between gap-2 mb-3 sm:mb-4">
+          <h2 className="text-base sm:text-xl font-bold text-white">Odds Movement</h2>
+          <span className="text-[10px] sm:text-xs text-slate-500 font-medium">Dotted = opening</span>
         </div>
-        <div className="h-64 sm:h-96 -mx-2 sm:mx-0">
+        <div className="h-72 sm:h-[400px]">
           <OddsChart
             data={match.odds_history}
             homeTeam={match.home_team}
