@@ -6,8 +6,11 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_
 
 from app.config import get_settings
-from app.models import Match, OddsSnapshot, SteamMove
+from app.models import Match, OddsSnapshot, SteamMove, TotalsSnapshot
 from app.models.database import SessionLocal
+
+# Leagues to fetch totals for (test mode - only Ligue 1)
+TOTALS_TEST_LEAGUES = ["soccer_france_ligue_one"]
 
 logger = structlog.get_logger()
 settings = get_settings()
@@ -53,6 +56,19 @@ class OddsFetcher:
                         matches=result["matches"],
                         odds_stored=result["odds_stored"]
                     )
+
+                    # Fetch totals for test leagues (Ligue 1 only)
+                    if sport_key in TOTALS_TEST_LEAGUES:
+                        try:
+                            totals_result = await self._fetch_league_totals(client, sport_key)
+                            logger.info(
+                                "Totals fetched successfully",
+                                sport_key=sport_key,
+                                totals_stored=totals_result["totals_stored"]
+                            )
+                        except Exception as te:
+                            logger.error("Failed to fetch totals", sport_key=sport_key, error=str(te))
+
                 except Exception as e:
                     error_msg = f"{sport_key}: {str(e)}"
                     summary["errors"].append(error_msg)
@@ -319,6 +335,121 @@ class OddsFetcher:
                                 odds["last_update"] = None
 
                         return odds if odds else None
+
+        return None
+
+    async def _fetch_league_totals(self, client: httpx.AsyncClient, sport_key: str) -> dict:
+        """
+        Fetch totals (over/under) odds for a league from The Odds API.
+        Currently only used for Ligue 1 as a test.
+        """
+        url = f"{self.base_url}/sports/{sport_key}/odds"
+        params = {
+            "apiKey": self.api_key,
+            "regions": "eu",
+            "markets": "totals",
+            "bookmakers": "pinnacle",
+            "oddsFormat": "decimal"
+        }
+
+        response = await client.get(url, params=params)
+        response.raise_for_status()
+
+        events = response.json()
+
+        # Log API usage
+        remaining = response.headers.get("x-requests-remaining", "unknown")
+        logger.debug("API quota (totals)", remaining=remaining)
+
+        # Store totals in database
+        result = self._store_totals(events)
+
+        return result
+
+    def _store_totals(self, events: list) -> dict:
+        """
+        Store fetched totals odds in the database.
+        Only stores if match already exists (from 1X2 fetch).
+        """
+        db = SessionLocal()
+        try:
+            totals_stored = 0
+            fetch_time = datetime.utcnow()
+
+            for event in events:
+                match_id = event["id"]
+
+                # Check if match exists (should have been created by 1X2 fetch)
+                match = db.query(Match).filter(Match.id == match_id).first()
+                if not match:
+                    # Match not found, skip (shouldn't happen normally)
+                    continue
+
+                # Extract Pinnacle totals
+                totals_data = self._extract_pinnacle_totals(event)
+
+                if totals_data:
+                    snapshot = TotalsSnapshot(
+                        match_id=match_id,
+                        line=totals_data["line"],
+                        over_odds=totals_data.get("over"),
+                        under_odds=totals_data.get("under"),
+                        fetched_at=fetch_time,
+                        last_update=totals_data.get("last_update")
+                    )
+                    db.add(snapshot)
+                    totals_stored += 1
+
+            db.commit()
+            return {"totals_stored": totals_stored}
+
+        except Exception as e:
+            db.rollback()
+            raise e
+        finally:
+            db.close()
+
+    def _extract_pinnacle_totals(self, event: dict) -> Optional[dict]:
+        """
+        Extract Pinnacle totals odds from event data.
+        Returns dict with line, over, under odds or None if not found.
+        """
+        bookmakers = event.get("bookmakers", [])
+
+        for bookmaker in bookmakers:
+            if bookmaker["key"] == "pinnacle":
+                markets = bookmaker.get("markets", [])
+
+                for market in markets:
+                    if market["key"] == "totals":
+                        outcomes = market.get("outcomes", [])
+                        totals = {}
+
+                        for outcome in outcomes:
+                            name = outcome["name"]
+                            price = outcome["price"]
+                            point = outcome.get("point")
+
+                            if name == "Over":
+                                totals["over"] = price
+                                totals["line"] = point
+                            elif name == "Under":
+                                totals["under"] = price
+                                # line should be same for over/under
+                                if "line" not in totals:
+                                    totals["line"] = point
+
+                        # Parse last_update if available
+                        last_update_str = market.get("last_update")
+                        if last_update_str:
+                            try:
+                                totals["last_update"] = datetime.fromisoformat(
+                                    last_update_str.replace("Z", "+00:00")
+                                )
+                            except (ValueError, TypeError):
+                                totals["last_update"] = None
+
+                        return totals if totals.get("line") else None
 
         return None
 
