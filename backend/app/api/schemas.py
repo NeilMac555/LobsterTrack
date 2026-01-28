@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from datetime import datetime
 from typing import Optional
 
@@ -124,3 +124,14 @@ class BiggestMover(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class EmailSignupRequest(BaseModel):
+    """Request to sign up for email alerts"""
+    email: EmailStr
+
+
+class EmailSignupResponse(BaseModel):
+    """Response after email signup"""
+    success: bool
+    message: str

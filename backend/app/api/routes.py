@@ -4,7 +4,7 @@ from sqlalchemy import func, desc, text
 from datetime import datetime, timedelta
 from typing import Optional
 
-from app.models import get_db, Match, OddsSnapshot, SteamMove
+from app.models import get_db, Match, OddsSnapshot, SteamMove, EmailSubscriber
 from app.config import get_settings
 from app.services.scheduler import odds_scheduler
 from .schemas import (
@@ -16,7 +16,9 @@ from .schemas import (
     HealthResponse,
     SteamMoveResponse,
     SteamMoveStats,
-    BiggestMover
+    BiggestMover,
+    EmailSignupRequest,
+    EmailSignupResponse
 )
 
 router = APIRouter()
@@ -493,4 +495,29 @@ async def get_steam_moves(db: Session = Depends(get_db)):
             )
             for m in sample_moves
         ]
+    )
+
+
+@router.post("/subscribe", response_model=EmailSignupResponse)
+async def subscribe_email(request: EmailSignupRequest, db: Session = Depends(get_db)):
+    """
+    Subscribe an email address to steam alerts.
+    """
+    # Check if email already exists
+    existing = db.query(EmailSubscriber).filter(EmailSubscriber.email == request.email).first()
+
+    if existing:
+        return EmailSignupResponse(
+            success=True,
+            message="You're already on the list!"
+        )
+
+    # Add new subscriber
+    subscriber = EmailSubscriber(email=request.email)
+    db.add(subscriber)
+    db.commit()
+
+    return EmailSignupResponse(
+        success=True,
+        message="You're on the list!"
     )

@@ -19,7 +19,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
         uvicorn>=0.27.0 \
         pydantic-settings>=2.1.0 \
         python-dotenv>=1.0.0 \
-        python-multipart>=0.0.6 && \
+        python-multipart>=0.0.6 \
+        email-validator>=2.1.0 && \
     pip install --no-cache-dir \
         sqlalchemy>=2.0.25 \
         alembic>=1.13.1 \

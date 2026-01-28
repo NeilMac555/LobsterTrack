@@ -6,6 +6,7 @@ import type { MatchSummary, BiggestMover } from '../types';
 import { LEAGUE_CONFIG } from '../types';
 import MatchCard from '../components/MatchCard';
 import LeagueLogo from '../components/LeagueLogo';
+import EmailSignup from '../components/EmailSignup';
 
 interface GroupedMatches {
   label: string;
@@ -271,6 +272,13 @@ export default function HomePage() {
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* Email Signup - only show on "All Matches" view */}
+      {!league && (
+        <div className="mb-6 sm:mb-10">
+          <EmailSignup />
         </div>
       )}
 
