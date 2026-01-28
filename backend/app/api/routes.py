@@ -4,7 +4,7 @@ from sqlalchemy import func, desc, text
 from datetime import datetime, timedelta
 from typing import Optional
 
-from app.models import get_db, Match, OddsSnapshot, SteamMove, EmailSubscriber
+from app.models import get_db, Match, OddsSnapshot, SteamMove, EmailSubscriber, TotalsSnapshot
 from app.config import get_settings
 from app.services.scheduler import odds_scheduler
 from .schemas import (
@@ -556,3 +556,42 @@ async def get_admin_emails(
             for s in subscribers
         ]
     )
+
+
+@router.get("/admin/totals-test")
+async def get_totals_test(
+    password: str = Query(..., description="Admin password"),
+    db: Session = Depends(get_db)
+):
+    """
+    Get totals snapshots for verification (admin only).
+    """
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid password")
+
+    # Get count
+    total_count = db.query(func.count(TotalsSnapshot.id)).scalar() or 0
+
+    # Get recent snapshots with match info
+    recent = (
+        db.query(TotalsSnapshot, Match)
+        .join(Match, TotalsSnapshot.match_id == Match.id)
+        .order_by(desc(TotalsSnapshot.fetched_at))
+        .limit(10)
+        .all()
+    )
+
+    return {
+        "total_count": total_count,
+        "recent_snapshots": [
+            {
+                "id": snapshot.id,
+                "match": f"{match.home_team} vs {match.away_team}",
+                "line": snapshot.line,
+                "over_odds": snapshot.over_odds,
+                "under_odds": snapshot.under_odds,
+                "fetched_at": snapshot.fetched_at.isoformat() if snapshot.fetched_at else None
+            }
+            for snapshot, match in recent
+        ]
+    }
