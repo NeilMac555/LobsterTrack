@@ -135,3 +135,19 @@ class EmailSignupResponse(BaseModel):
     """Response after email signup"""
     success: bool
     message: str
+
+
+class EmailSubscriberInfo(BaseModel):
+    """Email subscriber info for admin"""
+    id: int
+    email: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class AdminEmailsResponse(BaseModel):
+    """Response for admin emails endpoint"""
+    count: int
+    subscribers: list[EmailSubscriberInfo]

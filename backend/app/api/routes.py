@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Header
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, text
 from datetime import datetime, timedelta
@@ -18,8 +18,13 @@ from .schemas import (
     SteamMoveStats,
     BiggestMover,
     EmailSignupRequest,
-    EmailSignupResponse
+    EmailSignupResponse,
+    AdminEmailsResponse,
+    EmailSubscriberInfo
 )
+
+# Simple admin password
+ADMIN_PASSWORD = "SoccerMatics33"
 
 router = APIRouter()
 settings = get_settings()
@@ -520,4 +525,34 @@ async def subscribe_email(request: EmailSignupRequest, db: Session = Depends(get
     return EmailSignupResponse(
         success=True,
         message="You're on the list!"
+    )
+
+
+@router.get("/admin/emails", response_model=AdminEmailsResponse)
+async def get_admin_emails(
+    password: str = Query(..., description="Admin password"),
+    db: Session = Depends(get_db)
+):
+    """
+    Get all email subscribers (admin only).
+    """
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid password")
+
+    subscribers = (
+        db.query(EmailSubscriber)
+        .order_by(desc(EmailSubscriber.created_at))
+        .all()
+    )
+
+    return AdminEmailsResponse(
+        count=len(subscribers),
+        subscribers=[
+            EmailSubscriberInfo(
+                id=s.id,
+                email=s.email,
+                created_at=s.created_at
+            )
+            for s in subscribers
+        ]
     )

@@ -3,6 +3,7 @@ import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import MatchDetailPage from './pages/MatchDetailPage';
 import HedgeCalculatorPage from './pages/HedgeCalculatorPage';
+import AdminEmailsPage from './pages/AdminEmailsPage';
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
           <Route index element={<HomePage />} />
           <Route path="match/:matchId" element={<MatchDetailPage />} />
           <Route path="tools/hedge-calculator" element={<HedgeCalculatorPage />} />
+          <Route path="admin/emails" element={<AdminEmailsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
