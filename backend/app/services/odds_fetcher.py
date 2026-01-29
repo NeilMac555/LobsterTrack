@@ -9,9 +9,6 @@ from app.config import get_settings
 from app.models import Match, OddsSnapshot, SteamMove, TotalsSnapshot
 from app.models.database import SessionLocal
 
-# Leagues to fetch totals for (test mode - only Ligue 1)
-TOTALS_TEST_LEAGUES = ["soccer_france_ligue_one"]
-
 logger = structlog.get_logger()
 settings = get_settings()
 
@@ -57,17 +54,16 @@ class OddsFetcher:
                         odds_stored=result["odds_stored"]
                     )
 
-                    # Fetch totals for test leagues (Ligue 1 only)
-                    if sport_key in TOTALS_TEST_LEAGUES:
-                        try:
-                            totals_result = await self._fetch_league_totals(client, sport_key)
-                            logger.info(
-                                "Totals fetched successfully",
-                                sport_key=sport_key,
-                                totals_stored=totals_result["totals_stored"]
-                            )
-                        except Exception as te:
-                            logger.error("Failed to fetch totals", sport_key=sport_key, error=str(te))
+                    # Fetch totals for all leagues
+                    try:
+                        totals_result = await self._fetch_league_totals(client, sport_key)
+                        logger.info(
+                            "Totals fetched successfully",
+                            sport_key=sport_key,
+                            totals_stored=totals_result["totals_stored"]
+                        )
+                    except Exception as te:
+                        logger.error("Failed to fetch totals", sport_key=sport_key, error=str(te))
 
                 except Exception as e:
                     error_msg = f"{sport_key}: {str(e)}"
@@ -341,7 +337,6 @@ class OddsFetcher:
     async def _fetch_league_totals(self, client: httpx.AsyncClient, sport_key: str) -> dict:
         """
         Fetch totals (over/under) odds for a league from The Odds API.
-        Currently only used for Ligue 1 as a test.
         """
         url = f"{self.base_url}/sports/{sport_key}/odds"
         params = {

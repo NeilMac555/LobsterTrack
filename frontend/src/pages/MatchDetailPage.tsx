@@ -9,9 +9,6 @@ import TotalsChart from '../components/TotalsChart';
 import LeagueLogo from '../components/LeagueLogo';
 import OddsWithMovement from '../components/OddsWithMovement';
 
-// Ligue 1 is the only league with totals data
-const TOTALS_LEAGUES = ['soccer_france_ligue_one'];
-
 export default function MatchDetailPage() {
   const { matchId } = useParams<{ matchId: string }>();
   const [match, setMatch] = useState<MatchDetail | null>(null);
@@ -29,16 +26,14 @@ export default function MatchDetailPage() {
         const data = await getMatchDetail(matchId);
         setMatch(data);
 
-        // Fetch totals if this is a Ligue 1 match
-        if (TOTALS_LEAGUES.includes(data.sport_key)) {
-          try {
-            const totalsData = await getMatchTotals(matchId);
-            if (totalsData.totals_history.length > 0) {
-              setTotals(totalsData);
-            }
-          } catch {
-            // Silently fail - totals data is optional
+        // Fetch totals for all leagues
+        try {
+          const totalsData = await getMatchTotals(matchId);
+          if (totalsData.totals_history.length > 0) {
+            setTotals(totalsData);
           }
+        } catch {
+          // Silently fail - totals data is optional
         }
       } catch (err) {
         setError('Failed to load match details');
