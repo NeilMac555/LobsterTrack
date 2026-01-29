@@ -163,11 +163,6 @@ export default function MatchDetailPage() {
         </div>
       )}
 
-      {/* Totals (Over/Under) Section - Only for Ligue 1 */}
-      {totals && totals.totals_history.length > 0 && (
-        <TotalsSection totals={totals} />
-      )}
-
       {/* Odds History Chart */}
       <div className="bg-slate-800/80 rounded-xl sm:rounded-2xl border border-slate-700/50 p-3 sm:p-6 mb-6 sm:mb-8 card-shadow">
         <div className="flex items-center justify-between gap-2 mb-3 sm:mb-4">
@@ -182,6 +177,11 @@ export default function MatchDetailPage() {
           />
         </div>
       </div>
+
+      {/* Totals (Over/Under) Section - Only for Ligue 1 */}
+      {totals && totals.totals_history.length > 0 && (
+        <TotalsSection totals={totals} />
+      )}
 
       {/* Odds History Table */}
       <OddsHistoryTable
@@ -434,7 +434,7 @@ function TotalsSection({ totals }: TotalsSectionProps) {
 
           {/* Over */}
           <div className="bg-slate-900/50 rounded-xl p-3 sm:p-4 text-center">
-            <div className="text-xs sm:text-sm text-blue-400 font-medium mb-1">Over</div>
+            <div className="text-xs sm:text-sm text-emerald-400 font-medium mb-1">Over</div>
             <div className="text-2xl sm:text-3xl font-bold text-white font-mono">
               {latestTotals.over_odds?.toFixed(2) ?? '-'}
             </div>
@@ -465,7 +465,7 @@ function TotalsSection({ totals }: TotalsSectionProps) {
             <span className="text-slate-400">Opening</span>
             <div className="flex gap-4 font-mono font-medium text-slate-300">
               <span>Line: {openingTotals.line ?? '-'}</span>
-              <span className="text-blue-400">O: {openingTotals.over_odds?.toFixed(2) ?? '-'}</span>
+              <span className="text-emerald-400">O: {openingTotals.over_odds?.toFixed(2) ?? '-'}</span>
               <span className="text-orange-400">U: {openingTotals.under_odds?.toFixed(2) ?? '-'}</span>
             </div>
           </div>

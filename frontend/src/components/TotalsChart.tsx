@@ -125,7 +125,7 @@ export default function TotalsChart({ data }: TotalsChartProps) {
           {openingTotals?.over_odds && (
             <ReferenceLine
               y={openingTotals.over_odds}
-              stroke="#3b82f6"
+              stroke="#10b981"
               strokeDasharray="4 4"
               strokeOpacity={0.25}
             />
@@ -143,10 +143,10 @@ export default function TotalsChart({ data }: TotalsChartProps) {
             type="monotone"
             dataKey="over_odds"
             name="Over"
-            stroke="#3b82f6"
+            stroke="#10b981"
             strokeWidth={2.5}
-            dot={{ fill: '#3b82f6', strokeWidth: 0, r: 2 }}
-            activeDot={{ r: 5, fill: '#3b82f6', stroke: '#fff', strokeWidth: 2 }}
+            dot={{ fill: '#10b981', strokeWidth: 0, r: 2 }}
+            activeDot={{ r: 5, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }}
             animationDuration={300}
           />
           <Line

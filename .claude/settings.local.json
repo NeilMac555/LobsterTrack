@@ -30,7 +30,11 @@
       "Bash(railway variables:*)",
       "Bash(railway domain:*)",
       "Bash(railway status:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx tsc:*)",
+      "Bash(python -c:*)",
+      "Bash(python -m py_compile:*)"
     ]
   }
 }
