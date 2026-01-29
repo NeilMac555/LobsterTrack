@@ -34,7 +34,9 @@
       "Bash(npm run build:*)",
       "Bash(npx tsc:*)",
       "Bash(python -c:*)",
-      "Bash(python -m py_compile:*)"
+      "Bash(python -m py_compile:*)",
+      "Bash(pip show:*)",
+      "Bash(pip install:*)"
     ]
   }
 }

@@ -1,8 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <!-- Background -->
-  <rect width="32" height="32" rx="6" fill="#1e293b"/>
-  <!-- Trend line chart -->
-  <path d="M6 24 L11 18 L17 20 L26 10" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <!-- Arrow head -->
-  <path d="M23 10 L26 10 L26 13" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Red rounded square background -->
+  <rect width="100" height="100" rx="18" fill="#f14c4c"/>
+  <!-- Soccer player silhouette kicking ball - white -->
+  <g fill="#ffffff">
+    <!-- Head -->
+    <ellipse cx="42" cy="18" rx="9" ry="10"/>
+    <!-- Torso -->
+    <path d="M35 28 C32 35 30 42 32 50 L32 55 L50 55 L50 50 C52 42 50 35 47 28 C44 26 38 26 35 28"/>
+    <!-- Left arm (extended back) -->
+    <path d="M35 32 L22 38 L18 36 L17 40 L24 44 L38 38"/>
+    <!-- Right arm (extended forward) -->
+    <path d="M47 32 L58 28 L62 24 L65 27 L60 32 L48 38"/>
+    <!-- Left leg (planted) -->
+    <path d="M34 54 L28 70 L25 85 L22 90 L28 92 L32 88 L38 72 L40 55"/>
+    <!-- Right leg (kicking) -->
+    <path d="M45 54 L55 60 L68 62 L72 58 L66 56 L52 52 L48 54"/>
+    <!-- Soccer ball -->
+    <circle cx="78" cy="60" r="10" fill="#ffffff"/>
+  </g>
 </svg>
