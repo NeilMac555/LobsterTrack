@@ -423,11 +423,11 @@ function TotalsSection({ totals }: TotalsSectionProps) {
           <div className="bg-slate-900/50 rounded-xl p-3 sm:p-4 text-center">
             <div className="text-xs sm:text-sm text-slate-400 font-medium mb-1">Line</div>
             <div className="text-2xl sm:text-3xl font-bold text-white font-mono">
-              {latestTotals.line?.toFixed(1) ?? '-'}
+              {latestTotals.line ?? '-'}
             </div>
             {openingTotals.line !== latestTotals.line && (
               <div className="text-xs text-slate-500 mt-1">
-                Open: {openingTotals.line?.toFixed(1)}
+                Open: {openingTotals.line}
               </div>
             )}
           </div>
@@ -464,7 +464,7 @@ function TotalsSection({ totals }: TotalsSectionProps) {
           <div className="flex items-center justify-between text-xs sm:text-sm">
             <span className="text-slate-400">Opening</span>
             <div className="flex gap-4 font-mono font-medium text-slate-300">
-              <span>Line: {openingTotals.line?.toFixed(1) ?? '-'}</span>
+              <span>Line: {openingTotals.line ?? '-'}</span>
               <span className="text-blue-400">O: {openingTotals.over_odds?.toFixed(2) ?? '-'}</span>
               <span className="text-orange-400">U: {openingTotals.under_odds?.toFixed(2) ?? '-'}</span>
             </div>
