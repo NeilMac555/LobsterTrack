@@ -37,16 +37,21 @@ export default function EmailSignup() {
 
   if (status === 'success') {
     return (
-      <div className="bg-slate-800/60 rounded-xl border border-slate-700/50 p-4 sm:p-5">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
-            <svg className="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div className="relative rounded-2xl p-6 sm:p-8 overflow-hidden"
+        style={{
+          background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%)',
+          boxShadow: '0 0 0 1px rgba(59, 130, 246, 0.15), 0 4px 24px -4px rgba(0, 0, 0, 0.3)'
+        }}
+      >
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+            <svg className="w-6 h-6 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
           <div>
-            <p className="text-white font-semibold">{message}</p>
-            <p className="text-slate-400 text-sm">We'll notify you when steam alerts are live.</p>
+            <p className="text-white font-semibold text-lg">{message}</p>
+            <p className="text-slate-400 text-sm mt-0.5">We'll notify you when steam alerts are live.</p>
           </div>
         </div>
       </div>
@@ -54,16 +59,36 @@ export default function EmailSignup() {
   }
 
   return (
-    <div className="bg-slate-800/60 rounded-xl border border-slate-700/50 p-4 sm:p-5">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+    <div className="relative rounded-2xl p-6 sm:p-8 overflow-hidden"
+      style={{
+        background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%)',
+        boxShadow: '0 0 0 1px rgba(59, 130, 246, 0.15), 0 4px 24px -4px rgba(0, 0, 0, 0.3)'
+      }}
+    >
+      {/* Subtle gradient accent at top */}
+      <div
+        className="absolute top-0 left-0 right-0 h-px"
+        style={{
+          background: 'linear-gradient(90deg, transparent 0%, rgba(59, 130, 246, 0.4) 50%, transparent 100%)'
+        }}
+      />
+
+      <div className="flex flex-col sm:flex-row sm:items-center gap-5">
         <div className="flex-1">
-          <h3 className="text-white font-semibold flex items-center gap-2">
-            <svg className="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-            </svg>
+          <h3 className="text-white font-semibold text-lg flex items-center gap-2.5">
+            {/* Bell icon with pulse animation */}
+            <span className="relative">
+              <svg className="w-5 h-5 text-emerald-400 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+              {/* Subtle glow behind icon */}
+              <span className="absolute inset-0 bg-emerald-400/20 blur-md rounded-full" />
+            </span>
             Get Steam Alerts
           </h3>
-          <p className="text-slate-400 text-sm mt-0.5">Get notified when we detect sharp money movement.</p>
+          <p className="text-slate-400 text-sm mt-1.5">
+            Get alerted within 15 mins when Pinnacle lines move 5%+
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex gap-2 w-full sm:w-auto">
@@ -73,12 +98,12 @@ export default function EmailSignup() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="your@email.com"
             required
-            className="flex-1 sm:w-56 px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            className="flex-1 sm:w-56 px-4 py-2.5 bg-slate-900/60 border border-slate-600/50 rounded-lg text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
           />
           <button
             type="submit"
             disabled={status === 'loading'}
-            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white font-semibold rounded-lg text-sm transition-colors whitespace-nowrap"
+            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white font-semibold rounded-lg text-sm transition-all whitespace-nowrap hover:shadow-lg hover:shadow-blue-500/20"
           >
             {status === 'loading' ? 'Sending...' : 'Notify Me'}
           </button>
@@ -86,7 +111,7 @@ export default function EmailSignup() {
       </div>
 
       {status === 'error' && (
-        <p className="text-red-400 text-sm mt-3">{message}</p>
+        <p className="text-red-400 text-sm mt-4">{message}</p>
       )}
     </div>
   );
