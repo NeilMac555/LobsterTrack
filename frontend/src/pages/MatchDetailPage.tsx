@@ -1,16 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { format } from 'date-fns';
-import { getMatchDetail } from '../api';
-import type { MatchDetail } from '../types';
+import { getMatchDetail, getMatchTotals } from '../api';
+import type { MatchDetail, MatchTotals } from '../types';
 import { LEAGUE_CONFIG } from '../types';
 import OddsChart from '../components/OddsChart';
+import TotalsChart from '../components/TotalsChart';
 import LeagueLogo from '../components/LeagueLogo';
 import OddsWithMovement from '../components/OddsWithMovement';
+
+// Ligue 1 is the only league with totals data
+const TOTALS_LEAGUES = ['soccer_france_ligue_one'];
 
 export default function MatchDetailPage() {
   const { matchId } = useParams<{ matchId: string }>();
   const [match, setMatch] = useState<MatchDetail | null>(null);
+  const [totals, setTotals] = useState<MatchTotals | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showChangesOnly, setShowChangesOnly] = useState(true);
@@ -23,6 +28,18 @@ export default function MatchDetailPage() {
       try {
         const data = await getMatchDetail(matchId);
         setMatch(data);
+
+        // Fetch totals if this is a Ligue 1 match
+        if (TOTALS_LEAGUES.includes(data.sport_key)) {
+          try {
+            const totalsData = await getMatchTotals(matchId);
+            if (totalsData.totals_history.length > 0) {
+              setTotals(totalsData);
+            }
+          } catch {
+            // Silently fail - totals data is optional
+          }
+        }
       } catch (err) {
         setError('Failed to load match details');
         console.error(err);
@@ -144,6 +161,11 @@ export default function MatchDetailPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Totals (Over/Under) Section - Only for Ligue 1 */}
+      {totals && totals.totals_history.length > 0 && (
+        <TotalsSection totals={totals} />
       )}
 
       {/* Odds History Chart */}
@@ -367,6 +389,101 @@ function OddsHistoryTable({ oddsHistory, showChangesOnly, onToggleShowChanges }:
           No odds changes recorded yet
         </div>
       )}
+    </div>
+  );
+}
+
+interface TotalsSectionProps {
+  totals: MatchTotals;
+}
+
+function TotalsSection({ totals }: TotalsSectionProps) {
+  const latestTotals = totals.totals_history[totals.totals_history.length - 1];
+  const openingTotals = totals.totals_history[0];
+
+  // Calculate percentage changes from opening
+  const overChange = openingTotals.over_odds && latestTotals.over_odds
+    ? ((latestTotals.over_odds - openingTotals.over_odds) / openingTotals.over_odds) * 100
+    : null;
+  const underChange = openingTotals.under_odds && latestTotals.under_odds
+    ? ((latestTotals.under_odds - openingTotals.under_odds) / openingTotals.under_odds) * 100
+    : null;
+
+  return (
+    <div className="bg-slate-800/80 rounded-xl sm:rounded-2xl border border-slate-700/50 overflow-hidden mb-6 sm:mb-8 card-shadow">
+      {/* Header */}
+      <div className="px-4 sm:px-6 py-3 sm:py-4 bg-slate-700/30 border-b border-slate-700/50">
+        <h2 className="text-base sm:text-lg font-bold text-white">Total Goals (Over/Under)</h2>
+      </div>
+
+      <div className="p-4 sm:p-6">
+        {/* Current Totals */}
+        <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-6">
+          {/* Line */}
+          <div className="bg-slate-900/50 rounded-xl p-3 sm:p-4 text-center">
+            <div className="text-xs sm:text-sm text-slate-400 font-medium mb-1">Line</div>
+            <div className="text-2xl sm:text-3xl font-bold text-white font-mono">
+              {latestTotals.line?.toFixed(1) ?? '-'}
+            </div>
+            {openingTotals.line !== latestTotals.line && (
+              <div className="text-xs text-slate-500 mt-1">
+                Open: {openingTotals.line?.toFixed(1)}
+              </div>
+            )}
+          </div>
+
+          {/* Over */}
+          <div className="bg-slate-900/50 rounded-xl p-3 sm:p-4 text-center">
+            <div className="text-xs sm:text-sm text-blue-400 font-medium mb-1">Over</div>
+            <div className="text-2xl sm:text-3xl font-bold text-white font-mono">
+              {latestTotals.over_odds?.toFixed(2) ?? '-'}
+            </div>
+            {overChange !== null && Math.abs(overChange) >= 0.1 && (
+              <div className={`text-xs mt-1 font-medium ${overChange < 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                {overChange > 0 ? '+' : ''}{overChange.toFixed(1)}%
+              </div>
+            )}
+          </div>
+
+          {/* Under */}
+          <div className="bg-slate-900/50 rounded-xl p-3 sm:p-4 text-center">
+            <div className="text-xs sm:text-sm text-orange-400 font-medium mb-1">Under</div>
+            <div className="text-2xl sm:text-3xl font-bold text-white font-mono">
+              {latestTotals.under_odds?.toFixed(2) ?? '-'}
+            </div>
+            {underChange !== null && Math.abs(underChange) >= 0.1 && (
+              <div className={`text-xs mt-1 font-medium ${underChange < 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                {underChange > 0 ? '+' : ''}{underChange.toFixed(1)}%
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Opening Reference */}
+        <div className="bg-slate-900/30 rounded-lg p-3 mb-4">
+          <div className="flex items-center justify-between text-xs sm:text-sm">
+            <span className="text-slate-400">Opening</span>
+            <div className="flex gap-4 font-mono font-medium text-slate-300">
+              <span>Line: {openingTotals.line?.toFixed(1) ?? '-'}</span>
+              <span className="text-blue-400">O: {openingTotals.over_odds?.toFixed(2) ?? '-'}</span>
+              <span className="text-orange-400">U: {openingTotals.under_odds?.toFixed(2) ?? '-'}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Chart */}
+        {totals.totals_history.length > 1 && (
+          <div className="h-48 sm:h-64">
+            <TotalsChart data={totals.totals_history} />
+          </div>
+        )}
+
+        {totals.totals_history.length === 1 && (
+          <div className="text-center text-slate-500 text-sm py-4">
+            Only opening totals recorded so far
+          </div>
+        )}
+      </div>
     </div>
   );
 }

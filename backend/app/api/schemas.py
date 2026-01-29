@@ -151,3 +151,17 @@ class AdminEmailsResponse(BaseModel):
     """Response for admin emails endpoint"""
     count: int
     subscribers: list[EmailSubscriberInfo]
+
+
+class TotalsPoint(BaseModel):
+    """Single point in totals history timeline"""
+    timestamp: datetime
+    line: float
+    over_odds: Optional[float] = None
+    under_odds: Optional[float] = None
+
+
+class MatchTotalsResponse(BaseModel):
+    """Totals data for a match"""
+    match_id: str
+    totals_history: list[TotalsPoint]

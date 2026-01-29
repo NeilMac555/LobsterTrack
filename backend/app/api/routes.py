@@ -20,7 +20,9 @@ from .schemas import (
     EmailSignupRequest,
     EmailSignupResponse,
     AdminEmailsResponse,
-    EmailSubscriberInfo
+    EmailSubscriberInfo,
+    TotalsPoint,
+    MatchTotalsResponse
 )
 
 # Simple admin password
@@ -595,3 +597,38 @@ async def get_totals_test(
             for snapshot, match in recent
         ]
     }
+
+
+@router.get("/matches/{match_id}/totals", response_model=MatchTotalsResponse)
+async def get_match_totals(match_id: str, db: Session = Depends(get_db)):
+    """
+    Get totals (over/under) history for a match.
+    Only available for Ligue 1 matches.
+    """
+    match = db.query(Match).filter(Match.id == match_id).first()
+
+    if not match:
+        raise HTTPException(status_code=404, detail="Match not found")
+
+    # Get all totals snapshots ordered by time
+    snapshots = (
+        db.query(TotalsSnapshot)
+        .filter(TotalsSnapshot.match_id == match_id)
+        .order_by(TotalsSnapshot.fetched_at.asc())
+        .all()
+    )
+
+    totals_history = [
+        TotalsPoint(
+            timestamp=s.fetched_at,
+            line=s.line,
+            over_odds=s.over_odds,
+            under_odds=s.under_odds
+        )
+        for s in snapshots
+    ]
+
+    return MatchTotalsResponse(
+        match_id=match_id,
+        totals_history=totals_history
+    )

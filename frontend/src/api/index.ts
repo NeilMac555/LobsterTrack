@@ -1,4 +1,4 @@
-import type { MatchSummary, MatchDetail, LeagueSummary, Stats, BiggestMover } from '../types';
+import type { MatchSummary, MatchDetail, LeagueSummary, Stats, BiggestMover, MatchTotals } from '../types';
 
 const API_BASE = '/api';
 
@@ -46,4 +46,8 @@ export async function triggerFetch(): Promise<{ matches_found: number; odds_stor
 
 export async function getBiggestMovers(limit: number = 4): Promise<BiggestMover[]> {
   return fetchJson<BiggestMover[]>(`${API_BASE}/biggest-movers?limit=${limit}`);
+}
+
+export async function getMatchTotals(matchId: string): Promise<MatchTotals> {
+  return fetchJson<MatchTotals>(`${API_BASE}/matches/${matchId}/totals`);
 }
