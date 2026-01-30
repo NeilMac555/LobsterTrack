@@ -4,5 +4,6 @@ from .odds import OddsSnapshot
 from .steam_move import SteamMove
 from .email_subscriber import EmailSubscriber
 from .totals_snapshot import TotalsSnapshot
+from .spreads_snapshot import SpreadsSnapshot
 
-__all__ = ["Base", "get_db", "engine", "Match", "OddsSnapshot", "SteamMove", "EmailSubscriber", "TotalsSnapshot"]
+__all__ = ["Base", "get_db", "engine", "Match", "OddsSnapshot", "SteamMove", "EmailSubscriber", "TotalsSnapshot", "SpreadsSnapshot"]

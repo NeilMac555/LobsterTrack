@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_
 
 from app.config import get_settings
-from app.models import Match, OddsSnapshot, SteamMove, TotalsSnapshot
+from app.models import Match, OddsSnapshot, SteamMove, TotalsSnapshot, SpreadsSnapshot
 from app.models.database import SessionLocal
 
 logger = structlog.get_logger()
@@ -64,6 +64,17 @@ class OddsFetcher:
                         )
                     except Exception as te:
                         logger.error("Failed to fetch totals", sport_key=sport_key, error=str(te))
+
+                    # Fetch spreads (Asian Handicap) for all leagues
+                    try:
+                        spreads_result = await self._fetch_league_spreads(client, sport_key)
+                        logger.info(
+                            "Spreads fetched successfully",
+                            sport_key=sport_key,
+                            spreads_stored=spreads_result["spreads_stored"]
+                        )
+                    except Exception as se:
+                        logger.error("Failed to fetch spreads", sport_key=sport_key, error=str(se))
 
                 except Exception as e:
                     error_msg = f"{sport_key}: {str(e)}"
@@ -445,6 +456,122 @@ class OddsFetcher:
                                 totals["last_update"] = None
 
                         return totals if totals.get("line") else None
+
+        return None
+
+    async def _fetch_league_spreads(self, client: httpx.AsyncClient, sport_key: str) -> dict:
+        """
+        Fetch spreads (Asian Handicap) odds for a league from The Odds API.
+        """
+        url = f"{self.base_url}/sports/{sport_key}/odds"
+        params = {
+            "apiKey": self.api_key,
+            "regions": "eu",
+            "markets": "spreads",
+            "bookmakers": "pinnacle",
+            "oddsFormat": "decimal"
+        }
+
+        response = await client.get(url, params=params)
+        response.raise_for_status()
+
+        events = response.json()
+
+        # Log API usage
+        remaining = response.headers.get("x-requests-remaining", "unknown")
+        logger.debug("API quota (spreads)", remaining=remaining)
+
+        # Store spreads in database
+        result = self._store_spreads(events)
+
+        return result
+
+    def _store_spreads(self, events: list) -> dict:
+        """
+        Store fetched spreads odds in the database.
+        Only stores if match already exists (from 1X2 fetch).
+        """
+        db = SessionLocal()
+        try:
+            spreads_stored = 0
+            fetch_time = datetime.utcnow()
+
+            for event in events:
+                match_id = event["id"]
+
+                # Check if match exists (should have been created by 1X2 fetch)
+                match = db.query(Match).filter(Match.id == match_id).first()
+                if not match:
+                    # Match not found, skip
+                    continue
+
+                # Extract Pinnacle spreads
+                spreads_data = self._extract_pinnacle_spreads(event)
+
+                if spreads_data:
+                    snapshot = SpreadsSnapshot(
+                        match_id=match_id,
+                        line=spreads_data["line"],
+                        home_odds=spreads_data.get("home"),
+                        away_odds=spreads_data.get("away"),
+                        fetched_at=fetch_time,
+                        last_update=spreads_data.get("last_update")
+                    )
+                    db.add(snapshot)
+                    spreads_stored += 1
+
+            db.commit()
+            return {"spreads_stored": spreads_stored}
+
+        except Exception as e:
+            db.rollback()
+            raise e
+        finally:
+            db.close()
+
+    def _extract_pinnacle_spreads(self, event: dict) -> Optional[dict]:
+        """
+        Extract Pinnacle spreads (Asian Handicap) odds from event data.
+        Returns dict with line, home, away odds or None if not found.
+
+        The line is from the home team's perspective:
+        - Negative line (e.g., -0.5) means home team gives 0.5 goal handicap
+        - Positive line (e.g., +0.5) means home team receives 0.5 goal handicap
+        """
+        bookmakers = event.get("bookmakers", [])
+
+        for bookmaker in bookmakers:
+            if bookmaker["key"] == "pinnacle":
+                markets = bookmaker.get("markets", [])
+
+                for market in markets:
+                    if market["key"] == "spreads":
+                        outcomes = market.get("outcomes", [])
+                        spreads = {}
+
+                        for outcome in outcomes:
+                            name = outcome["name"]
+                            price = outcome["price"]
+                            point = outcome.get("point")
+
+                            if name == event["home_team"]:
+                                spreads["home"] = price
+                                spreads["line"] = point  # Line from home perspective
+                            elif name == event["away_team"]:
+                                spreads["away"] = price
+                                # Away point should be inverse of home
+
+                        # Parse last_update if available
+                        last_update_str = market.get("last_update")
+                        if last_update_str:
+                            try:
+                                spreads["last_update"] = datetime.fromisoformat(
+                                    last_update_str.replace("Z", "+00:00")
+                                )
+                            except (ValueError, TypeError):
+                                spreads["last_update"] = None
+
+                        return spreads if spreads.get("line") is not None else None
 
         return None
 

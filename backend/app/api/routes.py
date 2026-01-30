@@ -4,7 +4,7 @@ from sqlalchemy import func, desc, text
 from datetime import datetime, timedelta
 from typing import Optional
 
-from app.models import get_db, Match, OddsSnapshot, SteamMove, EmailSubscriber, TotalsSnapshot
+from app.models import get_db, Match, OddsSnapshot, SteamMove, EmailSubscriber, TotalsSnapshot, SpreadsSnapshot
 from app.config import get_settings
 from app.services.scheduler import odds_scheduler
 from .schemas import (
@@ -762,3 +762,43 @@ async def get_match_totals(match_id: str, db: Session = Depends(get_db)):
         match_id=match_id,
         totals_history=totals_history
     )
+
+
+@router.get("/admin/spreads-test")
+async def get_spreads_test(
+    password: str = Query(..., description="Admin password"),
+    db: Session = Depends(get_db)
+):
+    """
+    Get spreads (Asian Handicap) snapshots for verification (admin only).
+    """
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid password")
+
+    # Get count
+    total_count = db.query(func.count(SpreadsSnapshot.id)).scalar() or 0
+
+    # Get recent snapshots with match info
+    recent = (
+        db.query(SpreadsSnapshot, Match)
+        .join(Match, SpreadsSnapshot.match_id == Match.id)
+        .order_by(desc(SpreadsSnapshot.fetched_at))
+        .limit(10)
+        .all()
+    )
+
+    return {
+        "total_count": total_count,
+        "recent_snapshots": [
+            {
+                "id": snapshot.id,
+                "match": f"{match.home_team} vs {match.away_team}",
+                "league": match.sport_key,
+                "line": snapshot.line,
+                "home_odds": snapshot.home_odds,
+                "away_odds": snapshot.away_odds,
+                "fetched_at": snapshot.fetched_at.isoformat() if snapshot.fetched_at else None
+            }
+            for snapshot, match in recent
+        ]
+    }
