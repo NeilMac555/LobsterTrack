@@ -380,10 +380,8 @@ export default function HomePage() {
                             </div>
                           </td>
                           <td className="px-4 py-4 text-center">
-                            <span className={`font-mono font-bold text-lg ${
-                              move.direction === 'down' ? 'text-emerald-400' : 'text-red-400'
-                            }`}>
-                              {move.direction === 'up' ? '↑+' : '↓'}{move.movement_percent.toFixed(1)}%
+                            <span className="font-mono font-bold text-lg text-emerald-400">
+                              ↓{Math.abs(move.movement_percent).toFixed(1)}%
                             </span>
                           </td>
                           <td className="px-4 py-4 text-center">
@@ -437,10 +435,8 @@ export default function HomePage() {
                           </div>
                         </div>
                         <div className="text-right flex-shrink-0">
-                          <div className={`font-mono font-bold text-lg ${
-                            move.direction === 'down' ? 'text-emerald-400' : 'text-red-400'
-                          }`}>
-                            {move.direction === 'up' ? '↑+' : '↓'}{Math.abs(move.movement_percent).toFixed(1)}%
+                          <div className="font-mono font-bold text-lg text-emerald-400">
+                            ↓{Math.abs(move.movement_percent).toFixed(1)}%
                           </div>
                           <div className="text-xs text-slate-500 mt-1">
                             <span className="text-white font-semibold">{move.current_odds.toFixed(2)}</span>

@@ -496,7 +496,7 @@ async def get_syndicate_moves(
     )
     opening_odds_map = {row.match_id: row for row in opening_odds_query}
 
-    # Find syndicate moves
+    # Find syndicate moves - only SHORTENING odds (backed selections)
     syndicate_moves = []
 
     for match_id, snapshots in recent_by_match.items():
@@ -512,37 +512,47 @@ async def get_syndicate_moves(
         # Get the latest snapshot from the recent ones
         latest = snapshots[0]  # Already sorted desc by fetched_at
 
-        # Check each outcome for 5%+ movement
+        # Check each outcome for 5%+ SHORTENING movement
         outcomes = [
             ('home', match.home_team, opening.home_odds, latest.home_odds),
             ('draw', 'Draw', opening.draw_odds, latest.draw_odds),
             ('away', match.away_team, opening.away_odds, latest.away_odds),
         ]
 
+        # Find the best shortening move for this match (one per match)
+        best_move = None
+        best_pct = 0
+
         for outcome, name, open_odds, curr_odds in outcomes:
             if open_odds and curr_odds and open_odds > 0:
                 pct = ((curr_odds - open_odds) / open_odds) * 100
 
+                # Only include SHORTENING odds (negative pct = odds getting shorter = being backed)
                 # Must be 5%+ movement
-                if abs(pct) >= 5.0:
+                if pct <= -5.0 and pct < best_pct:
+                    best_pct = pct
                     # Calculate minutes to kickoff
                     time_to_ko = match.commence_time - now
                     minutes_to_ko = int(time_to_ko.total_seconds() / 60)
 
-                    syndicate_moves.append({
+                    best_move = {
                         'match': match,
                         'outcome': outcome,
                         'outcome_name': name,
                         'opening_odds': open_odds,
                         'current_odds': curr_odds,
                         'movement_percent': pct,
-                        'direction': 'down' if pct < 0 else 'up',
+                        'direction': 'down',  # Always down for shortening
                         'minutes_to_kickoff': minutes_to_ko,
                         'moved_at': latest.fetched_at
-                    })
+                    }
 
-    # Sort by absolute movement (biggest first) and take top N
-    syndicate_moves.sort(key=lambda x: abs(x['movement_percent']), reverse=True)
+        # Add the best shortening move for this match (if any)
+        if best_move:
+            syndicate_moves.append(best_move)
+
+    # Sort by movement (most shortened first) and take top N
+    syndicate_moves.sort(key=lambda x: x['movement_percent'])  # Most negative first
     top_moves = syndicate_moves[:limit]
 
     return [
