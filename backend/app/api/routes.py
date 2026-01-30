@@ -437,11 +437,13 @@ async def get_syndicate_moves(
     Get late sharp money moves - high conviction signals.
     Criteria:
     - Match kicks off within 3 hours
-    - Line movement of 5%+ within the last 60 minutes
+    - 5%+ line movement WITHIN the 3-hour window (not from opening)
+
+    Key insight: We measure movement from when the match entered the 3hr window,
+    NOT from opening odds. This captures LATE sharp action specifically.
     """
     now = datetime.utcnow()
     three_hours_from_now = now + timedelta(hours=3)
-    sixty_minutes_ago = now - timedelta(minutes=60)
 
     # Get matches kicking off within 3 hours
     matches = (
@@ -457,81 +459,61 @@ async def get_syndicate_moves(
     match_ids = [m.id for m in matches]
     match_map = {m.id: m for m in matches}
 
-    # Get recent snapshots (within last 60 minutes) for these matches
-    recent_snapshots = (
-        db.query(OddsSnapshot)
-        .filter(OddsSnapshot.match_id.in_(match_ids))
-        .filter(OddsSnapshot.fetched_at >= sixty_minutes_ago)
-        .order_by(OddsSnapshot.fetched_at.desc())
-        .all()
-    )
+    # For each match, calculate when it entered the 3-hour window
+    # That's: commence_time - 3 hours
+    # We want the baseline odds from that point (or closest snapshot after)
 
-    # Group recent snapshots by match
-    recent_by_match = {}
-    for snapshot in recent_snapshots:
-        if snapshot.match_id not in recent_by_match:
-            recent_by_match[snapshot.match_id] = []
-        recent_by_match[snapshot.match_id].append(snapshot)
-
-    # Get opening odds for comparison
-    opening_subq = (
-        db.query(
-            OddsSnapshot.match_id,
-            OddsSnapshot.home_odds,
-            OddsSnapshot.draw_odds,
-            OddsSnapshot.away_odds,
-            func.row_number().over(
-                partition_by=OddsSnapshot.match_id,
-                order_by=OddsSnapshot.fetched_at.asc()
-            ).label('rn')
-        )
-        .filter(OddsSnapshot.match_id.in_(match_ids))
-        .subquery()
-    )
-
-    opening_odds_query = (
-        db.query(opening_subq)
-        .filter(opening_subq.c.rn == 1)
-        .all()
-    )
-    opening_odds_map = {row.match_id: row for row in opening_odds_query}
-
-    # Find syndicate moves - only SHORTENING odds (backed selections)
     syndicate_moves = []
 
-    for match_id, snapshots in recent_by_match.items():
-        if not snapshots:
+    for match in matches:
+        # When did this match enter the 3-hour window?
+        window_start = match.commence_time - timedelta(hours=3)
+
+        # Get the baseline snapshot: first snapshot AT or AFTER window_start
+        # This is our "3 hours ago" reference point
+        baseline_snapshot = (
+            db.query(OddsSnapshot)
+            .filter(OddsSnapshot.match_id == match.id)
+            .filter(OddsSnapshot.fetched_at >= window_start)
+            .order_by(OddsSnapshot.fetched_at.asc())
+            .first()
+        )
+
+        # Get the latest (current) snapshot
+        latest_snapshot = (
+            db.query(OddsSnapshot)
+            .filter(OddsSnapshot.match_id == match.id)
+            .order_by(OddsSnapshot.fetched_at.desc())
+            .first()
+        )
+
+        if not baseline_snapshot or not latest_snapshot:
             continue
 
-        match = match_map.get(match_id)
-        opening = opening_odds_map.get(match_id)
-
-        if not match or not opening:
+        # If baseline and latest are the same snapshot, no movement to measure
+        if baseline_snapshot.id == latest_snapshot.id:
             continue
 
-        # Get the latest snapshot from the recent ones
-        latest = snapshots[0]  # Already sorted desc by fetched_at
-
-        # Check each outcome for 5%+ SHORTENING movement
+        # Check each outcome for movement within the 3-hour window
         outcomes = [
-            ('home', match.home_team, opening.home_odds, latest.home_odds),
-            ('draw', 'Draw', opening.draw_odds, latest.draw_odds),
-            ('away', match.away_team, opening.away_odds, latest.away_odds),
+            ('home', match.home_team, baseline_snapshot.home_odds, latest_snapshot.home_odds),
+            ('draw', 'Draw', baseline_snapshot.draw_odds, latest_snapshot.draw_odds),
+            ('away', match.away_team, baseline_snapshot.away_odds, latest_snapshot.away_odds),
         ]
 
-        # Find the best shortening move for this match (one per match)
+        # Find the best shortening move for this match
         best_move = None
         best_pct = 0
 
-        for outcome, name, open_odds, curr_odds in outcomes:
-            if open_odds and curr_odds and open_odds > 0:
-                pct = ((curr_odds - open_odds) / open_odds) * 100
+        for outcome, name, baseline_odds, curr_odds in outcomes:
+            if baseline_odds and curr_odds and baseline_odds > 0:
+                # Calculate % change from 3hr baseline to now
+                pct = ((curr_odds - baseline_odds) / baseline_odds) * 100
 
-                # Only include SHORTENING odds (negative pct = odds getting shorter = being backed)
-                # Must be 5%+ movement
+                # Only include SHORTENING odds (negative pct = being backed)
+                # Must be 5%+ movement within the window
                 if pct <= -5.0 and pct < best_pct:
                     best_pct = pct
-                    # Calculate minutes to kickoff
                     time_to_ko = match.commence_time - now
                     minutes_to_ko = int(time_to_ko.total_seconds() / 60)
 
@@ -539,20 +521,19 @@ async def get_syndicate_moves(
                         'match': match,
                         'outcome': outcome,
                         'outcome_name': name,
-                        'opening_odds': open_odds,
+                        'baseline_odds': baseline_odds,
                         'current_odds': curr_odds,
                         'movement_percent': pct,
-                        'direction': 'down',  # Always down for shortening
+                        'direction': 'down',
                         'minutes_to_kickoff': minutes_to_ko,
-                        'moved_at': latest.fetched_at
+                        'moved_at': latest_snapshot.fetched_at
                     }
 
-        # Add the best shortening move for this match (if any)
         if best_move:
             syndicate_moves.append(best_move)
 
     # Sort by movement (most shortened first) and take top N
-    syndicate_moves.sort(key=lambda x: x['movement_percent'])  # Most negative first
+    syndicate_moves.sort(key=lambda x: x['movement_percent'])
     top_moves = syndicate_moves[:limit]
 
     return [
@@ -565,7 +546,7 @@ async def get_syndicate_moves(
             commence_time=m['match'].commence_time,
             outcome=m['outcome'],
             outcome_name=m['outcome_name'],
-            opening_odds=m['opening_odds'],
+            opening_odds=m['baseline_odds'],  # This is now the 3hr baseline, not opening
             current_odds=m['current_odds'],
             movement_percent=m['movement_percent'],
             direction=m['direction'],
