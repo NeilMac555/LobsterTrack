@@ -486,26 +486,34 @@ export default function HomePage() {
           <p className="text-slate-400 text-base sm:text-lg">No upcoming matches found</p>
         </div>
       ) : (
-        <div className="space-y-6 sm:space-y-10">
-          {groupedMatches.map((group) => (
-            <section key={group.date.toISOString()}>
-              {/* Day Header */}
-              <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-5">
-                <h3 className="text-lg sm:text-xl font-bold text-white whitespace-nowrap">{group.label}</h3>
-                <div className="flex-1 h-px bg-gradient-to-r from-slate-700 to-transparent"></div>
-                <span className="text-xs sm:text-sm text-slate-500 font-medium whitespace-nowrap">
-                  {group.matches.length} match{group.matches.length !== 1 ? 'es' : ''}
-                </span>
-              </div>
+        <div className="space-y-8 sm:space-y-12">
+          {groupedMatches.map((group) => {
+            // Calculate total snapshots for this day
+            const totalSnapshots = group.matches.reduce((sum, m) => sum + m.odds_count, 0);
 
-              {/* Matches Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-                {group.matches.map((match) => (
-                  <MatchCard key={match.id} match={match} />
-                ))}
-              </div>
-            </section>
-          ))}
+            return (
+              <section key={group.date.toISOString()}>
+                {/* Day Header */}
+                <div className="flex items-center gap-3 sm:gap-4 mb-5 sm:mb-6">
+                  <h3 className="text-lg sm:text-xl font-bold text-white whitespace-nowrap">{group.label}</h3>
+                  <div className="flex-1 h-px bg-gradient-to-r from-slate-700 to-transparent"></div>
+                  <span className="text-xs sm:text-sm text-slate-500 font-medium whitespace-nowrap">
+                    {group.matches.length} match{group.matches.length !== 1 ? 'es' : ''}
+                    {totalSnapshots > 0 && (
+                      <span className="hidden sm:inline text-slate-600"> · {totalSnapshots.toLocaleString()} snapshots</span>
+                    )}
+                  </span>
+                </div>
+
+                {/* Matches Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-7">
+                  {group.matches.map((match) => (
+                    <MatchCard key={match.id} match={match} />
+                  ))}
+                </div>
+              </section>
+            );
+          })}
         </div>
       )}
     </div>
