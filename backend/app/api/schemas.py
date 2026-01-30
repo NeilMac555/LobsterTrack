@@ -165,3 +165,24 @@ class MatchTotalsResponse(BaseModel):
     """Totals data for a match"""
     match_id: str
     totals_history: list[TotalsPoint]
+
+
+class SyndicateMove(BaseModel):
+    """A late sharp money move - high conviction signal"""
+    match_id: str
+    home_team: str
+    away_team: str
+    sport_key: str
+    league_name: str
+    commence_time: datetime
+    outcome: str  # 'home', 'draw', 'away'
+    outcome_name: str  # Team name or 'Draw'
+    opening_odds: float
+    current_odds: float
+    movement_percent: float
+    direction: str  # 'up' or 'down'
+    minutes_to_kickoff: int  # Time remaining until match starts
+    moved_at: datetime  # When the significant move was detected
+
+    class Config:
+        from_attributes = True

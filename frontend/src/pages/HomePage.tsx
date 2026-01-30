@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { format, isToday, isTomorrow, startOfDay, formatDistanceToNow } from 'date-fns';
-import { getMatches, getStats, getBiggestMovers } from '../api';
-import type { MatchSummary, BiggestMover } from '../types';
+import { getMatches, getStats, getBiggestMovers, getSyndicateMoves } from '../api';
+import type { MatchSummary, BiggestMover, SyndicateMove } from '../types';
 import { LEAGUE_CONFIG } from '../types';
 import MatchCard from '../components/MatchCard';
 import LeagueLogo from '../components/LeagueLogo';
@@ -49,6 +49,7 @@ export default function HomePage() {
 
   const [matches, setMatches] = useState<MatchSummary[]>([]);
   const [biggestMovers, setBiggestMovers] = useState<BiggestMover[]>([]);
+  const [syndicateMoves, setSyndicateMoves] = useState<SyndicateMove[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -59,14 +60,16 @@ export default function HomePage() {
       setError(null);
       try {
         // Fetch all data in parallel for maximum speed
-        const [matchesData, statsData, moversData] = await Promise.all([
+        const [matchesData, statsData, moversData, syndicateData] = await Promise.all([
           getMatches({ league: league || undefined, limit: 200 }),
           getStats(),
           // Only fetch movers for "All Matches" view (no league filter)
-          league ? Promise.resolve([]) : getBiggestMovers(4)
+          league ? Promise.resolve([]) : getBiggestMovers(4),
+          league ? Promise.resolve([]) : getSyndicateMoves(4)
         ]);
         setMatches(matchesData);
         setBiggestMovers(moversData);
+        setSyndicateMoves(syndicateData);
         if (statsData.newest_data) {
           setLastUpdated(new Date(statsData.newest_data));
         }
@@ -272,6 +275,184 @@ export default function HomePage() {
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* Syndicate Moves - Late Sharp Action */}
+      {!league && (
+        <div className="bg-slate-800/80 rounded-2xl border border-amber-500/30 overflow-hidden mb-6 sm:mb-10 card-shadow"
+          style={{
+            boxShadow: '0 0 20px -5px rgba(245, 158, 11, 0.15)'
+          }}
+        >
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-700/50 flex items-center justify-between bg-gradient-to-r from-amber-500/10 to-transparent">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                <svg className="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-lg sm:text-xl font-bold text-white">Syndicate Moves</h2>
+                <p className="text-slate-400 text-xs sm:text-sm mt-0.5">Late sharp action on closing lines</p>
+              </div>
+            </div>
+            <span className="text-[10px] sm:text-xs text-amber-400/80 font-medium hidden sm:block">Within 3hrs • 5%+ move</span>
+          </div>
+
+          {syndicateMoves.length === 0 ? (
+            <div className="px-6 py-8 text-center">
+              <p className="text-slate-500 text-sm">No late sharp action detected</p>
+              <p className="text-slate-600 text-xs mt-1">Matches within 3 hours with 5%+ line movement will appear here</p>
+            </div>
+          ) : (
+            <>
+              {/* Desktop Table */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-slate-700/30">
+                      <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                        Match
+                      </th>
+                      <th className="px-4 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                        League
+                      </th>
+                      <th className="px-4 py-3.5 text-center text-xs font-semibold text-amber-400/80 uppercase tracking-wider">
+                        Time to KO
+                      </th>
+                      <th className="px-4 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                        Outcome
+                      </th>
+                      <th className="px-4 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                        % Change
+                      </th>
+                      <th className="px-4 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                        Current
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-700/50">
+                    {syndicateMoves.map((move, index) => {
+                      const leagueInfo = LEAGUE_CONFIG[move.sport_key];
+                      const outcomeLabel = move.outcome === 'home' ? 'H' : move.outcome === 'draw' ? 'D' : 'A';
+                      const hours = Math.floor(move.minutes_to_kickoff / 60);
+                      const mins = move.minutes_to_kickoff % 60;
+                      const timeToKO = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+
+                      return (
+                        <tr key={`${move.match_id}-${index}`} className="hover:bg-slate-700/20 transition-colors duration-150">
+                          <td className="px-6 py-4">
+                            <Link
+                              to={`/match/${move.match_id}`}
+                              className="text-white hover:text-amber-400 transition-colors"
+                            >
+                              <div className="font-semibold text-base">
+                                {move.home_team} vs {move.away_team}
+                              </div>
+                            </Link>
+                          </td>
+                          <td className="px-4 py-4 text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <LeagueLogo sportKey={move.sport_key} size="sm" />
+                              <span className="text-slate-400 text-sm hidden lg:inline font-medium">
+                                {leagueInfo?.shortName || ''}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 text-center">
+                            <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500/20 text-amber-400">
+                              {timeToKO}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4">
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
+                                move.outcome === 'home' ? 'bg-emerald-500/20 text-emerald-400' :
+                                move.outcome === 'draw' ? 'bg-yellow-500/20 text-yellow-400' :
+                                'bg-red-500/20 text-red-400'
+                              }`}>
+                                {outcomeLabel}
+                              </span>
+                              <span className="text-slate-300 text-sm truncate max-w-[100px] font-medium">
+                                {move.outcome_name}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 text-center">
+                            <span className={`font-mono font-bold text-lg ${
+                              move.direction === 'down' ? 'text-emerald-400' : 'text-red-400'
+                            }`}>
+                              {move.direction === 'up' ? '↑+' : '↓'}{move.movement_percent.toFixed(1)}%
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-center">
+                            <span className="font-mono font-bold text-white">
+                              {move.current_odds.toFixed(2)}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Cards */}
+              <div className="md:hidden divide-y divide-slate-700/50">
+                {syndicateMoves.map((move, index) => {
+                  const leagueInfo = LEAGUE_CONFIG[move.sport_key];
+                  const outcomeLabel = move.outcome === 'home' ? 'H' : move.outcome === 'draw' ? 'D' : 'A';
+                  const hours = Math.floor(move.minutes_to_kickoff / 60);
+                  const mins = move.minutes_to_kickoff % 60;
+                  const timeToKO = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+
+                  return (
+                    <Link
+                      key={`${move.match_id}-${index}`}
+                      to={`/match/${move.match_id}`}
+                      className="block p-4 hover:bg-slate-700/20 active:bg-slate-700/30 transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <LeagueLogo sportKey={move.sport_key} size="sm" />
+                            <span className="text-xs text-slate-500">{leagueInfo?.shortName}</span>
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400">
+                              {timeToKO}
+                            </span>
+                          </div>
+                          <div className="text-white font-semibold text-sm truncate">
+                            {move.home_team} vs {move.away_team}
+                          </div>
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${
+                              move.outcome === 'home' ? 'bg-emerald-500/20 text-emerald-400' :
+                              move.outcome === 'draw' ? 'bg-yellow-500/20 text-yellow-400' :
+                              'bg-red-500/20 text-red-400'
+                            }`}>
+                              {outcomeLabel}
+                            </span>
+                            <span className="text-slate-400 text-xs truncate">{move.outcome_name}</span>
+                          </div>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <div className={`font-mono font-bold text-lg ${
+                            move.direction === 'down' ? 'text-emerald-400' : 'text-red-400'
+                          }`}>
+                            {move.direction === 'up' ? '↑+' : '↓'}{Math.abs(move.movement_percent).toFixed(1)}%
+                          </div>
+                          <div className="text-xs text-slate-500 mt-1">
+                            <span className="text-white font-semibold">{move.current_odds.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
       )}
 

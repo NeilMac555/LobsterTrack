@@ -22,7 +22,8 @@ from .schemas import (
     AdminEmailsResponse,
     EmailSubscriberInfo,
     TotalsPoint,
-    MatchTotalsResponse
+    MatchTotalsResponse,
+    SyndicateMove
 )
 
 # Simple admin password
@@ -424,6 +425,144 @@ async def get_biggest_movers(
             direction=m['direction']
         )
         for m in top_movers
+    ]
+
+
+@router.get("/syndicate-moves", response_model=list[SyndicateMove])
+async def get_syndicate_moves(
+    db: Session = Depends(get_db),
+    limit: int = Query(4, le=20, description="Number of moves to return")
+):
+    """
+    Get late sharp money moves - high conviction signals.
+    Criteria:
+    - Match kicks off within 3 hours
+    - Line movement of 5%+ within the last 60 minutes
+    """
+    now = datetime.utcnow()
+    three_hours_from_now = now + timedelta(hours=3)
+    sixty_minutes_ago = now - timedelta(minutes=60)
+
+    # Get matches kicking off within 3 hours
+    matches = (
+        db.query(Match)
+        .filter(Match.commence_time > now)
+        .filter(Match.commence_time <= three_hours_from_now)
+        .all()
+    )
+
+    if not matches:
+        return []
+
+    match_ids = [m.id for m in matches]
+    match_map = {m.id: m for m in matches}
+
+    # Get recent snapshots (within last 60 minutes) for these matches
+    recent_snapshots = (
+        db.query(OddsSnapshot)
+        .filter(OddsSnapshot.match_id.in_(match_ids))
+        .filter(OddsSnapshot.fetched_at >= sixty_minutes_ago)
+        .order_by(OddsSnapshot.fetched_at.desc())
+        .all()
+    )
+
+    # Group recent snapshots by match
+    recent_by_match = {}
+    for snapshot in recent_snapshots:
+        if snapshot.match_id not in recent_by_match:
+            recent_by_match[snapshot.match_id] = []
+        recent_by_match[snapshot.match_id].append(snapshot)
+
+    # Get opening odds for comparison
+    opening_subq = (
+        db.query(
+            OddsSnapshot.match_id,
+            OddsSnapshot.home_odds,
+            OddsSnapshot.draw_odds,
+            OddsSnapshot.away_odds,
+            func.row_number().over(
+                partition_by=OddsSnapshot.match_id,
+                order_by=OddsSnapshot.fetched_at.asc()
+            ).label('rn')
+        )
+        .filter(OddsSnapshot.match_id.in_(match_ids))
+        .subquery()
+    )
+
+    opening_odds_query = (
+        db.query(opening_subq)
+        .filter(opening_subq.c.rn == 1)
+        .all()
+    )
+    opening_odds_map = {row.match_id: row for row in opening_odds_query}
+
+    # Find syndicate moves
+    syndicate_moves = []
+
+    for match_id, snapshots in recent_by_match.items():
+        if not snapshots:
+            continue
+
+        match = match_map.get(match_id)
+        opening = opening_odds_map.get(match_id)
+
+        if not match or not opening:
+            continue
+
+        # Get the latest snapshot from the recent ones
+        latest = snapshots[0]  # Already sorted desc by fetched_at
+
+        # Check each outcome for 5%+ movement
+        outcomes = [
+            ('home', match.home_team, opening.home_odds, latest.home_odds),
+            ('draw', 'Draw', opening.draw_odds, latest.draw_odds),
+            ('away', match.away_team, opening.away_odds, latest.away_odds),
+        ]
+
+        for outcome, name, open_odds, curr_odds in outcomes:
+            if open_odds and curr_odds and open_odds > 0:
+                pct = ((curr_odds - open_odds) / open_odds) * 100
+
+                # Must be 5%+ movement
+                if abs(pct) >= 5.0:
+                    # Calculate minutes to kickoff
+                    time_to_ko = match.commence_time - now
+                    minutes_to_ko = int(time_to_ko.total_seconds() / 60)
+
+                    syndicate_moves.append({
+                        'match': match,
+                        'outcome': outcome,
+                        'outcome_name': name,
+                        'opening_odds': open_odds,
+                        'current_odds': curr_odds,
+                        'movement_percent': pct,
+                        'direction': 'down' if pct < 0 else 'up',
+                        'minutes_to_kickoff': minutes_to_ko,
+                        'moved_at': latest.fetched_at
+                    })
+
+    # Sort by absolute movement (biggest first) and take top N
+    syndicate_moves.sort(key=lambda x: abs(x['movement_percent']), reverse=True)
+    top_moves = syndicate_moves[:limit]
+
+    return [
+        SyndicateMove(
+            match_id=m['match'].id,
+            home_team=m['match'].home_team,
+            away_team=m['match'].away_team,
+            sport_key=m['match'].sport_key,
+            league_name=m['match'].league_name,
+            commence_time=m['match'].commence_time,
+            outcome=m['outcome'],
+            outcome_name=m['outcome_name'],
+            opening_odds=m['opening_odds'],
+            current_odds=m['current_odds'],
+            movement_percent=m['movement_percent'],
+            direction=m['direction'],
+            minutes_to_kickoff=m['minutes_to_kickoff'],
+            moved_at=m['moved_at']
+        )
+        for m in top_moves
     ]
 
 
