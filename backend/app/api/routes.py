@@ -764,6 +764,73 @@ async def get_match_totals(match_id: str, db: Session = Depends(get_db)):
     )
 
 
+@router.get("/admin/steam-breakdown")
+async def get_steam_breakdown(
+    password: str = Query(..., description="Admin password"),
+    db: Session = Depends(get_db)
+):
+    """
+    Get steam moves breakdown by league (admin only).
+    """
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid password")
+
+    # Total count
+    total_count = db.query(func.count(SteamMove.id)).scalar() or 0
+
+    # By league
+    by_league = (
+        db.query(
+            SteamMove.sport_key,
+            func.count(SteamMove.id).label("total"),
+            func.sum(func.cast(SteamMove.won == True, db.bind.dialect.name == 'postgresql' and 'INTEGER' or None)).label("wins"),
+            func.sum(func.cast(SteamMove.result_updated == True, db.bind.dialect.name == 'postgresql' and 'INTEGER' or None)).label("with_results")
+        )
+        .group_by(SteamMove.sport_key)
+        .all()
+    )
+
+    # Simpler approach - just count manually
+    leagues_data = {}
+    all_moves = db.query(SteamMove).all()
+
+    for move in all_moves:
+        league = move.sport_key
+        if league not in leagues_data:
+            leagues_data[league] = {"total": 0, "wins": 0, "losses": 0, "pending": 0}
+
+        leagues_data[league]["total"] += 1
+        if move.result_updated:
+            if move.won:
+                leagues_data[league]["wins"] += 1
+            else:
+                leagues_data[league]["losses"] += 1
+        else:
+            leagues_data[league]["pending"] += 1
+
+    # Calculate win rates
+    league_stats = []
+    for league, data in leagues_data.items():
+        completed = data["wins"] + data["losses"]
+        win_rate = (data["wins"] / completed * 100) if completed > 0 else None
+        league_stats.append({
+            "league": league,
+            "total": data["total"],
+            "wins": data["wins"],
+            "losses": data["losses"],
+            "pending": data["pending"],
+            "win_rate": round(win_rate, 1) if win_rate else None
+        })
+
+    # Sort by total descending
+    league_stats.sort(key=lambda x: x["total"], reverse=True)
+
+    return {
+        "total_count": total_count,
+        "by_league": league_stats
+    }
+
+
 @router.get("/admin/spreads-test")
 async def get_spreads_test(
     password: str = Query(..., description="Admin password"),
