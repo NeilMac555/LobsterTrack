@@ -778,19 +778,7 @@ async def get_steam_breakdown(
     # Total count
     total_count = db.query(func.count(SteamMove.id)).scalar() or 0
 
-    # By league
-    by_league = (
-        db.query(
-            SteamMove.sport_key,
-            func.count(SteamMove.id).label("total"),
-            func.sum(func.cast(SteamMove.won == True, db.bind.dialect.name == 'postgresql' and 'INTEGER' or None)).label("wins"),
-            func.sum(func.cast(SteamMove.result_updated == True, db.bind.dialect.name == 'postgresql' and 'INTEGER' or None)).label("with_results")
-        )
-        .group_by(SteamMove.sport_key)
-        .all()
-    )
-
-    # Simpler approach - just count manually
+    # Count manually by league
     leagues_data = {}
     all_moves = db.query(SteamMove).all()
 
