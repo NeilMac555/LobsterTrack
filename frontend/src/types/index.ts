@@ -92,6 +92,18 @@ export interface SyndicateMove {
   moved_at: string;
 }
 
+export interface SpreadsPoint {
+  timestamp: string;
+  line: number;
+  home_odds: number | null;
+  away_odds: number | null;
+}
+
+export interface MatchSpreads {
+  match_id: string;
+  spreads_history: SpreadsPoint[];
+}
+
 export const LEAGUE_CONFIG: Record<string, { name: string; shortName: string; color: string }> = {
   soccer_epl: { name: 'Premier League', shortName: 'EPL', color: '#3D195B' },
   soccer_spain_la_liga: { name: 'La Liga', shortName: 'LAL', color: '#EE8707' },

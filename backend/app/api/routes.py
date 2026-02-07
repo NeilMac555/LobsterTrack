@@ -13,6 +13,8 @@ from .schemas import (
     OddsPoint,
     LeagueSummary,
     FetchStatus,
+    SpreadsPoint,
+    MatchSpreadsResponse,
     HealthResponse,
     SteamMoveResponse,
     SteamMoveStats,
@@ -761,6 +763,40 @@ async def get_match_totals(match_id: str, db: Session = Depends(get_db)):
     return MatchTotalsResponse(
         match_id=match_id,
         totals_history=totals_history
+    )
+
+
+@router.get("/matches/{match_id}/spreads", response_model=MatchSpreadsResponse)
+async def get_match_spreads(match_id: str, db: Session = Depends(get_db)):
+    """
+    Get spreads (Asian Handicap) history for a match.
+    """
+    match = db.query(Match).filter(Match.id == match_id).first()
+
+    if not match:
+        raise HTTPException(status_code=404, detail="Match not found")
+
+    # Get all spreads snapshots ordered by time
+    snapshots = (
+        db.query(SpreadsSnapshot)
+        .filter(SpreadsSnapshot.match_id == match_id)
+        .order_by(SpreadsSnapshot.fetched_at.asc())
+        .all()
+    )
+
+    spreads_history = [
+        SpreadsPoint(
+            timestamp=s.fetched_at,
+            line=s.line,
+            home_odds=s.home_odds,
+            away_odds=s.away_odds
+        )
+        for s in snapshots
+    ]
+
+    return MatchSpreadsResponse(
+        match_id=match_id,
+        spreads_history=spreads_history
     )
 
 

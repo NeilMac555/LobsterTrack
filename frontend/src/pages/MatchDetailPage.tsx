@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { format } from 'date-fns';
-import { getMatchDetail, getMatchTotals } from '../api';
-import type { MatchDetail, MatchTotals } from '../types';
+import { getMatchDetail, getMatchTotals, getMatchSpreads } from '../api';
+import type { MatchDetail, MatchTotals, MatchSpreads } from '../types';
 import { LEAGUE_CONFIG } from '../types';
 import OddsChart from '../components/OddsChart';
 import TotalsChart from '../components/TotalsChart';
+import SpreadsChart from '../components/SpreadsChart';
 import LeagueLogo from '../components/LeagueLogo';
 import OddsWithMovement from '../components/OddsWithMovement';
 
@@ -13,6 +14,7 @@ export default function MatchDetailPage() {
   const { matchId } = useParams<{ matchId: string }>();
   const [match, setMatch] = useState<MatchDetail | null>(null);
   const [totals, setTotals] = useState<MatchTotals | null>(null);
+  const [spreads, setSpreads] = useState<MatchSpreads | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showChangesOnly, setShowChangesOnly] = useState(true);
@@ -26,14 +28,18 @@ export default function MatchDetailPage() {
         const data = await getMatchDetail(matchId);
         setMatch(data);
 
-        // Fetch totals for all leagues
-        try {
-          const totalsData = await getMatchTotals(matchId);
-          if (totalsData.totals_history.length > 0) {
-            setTotals(totalsData);
-          }
-        } catch {
-          // Silently fail - totals data is optional
+        // Fetch totals and spreads in parallel
+        const [totalsResult, spreadsResult] = await Promise.allSettled([
+          getMatchTotals(matchId),
+          getMatchSpreads(matchId)
+        ]);
+
+        if (totalsResult.status === 'fulfilled' && totalsResult.value.totals_history.length > 0) {
+          setTotals(totalsResult.value);
+        }
+
+        if (spreadsResult.status === 'fulfilled' && spreadsResult.value.spreads_history.length > 0) {
+          setSpreads(spreadsResult.value);
         }
       } catch (err) {
         setError('Failed to load match details');
@@ -173,9 +179,14 @@ export default function MatchDetailPage() {
         </div>
       </div>
 
-      {/* Totals (Over/Under) Section - Only for Ligue 1 */}
+      {/* Totals (Over/Under) Section */}
       {totals && totals.totals_history.length > 0 && (
         <TotalsSection totals={totals} />
+      )}
+
+      {/* Asian Handicap (Spreads) Section */}
+      {spreads && spreads.spreads_history.length > 0 && (
+        <SpreadsSection spreads={spreads} homeTeam={match.home_team} awayTeam={match.away_team} />
       )}
 
       {/* Odds History Table */}
@@ -476,6 +487,113 @@ function TotalsSection({ totals }: TotalsSectionProps) {
         {totals.totals_history.length === 1 && (
           <div className="text-center text-slate-500 text-sm py-4">
             Only opening totals recorded so far
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+interface SpreadsSectionProps {
+  spreads: MatchSpreads;
+  homeTeam: string;
+  awayTeam: string;
+}
+
+function SpreadsSection({ spreads, homeTeam, awayTeam }: SpreadsSectionProps) {
+  const latestSpreads = spreads.spreads_history[spreads.spreads_history.length - 1];
+  const openingSpreads = spreads.spreads_history[0];
+
+  // Calculate percentage changes from opening
+  const homeChange = openingSpreads.home_odds && latestSpreads.home_odds
+    ? ((latestSpreads.home_odds - openingSpreads.home_odds) / openingSpreads.home_odds) * 100
+    : null;
+  const awayChange = openingSpreads.away_odds && latestSpreads.away_odds
+    ? ((latestSpreads.away_odds - openingSpreads.away_odds) / openingSpreads.away_odds) * 100
+    : null;
+
+  // Format line with sign
+  const formatLine = (line: number) => {
+    if (line > 0) return `+${line}`;
+    return line.toString();
+  };
+
+  return (
+    <div className="bg-slate-800/80 rounded-xl sm:rounded-2xl border border-slate-700/50 overflow-hidden mb-6 sm:mb-8 card-shadow">
+      {/* Header */}
+      <div className="px-4 sm:px-6 py-3 sm:py-4 bg-slate-700/30 border-b border-slate-700/50">
+        <h2 className="text-base sm:text-lg font-bold text-white">Asian Handicap</h2>
+      </div>
+
+      <div className="p-4 sm:p-6">
+        {/* Current Spreads */}
+        <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-6">
+          {/* Line */}
+          <div className="bg-slate-900/50 rounded-xl p-3 sm:p-4 text-center">
+            <div className="text-xs sm:text-sm text-slate-400 font-medium mb-1">Line</div>
+            <div className="text-2xl sm:text-3xl font-bold text-white font-mono">
+              {formatLine(latestSpreads.line)}
+            </div>
+            {openingSpreads.line !== latestSpreads.line && (
+              <div className="text-xs text-slate-500 mt-1">
+                Open: {formatLine(openingSpreads.line)}
+              </div>
+            )}
+          </div>
+
+          {/* Home */}
+          <div className="bg-slate-900/50 rounded-xl p-3 sm:p-4 text-center">
+            <div className="text-xs sm:text-sm text-emerald-400 font-medium mb-1 truncate" title={homeTeam}>
+              {homeTeam.length > 12 ? homeTeam.substring(0, 10) + '...' : homeTeam}
+            </div>
+            <div className="text-2xl sm:text-3xl font-bold text-white font-mono">
+              {latestSpreads.home_odds?.toFixed(2) ?? '-'}
+            </div>
+            {homeChange !== null && Math.abs(homeChange) >= 0.1 && (
+              <div className={`text-xs mt-1 font-medium ${homeChange < 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                {homeChange > 0 ? '+' : ''}{homeChange.toFixed(1)}%
+              </div>
+            )}
+          </div>
+
+          {/* Away */}
+          <div className="bg-slate-900/50 rounded-xl p-3 sm:p-4 text-center">
+            <div className="text-xs sm:text-sm text-orange-400 font-medium mb-1 truncate" title={awayTeam}>
+              {awayTeam.length > 12 ? awayTeam.substring(0, 10) + '...' : awayTeam}
+            </div>
+            <div className="text-2xl sm:text-3xl font-bold text-white font-mono">
+              {latestSpreads.away_odds?.toFixed(2) ?? '-'}
+            </div>
+            {awayChange !== null && Math.abs(awayChange) >= 0.1 && (
+              <div className={`text-xs mt-1 font-medium ${awayChange < 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                {awayChange > 0 ? '+' : ''}{awayChange.toFixed(1)}%
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Opening Reference */}
+        <div className="bg-slate-900/30 rounded-lg p-3 mb-4">
+          <div className="flex items-center justify-between text-xs sm:text-sm">
+            <span className="text-slate-400">Opening</span>
+            <div className="flex gap-4 font-mono font-medium text-slate-300">
+              <span>Line: {formatLine(openingSpreads.line)}</span>
+              <span className="text-emerald-400">H: {openingSpreads.home_odds?.toFixed(2) ?? '-'}</span>
+              <span className="text-orange-400">A: {openingSpreads.away_odds?.toFixed(2) ?? '-'}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Chart */}
+        {spreads.spreads_history.length > 1 && (
+          <div className="h-48 sm:h-64">
+            <SpreadsChart data={spreads.spreads_history} />
+          </div>
+        )}
+
+        {spreads.spreads_history.length === 1 && (
+          <div className="text-center text-slate-500 text-sm py-4">
+            Only opening spreads recorded so far
           </div>
         )}
       </div>

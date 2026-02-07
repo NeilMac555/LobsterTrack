@@ -186,3 +186,17 @@ class SyndicateMove(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class SpreadsPoint(BaseModel):
+    """Single point in spreads (Asian Handicap) history timeline"""
+    timestamp: datetime
+    line: float  # Handicap line from home team perspective
+    home_odds: Optional[float] = None
+    away_odds: Optional[float] = None
+
+
+class MatchSpreadsResponse(BaseModel):
+    """Spreads (Asian Handicap) data for a match"""
+    match_id: str
+    spreads_history: list[SpreadsPoint]
