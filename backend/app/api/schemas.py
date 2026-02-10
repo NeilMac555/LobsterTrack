@@ -115,8 +115,9 @@ class BiggestMover(BaseModel):
     sport_key: str
     league_name: str
     commence_time: datetime
-    outcome: str  # 'home', 'draw', 'away'
-    outcome_name: str  # Team name or 'Draw'
+    market: str  # '1x2', 'totals', 'spreads'
+    outcome: str  # 'home', 'draw', 'away', 'over', 'under', 'home_spread', 'away_spread'
+    outcome_name: str  # Team name, 'Draw', 'O 2.5', 'U 2.5', 'AH -0.5', etc.
     opening_odds: float
     current_odds: float
     movement_percent: float
@@ -175,8 +176,9 @@ class SyndicateMove(BaseModel):
     sport_key: str
     league_name: str
     commence_time: datetime
-    outcome: str  # 'home', 'draw', 'away'
-    outcome_name: str  # Team name or 'Draw'
+    market: str  # '1x2', 'totals', 'spreads'
+    outcome: str  # 'home', 'draw', 'away', 'over', 'under', 'home_spread', 'away_spread'
+    outcome_name: str  # Team name, 'Draw', 'O 2.5', 'U 2.5', 'AH -0.5', etc.
     opening_odds: float
     current_odds: float
     movement_percent: float

@@ -169,7 +169,23 @@ export default function HomePage() {
                   const isSignificant = Math.abs(mover.movement_percent) >= 5;
                   const matchDate = new Date(mover.commence_time);
                   const leagueInfo = LEAGUE_CONFIG[mover.sport_key];
-                  const outcomeLabel = mover.outcome === 'home' ? 'H' : mover.outcome === 'draw' ? 'D' : 'A';
+
+                  // Determine outcome label and color based on market type
+                  let outcomeLabel: string;
+                  let outcomeColor: string;
+                  if (mover.market === '1x2') {
+                    outcomeLabel = mover.outcome === 'home' ? 'H' : mover.outcome === 'draw' ? 'D' : 'A';
+                    outcomeColor = mover.outcome === 'home' ? 'bg-emerald-500/20 text-emerald-400' :
+                                   mover.outcome === 'draw' ? 'bg-yellow-500/20 text-yellow-400' :
+                                   'bg-red-500/20 text-red-400';
+                  } else if (mover.market === 'totals') {
+                    outcomeLabel = mover.outcome === 'over' ? 'O' : 'U';
+                    outcomeColor = mover.outcome === 'over' ? 'bg-emerald-500/20 text-emerald-400' :
+                                   'bg-orange-500/20 text-orange-400';
+                  } else {
+                    outcomeLabel = 'AH';
+                    outcomeColor = 'bg-blue-500/20 text-blue-400';
+                  }
 
                   return (
                     <tr key={`${mover.match_id}-${index}`} className="hover:bg-slate-700/20 transition-colors duration-150">
@@ -196,11 +212,7 @@ export default function HomePage() {
                       </td>
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-2">
-                          <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
-                            mover.outcome === 'home' ? 'bg-emerald-500/20 text-emerald-400' :
-                            mover.outcome === 'draw' ? 'bg-yellow-500/20 text-yellow-400' :
-                            'bg-red-500/20 text-red-400'
-                          }`}>
+                          <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${outcomeColor}`}>
                             {outcomeLabel}
                           </span>
                           <span className="text-slate-300 text-sm truncate max-w-[120px] font-medium">
@@ -238,7 +250,23 @@ export default function HomePage() {
               const isSignificant = Math.abs(mover.movement_percent) >= 5;
               const matchDate = new Date(mover.commence_time);
               const leagueInfo = LEAGUE_CONFIG[mover.sport_key];
-              const outcomeLabel = mover.outcome === 'home' ? 'H' : mover.outcome === 'draw' ? 'D' : 'A';
+
+              // Determine outcome label and color based on market type
+              let outcomeLabel: string;
+              let outcomeColor: string;
+              if (mover.market === '1x2') {
+                outcomeLabel = mover.outcome === 'home' ? 'H' : mover.outcome === 'draw' ? 'D' : 'A';
+                outcomeColor = mover.outcome === 'home' ? 'bg-emerald-500/20 text-emerald-400' :
+                               mover.outcome === 'draw' ? 'bg-yellow-500/20 text-yellow-400' :
+                               'bg-red-500/20 text-red-400';
+              } else if (mover.market === 'totals') {
+                outcomeLabel = mover.outcome === 'over' ? 'O' : 'U';
+                outcomeColor = mover.outcome === 'over' ? 'bg-emerald-500/20 text-emerald-400' :
+                               'bg-orange-500/20 text-orange-400';
+              } else {
+                outcomeLabel = 'AH';
+                outcomeColor = 'bg-blue-500/20 text-blue-400';
+              }
 
               return (
                 <Link
@@ -258,11 +286,7 @@ export default function HomePage() {
                         {mover.home_team} vs {mover.away_team}
                       </div>
                       <div className="flex items-center gap-2 mt-2">
-                        <span className={`px-2 py-0.5 rounded text-xs font-bold ${
-                          mover.outcome === 'home' ? 'bg-emerald-500/20 text-emerald-400' :
-                          mover.outcome === 'draw' ? 'bg-yellow-500/20 text-yellow-400' :
-                          'bg-red-500/20 text-red-400'
-                        }`}>
+                        <span className={`px-2 py-0.5 rounded text-xs font-bold ${outcomeColor}`}>
                           {outcomeLabel}
                         </span>
                         <span className="text-slate-400 text-xs truncate">{mover.outcome_name}</span>
@@ -343,10 +367,26 @@ export default function HomePage() {
                   <tbody className="divide-y divide-slate-700/50">
                     {syndicateMoves.map((move, index) => {
                       const leagueInfo = LEAGUE_CONFIG[move.sport_key];
-                      const outcomeLabel = move.outcome === 'home' ? 'H' : move.outcome === 'draw' ? 'D' : 'A';
                       const hours = Math.floor(move.minutes_to_kickoff / 60);
                       const mins = move.minutes_to_kickoff % 60;
                       const timeToKO = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+
+                      // Determine outcome label and color based on market type
+                      let outcomeLabel: string;
+                      let outcomeColor: string;
+                      if (move.market === '1x2') {
+                        outcomeLabel = move.outcome === 'home' ? 'H' : move.outcome === 'draw' ? 'D' : 'A';
+                        outcomeColor = move.outcome === 'home' ? 'bg-emerald-500/20 text-emerald-400' :
+                                       move.outcome === 'draw' ? 'bg-yellow-500/20 text-yellow-400' :
+                                       'bg-red-500/20 text-red-400';
+                      } else if (move.market === 'totals') {
+                        outcomeLabel = move.outcome === 'over' ? 'O' : 'U';
+                        outcomeColor = move.outcome === 'over' ? 'bg-emerald-500/20 text-emerald-400' :
+                                       'bg-orange-500/20 text-orange-400';
+                      } else {
+                        outcomeLabel = 'AH';
+                        outcomeColor = 'bg-blue-500/20 text-blue-400';
+                      }
 
                       return (
                         <tr key={`${move.match_id}-${index}`} className="hover:bg-slate-700/20 transition-colors duration-150">
@@ -375,11 +415,7 @@ export default function HomePage() {
                           </td>
                           <td className="px-4 py-4">
                             <div className="flex items-center gap-2">
-                              <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
-                                move.outcome === 'home' ? 'bg-emerald-500/20 text-emerald-400' :
-                                move.outcome === 'draw' ? 'bg-yellow-500/20 text-yellow-400' :
-                                'bg-red-500/20 text-red-400'
-                              }`}>
+                              <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${outcomeColor}`}>
                                 {outcomeLabel}
                               </span>
                               <span className="text-slate-300 text-sm truncate max-w-[100px] font-medium">
@@ -408,10 +444,26 @@ export default function HomePage() {
               <div className="md:hidden divide-y divide-slate-700/50">
                 {syndicateMoves.map((move, index) => {
                   const leagueInfo = LEAGUE_CONFIG[move.sport_key];
-                  const outcomeLabel = move.outcome === 'home' ? 'H' : move.outcome === 'draw' ? 'D' : 'A';
                   const hours = Math.floor(move.minutes_to_kickoff / 60);
                   const mins = move.minutes_to_kickoff % 60;
                   const timeToKO = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+
+                  // Determine outcome label and color based on market type
+                  let outcomeLabel: string;
+                  let outcomeColor: string;
+                  if (move.market === '1x2') {
+                    outcomeLabel = move.outcome === 'home' ? 'H' : move.outcome === 'draw' ? 'D' : 'A';
+                    outcomeColor = move.outcome === 'home' ? 'bg-emerald-500/20 text-emerald-400' :
+                                   move.outcome === 'draw' ? 'bg-yellow-500/20 text-yellow-400' :
+                                   'bg-red-500/20 text-red-400';
+                  } else if (move.market === 'totals') {
+                    outcomeLabel = move.outcome === 'over' ? 'O' : 'U';
+                    outcomeColor = move.outcome === 'over' ? 'bg-emerald-500/20 text-emerald-400' :
+                                   'bg-orange-500/20 text-orange-400';
+                  } else {
+                    outcomeLabel = 'AH';
+                    outcomeColor = 'bg-blue-500/20 text-blue-400';
+                  }
 
                   return (
                     <Link
@@ -432,11 +484,7 @@ export default function HomePage() {
                             {move.home_team} vs {move.away_team}
                           </div>
                           <div className="flex items-center gap-2 mt-2">
-                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${
-                              move.outcome === 'home' ? 'bg-emerald-500/20 text-emerald-400' :
-                              move.outcome === 'draw' ? 'bg-yellow-500/20 text-yellow-400' :
-                              'bg-red-500/20 text-red-400'
-                            }`}>
+                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${outcomeColor}`}>
                               {outcomeLabel}
                             </span>
                             <span className="text-slate-400 text-xs truncate">{move.outcome_name}</span>

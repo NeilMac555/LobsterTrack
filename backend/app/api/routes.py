@@ -305,9 +305,8 @@ async def get_biggest_movers(
     limit: int = Query(4, le=20, description="Number of movers to return")
 ):
     """
-    Get matches with the biggest odds movements.
-    Optimized server-side calculation - much faster than fetching all matches.
-    Uses only 3 database queries regardless of match count.
+    Get matches with the biggest odds movements across all markets (1X2, Totals, Asian Handicap).
+    Returns one move per match (the biggest across all markets).
     """
     now = datetime.utcnow()
 
@@ -324,8 +323,8 @@ async def get_biggest_movers(
     match_ids = [m.id for m in matches]
     match_map = {m.id: m for m in matches}
 
-    # Batch query: Get latest odds for all upcoming matches
-    latest_subq = (
+    # === 1X2 MARKET ===
+    latest_1x2_subq = (
         db.query(
             OddsSnapshot.match_id,
             OddsSnapshot.home_odds,
@@ -339,16 +338,9 @@ async def get_biggest_movers(
         .filter(OddsSnapshot.match_id.in_(match_ids))
         .subquery()
     )
+    latest_1x2 = {row.match_id: row for row in db.query(latest_1x2_subq).filter(latest_1x2_subq.c.rn == 1).all()}
 
-    latest_odds_query = (
-        db.query(latest_subq)
-        .filter(latest_subq.c.rn == 1)
-        .all()
-    )
-    latest_odds_map = {row.match_id: row for row in latest_odds_query}
-
-    # Batch query: Get opening odds for all upcoming matches
-    opening_subq = (
+    opening_1x2_subq = (
         db.query(
             OddsSnapshot.match_id,
             OddsSnapshot.home_odds,
@@ -362,49 +354,157 @@ async def get_biggest_movers(
         .filter(OddsSnapshot.match_id.in_(match_ids))
         .subquery()
     )
+    opening_1x2 = {row.match_id: row for row in db.query(opening_1x2_subq).filter(opening_1x2_subq.c.rn == 1).all()}
 
-    opening_odds_query = (
-        db.query(opening_subq)
-        .filter(opening_subq.c.rn == 1)
-        .all()
+    # === TOTALS MARKET ===
+    latest_totals_subq = (
+        db.query(
+            TotalsSnapshot.match_id,
+            TotalsSnapshot.line,
+            TotalsSnapshot.over_odds,
+            TotalsSnapshot.under_odds,
+            func.row_number().over(
+                partition_by=TotalsSnapshot.match_id,
+                order_by=TotalsSnapshot.fetched_at.desc()
+            ).label('rn')
+        )
+        .filter(TotalsSnapshot.match_id.in_(match_ids))
+        .subquery()
     )
-    opening_odds_map = {row.match_id: row for row in opening_odds_query}
+    latest_totals = {row.match_id: row for row in db.query(latest_totals_subq).filter(latest_totals_subq.c.rn == 1).all()}
 
-    # Calculate movements for all outcomes
+    opening_totals_subq = (
+        db.query(
+            TotalsSnapshot.match_id,
+            TotalsSnapshot.line,
+            TotalsSnapshot.over_odds,
+            TotalsSnapshot.under_odds,
+            func.row_number().over(
+                partition_by=TotalsSnapshot.match_id,
+                order_by=TotalsSnapshot.fetched_at.asc()
+            ).label('rn')
+        )
+        .filter(TotalsSnapshot.match_id.in_(match_ids))
+        .subquery()
+    )
+    opening_totals = {row.match_id: row for row in db.query(opening_totals_subq).filter(opening_totals_subq.c.rn == 1).all()}
+
+    # === SPREADS (ASIAN HANDICAP) MARKET ===
+    latest_spreads_subq = (
+        db.query(
+            SpreadsSnapshot.match_id,
+            SpreadsSnapshot.line,
+            SpreadsSnapshot.home_odds,
+            SpreadsSnapshot.away_odds,
+            func.row_number().over(
+                partition_by=SpreadsSnapshot.match_id,
+                order_by=SpreadsSnapshot.fetched_at.desc()
+            ).label('rn')
+        )
+        .filter(SpreadsSnapshot.match_id.in_(match_ids))
+        .subquery()
+    )
+    latest_spreads = {row.match_id: row for row in db.query(latest_spreads_subq).filter(latest_spreads_subq.c.rn == 1).all()}
+
+    opening_spreads_subq = (
+        db.query(
+            SpreadsSnapshot.match_id,
+            SpreadsSnapshot.line,
+            SpreadsSnapshot.home_odds,
+            SpreadsSnapshot.away_odds,
+            func.row_number().over(
+                partition_by=SpreadsSnapshot.match_id,
+                order_by=SpreadsSnapshot.fetched_at.asc()
+            ).label('rn')
+        )
+        .filter(SpreadsSnapshot.match_id.in_(match_ids))
+        .subquery()
+    )
+    opening_spreads = {row.match_id: row for row in db.query(opening_spreads_subq).filter(opening_spreads_subq.c.rn == 1).all()}
+
+    # Calculate movements for all outcomes across all markets
     movers = []
     for match_id, match in match_map.items():
-        latest = latest_odds_map.get(match_id)
-        opening = opening_odds_map.get(match_id)
-
-        if not latest or not opening:
-            continue
-
-        # Check each outcome
-        outcomes = [
-            ('home', match.home_team, opening.home_odds, latest.home_odds),
-            ('draw', 'Draw', opening.draw_odds, latest.draw_odds),
-            ('away', match.away_team, opening.away_odds, latest.away_odds),
-        ]
-
         best_move = None
         best_pct = 0
 
-        for outcome, name, open_odds, curr_odds in outcomes:
-            if open_odds and curr_odds and open_odds > 0:
-                pct = ((curr_odds - open_odds) / open_odds) * 100
-                if abs(pct) > abs(best_pct):
-                    best_pct = pct
-                    best_move = {
-                        'match': match,
-                        'outcome': outcome,
-                        'outcome_name': name,
-                        'opening_odds': open_odds,
-                        'current_odds': curr_odds,
-                        'movement_percent': pct,
-                        'direction': 'down' if pct < 0 else 'up'
-                    }
+        # 1X2 outcomes
+        latest = latest_1x2.get(match_id)
+        opening = opening_1x2.get(match_id)
+        if latest and opening:
+            outcomes = [
+                ('home', match.home_team, opening.home_odds, latest.home_odds),
+                ('draw', 'Draw', opening.draw_odds, latest.draw_odds),
+                ('away', match.away_team, opening.away_odds, latest.away_odds),
+            ]
+            for outcome, name, open_odds, curr_odds in outcomes:
+                if open_odds and curr_odds and open_odds > 0:
+                    pct = ((curr_odds - open_odds) / open_odds) * 100
+                    if abs(pct) > abs(best_pct):
+                        best_pct = pct
+                        best_move = {
+                            'match': match,
+                            'market': '1x2',
+                            'outcome': outcome,
+                            'outcome_name': name,
+                            'opening_odds': open_odds,
+                            'current_odds': curr_odds,
+                            'movement_percent': pct,
+                            'direction': 'down' if pct < 0 else 'up'
+                        }
 
-        if best_move and abs(best_pct) > 0.1:  # Only include if >0.1% movement
+        # Totals outcomes
+        latest_t = latest_totals.get(match_id)
+        opening_t = opening_totals.get(match_id)
+        if latest_t and opening_t:
+            line = opening_t.line
+            outcomes = [
+                ('over', f'O {line}', opening_t.over_odds, latest_t.over_odds),
+                ('under', f'U {line}', opening_t.under_odds, latest_t.under_odds),
+            ]
+            for outcome, name, open_odds, curr_odds in outcomes:
+                if open_odds and curr_odds and open_odds > 0:
+                    pct = ((curr_odds - open_odds) / open_odds) * 100
+                    if abs(pct) > abs(best_pct):
+                        best_pct = pct
+                        best_move = {
+                            'match': match,
+                            'market': 'totals',
+                            'outcome': outcome,
+                            'outcome_name': name,
+                            'opening_odds': open_odds,
+                            'current_odds': curr_odds,
+                            'movement_percent': pct,
+                            'direction': 'down' if pct < 0 else 'up'
+                        }
+
+        # Spreads (Asian Handicap) outcomes
+        latest_s = latest_spreads.get(match_id)
+        opening_s = opening_spreads.get(match_id)
+        if latest_s and opening_s:
+            line = opening_s.line
+            line_str = f"+{line}" if line > 0 else str(line)
+            outcomes = [
+                ('home_spread', f'AH {line_str}', opening_s.home_odds, latest_s.home_odds),
+                ('away_spread', f'AH {-line if line else 0:+g}', opening_s.away_odds, latest_s.away_odds),
+            ]
+            for outcome, name, open_odds, curr_odds in outcomes:
+                if open_odds and curr_odds and open_odds > 0:
+                    pct = ((curr_odds - open_odds) / open_odds) * 100
+                    if abs(pct) > abs(best_pct):
+                        best_pct = pct
+                        best_move = {
+                            'match': match,
+                            'market': 'spreads',
+                            'outcome': outcome,
+                            'outcome_name': name,
+                            'opening_odds': open_odds,
+                            'current_odds': curr_odds,
+                            'movement_percent': pct,
+                            'direction': 'down' if pct < 0 else 'up'
+                        }
+
+        if best_move and abs(best_pct) > 0.1:
             movers.append(best_move)
 
     # Sort by absolute movement and take top N
@@ -419,6 +519,7 @@ async def get_biggest_movers(
             sport_key=m['match'].sport_key,
             league_name=m['match'].league_name,
             commence_time=m['match'].commence_time,
+            market=m['market'],
             outcome=m['outcome'],
             outcome_name=m['outcome_name'],
             opening_odds=m['opening_odds'],
@@ -436,10 +537,11 @@ async def get_syndicate_moves(
     limit: int = Query(4, le=20, description="Number of moves to return")
 ):
     """
-    Get late sharp money moves - high conviction signals.
+    Get late sharp money moves across all markets (1X2, Totals, Asian Handicap).
     Criteria:
     - Match kicks off within 3 hours
     - 5%+ line movement WITHIN the 3-hour window (not from opening)
+    - Only SHORTENING odds (being backed)
 
     Key insight: We measure movement from when the match entered the 3hr window,
     NOT from opening odds. This captures LATE sharp action specifically.
@@ -458,78 +560,133 @@ async def get_syndicate_moves(
     if not matches:
         return []
 
-    match_ids = [m.id for m in matches]
-    match_map = {m.id: m for m in matches}
-
-    # For each match, calculate when it entered the 3-hour window
-    # That's: commence_time - 3 hours
-    # We want the baseline odds from that point (or closest snapshot after)
-
     syndicate_moves = []
 
     for match in matches:
-        # When did this match enter the 3-hour window?
         window_start = match.commence_time - timedelta(hours=3)
+        time_to_ko = match.commence_time - now
+        minutes_to_ko = int(time_to_ko.total_seconds() / 60)
 
-        # Get the baseline snapshot: first snapshot AT or AFTER window_start
-        # This is our "3 hours ago" reference point
-        baseline_snapshot = (
+        best_move = None
+        best_pct = 0
+
+        # === 1X2 MARKET ===
+        baseline_1x2 = (
             db.query(OddsSnapshot)
             .filter(OddsSnapshot.match_id == match.id)
             .filter(OddsSnapshot.fetched_at >= window_start)
             .order_by(OddsSnapshot.fetched_at.asc())
             .first()
         )
-
-        # Get the latest (current) snapshot
-        latest_snapshot = (
+        latest_1x2 = (
             db.query(OddsSnapshot)
             .filter(OddsSnapshot.match_id == match.id)
             .order_by(OddsSnapshot.fetched_at.desc())
             .first()
         )
 
-        if not baseline_snapshot or not latest_snapshot:
-            continue
+        if baseline_1x2 and latest_1x2 and baseline_1x2.id != latest_1x2.id:
+            outcomes = [
+                ('home', match.home_team, baseline_1x2.home_odds, latest_1x2.home_odds),
+                ('draw', 'Draw', baseline_1x2.draw_odds, latest_1x2.draw_odds),
+                ('away', match.away_team, baseline_1x2.away_odds, latest_1x2.away_odds),
+            ]
+            for outcome, name, baseline_odds, curr_odds in outcomes:
+                if baseline_odds and curr_odds and baseline_odds > 0:
+                    pct = ((curr_odds - baseline_odds) / baseline_odds) * 100
+                    if pct <= -5.0 and pct < best_pct:
+                        best_pct = pct
+                        best_move = {
+                            'match': match,
+                            'market': '1x2',
+                            'outcome': outcome,
+                            'outcome_name': name,
+                            'baseline_odds': baseline_odds,
+                            'current_odds': curr_odds,
+                            'movement_percent': pct,
+                            'direction': 'down',
+                            'minutes_to_kickoff': minutes_to_ko,
+                            'moved_at': latest_1x2.fetched_at
+                        }
 
-        # If baseline and latest are the same snapshot, no movement to measure
-        if baseline_snapshot.id == latest_snapshot.id:
-            continue
+        # === TOTALS MARKET ===
+        baseline_totals = (
+            db.query(TotalsSnapshot)
+            .filter(TotalsSnapshot.match_id == match.id)
+            .filter(TotalsSnapshot.fetched_at >= window_start)
+            .order_by(TotalsSnapshot.fetched_at.asc())
+            .first()
+        )
+        latest_totals = (
+            db.query(TotalsSnapshot)
+            .filter(TotalsSnapshot.match_id == match.id)
+            .order_by(TotalsSnapshot.fetched_at.desc())
+            .first()
+        )
 
-        # Check each outcome for movement within the 3-hour window
-        outcomes = [
-            ('home', match.home_team, baseline_snapshot.home_odds, latest_snapshot.home_odds),
-            ('draw', 'Draw', baseline_snapshot.draw_odds, latest_snapshot.draw_odds),
-            ('away', match.away_team, baseline_snapshot.away_odds, latest_snapshot.away_odds),
-        ]
+        if baseline_totals and latest_totals and baseline_totals.id != latest_totals.id:
+            line = baseline_totals.line
+            outcomes = [
+                ('over', f'O {line}', baseline_totals.over_odds, latest_totals.over_odds),
+                ('under', f'U {line}', baseline_totals.under_odds, latest_totals.under_odds),
+            ]
+            for outcome, name, baseline_odds, curr_odds in outcomes:
+                if baseline_odds and curr_odds and baseline_odds > 0:
+                    pct = ((curr_odds - baseline_odds) / baseline_odds) * 100
+                    if pct <= -5.0 and pct < best_pct:
+                        best_pct = pct
+                        best_move = {
+                            'match': match,
+                            'market': 'totals',
+                            'outcome': outcome,
+                            'outcome_name': name,
+                            'baseline_odds': baseline_odds,
+                            'current_odds': curr_odds,
+                            'movement_percent': pct,
+                            'direction': 'down',
+                            'minutes_to_kickoff': minutes_to_ko,
+                            'moved_at': latest_totals.fetched_at
+                        }
 
-        # Find the best shortening move for this match
-        best_move = None
-        best_pct = 0
+        # === SPREADS (ASIAN HANDICAP) MARKET ===
+        baseline_spreads = (
+            db.query(SpreadsSnapshot)
+            .filter(SpreadsSnapshot.match_id == match.id)
+            .filter(SpreadsSnapshot.fetched_at >= window_start)
+            .order_by(SpreadsSnapshot.fetched_at.asc())
+            .first()
+        )
+        latest_spreads = (
+            db.query(SpreadsSnapshot)
+            .filter(SpreadsSnapshot.match_id == match.id)
+            .order_by(SpreadsSnapshot.fetched_at.desc())
+            .first()
+        )
 
-        for outcome, name, baseline_odds, curr_odds in outcomes:
-            if baseline_odds and curr_odds and baseline_odds > 0:
-                # Calculate % change from 3hr baseline to now
-                pct = ((curr_odds - baseline_odds) / baseline_odds) * 100
-
-                # Only include SHORTENING odds (negative pct = being backed)
-                # Must be 5%+ movement within the window
-                if pct <= -5.0 and pct < best_pct:
-                    best_pct = pct
-                    time_to_ko = match.commence_time - now
-                    minutes_to_ko = int(time_to_ko.total_seconds() / 60)
-
-                    best_move = {
-                        'match': match,
-                        'outcome': outcome,
-                        'outcome_name': name,
-                        'baseline_odds': baseline_odds,
-                        'current_odds': curr_odds,
-                        'movement_percent': pct,
-                        'direction': 'down',
-                        'minutes_to_kickoff': minutes_to_ko,
-                        'moved_at': latest_snapshot.fetched_at
-                    }
+        if baseline_spreads and latest_spreads and baseline_spreads.id != latest_spreads.id:
+            line = baseline_spreads.line
+            line_str = f"+{line}" if line > 0 else str(line)
+            outcomes = [
+                ('home_spread', f'AH {line_str}', baseline_spreads.home_odds, latest_spreads.home_odds),
+                ('away_spread', f'AH {-line if line else 0:+g}', baseline_spreads.away_odds, latest_spreads.away_odds),
+            ]
+            for outcome, name, baseline_odds, curr_odds in outcomes:
+                if baseline_odds and curr_odds and baseline_odds > 0:
+                    pct = ((curr_odds - baseline_odds) / baseline_odds) * 100
+                    if pct <= -5.0 and pct < best_pct:
+                        best_pct = pct
+                        best_move = {
+                            'match': match,
+                            'market': 'spreads',
+                            'outcome': outcome,
+                            'outcome_name': name,
+                            'baseline_odds': baseline_odds,
+                            'current_odds': curr_odds,
+                            'movement_percent': pct,
+                            'direction': 'down',
+                            'minutes_to_kickoff': minutes_to_ko,
+                            'moved_at': latest_spreads.fetched_at
+                        }
 
         if best_move:
             syndicate_moves.append(best_move)
@@ -546,6 +703,7 @@ async def get_syndicate_moves(
             sport_key=m['match'].sport_key,
             league_name=m['match'].league_name,
             commence_time=m['match'].commence_time,
+            market=m['market'],
             outcome=m['outcome'],
             outcome_name=m['outcome_name'],
             opening_odds=m['baseline_odds'],  # This is now the 3hr baseline, not opening

@@ -55,7 +55,8 @@ export interface BiggestMover {
   sport_key: string;
   league_name: string;
   commence_time: string;
-  outcome: 'home' | 'draw' | 'away';
+  market: '1x2' | 'totals' | 'spreads';
+  outcome: 'home' | 'draw' | 'away' | 'over' | 'under' | 'home_spread' | 'away_spread';
   outcome_name: string;
   opening_odds: number;
   current_odds: number;
@@ -82,7 +83,8 @@ export interface SyndicateMove {
   sport_key: string;
   league_name: string;
   commence_time: string;
-  outcome: 'home' | 'draw' | 'away';
+  market: '1x2' | 'totals' | 'spreads';
+  outcome: 'home' | 'draw' | 'away' | 'over' | 'under' | 'home_spread' | 'away_spread';
   outcome_name: string;
   opening_odds: number;
   current_odds: number;
