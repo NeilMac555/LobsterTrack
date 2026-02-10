@@ -7,6 +7,7 @@ import { LEAGUE_CONFIG } from '../types';
 import MatchCard from '../components/MatchCard';
 import LeagueLogo from '../components/LeagueLogo';
 import EmailSignup from '../components/EmailSignup';
+import { SteamGuideModal, HelpButton } from '../components/SteamGuideModal';
 
 interface GroupedMatches {
   label: string;
@@ -53,6 +54,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [showSteamGuide, setShowSteamGuide] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -120,13 +122,19 @@ export default function HomePage() {
         </div>
       )}
 
+      {/* Steam Guide Modal */}
+      <SteamGuideModal isOpen={showSteamGuide} onClose={() => setShowSteamGuide(false)} />
+
       {/* Biggest Movers - Mobile Card / Desktop Table */}
       {biggestMovers.length > 0 && (
         <div className="bg-slate-800/80 rounded-2xl border border-slate-700/50 overflow-hidden mb-6 sm:mb-10 card-shadow">
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-700/50 flex items-center justify-between">
-            <div>
-              <h2 className="text-lg sm:text-xl font-bold text-white">Biggest Movers</h2>
-              <p className="text-slate-400 text-xs sm:text-sm mt-0.5">Significant line movement</p>
+            <div className="flex items-center gap-2">
+              <div>
+                <h2 className="text-lg sm:text-xl font-bold text-white">Biggest Movers</h2>
+                <p className="text-slate-400 text-xs sm:text-sm mt-0.5">Significant line movement</p>
+              </div>
+              <HelpButton onClick={() => setShowSteamGuide(true)} />
             </div>
             <span className="text-[10px] sm:text-xs text-slate-500 font-medium hidden sm:block">Sharp money indicators</span>
           </div>
