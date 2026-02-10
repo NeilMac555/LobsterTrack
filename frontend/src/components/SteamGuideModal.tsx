@@ -124,7 +124,7 @@ export function HelpButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="w-6 h-6 rounded-full bg-slate-700/50 hover:bg-slate-600 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+      className="w-7 h-7 rounded-full bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 hover:text-blue-300 flex items-center justify-center transition-colors animate-pulse ring-2 ring-blue-500/30"
       title="How to read steam moves"
     >
       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
