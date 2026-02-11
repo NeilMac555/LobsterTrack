@@ -36,7 +36,10 @@
       "Bash(python -c:*)",
       "Bash(python -m py_compile:*)",
       "Bash(pip show:*)",
-      "Bash(pip install:*)"
+      "Bash(pip install:*)",
+      "WebFetch(domain:api.telegram.org)",
+      "WebFetch(domain:steamwatch.io)",
+      "WebFetch(domain:www.steamwatch.io)"
     ]
   }
 }

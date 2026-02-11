@@ -508,6 +508,61 @@ export default function HomePage() {
         </div>
       )}
 
+      {/* Telegram CTA - Free Alerts */}
+      {!league && (
+        <a
+          href="https://t.me/steamwatchalerts"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block mb-6 sm:mb-10 group"
+        >
+          <div className="relative overflow-hidden rounded-2xl border border-[#2AABEE]/40 bg-gradient-to-r from-[#2AABEE]/20 via-[#229ED9]/15 to-[#2AABEE]/20 p-5 sm:p-6 transition-all duration-300 hover:border-[#2AABEE]/60 hover:shadow-lg hover:shadow-[#2AABEE]/10"
+            style={{
+              boxShadow: '0 0 30px -10px rgba(42, 171, 238, 0.3)'
+            }}
+          >
+            {/* Animated background pulse */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#2AABEE]/10 to-transparent animate-pulse"></div>
+
+            <div className="relative flex items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                {/* Telegram Icon */}
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-[#2AABEE] flex items-center justify-center shadow-lg shadow-[#2AABEE]/30 group-hover:scale-110 transition-transform duration-300">
+                  <svg className="w-7 h-7 sm:w-8 sm:h-8 text-white" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                  </svg>
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-bold bg-emerald-500/20 text-emerald-400 uppercase tracking-wide">
+                      Free
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-bold bg-amber-500/20 text-amber-400 uppercase tracking-wide">
+                      Real-time
+                    </span>
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-bold text-white group-hover:text-[#2AABEE] transition-colors">
+                    Get Instant Telegram Alerts
+                  </h3>
+                  <p className="text-slate-400 text-xs sm:text-sm mt-0.5">
+                    Syndicate moves delivered straight to your phone — never miss sharp action
+                  </p>
+                </div>
+              </div>
+
+              {/* Arrow */}
+              <div className="hidden sm:flex items-center gap-2 text-[#2AABEE] group-hover:translate-x-1 transition-transform duration-300">
+                <span className="font-semibold text-sm">Join Channel</span>
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </a>
+      )}
+
       {/* Email Signup - only show on "All Matches" view */}
       {!league && (
         <div className="mb-6 sm:mb-10">
