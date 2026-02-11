@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     # Logging
     log_level: str = "INFO"
 
+    # Telegram notifications
+    telegram_bot_token: str = ""
+    telegram_channel_id: str = ""
+
     # League mappings for The Odds API
     # Format: sport_key for the API
     leagues: dict = {

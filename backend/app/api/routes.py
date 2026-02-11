@@ -1051,3 +1051,45 @@ async def get_spreads_test(
             for snapshot, match in recent
         ]
     }
+
+
+@router.get("/admin/telegram-test")
+async def test_telegram(
+    password: str = Query(..., description="Admin password")
+):
+    """
+    Test Telegram bot connection (admin only).
+    """
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid password")
+
+    from app.services.telegram_notifier import telegram_notifier
+
+    result = await telegram_notifier.test_connection()
+    return result
+
+
+@router.post("/admin/telegram-test-alert")
+async def send_test_telegram_alert(
+    password: str = Query(..., description="Admin password")
+):
+    """
+    Send a test Telegram alert (admin only).
+    """
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid password")
+
+    from app.services.telegram_notifier import telegram_notifier
+
+    success = await telegram_notifier.send_syndicate_alert(
+        home_team="Test Home",
+        away_team="Test Away",
+        outcome_name="Test Home",
+        outcome_type="H",
+        current_odds=2.05,
+        movement_percent=-6.5,
+        minutes_to_kickoff=120,
+        market="1x2"
+    )
+
+    return {"success": success}

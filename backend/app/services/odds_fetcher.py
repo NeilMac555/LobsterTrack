@@ -81,6 +81,16 @@ class OddsFetcher:
                     summary["errors"].append(error_msg)
                     logger.error("Failed to fetch league", sport_key=sport_key, error=str(e))
 
+        # Check for syndicate moves and send Telegram alerts
+        try:
+            from app.services.syndicate_alerter import syndicate_alerter
+            alert_result = await syndicate_alerter.check_and_alert()
+            summary["syndicate_alerts"] = alert_result.get("alerts_sent", 0)
+            if alert_result.get("alerts_sent", 0) > 0:
+                logger.info("Syndicate alerts sent", alerts=alert_result["alerts_sent"])
+        except Exception as ae:
+            logger.error("Failed to check syndicate alerts", error=str(ae))
+
         logger.info("Fetch cycle complete", **summary)
         return summary
 

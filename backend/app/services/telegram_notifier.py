@@ -1,0 +1,125 @@
+import httpx
+import structlog
+from datetime import datetime
+from typing import Optional
+
+from app.config import get_settings
+
+logger = structlog.get_logger()
+settings = get_settings()
+
+
+class TelegramNotifier:
+    """
+    Service to send Telegram notifications for Syndicate Moves.
+    """
+
+    def __init__(self):
+        self.bot_token = settings.telegram_bot_token
+        self.channel_id = settings.telegram_channel_id
+        self.base_url = f"https://api.telegram.org/bot{self.bot_token}"
+
+    def is_configured(self) -> bool:
+        """Check if Telegram credentials are configured."""
+        return bool(self.bot_token and self.channel_id)
+
+    async def send_syndicate_alert(
+        self,
+        home_team: str,
+        away_team: str,
+        outcome_name: str,
+        outcome_type: str,  # 'H', 'D', 'A', 'O', 'U', 'AH'
+        current_odds: float,
+        movement_percent: float,
+        minutes_to_kickoff: int,
+        market: str = '1x2'
+    ) -> bool:
+        """
+        Send a Syndicate Move alert to Telegram channel.
+        Returns True if sent successfully.
+        """
+        if not self.is_configured():
+            logger.warning("Telegram not configured, skipping alert")
+            return False
+
+        # Format time to kickoff
+        hours = minutes_to_kickoff // 60
+        mins = minutes_to_kickoff % 60
+        if hours > 0:
+            time_str = f"{hours}h {mins}m"
+        else:
+            time_str = f"{mins}m"
+
+        # Format market indicator
+        if market == '1x2':
+            market_label = outcome_type  # H, D, or A
+        elif market == 'totals':
+            market_label = outcome_type  # O or U
+        else:
+            market_label = "AH"
+
+        # Build message
+        message = f"""🚨 LATE SHARP ACTION
+
+{home_team} vs {away_team}
+→ {outcome_name} ({market_label}) @ {current_odds:.2f}
+↓ {abs(movement_percent):.1f}% in last 3h
+⏱ Kickoff: {time_str}
+
+steamwatch.io"""
+
+        return await self._send_message(message)
+
+    async def _send_message(self, text: str) -> bool:
+        """Send a message to the Telegram channel."""
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.post(
+                    f"{self.base_url}/sendMessage",
+                    json={
+                        "chat_id": self.channel_id,
+                        "text": text,
+                        "parse_mode": "HTML",
+                        "disable_web_page_preview": True
+                    }
+                )
+
+                if response.status_code == 200:
+                    logger.info("Telegram alert sent successfully")
+                    return True
+                else:
+                    logger.error(
+                        "Failed to send Telegram alert",
+                        status=response.status_code,
+                        response=response.text
+                    )
+                    return False
+
+        except Exception as e:
+            logger.error("Error sending Telegram alert", error=str(e))
+            return False
+
+    async def test_connection(self) -> dict:
+        """Test the Telegram bot connection."""
+        if not self.is_configured():
+            return {"success": False, "error": "Telegram not configured"}
+
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(f"{self.base_url}/getMe")
+
+                if response.status_code == 200:
+                    data = response.json()
+                    return {
+                        "success": True,
+                        "bot_name": data.get("result", {}).get("username")
+                    }
+                else:
+                    return {"success": False, "error": response.text}
+
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+
+# Singleton instance
+telegram_notifier = TelegramNotifier()
