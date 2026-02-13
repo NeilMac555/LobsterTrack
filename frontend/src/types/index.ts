@@ -106,6 +106,21 @@ export interface MatchSpreads {
   spreads_history: SpreadsPoint[];
 }
 
+export interface ClosingLine {
+  match_id: string;
+  home_team: string;
+  away_team: string;
+  sport_key: string;
+  league_name: string;
+  commence_time: string;
+  handicap_line: number | null;
+  home_odds: number | null;
+  away_odds: number | null;
+  opening_home_odds: number | null;
+  opening_away_odds: number | null;
+  opening_line: number | null;
+}
+
 export const LEAGUE_CONFIG: Record<string, { name: string; shortName: string; color: string }> = {
   soccer_epl: { name: 'Premier League', shortName: 'EPL', color: '#3D195B' },
   soccer_spain_la_liga: { name: 'La Liga', shortName: 'LAL', color: '#EE8707' },

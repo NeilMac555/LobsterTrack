@@ -1,4 +1,4 @@
-import type { MatchSummary, MatchDetail, LeagueSummary, Stats, BiggestMover, MatchTotals, SyndicateMove, MatchSpreads } from '../types';
+import type { MatchSummary, MatchDetail, LeagueSummary, Stats, BiggestMover, MatchTotals, SyndicateMove, MatchSpreads, ClosingLine } from '../types';
 
 const API_BASE = '/api';
 
@@ -58,4 +58,16 @@ export async function getSyndicateMoves(limit: number = 4): Promise<SyndicateMov
 
 export async function getMatchSpreads(matchId: string): Promise<MatchSpreads> {
   return fetchJson<MatchSpreads>(`${API_BASE}/matches/${matchId}/spreads`);
+}
+
+export async function getClosingLines(params?: {
+  league?: string;
+  limit?: number;
+}): Promise<ClosingLine[]> {
+  const searchParams = new URLSearchParams();
+  if (params?.league) searchParams.set('league', params.league);
+  if (params?.limit) searchParams.set('limit', String(params.limit));
+
+  const query = searchParams.toString();
+  return fetchJson<ClosingLine[]>(`${API_BASE}/closing-lines${query ? `?${query}` : ''}`);
 }

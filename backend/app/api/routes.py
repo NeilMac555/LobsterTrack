@@ -25,7 +25,8 @@ from .schemas import (
     EmailSubscriberInfo,
     TotalsPoint,
     MatchTotalsResponse,
-    SyndicateMove
+    SyndicateMove,
+    ClosingLine
 )
 
 # Simple admin password
@@ -715,6 +716,108 @@ async def get_syndicate_moves(
         )
         for m in top_moves
     ]
+
+
+@router.get("/closing-lines", response_model=list[ClosingLine])
+async def get_closing_lines(
+    db: Session = Depends(get_db),
+    league: Optional[str] = Query(None, description="Filter by sport_key"),
+    limit: int = Query(50, le=100, description="Number of matches to return")
+):
+    """
+    Get closing lines for matches that have already started (last 48 hours).
+    Shows the final Asian Handicap odds snapshot before kickoff.
+    """
+    now = datetime.utcnow()
+    cutoff = now - timedelta(hours=48)
+
+    # Get matches that have started in the last 48 hours
+    query = (
+        db.query(Match)
+        .filter(Match.commence_time <= now)
+        .filter(Match.commence_time >= cutoff)
+    )
+
+    if league:
+        query = query.filter(Match.sport_key == league)
+
+    query = query.order_by(Match.commence_time.desc())
+    matches = query.limit(limit).all()
+
+    if not matches:
+        return []
+
+    match_ids = [m.id for m in matches]
+    match_map = {m.id: m for m in matches}
+
+    # Get the LAST (closing) spreads snapshot for each match — the one closest to kickoff
+    closing_subq = (
+        db.query(
+            SpreadsSnapshot.match_id,
+            SpreadsSnapshot.line,
+            SpreadsSnapshot.home_odds,
+            SpreadsSnapshot.away_odds,
+            func.row_number().over(
+                partition_by=SpreadsSnapshot.match_id,
+                order_by=SpreadsSnapshot.fetched_at.desc()
+            ).label('rn')
+        )
+        .filter(SpreadsSnapshot.match_id.in_(match_ids))
+        .subquery()
+    )
+    closing_spreads = {
+        row.match_id: row
+        for row in db.query(closing_subq).filter(closing_subq.c.rn == 1).all()
+    }
+
+    # Get the FIRST (opening) spreads snapshot for each match
+    opening_subq = (
+        db.query(
+            SpreadsSnapshot.match_id,
+            SpreadsSnapshot.line,
+            SpreadsSnapshot.home_odds,
+            SpreadsSnapshot.away_odds,
+            func.row_number().over(
+                partition_by=SpreadsSnapshot.match_id,
+                order_by=SpreadsSnapshot.fetched_at.asc()
+            ).label('rn')
+        )
+        .filter(SpreadsSnapshot.match_id.in_(match_ids))
+        .subquery()
+    )
+    opening_spreads = {
+        row.match_id: row
+        for row in db.query(opening_subq).filter(opening_subq.c.rn == 1).all()
+    }
+
+    result = []
+    for match_id, match in match_map.items():
+        closing = closing_spreads.get(match_id)
+        opening = opening_spreads.get(match_id)
+
+        # Only include matches that have spreads data
+        if not closing:
+            continue
+
+        result.append(ClosingLine(
+            match_id=match.id,
+            home_team=match.home_team,
+            away_team=match.away_team,
+            sport_key=match.sport_key,
+            league_name=match.league_name,
+            commence_time=match.commence_time,
+            handicap_line=closing.line,
+            home_odds=closing.home_odds,
+            away_odds=closing.away_odds,
+            opening_home_odds=opening.home_odds if opening else None,
+            opening_away_odds=opening.away_odds if opening else None,
+            opening_line=opening.line if opening else None,
+        ))
+
+    # Sort by commence_time descending (most recent first)
+    result.sort(key=lambda x: x.commence_time, reverse=True)
+
+    return result
 
 
 @router.get("/steam-moves", response_model=SteamMoveStats)

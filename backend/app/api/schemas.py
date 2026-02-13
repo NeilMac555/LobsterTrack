@@ -202,3 +202,22 @@ class MatchSpreadsResponse(BaseModel):
     """Spreads (Asian Handicap) data for a match"""
     match_id: str
     spreads_history: list[SpreadsPoint]
+
+
+class ClosingLine(BaseModel):
+    """Closing line snapshot for a completed/started match"""
+    match_id: str
+    home_team: str
+    away_team: str
+    sport_key: str
+    league_name: str
+    commence_time: datetime
+    handicap_line: Optional[float] = None
+    home_odds: Optional[float] = None
+    away_odds: Optional[float] = None
+    opening_home_odds: Optional[float] = None
+    opening_away_odds: Optional[float] = None
+    opening_line: Optional[float] = None
+
+    class Config:
+        from_attributes = True
