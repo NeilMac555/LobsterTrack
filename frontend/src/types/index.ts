@@ -148,14 +148,23 @@ export interface SteamMoveRecord {
   away_score: number | null;
 }
 
+export interface TeamSteamRanking {
+  team_name: string;
+  sport_key: string;
+  total_moves: number;
+  wins: number;
+  losses: number;
+  win_rate: number | null;
+}
+
 export interface SteamResultsData {
   total_moves: number;
   total_wins: number;
   total_losses: number;
-  pending: number;
   win_rate: number | null;
   avg_movement_percent: number | null;
   moves: SteamMoveRecord[];
+  team_rankings: TeamSteamRanking[];
 }
 
 export const LEAGUE_CONFIG: Record<string, { name: string; shortName: string; color: string }> = {

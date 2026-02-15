@@ -27,7 +27,8 @@ from .schemas import (
     MatchTotalsResponse,
     SyndicateMove,
     ClosingLine,
-    SteamResultsResponse
+    SteamResultsResponse,
+    TeamSteamRanking
 )
 
 # Simple admin password
@@ -957,25 +958,22 @@ async def get_steam_moves(db: Session = Depends(get_db)):
 async def get_steam_results(
     db: Session = Depends(get_db),
     league: Optional[str] = Query(None, description="Filter by sport_key"),
-    limit: int = Query(100, le=500, description="Number of moves to return")
+    limit: int = Query(200, le=500, description="Number of moves to return")
 ):
     """
-    Public endpoint: full steam move history with stats and results.
-    Shows every detected sharp money move with win/loss outcomes.
+    Public endpoint: completed steam move results with team rankings.
+    Only shows moves where results are known (no pending).
     """
-    # Base query
-    base_query = db.query(SteamMove)
+    # Base query — only completed results
+    base_query = db.query(SteamMove).filter(SteamMove.result_updated == True)
     if league:
         base_query = base_query.filter(SteamMove.sport_key == league)
 
-    # Stats
-    total_moves = base_query.count()
-    total_wins = base_query.filter(SteamMove.result_updated == True, SteamMove.won == True).count()
-    total_losses = base_query.filter(SteamMove.result_updated == True, SteamMove.won == False).count()
-    pending = base_query.filter(SteamMove.result_updated == False).count()
-
-    completed = total_wins + total_losses
-    win_rate = (total_wins / completed * 100) if completed > 0 else None
+    # Stats (completed only)
+    total_wins = base_query.filter(SteamMove.won == True).count()
+    total_losses = base_query.filter(SteamMove.won == False).count()
+    total_moves = total_wins + total_losses
+    win_rate = (total_wins / total_moves * 100) if total_moves > 0 else None
 
     avg_movement = (
         base_query
@@ -983,19 +981,58 @@ async def get_steam_results(
         .scalar()
     )
 
-    # All moves, most recent first
+    # Completed moves, most recent first
     moves = (
         base_query
-        .order_by(desc(SteamMove.detected_at))
+        .order_by(desc(SteamMove.match_commence_time))
         .limit(limit)
         .all()
     )
+
+    # === TEAM RANKINGS ===
+    # Count steam moves per team (across all completed results, ignoring league filter for rankings)
+    all_completed = db.query(SteamMove).filter(SteamMove.result_updated == True)
+    if league:
+        all_completed = all_completed.filter(SteamMove.sport_key == league)
+
+    all_moves_for_ranking = all_completed.all()
+
+    team_stats: dict[str, dict] = {}
+    for m in all_moves_for_ranking:
+        key = m.team_name
+        if key not in team_stats:
+            team_stats[key] = {
+                'team_name': m.team_name,
+                'sport_key': m.sport_key,
+                'total': 0,
+                'wins': 0,
+                'losses': 0,
+            }
+        team_stats[key]['total'] += 1
+        if m.won:
+            team_stats[key]['wins'] += 1
+        else:
+            team_stats[key]['losses'] += 1
+
+    # Sort by total moves descending
+    ranked_teams = sorted(team_stats.values(), key=lambda x: x['total'], reverse=True)
+
+    team_rankings = [
+        TeamSteamRanking(
+            team_name=t['team_name'],
+            sport_key=t['sport_key'],
+            total_moves=t['total'],
+            wins=t['wins'],
+            losses=t['losses'],
+            win_rate=round(t['wins'] / t['total'] * 100, 1) if t['total'] > 0 else None,
+        )
+        for t in ranked_teams
+    ]
 
     return SteamResultsResponse(
         total_moves=total_moves,
         total_wins=total_wins,
         total_losses=total_losses,
-        pending=pending,
         win_rate=round(win_rate, 1) if win_rate else None,
         avg_movement_percent=round(avg_movement, 1) if avg_movement else None,
         moves=[
@@ -1018,7 +1055,8 @@ async def get_steam_results(
                 away_score=m.away_score
             )
             for m in moves
-        ]
+        ],
+        team_rankings=team_rankings,
     )
 
 

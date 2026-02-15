@@ -107,15 +107,25 @@ class SteamMoveStats(BaseModel):
     sample_moves: list[SteamMoveResponse]
 
 
+class TeamSteamRanking(BaseModel):
+    """Team ranked by steam move frequency"""
+    team_name: str
+    sport_key: str
+    total_moves: int
+    wins: int
+    losses: int
+    win_rate: Optional[float] = None
+
+
 class SteamResultsResponse(BaseModel):
     """Public steam results with stats and full move history"""
     total_moves: int
     total_wins: int
     total_losses: int
-    pending: int
     win_rate: Optional[float] = None
     avg_movement_percent: Optional[float] = None
     moves: list[SteamMoveResponse]
+    team_rankings: list[TeamSteamRanking]
 
 
 class BiggestMover(BaseModel):
