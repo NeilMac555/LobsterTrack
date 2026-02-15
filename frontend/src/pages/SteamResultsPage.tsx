@@ -1,36 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
-import { format } from 'date-fns';
+import { useSearchParams } from 'react-router-dom';
 import { getSteamResults } from '../api';
-import type { SteamResultsData, SteamMoveRecord } from '../types';
+import type { SteamResultsData } from '../types';
 import { LEAGUE_CONFIG } from '../types';
 import LeagueLogo from '../components/LeagueLogo';
-
-function ResultBadge({ move }: { move: SteamMoveRecord }) {
-  if (move.won) {
-    return (
-      <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-emerald-500/20 text-emerald-400">
-        W
-      </span>
-    );
-  }
-  return (
-    <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-red-500/20 text-red-400">
-      L
-    </span>
-  );
-}
-
-function OutcomeBadge({ outcome }: { outcome: string }) {
-  const label = outcome === 'home' ? 'Home' : 'Away';
-  const color = outcome === 'home' ? 'bg-emerald-500/20 text-emerald-400' :
-                'bg-red-500/20 text-red-400';
-  return (
-    <span className={`px-2 py-0.5 rounded-md text-xs font-bold ${color}`}>
-      {label}
-    </span>
-  );
-}
 
 export default function SteamResultsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -191,7 +164,7 @@ export default function SteamResultsPage() {
         >
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-700/50 bg-gradient-to-r from-amber-500/10 to-transparent">
             <h2 className="text-lg sm:text-xl font-bold text-white">Most Steamed Teams</h2>
-            <p className="text-slate-400 text-xs sm:text-sm mt-0.5">Ranked by sharp money frequency</p>
+            <p className="text-slate-400 text-xs sm:text-sm mt-0.5">Top 20 &mdash; ranked by sharp money frequency</p>
           </div>
 
           {/* Desktop Table */}
@@ -223,7 +196,7 @@ export default function SteamResultsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/50">
-                {data.team_rankings.map((team, index) => {
+                {data.team_rankings.slice(0, 20).map((team, index) => {
                   const leagueInfo = LEAGUE_CONFIG[team.sport_key];
                   return (
                     <tr key={team.team_name} className="hover:bg-slate-700/20 transition-colors duration-150">
@@ -273,7 +246,7 @@ export default function SteamResultsPage() {
 
           {/* Mobile Cards */}
           <div className="md:hidden divide-y divide-slate-700/50">
-            {data.team_rankings.map((team, index) => {
+            {data.team_rankings.slice(0, 20).map((team, index) => {
               const leagueInfo = LEAGUE_CONFIG[team.sport_key];
               return (
                 <div key={team.team_name} className="p-4">
@@ -317,8 +290,8 @@ export default function SteamResultsPage() {
         </div>
       )}
 
-      {/* Results History */}
-      {data.moves.length === 0 ? (
+      {/* Empty state when no data at all */}
+      {data.team_rankings.length === 0 && (
         <div className="bg-slate-800/50 rounded-2xl border border-slate-700/50 p-8 sm:p-16 text-center">
           <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-amber-400/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -327,167 +300,8 @@ export default function SteamResultsPage() {
           </div>
           <p className="text-slate-400 text-base sm:text-lg">No completed steam moves yet</p>
           <p className="text-slate-500 text-sm mt-2">
-            Results will appear here once matches with detected steam have finished
+            Rankings will appear here once matches with detected steam have finished
           </p>
-        </div>
-      ) : (
-        <div className="bg-slate-800/80 rounded-2xl border border-slate-700/50 overflow-hidden card-shadow">
-          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-700/50 flex items-center justify-between">
-            <h2 className="text-lg sm:text-xl font-bold text-white">Match History</h2>
-            <span className="text-[10px] sm:text-xs text-slate-500 font-medium">
-              {data.moves.length} result{data.moves.length !== 1 ? 's' : ''}
-            </span>
-          </div>
-
-          {/* Desktop Table */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-slate-700/30">
-                  <th className="px-4 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider w-16">
-                    Result
-                  </th>
-                  <th className="px-4 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    Team Backed
-                  </th>
-                  <th className="px-3 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    League
-                  </th>
-                  <th className="px-3 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-3 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    Side
-                  </th>
-                  <th className="px-3 py-3.5 text-center text-xs font-semibold text-amber-400/80 uppercase tracking-wider">
-                    Move %
-                  </th>
-                  <th className="px-3 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    Odds
-                  </th>
-                  <th className="px-3 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    Score
-                  </th>
-                  <th className="px-3 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    Pre-KO
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-700/50">
-                {data.moves.map((move) => {
-                  const matchDate = new Date(move.match_commence_time);
-                  const leagueInfo = LEAGUE_CONFIG[move.sport_key];
-
-                  return (
-                    <tr key={move.id} className="hover:bg-slate-700/20 transition-colors duration-150">
-                      <td className="px-4 py-3.5 text-center">
-                        <ResultBadge move={move} />
-                      </td>
-                      <td className="px-4 py-3.5">
-                        <Link
-                          to={`/match/${move.match_id}`}
-                          className="text-white hover:text-amber-400 transition-colors font-semibold text-sm"
-                        >
-                          {move.team_name}
-                        </Link>
-                      </td>
-                      <td className="px-3 py-3.5 text-center">
-                        <div className="flex items-center justify-center gap-1.5">
-                          <LeagueLogo sportKey={move.sport_key} size="sm" />
-                          <span className="text-slate-400 text-xs hidden lg:inline">
-                            {leagueInfo?.shortName || ''}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-3 py-3.5 text-center">
-                        <span className="text-slate-400 text-xs">
-                          {format(matchDate, 'MMM d')}
-                        </span>
-                      </td>
-                      <td className="px-3 py-3.5 text-center">
-                        <OutcomeBadge outcome={move.outcome} />
-                      </td>
-                      <td className="px-3 py-3.5 text-center">
-                        <span className="font-mono font-bold text-emerald-400">
-                          {Math.abs(move.movement_percent).toFixed(1)}%
-                        </span>
-                      </td>
-                      <td className="px-3 py-3.5 text-center">
-                        <div className="text-xs">
-                          <span className="text-slate-500">{move.opening_odds.toFixed(2)}</span>
-                          <span className="text-slate-600 mx-1">&rarr;</span>
-                          <span className="font-mono font-bold text-white">{move.current_odds.toFixed(2)}</span>
-                        </div>
-                      </td>
-                      <td className="px-3 py-3.5 text-center">
-                        {move.home_score !== null && move.away_score !== null ? (
-                          <span className="font-mono font-bold text-white text-sm">
-                            {move.home_score} - {move.away_score}
-                          </span>
-                        ) : (
-                          <span className="text-slate-600 text-xs">-</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-3.5 text-center">
-                        <span className="text-slate-500 text-xs">
-                          {move.minutes_before_kickoff}m
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile Cards */}
-          <div className="md:hidden divide-y divide-slate-700/50">
-            {data.moves.map((move) => {
-              const matchDate = new Date(move.match_commence_time);
-              const leagueInfo = LEAGUE_CONFIG[move.sport_key];
-
-              return (
-                <Link
-                  key={move.id}
-                  to={`/match/${move.match_id}`}
-                  className="block p-4 hover:bg-slate-700/20 active:bg-slate-700/30 transition-colors"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <LeagueLogo sportKey={move.sport_key} size="sm" />
-                        <span className="text-xs text-slate-500">{leagueInfo?.shortName}</span>
-                        <span className="text-xs text-slate-600">&middot;</span>
-                        <span className="text-xs text-slate-500">{format(matchDate, 'MMM d')}</span>
-                        <span className="text-xs text-slate-600">&middot;</span>
-                        <span className="text-xs text-slate-500">{move.minutes_before_kickoff}m pre-KO</span>
-                      </div>
-                      <div className="text-white font-semibold text-sm mb-1.5">
-                        {move.team_name}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <OutcomeBadge outcome={move.outcome} />
-                        <span className="text-xs text-slate-500">
-                          {move.opening_odds.toFixed(2)} &rarr; <span className="text-white font-semibold">{move.current_odds.toFixed(2)}</span>
-                        </span>
-                      </div>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <ResultBadge move={move} />
-                      <div className="font-mono font-bold text-emerald-400 text-sm mt-1.5">
-                        {move.movement_percent.toFixed(1)}%
-                      </div>
-                      {move.home_score !== null && move.away_score !== null && (
-                        <div className="font-mono text-white text-xs mt-0.5">
-                          {move.home_score} - {move.away_score}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
         </div>
       )}
     </div>
