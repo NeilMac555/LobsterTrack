@@ -963,6 +963,7 @@ async def get_steam_results(
     """
     Public endpoint: completed steam move results with team rankings.
     Only shows odds that SHORTENED (sharp money backing) — no draws, no drifters.
+    Deduplicates by match: each match counts only once per team (using the biggest move).
     """
     # Base query — completed results, odds shortened (negative movement), no draws
     base_query = (
@@ -974,41 +975,32 @@ async def get_steam_results(
     if league:
         base_query = base_query.filter(SteamMove.sport_key == league)
 
-    # Stats (completed only)
-    total_wins = base_query.filter(SteamMove.won == True).count()
-    total_losses = base_query.filter(SteamMove.won == False).count()
+    all_moves = base_query.order_by(desc(SteamMove.match_commence_time)).all()
+
+    # Deduplicate: keep only the biggest move per (team_name, match_id)
+    # This ensures each match counts once per team
+    best_per_match: dict[tuple[str, str], SteamMove] = {}
+    for m in all_moves:
+        key = (m.team_name, m.match_id)
+        if key not in best_per_match or abs(m.movement_percent) > abs(best_per_match[key].movement_percent):
+            best_per_match[key] = m
+
+    deduped_moves = sorted(best_per_match.values(), key=lambda x: x.match_commence_time, reverse=True)
+
+    # Stats from deduplicated moves (one result per match per team)
+    total_wins = sum(1 for m in deduped_moves if m.won)
+    total_losses = sum(1 for m in deduped_moves if not m.won)
     total_moves = total_wins + total_losses
     win_rate = (total_wins / total_moves * 100) if total_moves > 0 else None
 
     avg_movement = (
-        base_query
-        .with_entities(func.avg(func.abs(SteamMove.movement_percent)))
-        .scalar()
+        sum(abs(m.movement_percent) for m in deduped_moves) / len(deduped_moves)
+        if deduped_moves else None
     )
 
-    # Completed moves, most recent first
-    moves = (
-        base_query
-        .order_by(desc(SteamMove.match_commence_time))
-        .limit(limit)
-        .all()
-    )
-
-    # === TEAM RANKINGS ===
-    # Only teams backed by sharps (shortened odds, no draws)
-    all_completed = (
-        db.query(SteamMove)
-        .filter(SteamMove.result_updated == True)
-        .filter(SteamMove.outcome != 'draw')
-        .filter(SteamMove.movement_percent < 0)
-    )
-    if league:
-        all_completed = all_completed.filter(SteamMove.sport_key == league)
-
-    all_moves_for_ranking = all_completed.all()
-
+    # === TEAM RANKINGS (from deduplicated moves) ===
     team_stats: dict[str, dict] = {}
-    for m in all_moves_for_ranking:
+    for m in deduped_moves:
         key = m.team_name
         if key not in team_stats:
             team_stats[key] = {
@@ -1024,7 +1016,7 @@ async def get_steam_results(
         else:
             team_stats[key]['losses'] += 1
 
-    # Sort by total moves descending
+    # Sort by total matches with steam descending
     ranked_teams = sorted(team_stats.values(), key=lambda x: x['total'], reverse=True)
 
     team_rankings = [
@@ -1038,6 +1030,9 @@ async def get_steam_results(
         )
         for t in ranked_teams
     ]
+
+    # Return limited moves for the response
+    limited_moves = deduped_moves[:limit]
 
     return SteamResultsResponse(
         total_moves=total_moves,
@@ -1064,7 +1059,7 @@ async def get_steam_results(
                 home_score=m.home_score,
                 away_score=m.away_score
             )
-            for m in moves
+            for m in limited_moves
         ],
         team_rankings=team_rankings,
     )

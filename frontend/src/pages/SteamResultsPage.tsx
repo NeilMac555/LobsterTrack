@@ -82,7 +82,7 @@ export default function SteamResultsPage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
         <div className="bg-slate-800/80 rounded-xl border border-slate-700/50 p-4 text-center">
           <div className="text-2xl sm:text-3xl font-bold text-white">{data.total_moves}</div>
-          <div className="text-xs sm:text-sm text-slate-400 mt-1">Completed</div>
+          <div className="text-xs sm:text-sm text-slate-400 mt-1">Matches</div>
         </div>
         <div className="bg-slate-800/80 rounded-xl border border-emerald-500/30 p-4 text-center">
           <div className="text-2xl sm:text-3xl font-bold text-emerald-400">
