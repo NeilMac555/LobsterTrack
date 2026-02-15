@@ -726,7 +726,7 @@ async def get_closing_lines(
 ):
     """
     Get closing lines for matches that have already started (last 48 hours).
-    Shows the final Asian Handicap odds snapshot before kickoff.
+    Shows 1x2 closing odds for all matches, plus Asian Handicap when available.
     """
     now = datetime.utcnow()
     cutoff = now - timedelta(hours=48)
@@ -750,53 +750,101 @@ async def get_closing_lines(
     match_ids = [m.id for m in matches]
     match_map = {m.id: m for m in matches}
 
-    # Get the LAST (closing) spreads snapshot for each match — the one closest to kickoff
-    closing_subq = (
+    # === 1X2 CLOSING ODDS (last snapshot before kickoff) ===
+    closing_1x2_subq = (
         db.query(
-            SpreadsSnapshot.match_id,
-            SpreadsSnapshot.line,
-            SpreadsSnapshot.home_odds,
-            SpreadsSnapshot.away_odds,
+            OddsSnapshot.match_id,
+            OddsSnapshot.home_odds,
+            OddsSnapshot.draw_odds,
+            OddsSnapshot.away_odds,
             func.row_number().over(
-                partition_by=SpreadsSnapshot.match_id,
-                order_by=SpreadsSnapshot.fetched_at.desc()
+                partition_by=OddsSnapshot.match_id,
+                order_by=OddsSnapshot.fetched_at.desc()
             ).label('rn')
         )
-        .filter(SpreadsSnapshot.match_id.in_(match_ids))
+        .filter(OddsSnapshot.match_id.in_(match_ids))
         .subquery()
     )
-    closing_spreads = {
+    closing_1x2 = {
         row.match_id: row
-        for row in db.query(closing_subq).filter(closing_subq.c.rn == 1).all()
+        for row in db.query(closing_1x2_subq).filter(closing_1x2_subq.c.rn == 1).all()
     }
 
-    # Get the FIRST (opening) spreads snapshot for each match
-    opening_subq = (
+    # === 1X2 OPENING ODDS (first snapshot) ===
+    opening_1x2_subq = (
         db.query(
-            SpreadsSnapshot.match_id,
-            SpreadsSnapshot.line,
-            SpreadsSnapshot.home_odds,
-            SpreadsSnapshot.away_odds,
+            OddsSnapshot.match_id,
+            OddsSnapshot.home_odds,
+            OddsSnapshot.draw_odds,
+            OddsSnapshot.away_odds,
             func.row_number().over(
-                partition_by=SpreadsSnapshot.match_id,
-                order_by=SpreadsSnapshot.fetched_at.asc()
+                partition_by=OddsSnapshot.match_id,
+                order_by=OddsSnapshot.fetched_at.asc()
             ).label('rn')
         )
-        .filter(SpreadsSnapshot.match_id.in_(match_ids))
+        .filter(OddsSnapshot.match_id.in_(match_ids))
         .subquery()
     )
-    opening_spreads = {
+    opening_1x2 = {
         row.match_id: row
-        for row in db.query(opening_subq).filter(opening_subq.c.rn == 1).all()
+        for row in db.query(opening_1x2_subq).filter(opening_1x2_subq.c.rn == 1).all()
     }
+
+    # === ASIAN HANDICAP CLOSING ODDS (last snapshot before kickoff) ===
+    closing_spreads = {}
+    opening_spreads = {}
+    try:
+        closing_ah_subq = (
+            db.query(
+                SpreadsSnapshot.match_id,
+                SpreadsSnapshot.line,
+                SpreadsSnapshot.home_odds,
+                SpreadsSnapshot.away_odds,
+                func.row_number().over(
+                    partition_by=SpreadsSnapshot.match_id,
+                    order_by=SpreadsSnapshot.fetched_at.desc()
+                ).label('rn')
+            )
+            .filter(SpreadsSnapshot.match_id.in_(match_ids))
+            .subquery()
+        )
+        closing_spreads = {
+            row.match_id: row
+            for row in db.query(closing_ah_subq).filter(closing_ah_subq.c.rn == 1).all()
+        }
+
+        # === ASIAN HANDICAP OPENING ODDS ===
+        opening_ah_subq = (
+            db.query(
+                SpreadsSnapshot.match_id,
+                SpreadsSnapshot.line,
+                SpreadsSnapshot.home_odds,
+                SpreadsSnapshot.away_odds,
+                func.row_number().over(
+                    partition_by=SpreadsSnapshot.match_id,
+                    order_by=SpreadsSnapshot.fetched_at.asc()
+                ).label('rn')
+            )
+            .filter(SpreadsSnapshot.match_id.in_(match_ids))
+            .subquery()
+        )
+        opening_spreads = {
+            row.match_id: row
+            for row in db.query(opening_ah_subq).filter(opening_ah_subq.c.rn == 1).all()
+        }
+    except Exception:
+        # spreads_snapshots table may not exist yet
+        pass
 
     result = []
     for match_id, match in match_map.items():
-        closing = closing_spreads.get(match_id)
-        opening = opening_spreads.get(match_id)
+        cl_1x2 = closing_1x2.get(match_id)
+        op_1x2 = opening_1x2.get(match_id)
+        cl_ah = closing_spreads.get(match_id)
+        op_ah = opening_spreads.get(match_id)
 
-        # Only include matches that have spreads data
-        if not closing:
+        # Need at least 1x2 closing data
+        if not cl_1x2:
             continue
 
         result.append(ClosingLine(
@@ -806,12 +854,18 @@ async def get_closing_lines(
             sport_key=match.sport_key,
             league_name=match.league_name,
             commence_time=match.commence_time,
-            handicap_line=closing.line,
-            home_odds=closing.home_odds,
-            away_odds=closing.away_odds,
-            opening_home_odds=opening.home_odds if opening else None,
-            opening_away_odds=opening.away_odds if opening else None,
-            opening_line=opening.line if opening else None,
+            closing_home_1x2=cl_1x2.home_odds,
+            closing_draw_1x2=cl_1x2.draw_odds,
+            closing_away_1x2=cl_1x2.away_odds,
+            opening_home_1x2=op_1x2.home_odds if op_1x2 else None,
+            opening_draw_1x2=op_1x2.draw_odds if op_1x2 else None,
+            opening_away_1x2=op_1x2.away_odds if op_1x2 else None,
+            handicap_line=cl_ah.line if cl_ah else None,
+            closing_home_ah=cl_ah.home_odds if cl_ah else None,
+            closing_away_ah=cl_ah.away_odds if cl_ah else None,
+            opening_home_ah=op_ah.home_odds if op_ah else None,
+            opening_away_ah=op_ah.away_odds if op_ah else None,
+            opening_line=op_ah.line if op_ah else None,
         ))
 
     # Sort by commence_time descending (most recent first)

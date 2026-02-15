@@ -6,6 +6,17 @@ import type { ClosingLine } from '../types';
 import { LEAGUE_CONFIG } from '../types';
 import LeagueLogo from '../components/LeagueLogo';
 
+function OddsMovement({ opening, closing }: { opening: number | null; closing: number | null }) {
+  if (!opening || !closing || opening === closing) return null;
+  const pct = ((closing - opening) / opening) * 100;
+  const isDown = pct < 0;
+  return (
+    <span className={`text-[10px] font-medium ${isDown ? 'text-emerald-500' : 'text-red-500'}`}>
+      {isDown ? '\u2193' : '\u2191'}{Math.abs(pct).toFixed(1)}%
+    </span>
+  );
+}
+
 export default function ClosingLinesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const league = searchParams.get('league');
@@ -37,12 +48,6 @@ export default function ClosingLinesPage() {
   function formatLine(line: number | null): string {
     if (line === null) return '-';
     return line > 0 ? `+${line}` : String(line);
-  }
-
-  function getLineMovement(opening: number | null, closing: number | null): { moved: boolean; label: string } {
-    if (opening === null || closing === null) return { moved: false, label: '' };
-    if (opening === closing) return { moved: false, label: '' };
-    return { moved: true, label: `${formatLine(opening)} -> ${formatLine(closing)}` };
   }
 
   if (loading) {
@@ -82,7 +87,7 @@ export default function ClosingLinesPage() {
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-white">Closing Lines</h1>
             <p className="text-slate-400 text-sm sm:text-base mt-0.5">
-              Final Asian Handicap odds before kickoff — last 48 hours
+              Final Pinnacle odds before kickoff &mdash; last 48 hours
             </p>
           </div>
         </div>
@@ -127,7 +132,7 @@ export default function ClosingLinesPage() {
           </div>
           <p className="text-slate-400 text-base sm:text-lg">No closing lines available</p>
           <p className="text-slate-500 text-sm mt-2">
-            Matches from the last 48 hours with Asian Handicap data will appear here
+            Matches from the last 48 hours will appear here with their final pre-kickoff odds
           </p>
         </div>
       ) : (
@@ -142,7 +147,7 @@ export default function ClosingLinesPage() {
                 {closingLines.length} match{closingLines.length !== 1 ? 'es' : ''}
               </span>
             </div>
-            <span className="text-[10px] sm:text-xs text-purple-400/80 font-medium hidden sm:block">Asian Handicap closing odds</span>
+            <span className="text-[10px] sm:text-xs text-purple-400/80 font-medium hidden sm:block">Final pre-kickoff odds snapshot</span>
           </div>
 
           {/* Desktop Table */}
@@ -153,23 +158,29 @@ export default function ClosingLinesPage() {
                   <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
                     Match
                   </th>
-                  <th className="px-4 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  <th className="px-3 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
                     League
                   </th>
-                  <th className="px-4 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  <th className="px-3 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
                     Kickoff
                   </th>
-                  <th className="px-4 py-3.5 text-center text-xs font-semibold text-purple-400/80 uppercase tracking-wider">
-                    Line
+                  <th className="px-3 py-3.5 text-center text-xs font-semibold text-emerald-400/80 uppercase tracking-wider">
+                    1
                   </th>
-                  <th className="px-4 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    Home
+                  <th className="px-3 py-3.5 text-center text-xs font-semibold text-yellow-400/80 uppercase tracking-wider">
+                    X
                   </th>
-                  <th className="px-4 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    Away
+                  <th className="px-3 py-3.5 text-center text-xs font-semibold text-red-400/80 uppercase tracking-wider">
+                    2
                   </th>
-                  <th className="px-4 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    Line Move
+                  <th className="px-3 py-3.5 text-center text-xs font-semibold text-purple-400/80 uppercase tracking-wider">
+                    AH Line
+                  </th>
+                  <th className="px-3 py-3.5 text-center text-xs font-semibold text-purple-400/80 uppercase tracking-wider">
+                    AH H
+                  </th>
+                  <th className="px-3 py-3.5 text-center text-xs font-semibold text-purple-400/80 uppercase tracking-wider">
+                    AH A
                   </th>
                 </tr>
               </thead>
@@ -177,7 +188,6 @@ export default function ClosingLinesPage() {
                 {closingLines.map((cl) => {
                   const matchDate = new Date(cl.commence_time);
                   const leagueInfo = LEAGUE_CONFIG[cl.sport_key];
-                  const lineMove = getLineMovement(cl.opening_line, cl.handicap_line);
 
                   return (
                     <tr key={cl.match_id} className="hover:bg-slate-700/20 transition-colors duration-150">
@@ -191,7 +201,7 @@ export default function ClosingLinesPage() {
                           </div>
                         </Link>
                       </td>
-                      <td className="px-4 py-4 text-center">
+                      <td className="px-3 py-4 text-center">
                         <div className="flex items-center justify-center gap-2">
                           <LeagueLogo sportKey={cl.sport_key} size="sm" />
                           <span className="text-slate-400 text-sm hidden lg:inline font-medium">
@@ -199,34 +209,61 @@ export default function ClosingLinesPage() {
                           </span>
                         </div>
                       </td>
-                      <td className="px-4 py-4 text-center">
+                      <td className="px-3 py-4 text-center">
                         <span className="text-slate-400 text-sm">
                           {format(matchDate, 'MMM d, HH:mm')}
                         </span>
                       </td>
-                      <td className="px-4 py-4 text-center">
-                        <span className="px-2.5 py-1 rounded-lg text-sm font-bold bg-purple-500/20 text-purple-400">
-                          {formatLine(cl.handicap_line)}
-                        </span>
+                      {/* 1X2 Closing Odds */}
+                      <td className="px-3 py-4 text-center">
+                        <div className="flex flex-col items-center">
+                          <span className="font-mono font-bold text-emerald-400">
+                            {cl.closing_home_1x2?.toFixed(2) || '-'}
+                          </span>
+                          <OddsMovement opening={cl.opening_home_1x2} closing={cl.closing_home_1x2} />
+                        </div>
                       </td>
-                      <td className="px-4 py-4 text-center">
-                        <span className="font-mono font-bold text-emerald-400">
-                          {cl.home_odds?.toFixed(2) || '-'}
-                        </span>
+                      <td className="px-3 py-4 text-center">
+                        <div className="flex flex-col items-center">
+                          <span className="font-mono font-bold text-yellow-400">
+                            {cl.closing_draw_1x2?.toFixed(2) || '-'}
+                          </span>
+                          <OddsMovement opening={cl.opening_draw_1x2} closing={cl.closing_draw_1x2} />
+                        </div>
                       </td>
-                      <td className="px-4 py-4 text-center">
-                        <span className="font-mono font-bold text-red-400">
-                          {cl.away_odds?.toFixed(2) || '-'}
-                        </span>
+                      <td className="px-3 py-4 text-center">
+                        <div className="flex flex-col items-center">
+                          <span className="font-mono font-bold text-red-400">
+                            {cl.closing_away_1x2?.toFixed(2) || '-'}
+                          </span>
+                          <OddsMovement opening={cl.opening_away_1x2} closing={cl.closing_away_1x2} />
+                        </div>
                       </td>
-                      <td className="px-4 py-4 text-center">
-                        {lineMove.moved ? (
-                          <span className="text-xs text-yellow-400 font-medium">
-                            {lineMove.label}
+                      {/* Asian Handicap */}
+                      <td className="px-3 py-4 text-center">
+                        {cl.handicap_line !== null ? (
+                          <span className="px-2.5 py-1 rounded-lg text-sm font-bold bg-purple-500/20 text-purple-400">
+                            {formatLine(cl.handicap_line)}
                           </span>
                         ) : (
-                          <span className="text-xs text-slate-600">-</span>
+                          <span className="text-slate-600 text-sm">-</span>
                         )}
+                      </td>
+                      <td className="px-3 py-4 text-center">
+                        <div className="flex flex-col items-center">
+                          <span className="font-mono font-bold text-blue-400">
+                            {cl.closing_home_ah?.toFixed(2) || '-'}
+                          </span>
+                          <OddsMovement opening={cl.opening_home_ah} closing={cl.closing_home_ah} />
+                        </div>
+                      </td>
+                      <td className="px-3 py-4 text-center">
+                        <div className="flex flex-col items-center">
+                          <span className="font-mono font-bold text-blue-400">
+                            {cl.closing_away_ah?.toFixed(2) || '-'}
+                          </span>
+                          <OddsMovement opening={cl.opening_away_ah} closing={cl.closing_away_ah} />
+                        </div>
                       </td>
                     </tr>
                   );
@@ -240,7 +277,6 @@ export default function ClosingLinesPage() {
             {closingLines.map((cl) => {
               const matchDate = new Date(cl.commence_time);
               const leagueInfo = LEAGUE_CONFIG[cl.sport_key];
-              const lineMove = getLineMovement(cl.opening_line, cl.handicap_line);
 
               return (
                 <Link
@@ -248,39 +284,72 @@ export default function ClosingLinesPage() {
                   to={`/match/${cl.match_id}`}
                   className="block p-4 hover:bg-slate-700/20 active:bg-slate-700/30 transition-colors"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <LeagueLogo sportKey={cl.sport_key} size="sm" />
-                        <span className="text-xs text-slate-500">{leagueInfo?.shortName}</span>
-                        <span className="text-xs text-slate-600">-</span>
-                        <span className="text-xs text-slate-500">{format(matchDate, 'MMM d, HH:mm')}</span>
-                      </div>
-                      <div className="text-white font-semibold text-sm truncate">
-                        {cl.home_team} vs {cl.away_team}
-                      </div>
-                      {lineMove.moved && (
-                        <div className="text-xs text-yellow-400 mt-1">
-                          Line: {lineMove.label}
+                  <div className="flex items-center gap-2 mb-2">
+                    <LeagueLogo sportKey={cl.sport_key} size="sm" />
+                    <span className="text-xs text-slate-500">{leagueInfo?.shortName}</span>
+                    <span className="text-xs text-slate-600">&middot;</span>
+                    <span className="text-xs text-slate-500">{format(matchDate, 'MMM d, HH:mm')}</span>
+                  </div>
+                  <div className="text-white font-semibold text-sm mb-3">
+                    {cl.home_team} vs {cl.away_team}
+                  </div>
+
+                  {/* 1X2 Row */}
+                  <div className="flex items-center gap-1 mb-2">
+                    <span className="text-[10px] text-slate-500 font-medium w-8">1X2</span>
+                    <div className="flex-1 grid grid-cols-3 gap-2">
+                      <div className="text-center bg-slate-700/40 rounded-lg py-1.5 px-1">
+                        <div className="text-[10px] text-slate-500 mb-0.5">1</div>
+                        <div className="font-mono font-bold text-emerald-400 text-sm">
+                          {cl.closing_home_1x2?.toFixed(2) || '-'}
                         </div>
-                      )}
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <div className="px-2.5 py-1 rounded-lg text-sm font-bold bg-purple-500/20 text-purple-400 mb-1">
-                        {formatLine(cl.handicap_line)}
+                        <OddsMovement opening={cl.opening_home_1x2} closing={cl.closing_home_1x2} />
                       </div>
-                      <div className="text-xs space-y-0.5">
-                        <div>
-                          <span className="text-slate-500">H </span>
-                          <span className="font-mono font-semibold text-emerald-400">{cl.home_odds?.toFixed(2) || '-'}</span>
+                      <div className="text-center bg-slate-700/40 rounded-lg py-1.5 px-1">
+                        <div className="text-[10px] text-slate-500 mb-0.5">X</div>
+                        <div className="font-mono font-bold text-yellow-400 text-sm">
+                          {cl.closing_draw_1x2?.toFixed(2) || '-'}
                         </div>
-                        <div>
-                          <span className="text-slate-500">A </span>
-                          <span className="font-mono font-semibold text-red-400">{cl.away_odds?.toFixed(2) || '-'}</span>
+                        <OddsMovement opening={cl.opening_draw_1x2} closing={cl.closing_draw_1x2} />
+                      </div>
+                      <div className="text-center bg-slate-700/40 rounded-lg py-1.5 px-1">
+                        <div className="text-[10px] text-slate-500 mb-0.5">2</div>
+                        <div className="font-mono font-bold text-red-400 text-sm">
+                          {cl.closing_away_1x2?.toFixed(2) || '-'}
                         </div>
+                        <OddsMovement opening={cl.opening_away_1x2} closing={cl.closing_away_1x2} />
                       </div>
                     </div>
                   </div>
+
+                  {/* AH Row */}
+                  {cl.handicap_line !== null && (
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] text-slate-500 font-medium w-8">AH</span>
+                      <div className="flex-1 grid grid-cols-3 gap-2">
+                        <div className="text-center bg-purple-500/10 rounded-lg py-1.5 px-1 col-span-1">
+                          <div className="text-[10px] text-purple-400/60 mb-0.5">Line</div>
+                          <div className="font-mono font-bold text-purple-400 text-sm">
+                            {formatLine(cl.handicap_line)}
+                          </div>
+                        </div>
+                        <div className="text-center bg-slate-700/40 rounded-lg py-1.5 px-1">
+                          <div className="text-[10px] text-slate-500 mb-0.5">H</div>
+                          <div className="font-mono font-bold text-blue-400 text-sm">
+                            {cl.closing_home_ah?.toFixed(2) || '-'}
+                          </div>
+                          <OddsMovement opening={cl.opening_home_ah} closing={cl.closing_home_ah} />
+                        </div>
+                        <div className="text-center bg-slate-700/40 rounded-lg py-1.5 px-1">
+                          <div className="text-[10px] text-slate-500 mb-0.5">A</div>
+                          <div className="font-mono font-bold text-blue-400 text-sm">
+                            {cl.closing_away_ah?.toFixed(2) || '-'}
+                          </div>
+                          <OddsMovement opening={cl.opening_away_ah} closing={cl.closing_away_ah} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </Link>
               );
             })}

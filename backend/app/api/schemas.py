@@ -212,11 +212,19 @@ class ClosingLine(BaseModel):
     sport_key: str
     league_name: str
     commence_time: datetime
+    # 1x2 closing odds
+    closing_home_1x2: Optional[float] = None
+    closing_draw_1x2: Optional[float] = None
+    closing_away_1x2: Optional[float] = None
+    opening_home_1x2: Optional[float] = None
+    opening_draw_1x2: Optional[float] = None
+    opening_away_1x2: Optional[float] = None
+    # Asian Handicap closing odds
     handicap_line: Optional[float] = None
-    home_odds: Optional[float] = None
-    away_odds: Optional[float] = None
-    opening_home_odds: Optional[float] = None
-    opening_away_odds: Optional[float] = None
+    closing_home_ah: Optional[float] = None
+    closing_away_ah: Optional[float] = None
+    opening_home_ah: Optional[float] = None
+    opening_away_ah: Optional[float] = None
     opening_line: Optional[float] = None
 
     class Config:
