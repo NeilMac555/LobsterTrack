@@ -120,13 +120,6 @@ export interface ClosingLine {
   opening_home_1x2: number | null;
   opening_draw_1x2: number | null;
   opening_away_1x2: number | null;
-  // Asian Handicap closing odds
-  handicap_line: number | null;
-  closing_home_ah: number | null;
-  closing_away_ah: number | null;
-  opening_home_ah: number | null;
-  opening_away_ah: number | null;
-  opening_line: number | null;
 }
 
 export interface SteamMoveRecord {

@@ -728,7 +728,7 @@ async def get_closing_lines(
 ):
     """
     Get closing lines for matches that have already started (last 48 hours).
-    Shows 1x2 closing odds for all matches, plus Asian Handicap when available.
+    Shows 1x2 closing odds with opening vs closing comparison.
     """
     now = datetime.utcnow()
     cutoff = now - timedelta(hours=48)
@@ -792,58 +792,10 @@ async def get_closing_lines(
         for row in db.query(opening_1x2_subq).filter(opening_1x2_subq.c.rn == 1).all()
     }
 
-    # === ASIAN HANDICAP CLOSING ODDS (last snapshot before kickoff) ===
-    closing_spreads = {}
-    opening_spreads = {}
-    try:
-        closing_ah_subq = (
-            db.query(
-                SpreadsSnapshot.match_id,
-                SpreadsSnapshot.line,
-                SpreadsSnapshot.home_odds,
-                SpreadsSnapshot.away_odds,
-                func.row_number().over(
-                    partition_by=SpreadsSnapshot.match_id,
-                    order_by=SpreadsSnapshot.fetched_at.desc()
-                ).label('rn')
-            )
-            .filter(SpreadsSnapshot.match_id.in_(match_ids))
-            .subquery()
-        )
-        closing_spreads = {
-            row.match_id: row
-            for row in db.query(closing_ah_subq).filter(closing_ah_subq.c.rn == 1).all()
-        }
-
-        # === ASIAN HANDICAP OPENING ODDS ===
-        opening_ah_subq = (
-            db.query(
-                SpreadsSnapshot.match_id,
-                SpreadsSnapshot.line,
-                SpreadsSnapshot.home_odds,
-                SpreadsSnapshot.away_odds,
-                func.row_number().over(
-                    partition_by=SpreadsSnapshot.match_id,
-                    order_by=SpreadsSnapshot.fetched_at.asc()
-                ).label('rn')
-            )
-            .filter(SpreadsSnapshot.match_id.in_(match_ids))
-            .subquery()
-        )
-        opening_spreads = {
-            row.match_id: row
-            for row in db.query(opening_ah_subq).filter(opening_ah_subq.c.rn == 1).all()
-        }
-    except Exception:
-        # spreads_snapshots table may not exist yet
-        pass
-
     result = []
     for match_id, match in match_map.items():
         cl_1x2 = closing_1x2.get(match_id)
         op_1x2 = opening_1x2.get(match_id)
-        cl_ah = closing_spreads.get(match_id)
-        op_ah = opening_spreads.get(match_id)
 
         # Need at least 1x2 closing data
         if not cl_1x2:
@@ -862,12 +814,6 @@ async def get_closing_lines(
             opening_home_1x2=op_1x2.home_odds if op_1x2 else None,
             opening_draw_1x2=op_1x2.draw_odds if op_1x2 else None,
             opening_away_1x2=op_1x2.away_odds if op_1x2 else None,
-            handicap_line=cl_ah.line if cl_ah else None,
-            closing_home_ah=cl_ah.home_odds if cl_ah else None,
-            closing_away_ah=cl_ah.away_odds if cl_ah else None,
-            opening_home_ah=op_ah.home_odds if op_ah else None,
-            opening_away_ah=op_ah.away_odds if op_ah else None,
-            opening_line=op_ah.line if op_ah else None,
         ))
 
     # Sort by commence_time descending (most recent first)

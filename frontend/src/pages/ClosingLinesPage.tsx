@@ -45,11 +45,6 @@ export default function ClosingLinesPage() {
     fetchData();
   }, [league]);
 
-  function formatLine(line: number | null): string {
-    if (line === null) return '-';
-    return line > 0 ? `+${line}` : String(line);
-  }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -173,15 +168,6 @@ export default function ClosingLinesPage() {
                   <th className="px-3 py-3.5 text-center text-xs font-semibold text-red-400/80 uppercase tracking-wider">
                     2
                   </th>
-                  <th className="px-3 py-3.5 text-center text-xs font-semibold text-purple-400/80 uppercase tracking-wider">
-                    AH Line
-                  </th>
-                  <th className="px-3 py-3.5 text-center text-xs font-semibold text-purple-400/80 uppercase tracking-wider">
-                    AH H
-                  </th>
-                  <th className="px-3 py-3.5 text-center text-xs font-semibold text-purple-400/80 uppercase tracking-wider">
-                    AH A
-                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/50">
@@ -239,32 +225,6 @@ export default function ClosingLinesPage() {
                           <OddsMovement opening={cl.opening_away_1x2} closing={cl.closing_away_1x2} />
                         </div>
                       </td>
-                      {/* Asian Handicap */}
-                      <td className="px-3 py-4 text-center">
-                        {cl.handicap_line !== null ? (
-                          <span className="px-2.5 py-1 rounded-lg text-sm font-bold bg-purple-500/20 text-purple-400">
-                            {formatLine(cl.handicap_line)}
-                          </span>
-                        ) : (
-                          <span className="text-slate-600 text-sm">-</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-4 text-center">
-                        <div className="flex flex-col items-center">
-                          <span className="font-mono font-bold text-blue-400">
-                            {cl.closing_home_ah?.toFixed(2) || '-'}
-                          </span>
-                          <OddsMovement opening={cl.opening_home_ah} closing={cl.closing_home_ah} />
-                        </div>
-                      </td>
-                      <td className="px-3 py-4 text-center">
-                        <div className="flex flex-col items-center">
-                          <span className="font-mono font-bold text-blue-400">
-                            {cl.closing_away_ah?.toFixed(2) || '-'}
-                          </span>
-                          <OddsMovement opening={cl.opening_away_ah} closing={cl.closing_away_ah} />
-                        </div>
-                      </td>
                     </tr>
                   );
                 })}
@@ -294,10 +254,8 @@ export default function ClosingLinesPage() {
                     {cl.home_team} vs {cl.away_team}
                   </div>
 
-                  {/* 1X2 Row */}
-                  <div className="flex items-center gap-1 mb-2">
-                    <span className="text-[10px] text-slate-500 font-medium w-8">1X2</span>
-                    <div className="flex-1 grid grid-cols-3 gap-2">
+                  {/* 1X2 Odds */}
+                  <div className="grid grid-cols-3 gap-2">
                       <div className="text-center bg-slate-700/40 rounded-lg py-1.5 px-1">
                         <div className="text-[10px] text-slate-500 mb-0.5">1</div>
                         <div className="font-mono font-bold text-emerald-400 text-sm">
@@ -319,37 +277,7 @@ export default function ClosingLinesPage() {
                         </div>
                         <OddsMovement opening={cl.opening_away_1x2} closing={cl.closing_away_1x2} />
                       </div>
-                    </div>
                   </div>
-
-                  {/* AH Row */}
-                  {cl.handicap_line !== null && (
-                    <div className="flex items-center gap-1">
-                      <span className="text-[10px] text-slate-500 font-medium w-8">AH</span>
-                      <div className="flex-1 grid grid-cols-3 gap-2">
-                        <div className="text-center bg-purple-500/10 rounded-lg py-1.5 px-1 col-span-1">
-                          <div className="text-[10px] text-purple-400/60 mb-0.5">Line</div>
-                          <div className="font-mono font-bold text-purple-400 text-sm">
-                            {formatLine(cl.handicap_line)}
-                          </div>
-                        </div>
-                        <div className="text-center bg-slate-700/40 rounded-lg py-1.5 px-1">
-                          <div className="text-[10px] text-slate-500 mb-0.5">H</div>
-                          <div className="font-mono font-bold text-blue-400 text-sm">
-                            {cl.closing_home_ah?.toFixed(2) || '-'}
-                          </div>
-                          <OddsMovement opening={cl.opening_home_ah} closing={cl.closing_home_ah} />
-                        </div>
-                        <div className="text-center bg-slate-700/40 rounded-lg py-1.5 px-1">
-                          <div className="text-[10px] text-slate-500 mb-0.5">A</div>
-                          <div className="font-mono font-bold text-blue-400 text-sm">
-                            {cl.closing_away_ah?.toFixed(2) || '-'}
-                          </div>
-                          <OddsMovement opening={cl.opening_away_ah} closing={cl.closing_away_ah} />
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </Link>
               );
             })}
