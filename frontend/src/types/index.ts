@@ -106,22 +106,6 @@ export interface MatchSpreads {
   spreads_history: SpreadsPoint[];
 }
 
-export interface ClosingLine {
-  match_id: string;
-  home_team: string;
-  away_team: string;
-  sport_key: string;
-  league_name: string;
-  commence_time: string;
-  // 1x2 closing odds
-  closing_home_1x2: number | null;
-  closing_draw_1x2: number | null;
-  closing_away_1x2: number | null;
-  opening_home_1x2: number | null;
-  opening_draw_1x2: number | null;
-  opening_away_1x2: number | null;
-}
-
 export interface SteamMoveRecord {
   id: number;
   match_id: string;

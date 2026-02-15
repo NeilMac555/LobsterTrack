@@ -227,21 +227,3 @@ class MatchSpreadsResponse(BaseModel):
     spreads_history: list[SpreadsPoint]
 
 
-class ClosingLine(BaseModel):
-    """Closing line snapshot for a completed/started match — 1x2 only"""
-    match_id: str
-    home_team: str
-    away_team: str
-    sport_key: str
-    league_name: str
-    commence_time: datetime
-    # 1x2 closing odds
-    closing_home_1x2: Optional[float] = None
-    closing_draw_1x2: Optional[float] = None
-    closing_away_1x2: Optional[float] = None
-    opening_home_1x2: Optional[float] = None
-    opening_draw_1x2: Optional[float] = None
-    opening_away_1x2: Optional[float] = None
-
-    class Config:
-        from_attributes = True

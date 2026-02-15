@@ -26,7 +26,6 @@ from .schemas import (
     TotalsPoint,
     MatchTotalsResponse,
     SyndicateMove,
-    ClosingLine,
     SteamResultsResponse,
     TeamSteamRanking
 )
@@ -718,108 +717,6 @@ async def get_syndicate_moves(
         )
         for m in top_moves
     ]
-
-
-@router.get("/closing-lines", response_model=list[ClosingLine])
-async def get_closing_lines(
-    db: Session = Depends(get_db),
-    league: Optional[str] = Query(None, description="Filter by sport_key"),
-    limit: int = Query(50, le=100, description="Number of matches to return")
-):
-    """
-    Get closing lines for matches that have already started (last 48 hours).
-    Shows 1x2 closing odds with opening vs closing comparison.
-    """
-    now = datetime.utcnow()
-    cutoff = now - timedelta(hours=48)
-
-    # Get matches that have started in the last 48 hours
-    query = (
-        db.query(Match)
-        .filter(Match.commence_time <= now)
-        .filter(Match.commence_time >= cutoff)
-    )
-
-    if league:
-        query = query.filter(Match.sport_key == league)
-
-    query = query.order_by(Match.commence_time.desc())
-    matches = query.limit(limit).all()
-
-    if not matches:
-        return []
-
-    match_ids = [m.id for m in matches]
-    match_map = {m.id: m for m in matches}
-
-    # === 1X2 CLOSING ODDS (last snapshot before kickoff) ===
-    closing_1x2_subq = (
-        db.query(
-            OddsSnapshot.match_id,
-            OddsSnapshot.home_odds,
-            OddsSnapshot.draw_odds,
-            OddsSnapshot.away_odds,
-            func.row_number().over(
-                partition_by=OddsSnapshot.match_id,
-                order_by=OddsSnapshot.fetched_at.desc()
-            ).label('rn')
-        )
-        .filter(OddsSnapshot.match_id.in_(match_ids))
-        .subquery()
-    )
-    closing_1x2 = {
-        row.match_id: row
-        for row in db.query(closing_1x2_subq).filter(closing_1x2_subq.c.rn == 1).all()
-    }
-
-    # === 1X2 OPENING ODDS (first snapshot) ===
-    opening_1x2_subq = (
-        db.query(
-            OddsSnapshot.match_id,
-            OddsSnapshot.home_odds,
-            OddsSnapshot.draw_odds,
-            OddsSnapshot.away_odds,
-            func.row_number().over(
-                partition_by=OddsSnapshot.match_id,
-                order_by=OddsSnapshot.fetched_at.asc()
-            ).label('rn')
-        )
-        .filter(OddsSnapshot.match_id.in_(match_ids))
-        .subquery()
-    )
-    opening_1x2 = {
-        row.match_id: row
-        for row in db.query(opening_1x2_subq).filter(opening_1x2_subq.c.rn == 1).all()
-    }
-
-    result = []
-    for match_id, match in match_map.items():
-        cl_1x2 = closing_1x2.get(match_id)
-        op_1x2 = opening_1x2.get(match_id)
-
-        # Need at least 1x2 closing data
-        if not cl_1x2:
-            continue
-
-        result.append(ClosingLine(
-            match_id=match.id,
-            home_team=match.home_team,
-            away_team=match.away_team,
-            sport_key=match.sport_key,
-            league_name=match.league_name,
-            commence_time=match.commence_time,
-            closing_home_1x2=cl_1x2.home_odds,
-            closing_draw_1x2=cl_1x2.draw_odds,
-            closing_away_1x2=cl_1x2.away_odds,
-            opening_home_1x2=op_1x2.home_odds if op_1x2 else None,
-            opening_draw_1x2=op_1x2.draw_odds if op_1x2 else None,
-            opening_away_1x2=op_1x2.away_odds if op_1x2 else None,
-        ))
-
-    # Sort by commence_time descending (most recent first)
-    result.sort(key=lambda x: x.commence_time, reverse=True)
-
-    return result
 
 
 @router.get("/steam-moves", response_model=SteamMoveStats)
