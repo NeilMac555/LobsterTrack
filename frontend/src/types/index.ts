@@ -153,6 +153,7 @@ export interface TeamSteamRanking {
   sport_key: string;
   total_moves: number;
   wins: number;
+  draws: number;
   losses: number;
   win_rate: number | null;
 }
@@ -160,6 +161,7 @@ export interface TeamSteamRanking {
 export interface SteamResultsData {
   total_moves: number;
   total_wins: number;
+  total_draws: number;
   total_losses: number;
   win_rate: number | null;
   avg_movement_percent: number | null;

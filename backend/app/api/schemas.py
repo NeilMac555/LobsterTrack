@@ -113,6 +113,7 @@ class TeamSteamRanking(BaseModel):
     sport_key: str
     total_moves: int
     wins: int
+    draws: int
     losses: int
     win_rate: Optional[float] = None
 
@@ -121,6 +122,7 @@ class SteamResultsResponse(BaseModel):
     """Public steam results with stats and full move history"""
     total_moves: int
     total_wins: int
+    total_draws: int
     total_losses: int
     win_rate: Optional[float] = None
     avg_movement_percent: Optional[float] = None

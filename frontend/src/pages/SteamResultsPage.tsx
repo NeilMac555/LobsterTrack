@@ -94,9 +94,11 @@ export default function SteamResultsPage() {
           <div className="text-2xl sm:text-3xl font-bold text-white">
             <span className="text-emerald-400">{data.total_wins}</span>
             <span className="text-slate-600 mx-1">/</span>
+            <span className="text-yellow-400">{data.total_draws}</span>
+            <span className="text-slate-600 mx-1">/</span>
             <span className="text-red-400">{data.total_losses}</span>
           </div>
-          <div className="text-xs sm:text-sm text-slate-400 mt-1">W / L</div>
+          <div className="text-xs sm:text-sm text-slate-400 mt-1">W / D / L</div>
         </div>
         <div className="bg-slate-800/80 rounded-xl border border-slate-700/50 p-4 text-center">
           <div className="text-2xl sm:text-3xl font-bold text-amber-400">
@@ -110,15 +112,19 @@ export default function SteamResultsPage() {
       {data.total_moves > 0 && (
         <div className="bg-slate-800/80 rounded-xl border border-slate-700/50 p-4 mb-6 sm:mb-8">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-slate-400 font-medium">Win/Loss Distribution</span>
+            <span className="text-sm text-slate-400 font-medium">Result Distribution</span>
             <span className="text-xs text-slate-500">
-              {data.total_wins}W &mdash; {data.total_losses}L
+              {data.total_wins}W &mdash; {data.total_draws}D &mdash; {data.total_losses}L
             </span>
           </div>
           <div className="h-3 bg-slate-700 rounded-full overflow-hidden flex">
             <div
               className="bg-emerald-500 rounded-l-full transition-all duration-500"
               style={{ width: `${(data.total_wins / data.total_moves) * 100}%` }}
+            />
+            <div
+              className="bg-yellow-500 transition-all duration-500"
+              style={{ width: `${(data.total_draws / data.total_moves) * 100}%` }}
             />
             <div
               className="bg-red-500 rounded-r-full transition-all duration-500"
@@ -187,6 +193,9 @@ export default function SteamResultsPage() {
                   <th className="px-3 py-3 text-center text-xs font-semibold text-emerald-400/80 uppercase tracking-wider">
                     W
                   </th>
+                  <th className="px-3 py-3 text-center text-xs font-semibold text-yellow-400/80 uppercase tracking-wider">
+                    D
+                  </th>
                   <th className="px-3 py-3 text-center text-xs font-semibold text-red-400/80 uppercase tracking-wider">
                     L
                   </th>
@@ -226,6 +235,9 @@ export default function SteamResultsPage() {
                       </td>
                       <td className="px-3 py-3 text-center">
                         <span className="font-mono font-bold text-emerald-400 text-sm">{team.wins}</span>
+                      </td>
+                      <td className="px-3 py-3 text-center">
+                        <span className="font-mono font-bold text-yellow-400 text-sm">{team.draws}</span>
                       </td>
                       <td className="px-3 py-3 text-center">
                         <span className="font-mono font-bold text-red-400 text-sm">{team.losses}</span>
@@ -272,6 +284,8 @@ export default function SteamResultsPage() {
                       <div className="font-mono font-bold text-amber-400">{team.total_moves} moves</div>
                       <div className="text-xs mt-0.5">
                         <span className="text-emerald-400 font-semibold">{team.wins}W</span>
+                        <span className="text-slate-600 mx-1">/</span>
+                        <span className="text-yellow-400 font-semibold">{team.draws}D</span>
                         <span className="text-slate-600 mx-1">/</span>
                         <span className="text-red-400 font-semibold">{team.losses}L</span>
                         <span className="text-slate-600 mx-1">&middot;</span>

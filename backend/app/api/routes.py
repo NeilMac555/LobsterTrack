@@ -987,10 +987,21 @@ async def get_steam_results(
 
     deduped_moves = sorted(best_per_match.values(), key=lambda x: x.match_commence_time, reverse=True)
 
+    # Helper: determine result (win/draw/loss) from a steam move
+    # The `won` boolean is True only for outright wins; draws show as won=False
+    # so we detect draws by checking if the scores are level
+    def _result(m):
+        if m.won:
+            return 'win'
+        if m.home_score is not None and m.away_score is not None and m.home_score == m.away_score:
+            return 'draw'
+        return 'loss'
+
     # Stats from deduplicated moves (one result per match per team)
-    total_wins = sum(1 for m in deduped_moves if m.won)
-    total_losses = sum(1 for m in deduped_moves if not m.won)
-    total_moves = total_wins + total_losses
+    total_wins = sum(1 for m in deduped_moves if _result(m) == 'win')
+    total_draws = sum(1 for m in deduped_moves if _result(m) == 'draw')
+    total_losses = sum(1 for m in deduped_moves if _result(m) == 'loss')
+    total_moves = total_wins + total_draws + total_losses
     win_rate = (total_wins / total_moves * 100) if total_moves > 0 else None
 
     avg_movement = (
@@ -1008,11 +1019,15 @@ async def get_steam_results(
                 'sport_key': m.sport_key,
                 'total': 0,
                 'wins': 0,
+                'draws': 0,
                 'losses': 0,
             }
         team_stats[key]['total'] += 1
-        if m.won:
+        r = _result(m)
+        if r == 'win':
             team_stats[key]['wins'] += 1
+        elif r == 'draw':
+            team_stats[key]['draws'] += 1
         else:
             team_stats[key]['losses'] += 1
 
@@ -1025,6 +1040,7 @@ async def get_steam_results(
             sport_key=t['sport_key'],
             total_moves=t['total'],
             wins=t['wins'],
+            draws=t['draws'],
             losses=t['losses'],
             win_rate=round(t['wins'] / t['total'] * 100, 1) if t['total'] > 0 else None,
         )
@@ -1037,6 +1053,7 @@ async def get_steam_results(
     return SteamResultsResponse(
         total_moves=total_moves,
         total_wins=total_wins,
+        total_draws=total_draws,
         total_losses=total_losses,
         win_rate=round(win_rate, 1) if win_rate else None,
         avg_movement_percent=round(avg_movement, 1) if avg_movement else None,
