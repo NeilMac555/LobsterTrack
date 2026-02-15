@@ -107,6 +107,17 @@ class SteamMoveStats(BaseModel):
     sample_moves: list[SteamMoveResponse]
 
 
+class SteamResultsResponse(BaseModel):
+    """Public steam results with stats and full move history"""
+    total_moves: int
+    total_wins: int
+    total_losses: int
+    pending: int
+    win_rate: Optional[float] = None
+    avg_movement_percent: Optional[float] = None
+    moves: list[SteamMoveResponse]
+
+
 class BiggestMover(BaseModel):
     """A match with significant odds movement"""
     match_id: str

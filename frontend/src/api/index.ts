@@ -1,4 +1,4 @@
-import type { MatchSummary, MatchDetail, LeagueSummary, Stats, BiggestMover, MatchTotals, SyndicateMove, MatchSpreads, ClosingLine } from '../types';
+import type { MatchSummary, MatchDetail, LeagueSummary, Stats, BiggestMover, MatchTotals, SyndicateMove, MatchSpreads, ClosingLine, SteamResultsData } from '../types';
 
 const API_BASE = '/api';
 
@@ -70,4 +70,16 @@ export async function getClosingLines(params?: {
 
   const query = searchParams.toString();
   return fetchJson<ClosingLine[]>(`${API_BASE}/closing-lines${query ? `?${query}` : ''}`);
+}
+
+export async function getSteamResults(params?: {
+  league?: string;
+  limit?: number;
+}): Promise<SteamResultsData> {
+  const searchParams = new URLSearchParams();
+  if (params?.league) searchParams.set('league', params.league);
+  if (params?.limit) searchParams.set('limit', String(params.limit));
+
+  const query = searchParams.toString();
+  return fetchJson<SteamResultsData>(`${API_BASE}/steam-results${query ? `?${query}` : ''}`);
 }

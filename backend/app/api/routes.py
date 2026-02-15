@@ -26,7 +26,8 @@ from .schemas import (
     TotalsPoint,
     MatchTotalsResponse,
     SyndicateMove,
-    ClosingLine
+    ClosingLine,
+    SteamResultsResponse
 )
 
 # Simple admin password
@@ -948,6 +949,75 @@ async def get_steam_moves(db: Session = Depends(get_db)):
                 away_score=m.away_score
             )
             for m in sample_moves
+        ]
+    )
+
+
+@router.get("/steam-results", response_model=SteamResultsResponse)
+async def get_steam_results(
+    db: Session = Depends(get_db),
+    league: Optional[str] = Query(None, description="Filter by sport_key"),
+    limit: int = Query(100, le=500, description="Number of moves to return")
+):
+    """
+    Public endpoint: full steam move history with stats and results.
+    Shows every detected sharp money move with win/loss outcomes.
+    """
+    # Base query
+    base_query = db.query(SteamMove)
+    if league:
+        base_query = base_query.filter(SteamMove.sport_key == league)
+
+    # Stats
+    total_moves = base_query.count()
+    total_wins = base_query.filter(SteamMove.result_updated == True, SteamMove.won == True).count()
+    total_losses = base_query.filter(SteamMove.result_updated == True, SteamMove.won == False).count()
+    pending = base_query.filter(SteamMove.result_updated == False).count()
+
+    completed = total_wins + total_losses
+    win_rate = (total_wins / completed * 100) if completed > 0 else None
+
+    avg_movement = (
+        base_query
+        .with_entities(func.avg(SteamMove.movement_percent))
+        .scalar()
+    )
+
+    # All moves, most recent first
+    moves = (
+        base_query
+        .order_by(desc(SteamMove.detected_at))
+        .limit(limit)
+        .all()
+    )
+
+    return SteamResultsResponse(
+        total_moves=total_moves,
+        total_wins=total_wins,
+        total_losses=total_losses,
+        pending=pending,
+        win_rate=round(win_rate, 1) if win_rate else None,
+        avg_movement_percent=round(avg_movement, 1) if avg_movement else None,
+        moves=[
+            SteamMoveResponse(
+                id=m.id,
+                match_id=m.match_id,
+                sport_key=m.sport_key,
+                outcome=m.outcome,
+                team_name=m.team_name,
+                opening_odds=m.opening_odds,
+                previous_odds=m.previous_odds,
+                current_odds=m.current_odds,
+                movement_percent=m.movement_percent,
+                detected_at=m.detected_at,
+                match_commence_time=m.match_commence_time,
+                minutes_before_kickoff=m.minutes_before_kickoff,
+                result_updated=m.result_updated,
+                won=m.won,
+                home_score=m.home_score,
+                away_score=m.away_score
+            )
+            for m in moves
         ]
     )
 
