@@ -962,10 +962,15 @@ async def get_steam_results(
 ):
     """
     Public endpoint: completed steam move results with team rankings.
-    Only shows moves where results are known (no pending).
+    Only shows odds that SHORTENED (sharp money backing) — no draws, no drifters.
     """
-    # Base query — only completed results
-    base_query = db.query(SteamMove).filter(SteamMove.result_updated == True)
+    # Base query — completed results, odds shortened (negative movement), no draws
+    base_query = (
+        db.query(SteamMove)
+        .filter(SteamMove.result_updated == True)
+        .filter(SteamMove.outcome != 'draw')
+        .filter(SteamMove.movement_percent < 0)  # Only shortened odds
+    )
     if league:
         base_query = base_query.filter(SteamMove.sport_key == league)
 
@@ -977,7 +982,7 @@ async def get_steam_results(
 
     avg_movement = (
         base_query
-        .with_entities(func.avg(SteamMove.movement_percent))
+        .with_entities(func.avg(func.abs(SteamMove.movement_percent)))
         .scalar()
     )
 
@@ -990,8 +995,13 @@ async def get_steam_results(
     )
 
     # === TEAM RANKINGS ===
-    # Count steam moves per team (across all completed results, ignoring league filter for rankings)
-    all_completed = db.query(SteamMove).filter(SteamMove.result_updated == True)
+    # Only teams backed by sharps (shortened odds, no draws)
+    all_completed = (
+        db.query(SteamMove)
+        .filter(SteamMove.result_updated == True)
+        .filter(SteamMove.outcome != 'draw')
+        .filter(SteamMove.movement_percent < 0)
+    )
     if league:
         all_completed = all_completed.filter(SteamMove.sport_key == league)
 

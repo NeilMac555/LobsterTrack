@@ -22,10 +22,9 @@ function ResultBadge({ move }: { move: SteamMoveRecord }) {
 }
 
 function OutcomeBadge({ outcome }: { outcome: string }) {
-  const label = outcome === 'home' ? 'H' : outcome === 'away' ? 'A' : 'D';
+  const label = outcome === 'home' ? 'Home' : 'Away';
   const color = outcome === 'home' ? 'bg-emerald-500/20 text-emerald-400' :
-                outcome === 'away' ? 'bg-red-500/20 text-red-400' :
-                'bg-yellow-500/20 text-yellow-400';
+                'bg-red-500/20 text-red-400';
   return (
     <span className={`px-2 py-0.5 rounded-md text-xs font-bold ${color}`}>
       {label}
@@ -100,7 +99,7 @@ export default function SteamResultsPage() {
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-white">Steam Results</h1>
             <p className="text-slate-400 text-sm sm:text-base mt-0.5">
-              Sharp money track record &mdash; completed results only
+              Teams backed by sharp money &mdash; odds shortened pre-KO
             </p>
           </div>
         </div>
@@ -410,7 +409,7 @@ export default function SteamResultsPage() {
                       </td>
                       <td className="px-3 py-3.5 text-center">
                         <span className="font-mono font-bold text-emerald-400">
-                          {move.movement_percent.toFixed(1)}%
+                          {Math.abs(move.movement_percent).toFixed(1)}%
                         </span>
                       </td>
                       <td className="px-3 py-3.5 text-center">
