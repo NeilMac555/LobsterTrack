@@ -11,24 +11,28 @@ import {
 } from 'recharts';
 import { format } from 'date-fns';
 import type { OddsPoint } from '../types';
+import { filterByTimeFrame, type TimeFrame } from './TimeFrameFilter';
 
 interface OddsChartProps {
   data: OddsPoint[];
   homeTeam: string;
   awayTeam: string;
+  timeFrame?: TimeFrame;
 }
 
 type ViewMode = 'odds' | 'percent';
 type SelectedOutcome = 'all' | 'home' | 'draw' | 'away';
 
-export default function OddsChart({ data, homeTeam, awayTeam }: OddsChartProps) {
+export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' }: OddsChartProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('odds');
   const [selectedOutcome, setSelectedOutcome] = useState<SelectedOutcome>('all');
+
+  const filteredData = filterByTimeFrame(data, timeFrame);
 
   // Get opening odds for reference lines and percentage calculations
   const openingOdds = data.length > 0 ? data[0] : null;
 
-  const chartData = data.map((point) => {
+  const chartData = filteredData.map((point) => {
     const baseData = {
       ...point,
       time: format(new Date(point.timestamp), 'MMM d, HH:mm'),
@@ -122,6 +126,14 @@ export default function OddsChart({ data, homeTeam, awayTeam }: OddsChartProps) 
     return (
       <div className="h-64 sm:h-96 flex items-center justify-center bg-slate-800/50 rounded-xl sm:rounded-2xl border border-slate-700">
         <p className="text-slate-500 text-sm sm:text-base">No odds history available</p>
+      </div>
+    );
+  }
+
+  if (filteredData.length === 0) {
+    return (
+      <div className="h-full w-full flex items-center justify-center">
+        <p className="text-slate-500 text-sm">No data in this time range</p>
       </div>
     );
   }

@@ -7,6 +7,7 @@ import { LEAGUE_CONFIG } from '../types';
 import OddsChart from '../components/OddsChart';
 import TotalsChart from '../components/TotalsChart';
 import SpreadsChart from '../components/SpreadsChart';
+import TimeFrameFilter, { type TimeFrame } from '../components/TimeFrameFilter';
 import LeagueLogo from '../components/LeagueLogo';
 import OddsWithMovement from '../components/OddsWithMovement';
 
@@ -18,6 +19,7 @@ export default function MatchDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showChangesOnly, setShowChangesOnly] = useState(true);
+  const [timeFrame, setTimeFrame] = useState<TimeFrame>('all');
 
   useEffect(() => {
     async function fetchMatch() {
@@ -166,27 +168,31 @@ export default function MatchDetailPage() {
 
       {/* Odds History Chart */}
       <div className="bg-slate-800/80 rounded-xl sm:rounded-2xl border border-slate-700/50 p-3 sm:p-6 mb-6 sm:mb-8 card-shadow">
-        <div className="flex items-center justify-between gap-2 mb-3 sm:mb-4">
-          <h2 className="text-base sm:text-xl font-bold text-white">Odds Movement</h2>
-          <span className="text-[10px] sm:text-xs text-slate-500 font-medium">Dotted = opening</span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 sm:mb-4">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-base sm:text-xl font-bold text-white">Odds Movement</h2>
+            <span className="text-[10px] sm:text-xs text-slate-500 font-medium">Dotted = opening</span>
+          </div>
+          <TimeFrameFilter value={timeFrame} onChange={setTimeFrame} />
         </div>
         <div className="h-72 sm:h-[400px]">
           <OddsChart
             data={match.odds_history}
             homeTeam={match.home_team}
             awayTeam={match.away_team}
+            timeFrame={timeFrame}
           />
         </div>
       </div>
 
       {/* Totals (Over/Under) Section */}
       {totals && totals.totals_history.length > 0 && (
-        <TotalsSection totals={totals} />
+        <TotalsSection totals={totals} timeFrame={timeFrame} />
       )}
 
       {/* Asian Handicap (Spreads) Section */}
       {spreads && spreads.spreads_history.length > 0 && (
-        <SpreadsSection spreads={spreads} homeTeam={match.home_team} awayTeam={match.away_team} />
+        <SpreadsSection spreads={spreads} homeTeam={match.home_team} awayTeam={match.away_team} timeFrame={timeFrame} />
       )}
 
       {/* Odds History Table */}
@@ -401,9 +407,10 @@ function OddsHistoryTable({ oddsHistory, showChangesOnly, onToggleShowChanges }:
 
 interface TotalsSectionProps {
   totals: MatchTotals;
+  timeFrame: TimeFrame;
 }
 
-function TotalsSection({ totals }: TotalsSectionProps) {
+function TotalsSection({ totals, timeFrame }: TotalsSectionProps) {
   const latestTotals = totals.totals_history[totals.totals_history.length - 1];
   const openingTotals = totals.totals_history[0];
 
@@ -480,7 +487,7 @@ function TotalsSection({ totals }: TotalsSectionProps) {
         {/* Chart */}
         {totals.totals_history.length > 1 && (
           <div className="h-48 sm:h-64">
-            <TotalsChart data={totals.totals_history} />
+            <TotalsChart data={totals.totals_history} timeFrame={timeFrame} />
           </div>
         )}
 
@@ -498,9 +505,10 @@ interface SpreadsSectionProps {
   spreads: MatchSpreads;
   homeTeam: string;
   awayTeam: string;
+  timeFrame: TimeFrame;
 }
 
-function SpreadsSection({ spreads, homeTeam, awayTeam }: SpreadsSectionProps) {
+function SpreadsSection({ spreads, homeTeam, awayTeam, timeFrame }: SpreadsSectionProps) {
   const latestSpreads = spreads.spreads_history[spreads.spreads_history.length - 1];
   const openingSpreads = spreads.spreads_history[0];
 
@@ -587,7 +595,7 @@ function SpreadsSection({ spreads, homeTeam, awayTeam }: SpreadsSectionProps) {
         {/* Chart */}
         {spreads.spreads_history.length > 1 && (
           <div className="h-48 sm:h-64">
-            <SpreadsChart data={spreads.spreads_history} />
+            <SpreadsChart data={spreads.spreads_history} timeFrame={timeFrame} />
           </div>
         )}
 

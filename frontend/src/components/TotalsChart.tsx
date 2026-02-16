@@ -10,16 +10,20 @@ import {
 } from 'recharts';
 import { format } from 'date-fns';
 import type { TotalsPoint } from '../types';
+import { filterByTimeFrame, type TimeFrame } from './TimeFrameFilter';
 
 interface TotalsChartProps {
   data: TotalsPoint[];
+  timeFrame?: TimeFrame;
 }
 
-export default function TotalsChart({ data }: TotalsChartProps) {
+export default function TotalsChart({ data, timeFrame = 'all' }: TotalsChartProps) {
+  const filteredData = filterByTimeFrame(data, timeFrame);
+
   // Get opening totals for reference lines
   const openingTotals = data.length > 0 ? data[0] : null;
 
-  const chartData = data.map((point) => ({
+  const chartData = filteredData.map((point) => ({
     ...point,
     time: format(new Date(point.timestamp), 'MMM d, HH:mm'),
     shortTime: format(new Date(point.timestamp), 'd/M HH:mm'),
@@ -84,6 +88,14 @@ export default function TotalsChart({ data }: TotalsChartProps) {
     return (
       <div className="h-48 flex items-center justify-center bg-slate-800/50 rounded-xl border border-slate-700">
         <p className="text-slate-500 text-sm">No totals history available</p>
+      </div>
+    );
+  }
+
+  if (filteredData.length === 0) {
+    return (
+      <div className="h-full w-full flex items-center justify-center">
+        <p className="text-slate-500 text-sm">No data in this time range</p>
       </div>
     );
   }
