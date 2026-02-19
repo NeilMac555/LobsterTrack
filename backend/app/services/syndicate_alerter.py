@@ -8,14 +8,33 @@ from app.services.telegram_notifier import telegram_notifier
 
 logger = structlog.get_logger()
 
-# Alert threshold
-SYNDICATE_THRESHOLD_PERCENT = 5.0
+# Alert threshold: minimum implied probability shift (in percentage points)
+# e.g. 3.0 means odds must move enough to shift implied prob by 3+ points
+SYNDICATE_THRESHOLD_PROB_POINTS = 3.0
+
+
+def implied_prob(odds: float) -> float:
+    """Convert decimal odds to implied probability (0-100 scale)."""
+    return (1.0 / odds) * 100
+
+
+def prob_movement(baseline_odds: float, current_odds: float) -> float:
+    """
+    Calculate implied probability movement in percentage points.
+    Positive = odds shortened (probability increased, being backed).
+    Negative = odds drifted (probability decreased).
+    e.g. 2.00 -> 1.80 = +5.6pp (50% -> 55.6%)
+    e.g. 2.00 -> 2.20 = -4.1pp (50% -> 45.5%)
+    """
+    return implied_prob(current_odds) - implied_prob(baseline_odds)
 
 
 class SyndicateAlerter:
     """
     Checks for Syndicate Move conditions and sends Telegram alerts.
     Runs after each odds fetch cycle.
+    Uses implied probability movement instead of raw odds percentage change
+    to avoid false positives on longshots.
     """
 
     async def check_and_alert(self) -> dict:
@@ -105,14 +124,14 @@ class SyndicateAlerter:
         ]
 
         for outcome, label, name, baseline_odds, curr_odds in outcomes:
-            if baseline_odds and curr_odds and baseline_odds > 0:
-                pct = ((curr_odds - baseline_odds) / baseline_odds) * 100
+            if baseline_odds and curr_odds and baseline_odds > 0 and curr_odds > 0:
+                prob_move = prob_movement(baseline_odds, curr_odds)
 
-                # Only shortening odds (being backed)
-                if pct <= -SYNDICATE_THRESHOLD_PERCENT:
+                # Only shortening odds (positive prob_move = probability increased)
+                if prob_move >= SYNDICATE_THRESHOLD_PROB_POINTS:
                     sent = await self._send_alert_if_new(
                         db, match, '1x2', outcome, label, name,
-                        curr_odds, pct, minutes_to_ko
+                        curr_odds, prob_move, minutes_to_ko
                     )
                     if sent:
                         alerts_sent += 1
@@ -149,13 +168,13 @@ class SyndicateAlerter:
         ]
 
         for outcome, label, name, baseline_odds, curr_odds in outcomes:
-            if baseline_odds and curr_odds and baseline_odds > 0:
-                pct = ((curr_odds - baseline_odds) / baseline_odds) * 100
+            if baseline_odds and curr_odds and baseline_odds > 0 and curr_odds > 0:
+                prob_move = prob_movement(baseline_odds, curr_odds)
 
-                if pct <= -SYNDICATE_THRESHOLD_PERCENT:
+                if prob_move >= SYNDICATE_THRESHOLD_PROB_POINTS:
                     sent = await self._send_alert_if_new(
                         db, match, 'totals', outcome, label, name,
-                        curr_odds, pct, minutes_to_ko
+                        curr_odds, prob_move, minutes_to_ko
                     )
                     if sent:
                         alerts_sent += 1
@@ -194,13 +213,13 @@ class SyndicateAlerter:
         ]
 
         for outcome, label, name, baseline_odds, curr_odds in outcomes:
-            if baseline_odds and curr_odds and baseline_odds > 0:
-                pct = ((curr_odds - baseline_odds) / baseline_odds) * 100
+            if baseline_odds and curr_odds and baseline_odds > 0 and curr_odds > 0:
+                prob_move = prob_movement(baseline_odds, curr_odds)
 
-                if pct <= -SYNDICATE_THRESHOLD_PERCENT:
+                if prob_move >= SYNDICATE_THRESHOLD_PROB_POINTS:
                     sent = await self._send_alert_if_new(
                         db, match, 'spreads', outcome, label, name,
-                        curr_odds, pct, minutes_to_ko
+                        curr_odds, prob_move, minutes_to_ko
                     )
                     if sent:
                         alerts_sent += 1
@@ -216,7 +235,7 @@ class SyndicateAlerter:
         outcome_label: str,
         outcome_name: str,
         current_odds: float,
-        movement_percent: float,
+        prob_change: float,
         minutes_to_ko: int
     ) -> bool:
         """Send alert if we haven't already alerted for this match/market/outcome."""
@@ -239,18 +258,18 @@ class SyndicateAlerter:
             outcome_name=outcome_name,
             outcome_type=outcome_label,
             current_odds=current_odds,
-            movement_percent=movement_percent,
+            prob_change=prob_change,
             minutes_to_kickoff=minutes_to_ko,
             market=market
         )
 
         if success:
-            # Record that we sent this alert
+            # Record that we sent this alert (store implied prob change)
             alert = SyndicateAlert(
                 match_id=match.id,
                 market=market,
                 outcome=outcome,
-                movement_percent=movement_percent,
+                movement_percent=prob_change,
                 odds_at_alert=current_odds
             )
             db.add(alert)
@@ -260,7 +279,7 @@ class SyndicateAlerter:
                 match=f"{match.home_team} vs {match.away_team}",
                 market=market,
                 outcome=outcome_name,
-                movement=f"{movement_percent:.1f}%"
+                prob_change=f"{prob_change:.1f}pp"
             )
             return True
 

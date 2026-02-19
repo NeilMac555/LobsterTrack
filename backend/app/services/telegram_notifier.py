@@ -30,12 +30,13 @@ class TelegramNotifier:
         outcome_name: str,
         outcome_type: str,  # 'H', 'D', 'A', 'O', 'U', 'AH'
         current_odds: float,
-        movement_percent: float,
+        prob_change: float,
         minutes_to_kickoff: int,
         market: str = '1x2'
     ) -> bool:
         """
         Send a Syndicate Move alert to Telegram channel.
+        prob_change is the implied probability shift in percentage points.
         Returns True if sent successfully.
         """
         if not self.is_configured():
@@ -63,7 +64,7 @@ class TelegramNotifier:
 
 {home_team} vs {away_team}
 → {outcome_name} ({market_label}) @ {current_odds:.2f}
-↓ {abs(movement_percent):.1f}% in last 3h
+↓ {abs(prob_change):.1f}pp implied prob in last 3h
 ⏱ Kickoff: {time_str}
 
 steamwatch.io"""

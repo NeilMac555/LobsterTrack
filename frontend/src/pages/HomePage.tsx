@@ -329,13 +329,13 @@ export default function HomePage() {
                 <p className="text-slate-400 text-xs sm:text-sm mt-0.5">Late sharp action on closing lines</p>
               </div>
             </div>
-            <span className="text-[10px] sm:text-xs text-amber-400/80 font-medium hidden sm:block">Within 3hrs • 5%+ move</span>
+            <span className="text-[10px] sm:text-xs text-amber-400/80 font-medium hidden sm:block">Within 3hrs • 3pp+ move</span>
           </div>
 
           {syndicateMoves.length === 0 ? (
             <div className="px-6 py-8 text-center">
               <p className="text-slate-500 text-sm">No late sharp action detected</p>
-              <p className="text-slate-600 text-xs mt-1">Matches within 3 hours with 5%+ line movement will appear here</p>
+              <p className="text-slate-600 text-xs mt-1">Matches within 3 hours with 3pp+ implied probability shift will appear here</p>
             </div>
           ) : (
             <>
@@ -357,7 +357,7 @@ export default function HomePage() {
                         Outcome
                       </th>
                       <th className="px-4 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                        % Change
+                        Prob &Delta;
                       </th>
                       <th className="px-4 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
                         Current
@@ -425,7 +425,7 @@ export default function HomePage() {
                           </td>
                           <td className="px-4 py-4 text-center">
                             <span className="font-mono font-bold text-lg text-emerald-400">
-                              ↓{Math.abs(move.movement_percent).toFixed(1)}%
+                              ↓{Math.abs(move.movement_percent).toFixed(1)}pp
                             </span>
                           </td>
                           <td className="px-4 py-4 text-center">
@@ -492,7 +492,7 @@ export default function HomePage() {
                         </div>
                         <div className="text-right flex-shrink-0">
                           <div className="font-mono font-bold text-lg text-emerald-400">
-                            ↓{Math.abs(move.movement_percent).toFixed(1)}%
+                            ↓{Math.abs(move.movement_percent).toFixed(1)}pp
                           </div>
                           <div className="text-xs text-slate-500 mt-1">
                             <span className="text-white font-semibold">{move.current_odds.toFixed(2)}</span>

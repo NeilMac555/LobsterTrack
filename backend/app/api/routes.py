@@ -544,12 +544,17 @@ async def get_syndicate_moves(
     Get late sharp money moves across all markets (1X2, Totals, Asian Handicap).
     Criteria:
     - Match kicks off within 3 hours
-    - 5%+ line movement WITHIN the 3-hour window (not from opening)
+    - 3+ implied probability percentage point shift WITHIN the 3-hour window
     - Only SHORTENING odds (being backed)
 
-    Key insight: We measure movement from when the match entered the 3hr window,
-    NOT from opening odds. This captures LATE sharp action specifically.
+    Uses implied probability movement instead of raw odds percentage change
+    to avoid false positives on longshots.
     """
+    PROB_THRESHOLD = 3.0  # Minimum implied probability shift in percentage points
+
+    def _prob(odds: float) -> float:
+        return (1.0 / odds) * 100
+
     now = datetime.utcnow()
     three_hours_from_now = now + timedelta(hours=3)
 
@@ -572,7 +577,7 @@ async def get_syndicate_moves(
         minutes_to_ko = int(time_to_ko.total_seconds() / 60)
 
         best_move = None
-        best_pct = 0
+        best_prob_move = 0
 
         # === 1X2 MARKET ===
         baseline_1x2 = (
@@ -596,10 +601,11 @@ async def get_syndicate_moves(
                 ('away', match.away_team, baseline_1x2.away_odds, latest_1x2.away_odds),
             ]
             for outcome, name, baseline_odds, curr_odds in outcomes:
-                if baseline_odds and curr_odds and baseline_odds > 0:
-                    pct = ((curr_odds - baseline_odds) / baseline_odds) * 100
-                    if pct <= -5.0 and pct < best_pct:
-                        best_pct = pct
+                if baseline_odds and curr_odds and baseline_odds > 0 and curr_odds > 0:
+                    # Positive = odds shortened (probability increased)
+                    prob_move = _prob(curr_odds) - _prob(baseline_odds)
+                    if prob_move >= PROB_THRESHOLD and prob_move > best_prob_move:
+                        best_prob_move = prob_move
                         best_move = {
                             'match': match,
                             'market': '1x2',
@@ -607,7 +613,7 @@ async def get_syndicate_moves(
                             'outcome_name': name,
                             'baseline_odds': baseline_odds,
                             'current_odds': curr_odds,
-                            'movement_percent': pct,
+                            'movement_percent': -prob_move,  # Negative to indicate shortening (convention)
                             'direction': 'down',
                             'minutes_to_kickoff': minutes_to_ko,
                             'moved_at': latest_1x2.fetched_at
@@ -635,10 +641,10 @@ async def get_syndicate_moves(
                 ('under', f'U {line}', baseline_totals.under_odds, latest_totals.under_odds),
             ]
             for outcome, name, baseline_odds, curr_odds in outcomes:
-                if baseline_odds and curr_odds and baseline_odds > 0:
-                    pct = ((curr_odds - baseline_odds) / baseline_odds) * 100
-                    if pct <= -5.0 and pct < best_pct:
-                        best_pct = pct
+                if baseline_odds and curr_odds and baseline_odds > 0 and curr_odds > 0:
+                    prob_move = _prob(curr_odds) - _prob(baseline_odds)
+                    if prob_move >= PROB_THRESHOLD and prob_move > best_prob_move:
+                        best_prob_move = prob_move
                         best_move = {
                             'match': match,
                             'market': 'totals',
@@ -646,7 +652,7 @@ async def get_syndicate_moves(
                             'outcome_name': name,
                             'baseline_odds': baseline_odds,
                             'current_odds': curr_odds,
-                            'movement_percent': pct,
+                            'movement_percent': -prob_move,
                             'direction': 'down',
                             'minutes_to_kickoff': minutes_to_ko,
                             'moved_at': latest_totals.fetched_at
@@ -675,10 +681,10 @@ async def get_syndicate_moves(
                 ('away_spread', f'AH {-line if line else 0:+g}', baseline_spreads.away_odds, latest_spreads.away_odds),
             ]
             for outcome, name, baseline_odds, curr_odds in outcomes:
-                if baseline_odds and curr_odds and baseline_odds > 0:
-                    pct = ((curr_odds - baseline_odds) / baseline_odds) * 100
-                    if pct <= -5.0 and pct < best_pct:
-                        best_pct = pct
+                if baseline_odds and curr_odds and baseline_odds > 0 and curr_odds > 0:
+                    prob_move = _prob(curr_odds) - _prob(baseline_odds)
+                    if prob_move >= PROB_THRESHOLD and prob_move > best_prob_move:
+                        best_prob_move = prob_move
                         best_move = {
                             'match': match,
                             'market': 'spreads',
@@ -686,7 +692,7 @@ async def get_syndicate_moves(
                             'outcome_name': name,
                             'baseline_odds': baseline_odds,
                             'current_odds': curr_odds,
-                            'movement_percent': pct,
+                            'movement_percent': -prob_move,
                             'direction': 'down',
                             'minutes_to_kickoff': minutes_to_ko,
                             'moved_at': latest_spreads.fetched_at
@@ -695,7 +701,7 @@ async def get_syndicate_moves(
         if best_move:
             syndicate_moves.append(best_move)
 
-    # Sort by movement (most shortened first) and take top N
+    # Sort by implied prob movement (largest shift first) and take top N
     syndicate_moves.sort(key=lambda x: x['movement_percent'])
     top_moves = syndicate_moves[:limit]
 
@@ -710,9 +716,9 @@ async def get_syndicate_moves(
             market=m['market'],
             outcome=m['outcome'],
             outcome_name=m['outcome_name'],
-            opening_odds=m['baseline_odds'],  # This is now the 3hr baseline, not opening
+            opening_odds=m['baseline_odds'],  # This is the 3hr baseline, not opening
             current_odds=m['current_odds'],
-            movement_percent=m['movement_percent'],
+            movement_percent=m['movement_percent'],  # Now implied prob change (negative = shortening)
             direction=m['direction'],
             minutes_to_kickoff=m['minutes_to_kickoff'],
             moved_at=m['moved_at']

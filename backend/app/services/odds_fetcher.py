@@ -13,8 +13,13 @@ logger = structlog.get_logger()
 settings = get_settings()
 
 # Constants for steam detection
-STEAM_THRESHOLD_PERCENT = 5.0  # Movement > 5% is considered significant
-LATE_STEAM_WINDOW_HOURS = 2    # Within 2 hours of kickoff
+STEAM_THRESHOLD_PROB_POINTS = 3.0  # Implied probability shift >= 3pp is significant
+LATE_STEAM_WINDOW_HOURS = 2        # Within 2 hours of kickoff
+
+
+def _implied_prob(odds: float) -> float:
+    """Convert decimal odds to implied probability (0-100 scale)."""
+    return (1.0 / odds) * 100
 
 
 class OddsFetcher:
@@ -240,12 +245,16 @@ class OddsFetcher:
         for outcome, team_name, opening, previous, current in outcomes:
             if not opening or not current or not previous:
                 continue
+            if opening <= 0 or current <= 0:
+                continue
 
-            # Calculate movement from opening
-            movement_percent = ((current - opening) / opening) * 100
+            # Calculate implied probability movement from opening
+            # Positive = odds shortened (probability up, being backed)
+            # Negative = odds drifted (probability down)
+            prob_move = _implied_prob(current) - _implied_prob(opening)
 
-            # Check if this is a significant move (>5% from opening)
-            if abs(movement_percent) >= STEAM_THRESHOLD_PERCENT:
+            # Check if this is a significant move (>= 3pp implied probability shift)
+            if abs(prob_move) >= STEAM_THRESHOLD_PROB_POINTS:
                 # Check if we already recorded this move (avoid duplicates)
                 existing = (
                     db.query(SteamMove)
@@ -268,7 +277,7 @@ class OddsFetcher:
                         opening_odds=opening,
                         previous_odds=previous,
                         current_odds=current,
-                        movement_percent=movement_percent,
+                        movement_percent=prob_move,
                         detected_at=fetch_time,
                         match_commence_time=match.commence_time,
                         minutes_before_kickoff=minutes_before_kickoff
@@ -281,7 +290,7 @@ class OddsFetcher:
                         match=f"{match.home_team} vs {match.away_team}",
                         outcome=outcome,
                         team=team_name,
-                        movement=f"{movement_percent:+.1f}%",
+                        prob_change=f"{prob_move:+.1f}pp",
                         minutes_before=minutes_before_kickoff
                     )
 
