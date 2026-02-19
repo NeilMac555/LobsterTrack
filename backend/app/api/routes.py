@@ -4,7 +4,7 @@ from sqlalchemy import func, desc, text
 from datetime import datetime, timedelta
 from typing import Optional
 
-from app.models import get_db, Match, OddsSnapshot, SteamMove, EmailSubscriber, TotalsSnapshot, SpreadsSnapshot
+from app.models import get_db, Match, OddsSnapshot, SteamMove, EmailSubscriber, TotalsSnapshot, SpreadsSnapshot, ClosingLine
 from app.config import get_settings
 from app.services.scheduler import odds_scheduler
 from .schemas import (
@@ -27,7 +27,9 @@ from .schemas import (
     MatchTotalsResponse,
     SyndicateMove,
     SteamResultsResponse,
-    TeamSteamRanking
+    TeamSteamRanking,
+    ClosingLineResponse,
+    ClosingLinesListResponse,
 )
 
 # Simple admin password
@@ -1085,6 +1087,86 @@ async def get_match_spreads(match_id: str, db: Session = Depends(get_db)):
     return MatchSpreadsResponse(
         match_id=match_id,
         spreads_history=spreads_history
+    )
+
+
+@router.get("/closing-lines", response_model=ClosingLinesListResponse)
+async def get_closing_lines(
+    db: Session = Depends(get_db),
+    league: Optional[str] = Query(None, description="Filter by sport_key (e.g. soccer_epl)"),
+    market_type: Optional[str] = Query(None, description="Filter by market: 1x2, asian_handicap, totals"),
+    team: Optional[str] = Query(None, description="Filter by team name (partial match)"),
+    date_from: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
+    date_to: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
+    limit: int = Query(100, le=500),
+    offset: int = Query(0),
+):
+    """
+    Query closing lines (last pre-kickoff odds) by league, date range, team, or market type.
+    """
+    query = db.query(ClosingLine)
+
+    if league:
+        query = query.filter(ClosingLine.league == league)
+
+    if market_type:
+        query = query.filter(ClosingLine.market_type == market_type)
+
+    if team:
+        team_filter = f"%{team}%"
+        query = query.filter(
+            (ClosingLine.home_team.ilike(team_filter)) |
+            (ClosingLine.away_team.ilike(team_filter))
+        )
+
+    if date_from:
+        try:
+            dt_from = datetime.strptime(date_from, "%Y-%m-%d")
+            query = query.filter(ClosingLine.kickoff_time >= dt_from)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date_from format. Use YYYY-MM-DD.")
+
+    if date_to:
+        try:
+            dt_to = datetime.strptime(date_to, "%Y-%m-%d") + timedelta(days=1)
+            query = query.filter(ClosingLine.kickoff_time < dt_to)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date_to format. Use YYYY-MM-DD.")
+
+    total = query.count()
+
+    closing_lines = (
+        query
+        .order_by(desc(ClosingLine.kickoff_time))
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+
+    return ClosingLinesListResponse(
+        total=total,
+        closing_lines=[
+            ClosingLineResponse(
+                id=cl.id,
+                match_id=cl.match_id,
+                league=cl.league,
+                home_team=cl.home_team,
+                away_team=cl.away_team,
+                kickoff_time=cl.kickoff_time,
+                market_type=cl.market_type.value if hasattr(cl.market_type, 'value') else cl.market_type,
+                close_home=cl.close_home,
+                close_draw=cl.close_draw,
+                close_away=cl.close_away,
+                close_line=cl.close_line,
+                close_home_price=cl.close_home_price,
+                close_away_price=cl.close_away_price,
+                close_over_price=cl.close_over_price,
+                close_under_price=cl.close_under_price,
+                captured_at=cl.captured_at,
+                minutes_before_kickoff=cl.minutes_before_kickoff,
+            )
+            for cl in closing_lines
+        ]
     )
 
 

@@ -227,3 +227,33 @@ class MatchSpreadsResponse(BaseModel):
     spreads_history: list[SpreadsPoint]
 
 
+class ClosingLineResponse(BaseModel):
+    """A single closing line record"""
+    id: int
+    match_id: str
+    league: str
+    home_team: str
+    away_team: str
+    kickoff_time: datetime
+    market_type: str
+    close_home: Optional[float] = None
+    close_draw: Optional[float] = None
+    close_away: Optional[float] = None
+    close_line: Optional[float] = None
+    close_home_price: Optional[float] = None
+    close_away_price: Optional[float] = None
+    close_over_price: Optional[float] = None
+    close_under_price: Optional[float] = None
+    captured_at: datetime
+    minutes_before_kickoff: int
+
+    class Config:
+        from_attributes = True
+
+
+class ClosingLinesListResponse(BaseModel):
+    """Paginated list of closing lines"""
+    total: int
+    closing_lines: list[ClosingLineResponse]
+
+

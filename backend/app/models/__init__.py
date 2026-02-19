@@ -6,5 +6,6 @@ from .email_subscriber import EmailSubscriber
 from .totals_snapshot import TotalsSnapshot
 from .spreads_snapshot import SpreadsSnapshot
 from .syndicate_alert import SyndicateAlert
+from .closing_line import ClosingLine, MarketType
 
-__all__ = ["Base", "get_db", "engine", "Match", "OddsSnapshot", "SteamMove", "EmailSubscriber", "TotalsSnapshot", "SpreadsSnapshot", "SyndicateAlert"]
+__all__ = ["Base", "get_db", "engine", "Match", "OddsSnapshot", "SteamMove", "EmailSubscriber", "TotalsSnapshot", "SpreadsSnapshot", "SyndicateAlert", "ClosingLine", "MarketType"]

@@ -6,6 +6,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 from app.config import get_settings
 from app.services.odds_fetcher import odds_fetcher
 from app.services.results_fetcher import results_fetcher
+from app.services.closing_line_capturer import closing_line_capturer
 
 logger = structlog.get_logger()
 settings = get_settings()
@@ -23,7 +24,7 @@ class OddsScheduler:
 
     async def fetch_job(self):
         """
-        Job function that fetches all odds.
+        Job function that fetches all odds, then captures closing lines.
         Wrapped to handle errors gracefully.
         """
         try:
@@ -38,6 +39,17 @@ class OddsScheduler:
             )
         except Exception as e:
             logger.error("Scheduled fetch failed", error=str(e))
+
+        # After fetching new odds, capture closing lines for any matches past kickoff
+        try:
+            cl_summary = await closing_line_capturer.capture_closing_lines()
+            if cl_summary["closing_lines_captured"] > 0:
+                logger.info(
+                    "Closing lines captured after odds fetch",
+                    captured=cl_summary["closing_lines_captured"]
+                )
+        except Exception as e:
+            logger.error("Closing line capture failed", error=str(e))
 
     async def results_job(self):
         """
