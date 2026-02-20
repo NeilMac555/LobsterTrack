@@ -51,12 +51,8 @@ export default function MatchCard({ match }: MatchCardProps) {
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           {biggestMover && (
-            <span className={`px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full font-semibold ${
-              biggestMover.direction === 'down'
-                ? 'bg-emerald-500/20 text-emerald-400'
-                : 'bg-red-500/20 text-red-400'
-            } ${isSignificantMove ? 'text-xs sm:text-sm font-bold' : 'text-[10px] sm:text-xs'}`}>
-              {biggestMover.outcome} {biggestMover.direction === 'up' ? '↑' : '↓'} {Math.abs(biggestMover.percentage).toFixed(1)}%
+            <span className={`px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full font-semibold bg-emerald-500/20 text-emerald-400 ${isSignificantMove ? 'text-xs sm:text-sm font-bold' : 'text-[10px] sm:text-xs'}`}>
+              {biggestMover.outcome} ↓ {Math.abs(biggestMover.percentage).toFixed(1)}%
             </span>
           )}
         </div>

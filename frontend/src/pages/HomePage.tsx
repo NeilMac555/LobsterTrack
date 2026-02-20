@@ -132,7 +132,7 @@ export default function HomePage() {
             <div className="flex items-center gap-2">
               <div>
                 <h2 className="text-lg sm:text-xl font-bold text-white">Biggest Movers</h2>
-                <p className="text-slate-400 text-xs sm:text-sm mt-0.5">Significant line movement</p>
+                <p className="text-slate-400 text-xs sm:text-sm mt-0.5">Sharp money signals</p>
               </div>
               <HelpButton onClick={() => setShowSteamGuide(true)} />
             </div>
@@ -151,10 +151,10 @@ export default function HomePage() {
                     League
                   </th>
                   <th className="px-4 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    Outcome Moved
+                    Backed
                   </th>
                   <th className="px-4 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    % Change
+                    Move
                   </th>
                   <th className="px-4 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
                     Opening
@@ -221,10 +221,8 @@ export default function HomePage() {
                         </div>
                       </td>
                       <td className="px-4 py-4 text-center">
-                        <span className={`font-mono font-bold ${
-                          mover.direction === 'down' ? 'text-emerald-400' : 'text-red-400'
-                        } ${isSignificant ? 'text-lg' : ''}`}>
-                          {mover.direction === 'up' ? '↑+' : '↓'}{mover.movement_percent.toFixed(1)}%
+                        <span className={`font-mono font-bold text-emerald-400 ${isSignificant ? 'text-lg' : ''}`}>
+                          ↓{Math.abs(mover.movement_percent).toFixed(1)}%
                         </span>
                       </td>
                       <td className="px-4 py-4 text-center">
@@ -293,10 +291,8 @@ export default function HomePage() {
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <div className={`font-mono font-bold ${
-                        mover.direction === 'down' ? 'text-emerald-400' : 'text-red-400'
-                      } ${isSignificant ? 'text-lg' : 'text-base'}`}>
-                        {mover.direction === 'up' ? '↑+' : '↓'}{Math.abs(mover.movement_percent).toFixed(1)}%
+                      <div className={`font-mono font-bold text-emerald-400 ${isSignificant ? 'text-lg' : 'text-base'}`}>
+                        ↓{Math.abs(mover.movement_percent).toFixed(1)}%
                       </div>
                       <div className="text-xs text-slate-500 mt-1">
                         {mover.opening_odds.toFixed(2)} → <span className="text-white font-semibold">{mover.current_odds.toFixed(2)}</span>

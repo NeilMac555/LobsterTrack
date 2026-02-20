@@ -427,10 +427,11 @@ async def get_biggest_movers(
     opening_spreads = {row.match_id: row for row in db.query(opening_spreads_subq).filter(opening_spreads_subq.c.rn == 1).all()}
 
     # Calculate movements for all outcomes across all markets
+    # Only consider SHORTENING odds (being backed) — the side smart money is on
     movers = []
     for match_id, match in match_map.items():
         best_move = None
-        best_pct = 0
+        best_pct = 0  # Track most-negative pct (most shortened)
 
         # 1X2 outcomes
         latest = latest_1x2.get(match_id)
@@ -444,7 +445,7 @@ async def get_biggest_movers(
             for outcome, name, open_odds, curr_odds in outcomes:
                 if open_odds and curr_odds and open_odds > 0:
                     pct = ((curr_odds - open_odds) / open_odds) * 100
-                    if abs(pct) > abs(best_pct):
+                    if pct < 0 and pct < best_pct:
                         best_pct = pct
                         best_move = {
                             'match': match,
@@ -454,7 +455,7 @@ async def get_biggest_movers(
                             'opening_odds': open_odds,
                             'current_odds': curr_odds,
                             'movement_percent': pct,
-                            'direction': 'down' if pct < 0 else 'up'
+                            'direction': 'down'
                         }
 
         # Totals outcomes
@@ -469,7 +470,7 @@ async def get_biggest_movers(
             for outcome, name, open_odds, curr_odds in outcomes:
                 if open_odds and curr_odds and open_odds > 0:
                     pct = ((curr_odds - open_odds) / open_odds) * 100
-                    if abs(pct) > abs(best_pct):
+                    if pct < 0 and pct < best_pct:
                         best_pct = pct
                         best_move = {
                             'match': match,
@@ -479,7 +480,7 @@ async def get_biggest_movers(
                             'opening_odds': open_odds,
                             'current_odds': curr_odds,
                             'movement_percent': pct,
-                            'direction': 'down' if pct < 0 else 'up'
+                            'direction': 'down'
                         }
 
         # Spreads (Asian Handicap) outcomes
@@ -495,7 +496,7 @@ async def get_biggest_movers(
             for outcome, name, open_odds, curr_odds in outcomes:
                 if open_odds and curr_odds and open_odds > 0:
                     pct = ((curr_odds - open_odds) / open_odds) * 100
-                    if abs(pct) > abs(best_pct):
+                    if pct < 0 and pct < best_pct:
                         best_pct = pct
                         best_move = {
                             'match': match,
@@ -505,7 +506,7 @@ async def get_biggest_movers(
                             'opening_odds': open_odds,
                             'current_odds': curr_odds,
                             'movement_percent': pct,
-                            'direction': 'down' if pct < 0 else 'up'
+                            'direction': 'down'
                         }
 
         if best_move and abs(best_pct) > 0.1:

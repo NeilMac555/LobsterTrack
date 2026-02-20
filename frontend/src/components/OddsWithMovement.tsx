@@ -139,7 +139,7 @@ export function OddsDisplayWithMovement({
   );
 }
 
-// Get the biggest mover for summary display
+// Get the biggest mover for summary display — only shortening (backed) outcomes
 export function getBiggestMover(
   homeMovement: ReturnType<typeof calculateMovement>,
   drawMovement: ReturnType<typeof calculateMovement>,
@@ -151,11 +151,14 @@ export function getBiggestMover(
     { outcome: 'A', ...awayMovement },
   ];
 
-  const biggest = movements.reduce((max, curr) =>
+  // Only consider shortening odds (direction === 'down') — the side being backed
+  const shortening = movements.filter(m => m.direction === 'down');
+
+  if (shortening.length === 0) return null;
+
+  const biggest = shortening.reduce((max, curr) =>
     Math.abs(curr.percentage) > Math.abs(max.percentage) ? curr : max
   );
-
-  if (biggest.direction === 'none') return null;
 
   return {
     outcome: biggest.outcome,
