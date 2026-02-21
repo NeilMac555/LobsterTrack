@@ -34,8 +34,6 @@ export default function Layout() {
 
   const isToolsPage = location.pathname.startsWith('/tools');
   const isSteamResultsPage = location.pathname === '/steam-results';
-  const isClosingLinesPage = location.pathname === '/closing-lines';
-
   return (
     <div className="min-h-screen">
       {/* Header */}
@@ -95,7 +93,7 @@ export default function Layout() {
               <Link
                 to="/"
                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                  !currentLeague && !isToolsPage && !isSteamResultsPage && !isClosingLinesPage
+                  !currentLeague && !isToolsPage && !isSteamResultsPage
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
                     : 'bg-slate-700/80 text-slate-300 hover:bg-slate-600 hover:text-white'
                 }`}
@@ -116,18 +114,6 @@ export default function Layout() {
                 }`}
               >
                 Steam Results
-              </Link>
-
-              {/* Closing Lines */}
-              <Link
-                to="/closing-lines"
-                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                  isClosingLinesPage
-                    ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/20'
-                    : 'bg-slate-700/80 text-slate-300 hover:bg-slate-600 hover:text-white'
-                }`}
-              >
-                Closing Lines
               </Link>
 
               {/* Tools Dropdown */}
@@ -218,7 +204,7 @@ export default function Layout() {
                   <Link
                     to="/"
                     className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                      !currentLeague && !isToolsPage && !isSteamResultsPage && !isClosingLinesPage
+                      !currentLeague && !isToolsPage && !isSteamResultsPage
                         ? 'bg-blue-600 text-white'
                         : 'bg-slate-700/80 text-slate-300 hover:bg-slate-600'
                     }`}
@@ -242,17 +228,6 @@ export default function Layout() {
                   >
                     <span className="text-lg">&#9889;</span>
                     <span className="font-medium">Steam Results</span>
-                  </Link>
-                  <Link
-                    to="/closing-lines"
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors ${
-                      isClosingLinesPage
-                        ? 'bg-violet-600/20 text-violet-400'
-                        : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700 hover:text-white'
-                    }`}
-                  >
-                    <span className="text-lg">&#9866;</span>
-                    <span className="font-medium">Closing Lines</span>
                   </Link>
                 </div>
               </div>
