@@ -224,10 +224,11 @@ async def get_match_detail(match_id: str, db: Session = Depends(get_db)):
     if not match:
         raise HTTPException(status_code=404, detail="Match not found")
 
-    # Get all odds snapshots ordered by time
+    # Get only pre-kickoff odds snapshots (exclude in-play odds)
     snapshots = (
         db.query(OddsSnapshot)
         .filter(OddsSnapshot.match_id == match_id)
+        .filter(OddsSnapshot.fetched_at < match.commence_time)
         .order_by(OddsSnapshot.fetched_at.asc())
         .all()
     )
@@ -1039,10 +1040,11 @@ async def get_match_totals(match_id: str, db: Session = Depends(get_db)):
     if not match:
         raise HTTPException(status_code=404, detail="Match not found")
 
-    # Get all totals snapshots ordered by time
+    # Get only pre-kickoff totals snapshots (exclude in-play odds)
     snapshots = (
         db.query(TotalsSnapshot)
         .filter(TotalsSnapshot.match_id == match_id)
+        .filter(TotalsSnapshot.fetched_at < match.commence_time)
         .order_by(TotalsSnapshot.fetched_at.asc())
         .all()
     )
@@ -1073,10 +1075,11 @@ async def get_match_spreads(match_id: str, db: Session = Depends(get_db)):
     if not match:
         raise HTTPException(status_code=404, detail="Match not found")
 
-    # Get all spreads snapshots ordered by time
+    # Get only pre-kickoff spreads snapshots (exclude in-play odds)
     snapshots = (
         db.query(SpreadsSnapshot)
         .filter(SpreadsSnapshot.match_id == match_id)
+        .filter(SpreadsSnapshot.fetched_at < match.commence_time)
         .order_by(SpreadsSnapshot.fetched_at.asc())
         .all()
     )
