@@ -146,6 +146,31 @@ export interface SteamResultsData {
   team_rankings: TeamSteamRanking[];
 }
 
+export interface ClosingLine {
+  id: number;
+  match_id: string;
+  league: string;
+  home_team: string;
+  away_team: string;
+  kickoff_time: string;
+  market_type: string;
+  close_home: number | null;
+  close_draw: number | null;
+  close_away: number | null;
+  close_line: number | null;
+  close_home_price: number | null;
+  close_away_price: number | null;
+  close_over_price: number | null;
+  close_under_price: number | null;
+  captured_at: string;
+  minutes_before_kickoff: number;
+}
+
+export interface ClosingLinesResponse {
+  total: number;
+  closing_lines: ClosingLine[];
+}
+
 export const LEAGUE_CONFIG: Record<string, { name: string; shortName: string; color: string }> = {
   soccer_epl: { name: 'Premier League', shortName: 'EPL', color: '#3D195B' },
   soccer_spain_la_liga: { name: 'La Liga', shortName: 'LAL', color: '#EE8707' },

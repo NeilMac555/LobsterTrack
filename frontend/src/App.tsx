@@ -4,6 +4,7 @@ import HomePage from './pages/HomePage';
 import MatchDetailPage from './pages/MatchDetailPage';
 import HedgeCalculatorPage from './pages/HedgeCalculatorPage';
 import SteamResultsPage from './pages/SteamResultsPage';
+import ClosingLinesPage from './pages/ClosingLinesPage';
 import AdminEmailsPage from './pages/AdminEmailsPage';
 
 function App() {
@@ -14,6 +15,7 @@ function App() {
           <Route index element={<HomePage />} />
           <Route path="match/:matchId" element={<MatchDetailPage />} />
           <Route path="steam-results" element={<SteamResultsPage />} />
+          <Route path="closing-lines" element={<ClosingLinesPage />} />
           <Route path="tools/hedge-calculator" element={<HedgeCalculatorPage />} />
           <Route path="admin/emails" element={<AdminEmailsPage />} />
         </Route>
