@@ -257,3 +257,21 @@ class ClosingLinesListResponse(BaseModel):
     closing_lines: list[ClosingLineResponse]
 
 
+class MatchClosingLines(BaseModel):
+    """All closing lines for a single match, grouped by market"""
+    match_id: str
+    home_team: str
+    away_team: str
+    league: str
+    kickoff_time: datetime
+    h2h: Optional[ClosingLineResponse] = None
+    asian_handicap: Optional[ClosingLineResponse] = None
+    totals: Optional[ClosingLineResponse] = None
+
+
+class MatchClosingLinesListResponse(BaseModel):
+    """List of matches with their grouped closing lines"""
+    total: int
+    matches: list[MatchClosingLines]
+
+

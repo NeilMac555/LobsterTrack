@@ -1,4 +1,4 @@
-import type { MatchSummary, MatchDetail, LeagueSummary, Stats, BiggestMover, MatchTotals, SyndicateMove, MatchSpreads, SteamResultsData, ClosingLinesResponse } from '../types';
+import type { MatchSummary, MatchDetail, LeagueSummary, Stats, BiggestMover, MatchTotals, SyndicateMove, MatchSpreads, SteamResultsData, ClosingLinesResponse, MatchClosingLinesResponse } from '../types';
 
 const API_BASE = '/api';
 
@@ -89,4 +89,15 @@ export async function getClosingLines(params?: {
   if (params?.limit) searchParams.set('limit', String(params.limit));
   const query = searchParams.toString();
   return fetchJson<ClosingLinesResponse>(`${API_BASE}/closing-lines${query ? `?${query}` : ''}`);
+}
+
+export async function getClosingLinesGrouped(params?: {
+  league?: string;
+  limit?: number;
+}): Promise<MatchClosingLinesResponse> {
+  const searchParams = new URLSearchParams();
+  if (params?.league) searchParams.set('league', params.league);
+  if (params?.limit) searchParams.set('limit', String(params.limit));
+  const query = searchParams.toString();
+  return fetchJson<MatchClosingLinesResponse>(`${API_BASE}/closing-lines/grouped${query ? `?${query}` : ''}`);
 }

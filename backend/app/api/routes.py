@@ -30,6 +30,8 @@ from .schemas import (
     TeamSteamRanking,
     ClosingLineResponse,
     ClosingLinesListResponse,
+    MatchClosingLines,
+    MatchClosingLinesListResponse,
 )
 
 # Simple admin password
@@ -1177,6 +1179,83 @@ async def get_closing_lines(
             )
             for cl in closing_lines
         ]
+    )
+
+
+@router.get("/closing-lines/grouped", response_model=MatchClosingLinesListResponse)
+async def get_closing_lines_grouped(
+    db: Session = Depends(get_db),
+    league: Optional[str] = Query(None, description="Filter by sport_key (e.g. soccer_uefa_champs_league)"),
+    limit: int = Query(100, le=500),
+    offset: int = Query(0),
+):
+    """
+    Get closing lines grouped by match. Each match includes all available markets
+    (1x2, asian_handicap, totals) in a single object for accordion display.
+    """
+    query = db.query(ClosingLine)
+
+    if league:
+        query = query.filter(ClosingLine.league == league)
+
+    # Get all closing lines ordered by kickoff
+    all_lines = (
+        query
+        .order_by(desc(ClosingLine.kickoff_time))
+        .all()
+    )
+
+    # Group by match_id
+    matches_map: dict[str, dict] = {}
+    for cl in all_lines:
+        if cl.match_id not in matches_map:
+            matches_map[cl.match_id] = {
+                "match_id": cl.match_id,
+                "home_team": cl.home_team,
+                "away_team": cl.away_team,
+                "league": cl.league,
+                "kickoff_time": cl.kickoff_time,
+                "h2h": None,
+                "asian_handicap": None,
+                "totals": None,
+            }
+
+        market = cl.market_type.value if hasattr(cl.market_type, 'value') else cl.market_type
+        cl_response = ClosingLineResponse(
+            id=cl.id,
+            match_id=cl.match_id,
+            league=cl.league,
+            home_team=cl.home_team,
+            away_team=cl.away_team,
+            kickoff_time=cl.kickoff_time,
+            market_type=market,
+            close_home=cl.close_home,
+            close_draw=cl.close_draw,
+            close_away=cl.close_away,
+            close_line=cl.close_line,
+            close_home_price=cl.close_home_price,
+            close_away_price=cl.close_away_price,
+            close_over_price=cl.close_over_price,
+            close_under_price=cl.close_under_price,
+            captured_at=cl.captured_at,
+            minutes_before_kickoff=cl.minutes_before_kickoff,
+        )
+
+        if market == "1x2":
+            matches_map[cl.match_id]["h2h"] = cl_response
+        elif market == "asian_handicap":
+            matches_map[cl.match_id]["asian_handicap"] = cl_response
+        elif market == "totals":
+            matches_map[cl.match_id]["totals"] = cl_response
+
+    # Sort by kickoff descending, apply pagination
+    sorted_matches = sorted(matches_map.values(), key=lambda m: m["kickoff_time"], reverse=True)
+    total = len(sorted_matches)
+    paginated = sorted_matches[offset:offset + limit]
+
+    return MatchClosingLinesListResponse(
+        total=total,
+        matches=[MatchClosingLines(**m) for m in paginated],
     )
 
 

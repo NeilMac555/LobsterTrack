@@ -171,6 +171,22 @@ export interface ClosingLinesResponse {
   closing_lines: ClosingLine[];
 }
 
+export interface MatchClosingLines {
+  match_id: string;
+  home_team: string;
+  away_team: string;
+  league: string;
+  kickoff_time: string;
+  h2h: ClosingLine | null;
+  asian_handicap: ClosingLine | null;
+  totals: ClosingLine | null;
+}
+
+export interface MatchClosingLinesResponse {
+  total: number;
+  matches: MatchClosingLines[];
+}
+
 export const LEAGUE_CONFIG: Record<string, { name: string; shortName: string; color: string }> = {
   soccer_epl: { name: 'Premier League', shortName: 'EPL', color: '#3D195B' },
   soccer_spain_la_liga: { name: 'La Liga', shortName: 'LAL', color: '#EE8707' },
