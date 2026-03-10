@@ -1315,3 +1315,66 @@ async def send_test_telegram_alert(
     )
 
     return {"success": success}
+
+
+@router.get("/admin/scheduler-status")
+async def get_scheduler_status(
+    password: str = Query(..., description="Admin password"),
+    db: Session = Depends(get_db)
+):
+    """
+    Get current scheduler status showing refresh rates per league (admin only).
+    """
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid password")
+
+    from app.services.scheduler import odds_scheduler
+    from datetime import timezone
+
+    now = datetime.utcnow().replace(tzinfo=timezone.utc)
+    league_status = []
+
+    for sport_key, league_name in settings.leagues.items():
+        interval, ko_matches = odds_scheduler._get_league_refresh_info(sport_key)
+        last_fetch = odds_scheduler._last_fetch_by_league.get(sport_key)
+
+        # Find nearest match
+        nearest = (
+            db.query(Match)
+            .filter(Match.sport_key == sport_key, Match.commence_time > now)
+            .order_by(Match.commence_time.asc())
+            .first()
+        )
+
+        nearest_ko = None
+        minutes_to_ko = None
+        if nearest:
+            ct = nearest.commence_time
+            if ct.tzinfo is None:
+                ct = ct.replace(tzinfo=timezone.utc)
+            minutes_to_ko = int((ct - now).total_seconds() / 60)
+            nearest_ko = ct.isoformat()
+
+        window = "default"
+        if minutes_to_ko is not None:
+            if minutes_to_ko <= 30:
+                window = "closing (T-30 to T-0)"
+            elif minutes_to_ko <= 120:
+                window = "early (T-120 to T-30)"
+
+        league_status.append({
+            "sport_key": sport_key,
+            "league_name": league_name,
+            "refresh_interval_minutes": interval,
+            "window": window,
+            "nearest_ko": nearest_ko,
+            "minutes_to_nearest_ko": minutes_to_ko,
+            "last_fetch": last_fetch.isoformat() if last_fetch else None,
+        })
+
+    return {
+        "scheduler_running": odds_scheduler._is_running,
+        "tick_interval_minutes": 2,
+        "scheduled_ko_jobs": len(odds_scheduler._scheduled_ko_jobs),
+        "leagues": league_status
+    }

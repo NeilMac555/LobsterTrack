@@ -33,9 +33,10 @@ class OddsFetcher:
         self.api_key = settings.odds_api_key
         self.leagues = settings.leagues
 
-    async def fetch_all_leagues(self) -> dict:
+    async def fetch_all_leagues(self, sport_keys: list = None) -> dict:
         """
-        Fetch odds for all configured leagues.
+        Fetch odds for configured leagues.
+        If sport_keys is provided, only fetch those leagues.
         Returns summary of what was fetched.
         """
         summary = {
@@ -45,8 +46,13 @@ class OddsFetcher:
             "errors": []
         }
 
+        leagues_to_fetch = {
+            k: v for k, v in self.leagues.items()
+            if sport_keys is None or k in sport_keys
+        }
+
         async with httpx.AsyncClient(timeout=30.0) as client:
-            for sport_key, league_name in self.leagues.items():
+            for sport_key, league_name in leagues_to_fetch.items():
                 try:
                     result = await self._fetch_league_odds(client, sport_key, league_name)
                     summary["leagues_processed"] += 1
