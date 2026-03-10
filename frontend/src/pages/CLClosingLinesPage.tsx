@@ -322,18 +322,21 @@ export default function CLClosingLinesPage() {
 
   if (!data) return null;
 
-  // Count markets across all matches
-  const stats = data.matches.reduce(
-    (acc, m) => {
-      if (m.h2h) acc.h2h++;
-      if (m.asian_handicap) acc.ah++;
-      if (m.totals) acc.totals++;
-      return acc;
-    },
-    { h2h: 0, ah: 0, totals: 0 }
-  );
-
   const matchdays = groupByMatchday(data.matches);
+
+  // Compute practical stats
+  const allCaptureTimes: number[] = [];
+  let fullMarketCount = 0;
+  for (const m of data.matches) {
+    const markets = [m.h2h, m.asian_handicap, m.totals];
+    if (markets.every(Boolean)) fullMarketCount++;
+    for (const cl of markets) {
+      if (cl) allCaptureTimes.push(cl.minutes_before_kickoff);
+    }
+  }
+  const avgCapture = allCaptureTimes.length > 0
+    ? Math.round(allCaptureTimes.reduce((a, b) => a + b, 0) / allCaptureTimes.length)
+    : 0;
 
   return (
     <div>
@@ -350,29 +353,18 @@ export default function CLClosingLinesPage() {
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-white">Champions League Closing Lines</h1>
             <p className="text-slate-400 text-sm sm:text-base mt-0.5">
-              Pinnacle's last odds before kickoff across all markets
+              Pinnacle's last odds before kickoff &bull; 1X2, Asian Handicap &amp; Totals
             </p>
           </div>
         </div>
-      </div>
 
-      {/* Stats Banner */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
-        <div className="bg-slate-800/80 rounded-xl border border-indigo-500/30 p-4 text-center">
-          <div className="text-2xl sm:text-3xl font-bold text-indigo-400">{data.total}</div>
-          <div className="text-xs sm:text-sm text-slate-400 mt-1">Matches</div>
-        </div>
-        <div className="bg-slate-800/80 rounded-xl border border-slate-700/50 p-4 text-center">
-          <div className="text-2xl sm:text-3xl font-bold text-blue-400">{stats.h2h}</div>
-          <div className="text-xs sm:text-sm text-slate-400 mt-1">1X2</div>
-        </div>
-        <div className="bg-slate-800/80 rounded-xl border border-slate-700/50 p-4 text-center">
-          <div className="text-2xl sm:text-3xl font-bold text-amber-400">{stats.ah}</div>
-          <div className="text-xs sm:text-sm text-slate-400 mt-1">Asian HC</div>
-        </div>
-        <div className="bg-slate-800/80 rounded-xl border border-slate-700/50 p-4 text-center">
-          <div className="text-2xl sm:text-3xl font-bold text-emerald-400">{stats.totals}</div>
-          <div className="text-xs sm:text-sm text-slate-400 mt-1">Totals</div>
+        {/* Compact info bar */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-xs text-slate-500">
+          <span>{data.total} matches across {matchdays.length} matchday{matchdays.length !== 1 ? 's' : ''}</span>
+          <span className="hidden sm:inline text-slate-700">&bull;</span>
+          <span>{fullMarketCount}/{data.total} with all 3 markets</span>
+          <span className="hidden sm:inline text-slate-700">&bull;</span>
+          <span>Avg capture: <span className={`font-medium ${avgCapture <= 5 ? 'text-emerald-400' : avgCapture <= 15 ? 'text-amber-400' : 'text-red-400'}`}>{avgCapture}m</span> before KO</span>
         </div>
       </div>
 
