@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { format } from 'date-fns';
+import { format, isToday, startOfDay } from 'date-fns';
 import { getClosingLinesGrouped } from '../api';
 import type { MatchClosingLinesResponse, MatchClosingLines, ClosingLine } from '../types';
 
@@ -134,7 +134,7 @@ function MatchAccordion({ match }: { match: MatchClosingLines }) {
           </div>
           <div className="flex items-center gap-3 mt-1">
             <span className="text-xs text-slate-500">
-              {format(kickoff, 'EEE, MMM d yyyy - HH:mm')}
+              {format(kickoff, 'HH:mm')}
             </span>
             <span className="text-[10px] text-indigo-400/70 bg-indigo-500/10 px-1.5 py-0.5 rounded">
               {marketsAvailable}/3 markets
@@ -187,6 +187,86 @@ function MatchAccordion({ match }: { match: MatchClosingLines }) {
               View full odds history &rarr;
             </Link>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface MatchdayGroup {
+  dateKey: string;
+  label: string;
+  matches: MatchClosingLines[];
+  isToday: boolean;
+}
+
+function groupByMatchday(matches: MatchClosingLines[]): MatchdayGroup[] {
+  const groups: Record<string, MatchClosingLines[]> = {};
+
+  for (const match of matches) {
+    const kickoff = new Date(match.kickoff_time);
+    const dateKey = format(startOfDay(kickoff), 'yyyy-MM-dd');
+    if (!groups[dateKey]) groups[dateKey] = [];
+    groups[dateKey].push(match);
+  }
+
+  // Sort by date descending (most recent first)
+  const sortedKeys = Object.keys(groups).sort((a, b) => b.localeCompare(a));
+
+  return sortedKeys.map((dateKey) => {
+    const first = new Date(groups[dateKey][0].kickoff_time);
+    const today = isToday(first);
+    return {
+      dateKey,
+      label: today ? 'Today' : format(first, 'EEEE, MMMM d yyyy'),
+      matches: groups[dateKey],
+      isToday: today,
+    };
+  });
+}
+
+function MatchdayAccordion({ group }: { group: MatchdayGroup }) {
+  const [open, setOpen] = useState(group.isToday);
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(!open)}
+        className={`w-full flex items-center justify-between px-4 sm:px-5 py-3 rounded-xl transition-colors ${
+          group.isToday
+            ? 'bg-indigo-600/20 border border-indigo-500/30'
+            : 'bg-slate-800/60 border border-slate-700/40 hover:bg-slate-800/80'
+        }`}
+      >
+        <div className="flex items-center gap-3">
+          <span className={`text-sm sm:text-base font-bold ${group.isToday ? 'text-indigo-300' : 'text-slate-300'}`}>
+            {group.label}
+          </span>
+          <span className={`text-xs px-2 py-0.5 rounded-full ${
+            group.isToday
+              ? 'bg-indigo-500/20 text-indigo-400'
+              : 'bg-slate-700/50 text-slate-500'
+          }`}>
+            {group.matches.length} {group.matches.length === 1 ? 'match' : 'matches'}
+          </span>
+        </div>
+        <svg
+          className={`w-5 h-5 transition-transform duration-200 flex-shrink-0 ${
+            group.isToday ? 'text-indigo-400' : 'text-slate-500'
+          } ${open ? 'rotate-180' : ''}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="mt-2 space-y-3">
+          {group.matches.map((match) => (
+            <MatchAccordion key={match.match_id} match={match} />
+          ))}
         </div>
       )}
     </div>
@@ -253,6 +333,8 @@ export default function CLClosingLinesPage() {
     { h2h: 0, ah: 0, totals: 0 }
   );
 
+  const matchdays = groupByMatchday(data.matches);
+
   return (
     <div>
       {/* Page Header */}
@@ -294,11 +376,11 @@ export default function CLClosingLinesPage() {
         </div>
       </div>
 
-      {/* Match List with Accordions */}
-      {data.matches.length > 0 ? (
-        <div className="space-y-3">
-          {data.matches.map((match) => (
-            <MatchAccordion key={match.match_id} match={match} />
+      {/* Matchday Groups */}
+      {matchdays.length > 0 ? (
+        <div className="space-y-4">
+          {matchdays.map((group) => (
+            <MatchdayAccordion key={group.dateKey} group={group} />
           ))}
         </div>
       ) : (
