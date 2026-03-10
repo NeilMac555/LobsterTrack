@@ -334,9 +334,18 @@ export default function CLClosingLinesPage() {
       if (cl) allCaptureTimes.push(cl.minutes_before_kickoff);
     }
   }
-  const avgCapture = allCaptureTimes.length > 0
-    ? Math.round(allCaptureTimes.reduce((a, b) => a + b, 0) / allCaptureTimes.length)
+  // Use median to avoid outliers from early captures
+  const sorted = [...allCaptureTimes].sort((a, b) => a - b);
+  const medianCapture = sorted.length > 0
+    ? sorted[Math.floor(sorted.length / 2)]
     : 0;
+
+  function formatCapture(mins: number): string {
+    if (mins < 60) return `${mins}m`;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return m > 0 ? `${h}h ${m}m` : `${h}h`;
+  }
 
   return (
     <div>
@@ -364,7 +373,7 @@ export default function CLClosingLinesPage() {
           <span className="hidden sm:inline text-slate-700">&bull;</span>
           <span>{fullMarketCount}/{data.total} with all 3 markets</span>
           <span className="hidden sm:inline text-slate-700">&bull;</span>
-          <span>Avg capture: <span className={`font-medium ${avgCapture <= 5 ? 'text-emerald-400' : avgCapture <= 15 ? 'text-amber-400' : 'text-red-400'}`}>{avgCapture}m</span> before KO</span>
+          <span>Typical capture: <span className={`font-medium ${medianCapture <= 5 ? 'text-emerald-400' : medianCapture <= 15 ? 'text-amber-400' : 'text-red-400'}`}>{formatCapture(medianCapture)}</span> before KO</span>
         </div>
       </div>
 
