@@ -401,16 +401,11 @@ class OddsFetcher:
         """
         Store fetched totals odds in the database.
         Only stores if match already exists (from 1X2 fetch).
-
-        ANCHOR LINE LOGIC:
-        - First snapshot for a match establishes the "anchor line"
-        - Subsequent snapshots only stored if they match the anchor line
-        - This ensures clean tracking of one line from open to close
+        Always stores regardless of line changes so closing lines are accurate.
         """
         db = SessionLocal()
         try:
             totals_stored = 0
-            totals_skipped = 0
             fetch_time = datetime.utcnow()
 
             for event in events:
@@ -419,35 +414,15 @@ class OddsFetcher:
                 # Check if match exists (should have been created by 1X2 fetch)
                 match = db.query(Match).filter(Match.id == match_id).first()
                 if not match:
-                    # Match not found, skip (shouldn't happen normally)
                     continue
 
                 # Extract Pinnacle totals
                 totals_data = self._extract_pinnacle_totals(event)
 
                 if totals_data:
-                    current_line = totals_data["line"]
-
-                    # Check if we have an anchor line (first snapshot for this match)
-                    first_snapshot = (
-                        db.query(TotalsSnapshot)
-                        .filter(TotalsSnapshot.match_id == match_id)
-                        .order_by(TotalsSnapshot.fetched_at.asc())
-                        .first()
-                    )
-
-                    if first_snapshot:
-                        # We have an anchor line - only store if current line matches
-                        anchor_line = first_snapshot.line
-                        if current_line != anchor_line:
-                            # Line has shifted, skip this snapshot
-                            totals_skipped += 1
-                            continue
-
-                    # Either first snapshot (establishes anchor) or matches anchor
                     snapshot = TotalsSnapshot(
                         match_id=match_id,
-                        line=current_line,
+                        line=totals_data["line"],
                         over_odds=totals_data.get("over"),
                         under_odds=totals_data.get("under"),
                         fetched_at=fetch_time,
@@ -457,9 +432,6 @@ class OddsFetcher:
                     totals_stored += 1
 
             db.commit()
-
-            if totals_skipped > 0:
-                logger.debug("Totals skipped due to line shift", skipped=totals_skipped)
 
             return {"totals_stored": totals_stored}
 
@@ -544,16 +516,11 @@ class OddsFetcher:
         """
         Store fetched spreads odds in the database.
         Only stores if match already exists (from 1X2 fetch).
-
-        ANCHOR LINE LOGIC:
-        - First snapshot for a match establishes the "anchor line"
-        - Subsequent snapshots only stored if they match the anchor line
-        - This ensures clean tracking of one line from open to close
+        Always stores regardless of line changes so closing lines are accurate.
         """
         db = SessionLocal()
         try:
             spreads_stored = 0
-            spreads_skipped = 0
             fetch_time = datetime.utcnow()
 
             for event in events:
@@ -562,35 +529,15 @@ class OddsFetcher:
                 # Check if match exists (should have been created by 1X2 fetch)
                 match = db.query(Match).filter(Match.id == match_id).first()
                 if not match:
-                    # Match not found, skip
                     continue
 
                 # Extract Pinnacle spreads
                 spreads_data = self._extract_pinnacle_spreads(event)
 
                 if spreads_data:
-                    current_line = spreads_data["line"]
-
-                    # Check if we have an anchor line (first snapshot for this match)
-                    first_snapshot = (
-                        db.query(SpreadsSnapshot)
-                        .filter(SpreadsSnapshot.match_id == match_id)
-                        .order_by(SpreadsSnapshot.fetched_at.asc())
-                        .first()
-                    )
-
-                    if first_snapshot:
-                        # We have an anchor line - only store if current line matches
-                        anchor_line = first_snapshot.line
-                        if current_line != anchor_line:
-                            # Line has shifted, skip this snapshot
-                            spreads_skipped += 1
-                            continue
-
-                    # Either first snapshot (establishes anchor) or matches anchor
                     snapshot = SpreadsSnapshot(
                         match_id=match_id,
-                        line=current_line,
+                        line=spreads_data["line"],
                         home_odds=spreads_data.get("home"),
                         away_odds=spreads_data.get("away"),
                         fetched_at=fetch_time,
@@ -600,9 +547,6 @@ class OddsFetcher:
                     spreads_stored += 1
 
             db.commit()
-
-            if spreads_skipped > 0:
-                logger.debug("Spreads skipped due to line shift", skipped=spreads_skipped)
 
             return {"spreads_stored": spreads_stored}
 
