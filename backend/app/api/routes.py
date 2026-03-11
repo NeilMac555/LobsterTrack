@@ -813,7 +813,8 @@ async def get_steam_moves(db: Session = Depends(get_db)):
 async def get_steam_results(
     db: Session = Depends(get_db),
     league: Optional[str] = Query(None, description="Filter by sport_key"),
-    limit: int = Query(200, le=500, description="Number of moves to return")
+    limit: int = Query(200, le=500, description="Number of moves to return"),
+    days: Optional[int] = Query(None, description="Only include moves from the last N days")
 ):
     """
     Public endpoint: completed steam move results with team rankings.
@@ -829,6 +830,9 @@ async def get_steam_results(
     )
     if league:
         base_query = base_query.filter(SteamMove.sport_key == league)
+    if days:
+        cutoff = datetime.utcnow() - timedelta(days=days)
+        base_query = base_query.filter(SteamMove.match_commence_time >= cutoff)
 
     all_moves = base_query.order_by(desc(SteamMove.match_commence_time)).all()
 
@@ -876,18 +880,24 @@ async def get_steam_results(
                 'wins': 0,
                 'draws': 0,
                 'losses': 0,
+                'movement_sum': 0.0,
+                'profit_loss': 0.0,
             }
         team_stats[key]['total'] += 1
+        team_stats[key]['movement_sum'] += abs(m.movement_percent)
         r = _result(m)
         if r == 'win':
             team_stats[key]['wins'] += 1
+            team_stats[key]['profit_loss'] += (m.current_odds - 1)
         elif r == 'draw':
             team_stats[key]['draws'] += 1
+            team_stats[key]['profit_loss'] -= 1
         else:
             team_stats[key]['losses'] += 1
+            team_stats[key]['profit_loss'] -= 1
 
-    # Sort by total matches with steam descending
-    ranked_teams = sorted(team_stats.values(), key=lambda x: x['total'], reverse=True)
+    # Sort by profit/loss descending
+    ranked_teams = sorted(team_stats.values(), key=lambda x: x['profit_loss'], reverse=True)
 
     team_rankings = [
         TeamSteamRanking(
@@ -898,6 +908,8 @@ async def get_steam_results(
             draws=t['draws'],
             losses=t['losses'],
             win_rate=round(t['wins'] / t['total'] * 100, 1) if t['total'] > 0 else None,
+            avg_move_size=round(t['movement_sum'] / t['total'], 1) if t['total'] > 0 else None,
+            profit_loss=round(t['profit_loss'], 2),
         )
         for t in ranked_teams
     ]

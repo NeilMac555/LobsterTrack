@@ -116,6 +116,8 @@ class TeamSteamRanking(BaseModel):
     draws: int
     losses: int
     win_rate: Optional[float] = None
+    avg_move_size: Optional[float] = None
+    profit_loss: Optional[float] = None
 
 
 class SteamResultsResponse(BaseModel):

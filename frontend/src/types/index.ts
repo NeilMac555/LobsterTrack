@@ -133,6 +133,8 @@ export interface TeamSteamRanking {
   draws: number;
   losses: number;
   win_rate: number | null;
+  avg_move_size: number | null;
+  profit_loss: number | null;
 }
 
 export interface SteamResultsData {

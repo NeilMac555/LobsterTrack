@@ -1,9 +1,42 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { getSteamResults } from '../api';
-import type { SteamResultsData } from '../types';
+import type { SteamResultsData, TeamSteamRanking } from '../types';
 import { LEAGUE_CONFIG } from '../types';
 import LeagueLogo from '../components/LeagueLogo';
+
+type SortField = 'profit_loss' | 'total_moves' | 'wins' | 'win_rate' | 'avg_move_size';
+type SortDir = 'asc' | 'desc';
+type MinMoves = 3 | 5 | 10;
+
+function winRateColor(rate: number | null): string {
+  if (rate === null) return 'text-slate-400';
+  if (rate >= 60) return 'text-emerald-400';
+  if (rate >= 40) return 'text-amber-400';
+  return 'text-red-400';
+}
+
+function plColor(pl: number | null): string {
+  if (pl === null) return 'text-slate-400';
+  if (pl > 0) return 'text-emerald-400';
+  if (pl < 0) return 'text-red-400';
+  return 'text-slate-400';
+}
+
+function formatPL(pl: number | null): string {
+  if (pl === null) return '-';
+  const sign = pl > 0 ? '+' : '';
+  return `${sign}${pl.toFixed(2)}u`;
+}
+
+function SortIcon({ active, direction }: { active: boolean; direction: SortDir }) {
+  if (!active) return <span className="text-slate-600 ml-1">&#8597;</span>;
+  return (
+    <span className="text-amber-400 ml-1">
+      {direction === 'desc' ? '\u25BC' : '\u25B2'}
+    </span>
+  );
+}
 
 export default function SteamResultsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -13,6 +46,11 @@ export default function SteamResultsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [sortField, setSortField] = useState<SortField>('profit_loss');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [minMoves, setMinMoves] = useState<MinMoves>(5);
+  const [daysFilter, setDaysFilter] = useState<number | null>(null);
+
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
@@ -21,6 +59,7 @@ export default function SteamResultsPage() {
         const result = await getSteamResults({
           league: league || undefined,
           limit: 200,
+          days: daysFilter || undefined,
         });
         setData(result);
       } catch (err) {
@@ -31,7 +70,27 @@ export default function SteamResultsPage() {
       }
     }
     fetchData();
-  }, [league]);
+  }, [league, daysFilter]);
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir(d => d === 'desc' ? 'asc' : 'desc');
+    } else {
+      setSortField(field);
+      setSortDir('desc');
+    }
+  };
+
+  const filteredRankings = useMemo(() => {
+    if (!data) return [];
+    return data.team_rankings
+      .filter(t => t.total_moves >= minMoves)
+      .sort((a, b) => {
+        const aVal = a[sortField] ?? -Infinity;
+        const bVal = b[sortField] ?? -Infinity;
+        return sortDir === 'desc' ? (bVal as number) - (aVal as number) : (aVal as number) - (bVal as number);
+      });
+  }, [data, minMoves, sortField, sortDir]);
 
   if (loading) {
     return (
@@ -58,6 +117,14 @@ export default function SteamResultsPage() {
   if (!data) return null;
 
   const leagues = Object.entries(LEAGUE_CONFIG);
+
+  const sortLabels: Record<SortField, string> = {
+    profit_loss: 'P/L',
+    total_moves: 'steam move frequency',
+    wins: 'wins',
+    win_rate: 'win rate',
+    avg_move_size: 'avg move size',
+  };
 
   return (
     <div>
@@ -170,7 +237,43 @@ export default function SteamResultsPage() {
         >
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-700/50 bg-gradient-to-r from-amber-500/10 to-transparent">
             <h2 className="text-lg sm:text-xl font-bold text-white">Most Steamed Teams</h2>
-            <p className="text-slate-400 text-xs sm:text-sm mt-0.5">Top 20 &mdash; ranked by sharp money frequency</p>
+            <p className="text-slate-400 text-xs sm:text-sm mt-0.5">
+              Ranked by {sortLabels[sortField]} ({sortDir === 'desc' ? 'highest' : 'lowest'} first)
+            </p>
+          </div>
+
+          {/* Filter Controls */}
+          <div className="px-4 sm:px-6 py-3 border-b border-slate-700/50 flex flex-wrap items-center gap-3 sm:gap-4 bg-slate-800/50">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400 font-medium">Min moves:</span>
+              {([3, 5, 10] as MinMoves[]).map(n => (
+                <button
+                  key={n}
+                  onClick={() => setMinMoves(n)}
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+                    minMoves === n
+                      ? 'bg-amber-600 text-white'
+                      : 'bg-slate-700/80 text-slate-400 hover:bg-slate-600 hover:text-white'
+                  }`}
+                >
+                  {n}+
+                </button>
+              ))}
+            </div>
+            <div className="w-px h-5 bg-slate-700 hidden sm:block"></div>
+            <button
+              onClick={() => setDaysFilter(d => d === 30 ? null : 30)}
+              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+                daysFilter === 30
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-700/80 text-slate-400 hover:bg-slate-600 hover:text-white'
+              }`}
+            >
+              Last 30 days
+            </button>
+            <span className="text-xs text-slate-500 ml-auto">
+              {filteredRankings.length} team{filteredRankings.length !== 1 ? 's' : ''}
+            </span>
           </div>
 
           {/* Desktop Table */}
@@ -187,11 +290,17 @@ export default function SteamResultsPage() {
                   <th className="px-3 py-3 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
                     League
                   </th>
-                  <th className="px-3 py-3 text-center text-xs font-semibold text-amber-400/80 uppercase tracking-wider">
-                    Moves
+                  <th
+                    className="px-3 py-3 text-center text-xs font-semibold text-amber-400/80 uppercase tracking-wider cursor-pointer hover:text-amber-300 select-none"
+                    onClick={() => handleSort('total_moves')}
+                  >
+                    Moves<SortIcon active={sortField === 'total_moves'} direction={sortDir} />
                   </th>
-                  <th className="px-3 py-3 text-center text-xs font-semibold text-emerald-400/80 uppercase tracking-wider">
-                    W
+                  <th
+                    className="px-3 py-3 text-center text-xs font-semibold text-emerald-400/80 uppercase tracking-wider cursor-pointer hover:text-emerald-300 select-none"
+                    onClick={() => handleSort('wins')}
+                  >
+                    W<SortIcon active={sortField === 'wins'} direction={sortDir} />
                   </th>
                   <th className="px-3 py-3 text-center text-xs font-semibold text-yellow-400/80 uppercase tracking-wider">
                     D
@@ -199,13 +308,28 @@ export default function SteamResultsPage() {
                   <th className="px-3 py-3 text-center text-xs font-semibold text-red-400/80 uppercase tracking-wider">
                     L
                   </th>
-                  <th className="px-3 py-3 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    Win %
+                  <th
+                    className="px-3 py-3 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider cursor-pointer hover:text-slate-300 select-none"
+                    onClick={() => handleSort('win_rate')}
+                  >
+                    Win%<SortIcon active={sortField === 'win_rate'} direction={sortDir} />
+                  </th>
+                  <th
+                    className="px-3 py-3 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider cursor-pointer hover:text-slate-300 select-none"
+                    onClick={() => handleSort('avg_move_size')}
+                  >
+                    Avg Move<SortIcon active={sortField === 'avg_move_size'} direction={sortDir} />
+                  </th>
+                  <th
+                    className="px-3 py-3 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider cursor-pointer hover:text-slate-300 select-none"
+                    onClick={() => handleSort('profit_loss')}
+                  >
+                    P/L<SortIcon active={sortField === 'profit_loss'} direction={sortDir} />
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/50">
-                {data.team_rankings.slice(0, 20).map((team, index) => {
+                {filteredRankings.map((team, index) => {
                   const leagueInfo = LEAGUE_CONFIG[team.sport_key];
                   return (
                     <tr key={team.team_name} className="hover:bg-slate-700/20 transition-colors duration-150">
@@ -243,10 +367,18 @@ export default function SteamResultsPage() {
                         <span className="font-mono font-bold text-red-400 text-sm">{team.losses}</span>
                       </td>
                       <td className="px-3 py-3 text-center">
-                        <span className={`font-mono font-bold text-sm ${
-                          team.win_rate !== null && team.win_rate >= 50 ? 'text-emerald-400' : 'text-red-400'
-                        }`}>
+                        <span className={`font-mono font-bold text-sm ${winRateColor(team.win_rate)}`}>
                           {team.win_rate !== null ? `${team.win_rate}%` : '-'}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3 text-center">
+                        <span className="font-mono font-bold text-sm text-slate-300">
+                          {team.avg_move_size !== null ? `${team.avg_move_size}%` : '-'}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3 text-center">
+                        <span className={`font-mono font-bold text-sm ${plColor(team.profit_loss)}`}>
+                          {formatPL(team.profit_loss)}
                         </span>
                       </td>
                     </tr>
@@ -258,7 +390,7 @@ export default function SteamResultsPage() {
 
           {/* Mobile Cards */}
           <div className="md:hidden divide-y divide-slate-700/50">
-            {data.team_rankings.slice(0, 20).map((team, index) => {
+            {filteredRankings.map((team, index) => {
               const leagueInfo = LEAGUE_CONFIG[team.sport_key];
               return (
                 <div key={team.team_name} className="p-4">
@@ -281,7 +413,12 @@ export default function SteamResultsPage() {
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <div className="font-mono font-bold text-amber-400">{team.total_moves} moves</div>
+                      <div className="flex items-center justify-end gap-2">
+                        <span className="font-mono font-bold text-amber-400 text-sm">{team.total_moves} moves</span>
+                        <span className={`font-mono font-bold text-sm ${plColor(team.profit_loss)}`}>
+                          {formatPL(team.profit_loss)}
+                        </span>
+                      </div>
                       <div className="text-xs mt-0.5">
                         <span className="text-emerald-400 font-semibold">{team.wins}W</span>
                         <span className="text-slate-600 mx-1">/</span>
@@ -289,10 +426,12 @@ export default function SteamResultsPage() {
                         <span className="text-slate-600 mx-1">/</span>
                         <span className="text-red-400 font-semibold">{team.losses}L</span>
                         <span className="text-slate-600 mx-1">&middot;</span>
-                        <span className={`font-semibold ${
-                          team.win_rate !== null && team.win_rate >= 50 ? 'text-emerald-400' : 'text-red-400'
-                        }`}>
+                        <span className={`font-semibold ${winRateColor(team.win_rate)}`}>
                           {team.win_rate !== null ? `${team.win_rate}%` : '-'}
+                        </span>
+                        <span className="text-slate-600 mx-1">&middot;</span>
+                        <span className="text-slate-400 font-semibold">
+                          {team.avg_move_size !== null ? `${team.avg_move_size}%` : '-'}
                         </span>
                       </div>
                     </div>

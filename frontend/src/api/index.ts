@@ -63,10 +63,12 @@ export async function getMatchSpreads(matchId: string): Promise<MatchSpreads> {
 export async function getSteamResults(params?: {
   league?: string;
   limit?: number;
+  days?: number;
 }): Promise<SteamResultsData> {
   const searchParams = new URLSearchParams();
   if (params?.league) searchParams.set('league', params.league);
   if (params?.limit) searchParams.set('limit', String(params.limit));
+  if (params?.days) searchParams.set('days', String(params.days));
 
   const query = searchParams.toString();
   return fetchJson<SteamResultsData>(`${API_BASE}/steam-results${query ? `?${query}` : ''}`);
