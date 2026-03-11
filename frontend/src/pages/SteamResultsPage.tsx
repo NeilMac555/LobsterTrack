@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { getSteamResults } from '../api';
-import type { SteamResultsData, TeamSteamRanking } from '../types';
+import type { SteamResultsData } from '../types';
 import { LEAGUE_CONFIG } from '../types';
 import LeagueLogo from '../components/LeagueLogo';
 
