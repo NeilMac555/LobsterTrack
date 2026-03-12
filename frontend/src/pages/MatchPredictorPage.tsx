@@ -464,10 +464,13 @@ export default function MatchPredictorPage() {
     <div className="max-w-5xl mx-auto">
       {/* Page Header */}
       <div className="mb-6 sm:mb-8 text-center">
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-1 tracking-wider">
-          Match Model
-        </h1>
-        <p className="text-slate-400 text-xs sm:text-sm uppercase tracking-widest">Soccer Match Prediction</p>
+        <div className="flex items-center justify-center gap-3 mb-1">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-wider">
+            Match Model
+          </h1>
+          <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full">Beta</span>
+        </div>
+        <p className="text-slate-400 text-xs sm:text-sm uppercase tracking-widest">Poisson / Dixon-Coles Probability Baseline</p>
       </div>
 
       {/* League Selector + Reset */}
@@ -590,7 +593,7 @@ export default function MatchPredictorPage() {
           onClick={calculate}
           className="bg-gradient-to-br from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 text-white font-bold text-sm sm:text-base uppercase tracking-widest px-12 sm:px-16 py-4 rounded-xl shadow-lg shadow-red-500/25 hover:shadow-red-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
         >
-          Calculate Prediction
+          Calculate Probabilities
         </button>
       </div>
 
@@ -600,7 +603,7 @@ export default function MatchPredictorPage() {
           {/* Title */}
           <p className="text-center text-slate-400 text-sm mb-6 tracking-wide">
             <span className="text-emerald-400 font-bold">{homeName}</span> vs{' '}
-            <span className="text-red-400 font-bold">{awayName}</span> — Prediction
+            <span className="text-red-400 font-bold">{awayName}</span> — Probability Baseline
           </p>
 
           {/* Lambda Display */}
