@@ -461,7 +461,7 @@ export default function MatchPredictorPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-7xl mx-auto">
       {/* Page Header */}
       <div className="mb-6 sm:mb-8 text-center">
         <div className="flex items-center justify-center gap-3 mb-1">
@@ -472,6 +472,130 @@ export default function MatchPredictorPage() {
         </div>
         <p className="text-slate-400 text-xs sm:text-sm uppercase tracking-widest">Poisson / Dixon-Coles Probability Baseline</p>
       </div>
+
+      <div className="flex gap-6">
+      {/* Data Sources Sidebar */}
+      <aside className="hidden lg:block w-72 flex-shrink-0">
+        <div className="sticky top-4 space-y-4">
+          {/* Where to find data */}
+          <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-slate-300 mb-3 flex items-center gap-2">
+              <span className="text-amber-400">📊</span> Where to Find the Data
+            </h3>
+
+            <div className="space-y-3">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-400 mb-1">OPTA Analyst</p>
+                <a href="https://theanalyst.com" target="_blank" rel="noopener noreferrer" className="text-[11px] text-blue-400 hover:text-blue-300 underline underline-offset-2">theanalyst.com</a>
+                <ul className="mt-1 space-y-0.5">
+                  <li className="text-[11px] text-slate-400">• Goals For / Against per match</li>
+                  <li className="text-[11px] text-slate-400">• xG For / Against per match</li>
+                  <li className="text-[11px] text-slate-400">• Open Play xG</li>
+                  <li className="text-[11px] text-slate-400">• Set Piece xG</li>
+                  <li className="text-[11px] text-slate-400">• Non-penalty xG</li>
+                  <li className="text-[11px] text-slate-400">• Last 6 xG For / Against</li>
+                </ul>
+              </div>
+
+              <div className="border-t border-slate-700/40 pt-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-amber-400 mb-1">Transfermarkt</p>
+                <a href="https://www.transfermarkt.com" target="_blank" rel="noopener noreferrer" className="text-[11px] text-blue-400 hover:text-blue-300 underline underline-offset-2">transfermarkt.com</a>
+                <ul className="mt-1 space-y-0.5">
+                  <li className="text-[11px] text-slate-400">• Penalties Received (season)</li>
+                  <li className="text-[11px] text-slate-400">• Penalties Conceded (season)</li>
+                </ul>
+              </div>
+
+              <div className="border-t border-slate-700/40 pt-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-red-400 mb-1">Scoreroom</p>
+                <a href="https://scoreroom.com" target="_blank" rel="noopener noreferrer" className="text-[11px] text-blue-400 hover:text-blue-300 underline underline-offset-2">scoreroom.com</a>
+                <ul className="mt-1 space-y-0.5">
+                  <li className="text-[11px] text-slate-400">• Avg Red Cards For / match</li>
+                  <li className="text-[11px] text-slate-400">• Avg Red Cards Against / match</li>
+                </ul>
+              </div>
+
+              <div className="border-t border-slate-700/40 pt-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-blue-400 mb-1">FBref</p>
+                <a href="https://fbref.com" target="_blank" rel="noopener noreferrer" className="text-[11px] text-blue-400 hover:text-blue-300 underline underline-offset-2">fbref.com</a>
+                <ul className="mt-1 space-y-0.5">
+                  <li className="text-[11px] text-slate-400">• Shots For / Against</li>
+                  <li className="text-[11px] text-slate-400">• PSxG For / Against</li>
+                  <li className="text-[11px] text-slate-400">• Last 6 Shots per match</li>
+                </ul>
+              </div>
+
+              <div className="border-t border-slate-700/40 pt-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-purple-400 mb-1">MarkStats</p>
+                <a href="https://markstats.club" target="_blank" rel="noopener noreferrer" className="text-[11px] text-blue-400 hover:text-blue-300 underline underline-offset-2">markstats.club</a>
+                <ul className="mt-1 space-y-0.5">
+                  <li className="text-[11px] text-slate-400">• Danger Possession Lost (LOS/OLOS)</li>
+                </ul>
+              </div>
+
+              <div className="border-t border-slate-700/40 pt-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Subjective</p>
+                <ul className="mt-1 space-y-0.5">
+                  <li className="text-[11px] text-slate-500">• Motivation level</li>
+                  <li className="text-[11px] text-slate-500">• Absence severity (attack/defence)</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Useful reference sites */}
+          <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-slate-300 mb-3 flex items-center gap-2">
+              <span className="text-amber-400">🔗</span> Useful Reference Sites
+            </h3>
+            <div className="space-y-2">
+              <a href="https://theanalyst.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] text-slate-400 hover:text-white transition-colors group">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span className="group-hover:underline">OPTA Analyst</span>
+                <span className="text-slate-600 ml-auto">xG, goals</span>
+              </a>
+              <a href="https://fbref.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] text-slate-400 hover:text-white transition-colors group">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                <span className="group-hover:underline">FBref</span>
+                <span className="text-slate-600 ml-auto">shots, PSxG</span>
+              </a>
+              <a href="https://www.whoscored.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] text-slate-400 hover:text-white transition-colors group">
+                <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+                <span className="group-hover:underline">WhoScored</span>
+                <span className="text-slate-600 ml-auto">ratings, form</span>
+              </a>
+              <a href="https://www.transfermarkt.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] text-slate-400 hover:text-white transition-colors group">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                <span className="group-hover:underline">Transfermarkt</span>
+                <span className="text-slate-600 ml-auto">pens, injuries</span>
+              </a>
+              <a href="https://scoreroom.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] text-slate-400 hover:text-white transition-colors group">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                <span className="group-hover:underline">Scoreroom</span>
+                <span className="text-slate-600 ml-auto">cards, discipline</span>
+              </a>
+              <a href="https://www.footystats.org" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] text-slate-400 hover:text-white transition-colors group">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                <span className="group-hover:underline">FootyStats</span>
+                <span className="text-slate-600 ml-auto">league stats</span>
+              </a>
+              <a href="https://www.wyscout.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] text-slate-400 hover:text-white transition-colors group">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>
+                <span className="group-hover:underline">Wyscout</span>
+                <span className="text-slate-600 ml-auto">advanced metrics</span>
+              </a>
+              <a href="https://markstats.club" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] text-slate-400 hover:text-white transition-colors group">
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                <span className="group-hover:underline">MarkStats</span>
+                <span className="text-slate-600 ml-auto">possession loss</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <div className="flex-1 min-w-0">
 
       {/* League Selector + Reset */}
       <div className="flex items-center justify-center gap-3 sm:gap-4 mb-6">
@@ -671,10 +795,12 @@ export default function MatchPredictorPage() {
         </div>
       )}
 
-      {/* Data Sources */}
-      <div className="mt-6">
+      {/* Data Sources (mobile only — sidebar handles desktop) */}
+      <div className="mt-6 lg:hidden">
         <DataSourcesSection />
       </div>
+      </div>{/* end Main Content */}
+      </div>{/* end flex */}
     </div>
   );
 }
