@@ -27,9 +27,9 @@ interface AdvancedSettings {
   drawInflation: string;
   rho: string;
   formWeight: string;
-  varianceSensitivity: string;
+  spDiscount: string;
+  qualityWeight: string;
   absenceWeight: string;
-  negBin: boolean;
 }
 
 interface AbsenceNote {
@@ -46,6 +46,7 @@ interface PredictionResult {
   probDraw: number;
   probAway: number;
   absenceNotes: AbsenceNote[];
+  calcLog: string[];
 }
 
 // ===== LEAGUE CONSTANTS =====
@@ -88,7 +89,7 @@ function makeDefaultTeam(league: string): TeamInputs {
 }
 
 function makeDefaultAdvanced(): AdvancedSettings {
-  return { drawInflation: '1.10', rho: '0.03', formWeight: '0.35', varianceSensitivity: '0.10', absenceWeight: '0.03', negBin: false };
+  return { drawInflation: '1.08', rho: '-0.03', formWeight: '0.25', spDiscount: '0.85', qualityWeight: '0.15', absenceWeight: '0.03' };
 }
 
 // ===== MATH =====
@@ -245,6 +246,7 @@ export default function MatchPredictorPage() {
   const calculate = useCallback(() => {
     const lg = LEAGUES[league];
     const h = home, a = away;
+    const log: string[] = [];
 
     // Step 0: Penalty xG Adjustment
     function penAdjXGFor(t: TeamInputs) {
@@ -258,6 +260,28 @@ export default function MatchPredictorPage() {
 
     let exH = penAdjXGFor(h), exA = penAdjXGFor(a);
     let eaH = penAdjXGAgainst(h), eaA = penAdjXGAgainst(a);
+    log.push(`Step 0 — Pen xG Adj: H_atk=${exH.toFixed(3)} A_atk=${exA.toFixed(3)} H_def=${eaH.toFixed(3)} A_def=${eaA.toFixed(3)}`);
+
+    // Step 0b: Set Piece xG Discount (attack side only)
+    const spDiscount = v(adv.spDiscount);
+    function applySpDiscount(adjXG: number, openPlay: number, setPiece: number): [number, boolean] {
+      if (openPlay > 0 || setPiece > 0) {
+        const total = openPlay + setPiece;
+        if (total > 0) {
+          const discounted = openPlay + (setPiece * spDiscount);
+          return [adjXG * (discounted / total), true];
+        }
+      }
+      return [adjXG, false];
+    }
+    const [exH2, spAppliedH] = applySpDiscount(exH, v(h.openPlayXG), v(h.setPieceXG));
+    const [exA2, spAppliedA] = applySpDiscount(exA, v(a.openPlayXG), v(a.setPieceXG));
+    exH = exH2; exA = exA2;
+    if (spAppliedH || spAppliedA) {
+      log.push(`Step 0b — SP Discount (${spDiscount}): H_atk=${exH.toFixed(3)} A_atk=${exA.toFixed(3)}`);
+    } else {
+      log.push(`Step 0b — SP Discount: SKIPPED — no component breakdown`);
+    }
 
     // Step 1: Red card normalisation
     const atkRedAdjH = clamp(1 - v(h.avgRedCardsFor) * 0.18 + v(h.avgRedCardsAgainst) * 0.12, 0.90, 1.10);
@@ -267,26 +291,95 @@ export default function MatchPredictorPage() {
 
     exH *= atkRedAdjH; exA *= atkRedAdjA;
     eaH *= defRedAdjH; eaA *= defRedAdjA;
+    log.push(`Step 1 — Red Card Norm: H_atkAdj=${atkRedAdjH.toFixed(3)} H_defAdj=${defRedAdjH.toFixed(3)} A_atkAdj=${atkRedAdjA.toFixed(3)} A_defAdj=${defRedAdjA.toFixed(3)}`);
+
+    // Step 1b: xG Per Shot Quality Modifier
+    const qualityWeight = v(adv.qualityWeight);
+    const leagueAvgXGPerShot = lg.avgXG / lg.avgShotsPerGame;
+    const shotsForH = v(h.shotsFor), shotsForA = v(a.shotsFor);
+    const shotsAgainstH = v(h.shotsAgainst), shotsAgainstA = v(a.shotsAgainst);
+
+    if (shotsForH > 0 && qualityWeight > 0) {
+      const xgpsH = exH / shotsForH;
+      const qRatioH = xgpsH / leagueAvgXGPerShot;
+      const qModH = (1 - qualityWeight) + qualityWeight * qRatioH;
+      exH *= qModH;
+      log.push(`Step 1b — Quality (H atk): xG/shot=${xgpsH.toFixed(4)} ratio=${qRatioH.toFixed(3)} mod=${qModH.toFixed(3)}`);
+    }
+    if (shotsForA > 0 && qualityWeight > 0) {
+      const xgpsA = exA / shotsForA;
+      const qRatioA = xgpsA / leagueAvgXGPerShot;
+      const qModA = (1 - qualityWeight) + qualityWeight * qRatioA;
+      exA *= qModA;
+      log.push(`Step 1b — Quality (A atk): xG/shot=${xgpsA.toFixed(4)} ratio=${qRatioA.toFixed(3)} mod=${qModA.toFixed(3)}`);
+    }
+    if (shotsAgainstH > 0 && qualityWeight > 0) {
+      const xgpsDefH = eaH / shotsAgainstH;
+      const qRatioDefH = xgpsDefH / leagueAvgXGPerShot;
+      const qModDefH = (1 - qualityWeight) + qualityWeight * qRatioDefH;
+      eaH *= qModDefH;
+      log.push(`Step 1b — Quality (H def): xG/shot=${xgpsDefH.toFixed(4)} ratio=${qRatioDefH.toFixed(3)} mod=${qModDefH.toFixed(3)}`);
+    }
+    if (shotsAgainstA > 0 && qualityWeight > 0) {
+      const xgpsDefA = eaA / shotsAgainstA;
+      const qRatioDefA = xgpsDefA / leagueAvgXGPerShot;
+      const qModDefA = (1 - qualityWeight) + qualityWeight * qRatioDefA;
+      eaA *= qModDefA;
+      log.push(`Step 1b — Quality (A def): xG/shot=${xgpsDefA.toFixed(4)} ratio=${qRatioDefA.toFixed(3)} mod=${qModDefA.toFixed(3)}`);
+    }
+    if (qualityWeight === 0) log.push(`Step 1b — Quality: SKIPPED — weight is 0`);
+
+    // Step 1c: Form Weighting (Last 6 Blend)
+    const formWeight = v(adv.formWeight);
+    const l6xgfH = v(h.last6XGFor), l6xgaH = v(h.last6XGAgainst);
+    const l6xgfA = v(a.last6XGFor), l6xgaA = v(a.last6XGAgainst);
+
+    let formApplied = false;
+    if (formWeight > 0) {
+      if (Math.abs(l6xgfH - exH) > 0.001 || Math.abs(l6xgaH - eaH) > 0.001) {
+        exH = (1 - formWeight) * exH + formWeight * l6xgfH;
+        eaH = (1 - formWeight) * eaH + formWeight * l6xgaH;
+        formApplied = true;
+      }
+      if (Math.abs(l6xgfA - exA) > 0.001 || Math.abs(l6xgaA - eaA) > 0.001) {
+        exA = (1 - formWeight) * exA + formWeight * l6xgfA;
+        eaA = (1 - formWeight) * eaA + formWeight * l6xgaA;
+        formApplied = true;
+      }
+    }
+    if (formApplied) {
+      log.push(`Step 1c — Form (${formWeight}): H_atk=${exH.toFixed(3)} H_def=${eaH.toFixed(3)} A_atk=${exA.toFixed(3)} A_def=${eaA.toFixed(3)}`);
+    } else {
+      log.push(`Step 1c — Form: SKIPPED — values match season data`);
+    }
 
     // Step 2: Attack strength
     const atkH = exH / lg.avgXG, atkA = exA / lg.avgXG;
+    log.push(`Step 2 — Attack Strength: H=${atkH.toFixed(3)} A=${atkA.toFixed(3)}`);
 
     // Step 3: Defence strength (80/20 blend)
     const dbH = 0.80 * eaH + 0.20 * v(h.goalsAgainst);
     const dbA = 0.80 * eaA + 0.20 * v(a.goalsAgainst);
     const avgDB = 0.80 * lg.avgXG + 0.20 * lg.avgGoals;
     const defH = dbH / avgDB, defA = dbA / avgDB;
+    log.push(`Step 3 — Defence Strength: H=${defH.toFixed(3)} A=${defA.toFixed(3)}`);
 
-    // Step 4: Lambda
+    // Step 4: Lambda (base rate = league avg xG)
     const ha = v(homeAdv);
-    let lH = clamp(atkH * defA * lg.avgGoals * ha, 0.05, 8);
-    let lA = clamp(atkA * defH * lg.avgGoals, 0.05, 8);
+    let lH = clamp(atkH * defA * lg.avgXG * ha, 0.05, 8);
+    let lA = clamp(atkA * defH * lg.avgXG, 0.05, 8);
+    log.push(`Step 4 — Lambda (raw): H=${lH.toFixed(3)} A=${lA.toFixed(3)}`);
 
     // Step 5: Motivation
     lH *= (MOTIVATION_MULT[h.motivation] || 1.00);
     lA *= (MOTIVATION_MULT[a.motivation] || 1.00);
     lH = clamp(lH, 0.05, 8);
     lA = clamp(lA, 0.05, 8);
+    if (h.motivation !== 'normal' || a.motivation !== 'normal') {
+      log.push(`Step 5 — Motivation: H=${h.motivation}(${MOTIVATION_MULT[h.motivation]}) A=${a.motivation}(${MOTIVATION_MULT[a.motivation]}) → λH=${lH.toFixed(3)} λA=${lA.toFixed(3)}`);
+    } else {
+      log.push(`Step 5 — Motivation: SKIPPED — both normal`);
+    }
 
     // Step 5b: Absence severity
     const absWt = v(adv.absenceWeight);
@@ -303,10 +396,16 @@ export default function MatchPredictorPage() {
     if (h.absenceDef > 1) absenceNotes.push({ team: 'home', type: 'defence', severity: h.absenceDef, pct: ((h.absenceDef - 1) * absWt * 100).toFixed(1) });
     if (a.absenceAtk > 1) absenceNotes.push({ team: 'away', type: 'attack', severity: a.absenceAtk, pct: ((a.absenceAtk - 1) * absWt * 100).toFixed(1) });
     if (a.absenceDef > 1) absenceNotes.push({ team: 'away', type: 'defence', severity: a.absenceDef, pct: ((a.absenceDef - 1) * absWt * 100).toFixed(1) });
+    if (absenceNotes.length > 0) {
+      log.push(`Step 5b — Absence: λH=${lH.toFixed(3)} λA=${lA.toFixed(3)}`);
+    } else {
+      log.push(`Step 5b — Absence: SKIPPED — all sliders at 1`);
+    }
 
     // Step 6: Poisson marginals
     const hP: number[] = [], aP: number[] = [];
     for (let k = 0; k <= MAX_GOALS; k++) { hP[k] = poissonPMF(k, lH); aP[k] = poissonPMF(k, lA); }
+    log.push(`Step 6 — Poisson: λH=${lH.toFixed(3)} λA=${lA.toFixed(3)}`);
 
     // Step 7: Dixon-Coles correction
     const rho = v(adv.rho);
@@ -322,6 +421,7 @@ export default function MatchPredictorPage() {
         matrix[i][j] = p;
       }
     }
+    log.push(`Step 7 — Dixon-Coles: ρ=${rho}`);
 
     // Step 8: Aggregate 1X2
     let pH = 0, pD = 0, pA = 0;
@@ -331,13 +431,15 @@ export default function MatchPredictorPage() {
         else if (i === j) pD += matrix[i][j];
         else pA += matrix[i][j];
       }
+    log.push(`Step 8 — Raw 1X2: H=${(pH*100).toFixed(1)}% D=${(pD*100).toFixed(1)}% A=${(pA*100).toFixed(1)}%`);
 
     // Step 9: Draw inflation
     pD *= v(adv.drawInflation);
     const tot = pH + pD + pA;
     pH /= tot; pD /= tot; pA /= tot;
+    log.push(`Step 9 — Draw Inflation (${adv.drawInflation}): H=${(pH*100).toFixed(1)}% D=${(pD*100).toFixed(1)}% A=${(pA*100).toFixed(1)}%`);
 
-    setResult({ lambdaHome: lH, lambdaAway: lA, probHome: pH, probDraw: pD, probAway: pA, absenceNotes });
+    setResult({ lambdaHome: lH, lambdaAway: lA, probHome: pH, probDraw: pD, probAway: pA, absenceNotes, calcLog: log });
   }, [league, home, away, homeAdv, adv]);
 
   // Scroll to results after calculation
@@ -684,13 +786,18 @@ export default function MatchPredictorPage() {
                 className="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-blue-500 transition-colors" />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Form Weight</label>
-              <input type="number" step="0.01" min="0" max="1" value={adv.formWeight} onChange={(e) => updateAdv('formWeight', e.target.value)}
+              <label className="block text-xs text-slate-400 mb-1">Form Weight (Last 6)</label>
+              <input type="number" step="0.01" min="0" max="0.50" value={adv.formWeight} onChange={(e) => updateAdv('formWeight', e.target.value)}
                 className="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-blue-500 transition-colors" />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Variance Sensitivity</label>
-              <input type="number" step="0.01" min="0.01" max="1" value={adv.varianceSensitivity} onChange={(e) => updateAdv('varianceSensitivity', e.target.value)}
+              <label className="block text-xs text-slate-400 mb-1">Set Piece xG Discount</label>
+              <input type="number" step="0.01" min="0.50" max="1.00" value={adv.spDiscount} onChange={(e) => updateAdv('spDiscount', e.target.value)}
+                className="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-blue-500 transition-colors" />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">xG/Shot Quality Weight</label>
+              <input type="number" step="0.01" min="0.00" max="0.50" value={adv.qualityWeight} onChange={(e) => updateAdv('qualityWeight', e.target.value)}
                 className="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-blue-500 transition-colors" />
             </div>
             <div>
@@ -698,13 +805,6 @@ export default function MatchPredictorPage() {
               <input type="number" step="0.005" min="0" max="0.10" value={adv.absenceWeight} onChange={(e) => updateAdv('absenceWeight', e.target.value)}
                 className="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-blue-500 transition-colors" />
             </div>
-          </div>
-          <div className="flex items-center gap-3 mt-4 pt-3 border-t border-slate-700/40">
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" checked={adv.negBin} onChange={(e) => updateAdv('negBin', e.target.checked)} className="sr-only peer" />
-              <div className="w-10 h-5 bg-slate-600 rounded-full peer peer-checked:bg-red-500 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></div>
-            </label>
-            <span className="text-xs sm:text-sm text-slate-400">Use Quality-Adjusted Negative Binomial (off = standard Poisson)</span>
           </div>
         </Section>
       </div>
@@ -787,9 +887,15 @@ export default function MatchPredictorPage() {
             </div>
           )}
 
-          <p className="text-center text-slate-500 text-xs italic mt-5 pt-4 border-t border-slate-700/50">
-            Scoreline heatmap, full markets, xG quality, form weighting, NegBin — Phases 4-8
-          </p>
+          {/* Calc Log */}
+          <details className="mt-5 pt-4 border-t border-slate-700/50">
+            <summary className="text-xs text-slate-500 cursor-pointer hover:text-slate-400 transition-colors">Show Calculation Log</summary>
+            <div className="mt-2 bg-black/20 rounded-lg p-3 font-mono text-[11px] text-slate-500 space-y-0.5 max-h-64 overflow-y-auto">
+              {result.calcLog.map((line, i) => (
+                <p key={i} className={line.includes('SKIPPED') ? 'text-slate-600' : ''}>{line}</p>
+              ))}
+            </div>
+          </details>
         </div>
       )}
 
