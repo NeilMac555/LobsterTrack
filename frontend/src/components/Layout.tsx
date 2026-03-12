@@ -7,6 +7,7 @@ const leagues = Object.entries(LEAGUE_CONFIG);
 
 const tools = [
   { name: 'Hedging Calculator', path: '/tools/hedge-calculator', icon: '🧮' },
+  { name: 'Match Predictor', path: '/tools/match-predictor', icon: '⚽' },
 ];
 
 export default function Layout() {

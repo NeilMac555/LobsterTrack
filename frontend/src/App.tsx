@@ -3,6 +3,7 @@ import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import MatchDetailPage from './pages/MatchDetailPage';
 import HedgeCalculatorPage from './pages/HedgeCalculatorPage';
+import MatchPredictorPage from './pages/MatchPredictorPage';
 import SteamResultsPage from './pages/SteamResultsPage';
 import ClosingLinesPage from './pages/ClosingLinesPage';
 import CLClosingLinesPage from './pages/CLClosingLinesPage';
@@ -19,6 +20,7 @@ function App() {
           <Route path="closing-lines" element={<ClosingLinesPage />} />
           <Route path="cl-closing-lines" element={<CLClosingLinesPage />} />
           <Route path="tools/hedge-calculator" element={<HedgeCalculatorPage />} />
+          <Route path="tools/match-predictor" element={<MatchPredictorPage />} />
           <Route path="admin/emails" element={<AdminEmailsPage />} />
         </Route>
       </Routes>
