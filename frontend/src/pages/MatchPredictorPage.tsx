@@ -15,8 +15,6 @@ interface TeamInputs {
   shotsAgainst: string;
   openPlayXG: string;
   setPieceXG: string;
-  psxgFor: string;
-  psxgAgainst: string;
   last6XGFor: string;
   last6XGAgainst: string;
   last6XGPerShot: string;
@@ -29,7 +27,6 @@ interface AdvancedSettings {
   drawInflation: string;
   rho: string;
   formWeight: string;
-  psxgWeight: string;
   varianceSensitivity: string;
   absenceWeight: string;
   negBin: boolean;
@@ -85,14 +82,13 @@ function makeDefaultTeam(league: string): TeamInputs {
     avgRedCardsFor: '0.05', avgRedCardsAgainst: '0.05',
     shotsFor: d.shots.toFixed(1), shotsAgainst: d.shots.toFixed(1),
     openPlayXG: '1.00', setPieceXG: '0.25',
-    psxgFor: '1.30', psxgAgainst: '1.30',
     last6XGFor: '1.30', last6XGAgainst: '1.30', last6XGPerShot: '0.100',
     motivation: 'normal', absenceAtk: 1, absenceDef: 1,
   };
 }
 
 function makeDefaultAdvanced(): AdvancedSettings {
-  return { drawInflation: '1.10', rho: '0.03', formWeight: '0.35', psxgWeight: '0.15', varianceSensitivity: '0.10', absenceWeight: '0.03', negBin: false };
+  return { drawInflation: '1.10', rho: '0.03', formWeight: '0.35', varianceSensitivity: '0.10', absenceWeight: '0.03', negBin: false };
 }
 
 // ===== MATH =====
@@ -174,7 +170,6 @@ function DataSourcesSection() {
                 <tr className="border-b border-slate-700/30"><td className="py-1.5 px-1.5 text-white font-medium">Shots For / Against</td><td className="py-1.5 px-1.5"><SourceLink href="https://fbref.com" name="FBref" /></td><td className="py-1.5 px-1.5 text-slate-500 text-[11px] italic">Team page &gt; Shooting &gt; Sh/90</td></tr>
                 <tr className="border-b border-slate-700/30"><td className="py-1.5 px-1.5 text-white font-medium">Open Play xG</td><td className="py-1.5 px-1.5"><SourceLink href="https://theanalyst.com/football/stats" name="OPTA Analyst" /></td><td className="py-1.5 px-1.5 text-slate-500 text-[11px] italic">Team stats &gt; total xG minus set piece xG</td></tr>
                 <tr className="border-b border-slate-700/30"><td className="py-1.5 px-1.5 text-white font-medium">Set Piece xG</td><td className="py-1.5 px-1.5"><SourceLink href="https://theanalyst.com/football/stats" name="OPTA Analyst" /></td><td className="py-1.5 px-1.5 text-slate-500 text-[11px] italic">Team stats &gt; Dead ball xG</td></tr>
-                <tr className="border-b border-slate-700/30"><td className="py-1.5 px-1.5 text-white font-medium">PSxG For / Against</td><td className="py-1.5 px-1.5"><SourceLink href="https://fbref.com" name="FBref" /></td><td className="py-1.5 px-1.5 text-slate-500 text-[11px] italic">Goalkeeping &gt; Advanced &gt; PSxG</td></tr>
                 <tr className="border-b border-slate-700/30"><td className="py-1.5 px-1.5 text-white font-medium">Danger Poss. Lost (LOS)</td><td className="py-1.5 px-1.5"><SourceLink href="https://markstats.club" name="MarkStats" /></td><td className="py-1.5 px-1.5 text-slate-500 text-[11px] italic">Select league &gt; Team &gt; LOS</td></tr>
                 <tr><td className="py-1.5 px-1.5 text-white font-medium">Open-play Poss. Lost (OLOS)</td><td className="py-1.5 px-1.5"><SourceLink href="https://markstats.club" name="MarkStats" /></td><td className="py-1.5 px-1.5 text-slate-500 text-[11px] italic">Select league &gt; Team &gt; OLOS</td></tr>
               </tbody>
@@ -203,7 +198,7 @@ function DataSourcesSection() {
             </table>
           </div>
           <div className="text-[11px] text-slate-500 italic bg-black/15 rounded-lg p-3 leading-relaxed">
-            <strong className="text-slate-400 not-italic">Tip:</strong> OPTA Analyst for all goals & xG. FBref for shots & PSxG. MarkStats for LOS/OLOS. Scoreroom & Transfermarkt for cards & penalties. Motivation and absence severity are subjective.
+            <strong className="text-slate-400 not-italic">Tip:</strong> OPTA Analyst for all goals & xG. FBref for shots. MarkStats for LOS/OLOS. Scoreroom & Transfermarkt for cards & penalties. Motivation and absence severity are subjective.
           </div>
         </div>
       )}
@@ -386,8 +381,6 @@ export default function MatchPredictorPage() {
         <Field label="Shots Against / match" value={team.shotsAgainst} onChange={v => update('shotsAgainst', v)} step="0.1" min="0" />
         <Field label="Open Play xG / match" value={team.openPlayXG} onChange={v => update('openPlayXG', v)} step="0.01" min="0" />
         <Field label="Set Piece xG / match" value={team.setPieceXG} onChange={v => update('setPieceXG', v)} step="0.01" min="0" />
-        <Field label="PSxG For / match" value={team.psxgFor} onChange={v => update('psxgFor', v)} step="0.01" min="0" />
-        <Field label="PSxG Against / match" value={team.psxgAgainst} onChange={v => update('psxgAgainst', v)} step="0.01" min="0" />
       </div>
     );
   };
@@ -520,7 +513,6 @@ export default function MatchPredictorPage() {
                 <a href="https://fbref.com" target="_blank" rel="noopener noreferrer" className="text-[11px] text-blue-400 hover:text-blue-300 underline underline-offset-2">fbref.com</a>
                 <ul className="mt-1 space-y-0.5">
                   <li className="text-[11px] text-slate-400">• Shots For / Against</li>
-                  <li className="text-[11px] text-slate-400">• PSxG For / Against</li>
                   <li className="text-[11px] text-slate-400">• Last 6 Shots per match</li>
                 </ul>
               </div>
@@ -557,7 +549,7 @@ export default function MatchPredictorPage() {
               <a href="https://fbref.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] text-slate-400 hover:text-white transition-colors group">
                 <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
                 <span className="group-hover:underline">FBref</span>
-                <span className="text-slate-600 ml-auto">shots, PSxG</span>
+                <span className="text-slate-600 ml-auto">shots, stats</span>
               </a>
               <a href="https://www.whoscored.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] text-slate-400 hover:text-white transition-colors group">
                 <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
@@ -591,6 +583,17 @@ export default function MatchPredictorPage() {
               </a>
             </div>
           </div>
+
+          {/* Telegram Feedback */}
+          <a
+            href="https://t.me/neilmac555"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 w-full bg-[#2AABEE]/10 hover:bg-[#2AABEE]/20 border border-[#2AABEE]/30 text-[#2AABEE] rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 hover:scale-[1.02]"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+            Feedback / Suggestions
+          </a>
         </div>
       </aside>
 
@@ -683,11 +686,6 @@ export default function MatchPredictorPage() {
             <div>
               <label className="block text-xs text-slate-400 mb-1">Form Weight</label>
               <input type="number" step="0.01" min="0" max="1" value={adv.formWeight} onChange={(e) => updateAdv('formWeight', e.target.value)}
-                className="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-blue-500 transition-colors" />
-            </div>
-            <div>
-              <label className="block text-xs text-slate-400 mb-1">PSxG Weight</label>
-              <input type="number" step="0.01" min="0" max="1" value={adv.psxgWeight} onChange={(e) => updateAdv('psxgWeight', e.target.value)}
                 className="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-blue-500 transition-colors" />
             </div>
             <div>
