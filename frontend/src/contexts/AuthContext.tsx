@@ -31,9 +31,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const isSubscribed = user?.subscription?.status === 'active';
 
-  // Hydrate user on mount
+  // Hydrate user on mount (only if we don't already have the user from verify)
   useEffect(() => {
-    if (token) {
+    if (token && !user) {
       console.log('[Auth] Hydrating user with token:', token.substring(0, 20) + '...');
       getMe(token)
         .then((u) => {
@@ -48,7 +48,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         })
         .finally(() => setIsLoading(false));
     } else {
-      console.log('[Auth] No token found');
+      if (token && user) console.log('[Auth] User already set, skipping hydration');
+      if (!token) console.log('[Auth] No token found');
       setIsLoading(false);
     }
   }, [token]);
