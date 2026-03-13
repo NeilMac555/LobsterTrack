@@ -1,4 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import PaywallOverlay from '../components/PaywallOverlay';
 
 // ===== TYPES =====
 interface TeamInputs {
@@ -209,6 +212,8 @@ function DataSourcesSection() {
 
 // ===== MAIN COMPONENT =====
 export default function MatchPredictorPage() {
+  const { isSubscribed, refreshUser } = useAuth();
+  const [searchParams] = useSearchParams();
   const [league, setLeague] = useState('PL');
   const [homeName, setHomeName] = useState('Home');
   const [awayName, setAwayName] = useState('Away');
@@ -217,7 +222,23 @@ export default function MatchPredictorPage() {
   const [homeAdv, setHomeAdv] = useState(LEAGUES.PL.homeAdv.toFixed(2));
   const [adv, setAdv] = useState<AdvancedSettings>(makeDefaultAdvanced());
   const [result, setResult] = useState<PredictionResult | null>(null);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const pendingResult = useRef<PredictionResult | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
+
+  // After successful Stripe checkout, refresh user subscription status
+  useEffect(() => {
+    if (searchParams.get('checkout') === 'success') {
+      refreshUser().then(() => {
+        // If there's a pending result and user is now subscribed, show it
+        if (pendingResult.current) {
+          setResult(pendingResult.current);
+          setShowPaywall(false);
+          pendingResult.current = null;
+        }
+      });
+    }
+  }, [searchParams, refreshUser]);
 
   const updateHome = useCallback((field: keyof TeamInputs, value: string | number) => {
     setHome(prev => ({ ...prev, [field]: value }));
@@ -439,8 +460,16 @@ export default function MatchPredictorPage() {
     pH /= tot; pD /= tot; pA /= tot;
     log.push(`Step 9 — Draw Inflation (${adv.drawInflation}): H=${(pH*100).toFixed(1)}% D=${(pD*100).toFixed(1)}% A=${(pA*100).toFixed(1)}%`);
 
-    setResult({ lambdaHome: lH, lambdaAway: lA, probHome: pH, probDraw: pD, probAway: pA, absenceNotes, calcLog: log });
-  }, [league, home, away, homeAdv, adv]);
+    const computed = { lambdaHome: lH, lambdaAway: lA, probHome: pH, probDraw: pD, probAway: pA, absenceNotes, calcLog: log };
+    if (isSubscribed) {
+      setResult(computed);
+      setShowPaywall(false);
+    } else {
+      pendingResult.current = computed;
+      setResult(null);
+      setShowPaywall(true);
+    }
+  }, [league, home, away, homeAdv, adv, isSubscribed]);
 
   // Scroll to results after calculation
   useEffect(() => {
@@ -818,6 +847,13 @@ export default function MatchPredictorPage() {
           Calculate Probabilities
         </button>
       </div>
+
+      {/* Paywall */}
+      {showPaywall && !result && (
+        <div ref={resultRef}>
+          <PaywallOverlay />
+        </div>
+      )}
 
       {/* Results */}
       {result && (

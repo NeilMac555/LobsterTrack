@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { LEAGUE_CONFIG } from '../types';
 import LeagueLogo from './LeagueLogo';
+import { useAuth } from '../contexts/AuthContext';
+import LoginModal from './LoginModal';
 
 const leagues = Object.entries(LEAGUE_CONFIG);
 
@@ -12,16 +14,23 @@ const tools = [
 
 export default function Layout() {
   const location = useLocation();
+  const { user, logout, manageSubscription, isSubscribed } = useAuth();
+  const [showLogin, setShowLogin] = useState(false);
   const currentLeague = new URLSearchParams(location.search).get('league');
   const [toolsOpen, setToolsOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const accountRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setToolsOpen(false);
+      }
+      if (accountRef.current && !accountRef.current.contains(event.target as Node)) {
+        setAccountOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -172,6 +181,58 @@ export default function Layout() {
                   </div>
                 )}
               </div>
+
+              {/* Divider */}
+              <div className="w-px h-6 bg-slate-600 mx-2"></div>
+
+              {/* Account */}
+              {user ? (
+                <div className="relative" ref={accountRef}>
+                  <button
+                    onClick={() => setAccountOpen(!accountOpen)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold bg-slate-700/80 text-slate-300 hover:bg-slate-600 hover:text-white transition-all duration-200"
+                  >
+                    <span className="w-6 h-6 rounded-full bg-red-500/20 border border-red-500/30 flex items-center justify-center text-xs text-red-400 font-bold">
+                      {user.email[0].toUpperCase()}
+                    </span>
+                    {isSubscribed && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded-full font-bold uppercase">Pro</span>}
+                  </button>
+                  {accountOpen && (
+                    <div className="absolute right-0 mt-2 w-56 bg-slate-800 border border-slate-700 rounded-xl shadow-xl shadow-black/20 overflow-hidden z-50">
+                      <div className="px-4 py-3 border-b border-slate-700/50">
+                        <p className="text-xs text-slate-400 truncate">{user.email}</p>
+                        <p className="text-xs mt-1">
+                          {isSubscribed
+                            ? <span className="text-emerald-400 font-semibold">Pro subscriber</span>
+                            : <span className="text-slate-500">Free tier</span>
+                          }
+                        </p>
+                      </div>
+                      {isSubscribed && (
+                        <button
+                          onClick={() => { setAccountOpen(false); manageSubscription(); }}
+                          className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+                        >
+                          Manage Subscription
+                        </button>
+                      )}
+                      <button
+                        onClick={() => { setAccountOpen(false); logout(); }}
+                        className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+                      >
+                        Sign Out
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowLogin(true)}
+                  className="px-4 py-2 rounded-xl text-sm font-semibold bg-slate-700/80 text-slate-300 hover:bg-slate-600 hover:text-white transition-all duration-200"
+                >
+                  Sign In
+                </button>
+              )}
             </nav>
 
             {/* Mobile Menu Button */}
@@ -295,6 +356,8 @@ export default function Layout() {
           </p>
         </div>
       </footer>
+
+      <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
     </div>
   );
 }

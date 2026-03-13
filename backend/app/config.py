@@ -20,6 +20,22 @@ class Settings(BaseSettings):
     telegram_bot_token: str = ""
     telegram_channel_id: str = ""
 
+    # Auth
+    jwt_secret: str = "change-me-in-production"
+    jwt_expiry_hours: int = 168  # 7 days
+    magic_link_expiry_minutes: int = 15
+    frontend_url: str = "http://localhost:5173"
+
+    # Stripe
+    stripe_secret_key: str = ""
+    stripe_publishable_key: str = ""
+    stripe_webhook_secret: str = ""
+    stripe_price_id: str = ""
+
+    # Email (Resend)
+    resend_api_key: str = ""
+    email_from: str = "SteamWatch <noreply@steamwatch.io>"
+
     # League mappings for The Odds API
     # Format: sport_key for the API
     leagues: dict = {

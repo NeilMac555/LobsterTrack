@@ -8,7 +8,7 @@ from alembic import context
 
 # Import your models
 from app.models.database import Base
-from app.models import Match, OddsSnapshot
+from app.models import Match, OddsSnapshot, User, Subscription, MagicLink
 from app.config import get_settings
 
 # this is the Alembic Config object
