@@ -105,19 +105,25 @@ def _handle_checkout_completed(session_data: dict, db: Session):
         logger.warning("Checkout completed for unknown customer", customer_id=customer_id)
         return
 
-    # Get subscription details from Stripe
-    stripe.api_key = settings.stripe_secret_key
-    stripe_sub = stripe.Subscription.retrieve(subscription_id)
-
     sub = db.query(Subscription).filter(Subscription.user_id == user.id).first()
     if not sub:
         sub = Subscription(user_id=user.id)
         db.add(sub)
 
     sub.stripe_subscription_id = subscription_id
-    sub.status = stripe_sub.status
-    sub.current_period_end = datetime.utcfromtimestamp(stripe_sub.current_period_end) if stripe_sub.current_period_end else None
-    sub.cancel_at_period_end = stripe_sub.cancel_at_period_end
+    sub.status = "active"
+
+    # Try to get subscription details from Stripe for period info
+    try:
+        stripe.api_key = settings.stripe_secret_key
+        stripe_sub = stripe.Subscription.retrieve(subscription_id)
+        period_end = getattr(stripe_sub, "current_period_end", None)
+        if period_end:
+            sub.current_period_end = datetime.utcfromtimestamp(period_end)
+        sub.cancel_at_period_end = getattr(stripe_sub, "cancel_at_period_end", False)
+    except Exception as e:
+        logger.warning("Could not fetch subscription details", error=str(e))
+
     db.commit()
 
     logger.info("Subscription activated", user_id=user.id, subscription_id=subscription_id)
