@@ -2,7 +2,7 @@ import secrets
 from datetime import datetime, timedelta
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
@@ -115,3 +115,23 @@ async def verify_magic_link(body: VerifyRequest, db: Session = Depends(get_db)):
 @auth_router.get("/me", response_model=UserResponse)
 async def get_me(user: User = Depends(require_user)):
     return _user_response(user)
+
+
+@auth_router.get("/debug-token")
+async def debug_token(authorization: str | None = Header(None), db: Session = Depends(get_db)):
+    """Temporary debug endpoint to diagnose JWT issues"""
+    from app.services.auth import decode_jwt
+    if not authorization:
+        return {"error": "No Authorization header"}
+    if not authorization.startswith("Bearer "):
+        return {"error": "Not Bearer token"}
+    token = authorization[7:]
+    payload = decode_jwt(token)
+    if not payload:
+        return {"error": "JWT decode returned None", "token_prefix": token[:20]}
+    user = db.query(User).filter(User.id == payload["sub"]).first()
+    return {
+        "payload": payload,
+        "user_found": user is not None,
+        "user_id_queried": payload["sub"],
+    }
