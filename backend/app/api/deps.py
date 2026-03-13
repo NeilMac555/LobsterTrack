@@ -15,7 +15,7 @@ async def get_current_user(
     payload = decode_jwt(authorization[7:])
     if not payload:
         return None
-    user = db.query(User).filter(User.id == payload["sub"]).first()
+    user = db.query(User).filter(User.id == int(payload["sub"])).first()
     return user
 
 

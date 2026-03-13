@@ -8,7 +8,7 @@ settings = get_settings()
 
 def create_jwt(user_id: int, email: str) -> str:
     payload = {
-        "sub": user_id,
+        "sub": str(user_id),
         "email": email,
         "exp": datetime.utcnow() + timedelta(hours=settings.jwt_expiry_hours),
         "iat": datetime.utcnow(),
