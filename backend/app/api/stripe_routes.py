@@ -1,5 +1,6 @@
 import stripe
 import structlog
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
@@ -70,7 +71,7 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
         event = stripe.Webhook.construct_event(payload, sig_header, settings.stripe_webhook_secret)
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid payload")
-    except stripe.error.SignatureVerificationError:
+    except Exception:
         raise HTTPException(status_code=400, detail="Invalid signature")
 
     event_type = event["type"]
@@ -111,7 +112,7 @@ def _handle_checkout_completed(session_data: dict, db: Session):
 
     sub.stripe_subscription_id = subscription_id
     sub.status = stripe_sub.status
-    sub.current_period_end = stripe_sub.current_period_end
+    sub.current_period_end = datetime.utcfromtimestamp(stripe_sub.current_period_end) if stripe_sub.current_period_end else None
     sub.cancel_at_period_end = stripe_sub.cancel_at_period_end
     db.commit()
 
@@ -125,7 +126,8 @@ def _handle_subscription_updated(sub_data: dict, db: Session):
         return
 
     sub.status = sub_data.get("status", sub.status)
-    sub.current_period_end = sub_data.get("current_period_end")
+    period_end = sub_data.get("current_period_end")
+    sub.current_period_end = datetime.utcfromtimestamp(period_end) if period_end else None
     sub.cancel_at_period_end = sub_data.get("cancel_at_period_end", False)
     db.commit()
 
