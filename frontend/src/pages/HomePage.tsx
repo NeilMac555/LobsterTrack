@@ -6,7 +6,6 @@ import type { MatchSummary, BiggestMover, SyndicateMove } from '../types';
 import { LEAGUE_CONFIG } from '../types';
 import MatchCard from '../components/MatchCard';
 import LeagueLogo from '../components/LeagueLogo';
-import EmailSignup from '../components/EmailSignup';
 import { SteamGuideModal, HelpButton } from '../components/SteamGuideModal';
 
 interface GroupedMatches {
@@ -571,13 +570,6 @@ export default function HomePage() {
             </div>
           </div>
         </a>
-      )}
-
-      {/* Email Signup - only show on "All Matches" view */}
-      {!league && (
-        <div className="mb-6 sm:mb-10">
-          <EmailSignup />
-        </div>
       )}
 
       {/* Page Header */}
