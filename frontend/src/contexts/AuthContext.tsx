@@ -34,15 +34,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Hydrate user on mount
   useEffect(() => {
     if (token) {
+      console.log('[Auth] Hydrating user with token:', token.substring(0, 20) + '...');
       getMe(token)
-        .then(setUser)
-        .catch(() => {
+        .then((u) => {
+          console.log('[Auth] User hydrated:', u.email);
+          setUser(u);
+        })
+        .catch((err) => {
+          console.error('[Auth] getMe failed, clearing token:', err);
           setToken(null);
           setUser(null);
           localStorage.removeItem('auth_token');
         })
         .finally(() => setIsLoading(false));
     } else {
+      console.log('[Auth] No token found');
       setIsLoading(false);
     }
   }, [token]);
@@ -52,7 +58,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const verify = useCallback(async (magicToken: string) => {
+    console.log('[Auth] Calling verifyMagicLink...');
     const res = await verifyMagicLink(magicToken);
+    console.log('[Auth] Verify response:', res);
     localStorage.setItem('auth_token', res.token);
     setToken(res.token);
     setUser(res.user);

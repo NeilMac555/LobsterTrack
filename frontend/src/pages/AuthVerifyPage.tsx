@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -7,19 +7,26 @@ export default function AuthVerifyPage() {
   const navigate = useNavigate();
   const { verify } = useAuth();
   const [error, setError] = useState('');
+  const verifiedRef = useRef(false);
 
   useEffect(() => {
+    if (verifiedRef.current) return;
     const token = searchParams.get('token');
     if (!token) {
       setError('No verification token found');
       return;
     }
 
+    verifiedRef.current = true;
+    console.log('[AuthVerify] Verifying token:', token.substring(0, 8) + '...');
     verify(token)
       .then(() => {
+        console.log('[AuthVerify] Success! Redirecting...');
         navigate('/tools/match-predictor', { replace: true });
       })
       .catch((err) => {
+        console.error('[AuthVerify] FAILED:', err);
+        verifiedRef.current = false;
         setError(err instanceof Error ? err.message : 'Verification failed');
       });
   }, [searchParams, verify, navigate]);
