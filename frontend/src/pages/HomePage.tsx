@@ -112,6 +112,20 @@ export default function HomePage() {
 
   return (
     <div>
+      {/* Match Model Promo */}
+      <Link
+        to="/tools/match-predictor"
+        className="block mb-4 sm:mb-6 bg-gradient-to-r from-slate-800/90 to-slate-800/60 border border-red-500/20 rounded-lg px-4 py-2.5 hover:border-red-500/40 transition-colors group"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="text-red-400 text-sm">NEW</span>
+            <span className="text-slate-300 text-sm truncate">Match Model — Dixon-Coles probability baselines for every match</span>
+          </div>
+          <span className="text-slate-500 group-hover:text-red-400 text-xs whitespace-nowrap transition-colors">Try it &rarr;</span>
+        </div>
+      </Link>
+
       {/* Last Updated Indicator */}
       {lastUpdated && (
         <div className="flex items-center justify-end mb-4 sm:mb-6">
