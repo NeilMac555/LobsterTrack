@@ -932,6 +932,24 @@ export default function MatchPredictorPage() {
               ))}
             </div>
           </details>
+
+          {/* Model Guide Download */}
+          <div className="mt-5 pt-4 border-t border-slate-700/50 flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-300 font-medium">Match Model Guide</p>
+              <p className="text-xs text-slate-500">How the Dixon-Coles pipeline works, where to find data, and tips</p>
+            </div>
+            <a
+              href="/SteamWatch_Match_Model_Guide.pdf"
+              download
+              className="flex items-center gap-2 px-4 py-2 bg-red-500/15 border border-red-500/30 rounded-lg text-red-400 text-sm font-medium hover:bg-red-500/25 hover:border-red-500/50 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Download PDF
+            </a>
+          </div>
         </div>
       )}
 
