@@ -120,18 +120,29 @@ async def get_me(user: User = Depends(require_user)):
 @auth_router.get("/debug-token")
 async def debug_token(authorization: str | None = Header(None), db: Session = Depends(get_db)):
     """Temporary debug endpoint to diagnose JWT issues"""
+    import jwt as pyjwt
     from app.services.auth import decode_jwt
     if not authorization:
         return {"error": "No Authorization header"}
     if not authorization.startswith("Bearer "):
         return {"error": "Not Bearer token"}
     token = authorization[7:]
+    secret = settings.jwt_secret
+    # Try manual decode with full error
+    try:
+        manual = pyjwt.decode(token, secret, algorithms=["HS256"])
+        manual_ok = True
+        manual_err = None
+    except Exception as e:
+        manual = None
+        manual_ok = False
+        manual_err = str(e)
     payload = decode_jwt(token)
-    if not payload:
-        return {"error": "JWT decode returned None", "token_prefix": token[:20]}
-    user = db.query(User).filter(User.id == payload["sub"]).first()
     return {
-        "payload": payload,
-        "user_found": user is not None,
-        "user_id_queried": payload["sub"],
+        "secret_prefix": secret[:10] + "...",
+        "secret_len": len(secret),
+        "token_prefix": token[:20],
+        "decode_result": payload,
+        "manual_ok": manual_ok,
+        "manual_err": manual_err,
     }
