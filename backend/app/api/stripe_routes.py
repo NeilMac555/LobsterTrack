@@ -77,14 +77,18 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
     event_type = event["type"]
     data = event["data"]["object"]
 
-    if event_type == "checkout.session.completed":
-        _handle_checkout_completed(data, db)
-    elif event_type == "customer.subscription.updated":
-        _handle_subscription_updated(data, db)
-    elif event_type == "customer.subscription.deleted":
-        _handle_subscription_deleted(data, db)
-    elif event_type == "invoice.payment_failed":
-        _handle_payment_failed(data, db)
+    try:
+        if event_type == "checkout.session.completed":
+            _handle_checkout_completed(data, db)
+        elif event_type == "customer.subscription.updated":
+            _handle_subscription_updated(data, db)
+        elif event_type == "customer.subscription.deleted":
+            _handle_subscription_deleted(data, db)
+        elif event_type == "invoice.payment_failed":
+            _handle_payment_failed(data, db)
+    except Exception as e:
+        logger.error("Webhook handler error", event_type=event_type, error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
     return {"status": "ok"}
 
