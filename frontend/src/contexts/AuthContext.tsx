@@ -74,9 +74,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshUser = useCallback(async () => {
-    if (!token) return;
+    const t = token || localStorage.getItem('auth_token');
+    if (!t) return;
     try {
-      const u = await getMe(token);
+      const u = await getMe(t);
       setUser(u);
     } catch {
       // ignore
@@ -84,14 +85,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [token]);
 
   const subscribe = useCallback(async () => {
-    if (!token) return;
-    const { checkout_url } = await createCheckoutSession(token);
+    const t = token || localStorage.getItem('auth_token');
+    if (!t) return;
+    console.log('[Auth] subscribe() token prefix:', t.substring(0, 20) + '...');
+    const { checkout_url } = await createCheckoutSession(t);
     window.location.href = checkout_url;
   }, [token]);
 
   const manageSubscription = useCallback(async () => {
-    if (!token) return;
-    const { portal_url } = await createPortalSession(token);
+    const t = token || localStorage.getItem('auth_token');
+    if (!t) return;
+    const { portal_url } = await createPortalSession(t);
     window.location.href = portal_url;
   }, [token]);
 
