@@ -486,31 +486,11 @@ async def get_biggest_movers(
                             'direction': 'down'
                         }
 
-        # Spreads (Asian Handicap) outcomes
-        latest_s = latest_spreads.get(match_id)
-        opening_s = opening_spreads.get(match_id)
-        if latest_s and opening_s:
-            line = opening_s.line
-            line_str = f"+{line}" if line > 0 else str(line)
-            outcomes = [
-                ('home_spread', f'AH {line_str}', opening_s.home_odds, latest_s.home_odds),
-                ('away_spread', f'AH {-line if line else 0:+g}', opening_s.away_odds, latest_s.away_odds),
-            ]
-            for outcome, name, open_odds, curr_odds in outcomes:
-                if open_odds and curr_odds and open_odds > 0:
-                    pct = ((curr_odds - open_odds) / open_odds) * 100
-                    if pct < 0 and pct < best_pct:
-                        best_pct = pct
-                        best_move = {
-                            'match': match,
-                            'market': 'spreads',
-                            'outcome': outcome,
-                            'outcome_name': name,
-                            'opening_odds': open_odds,
-                            'current_odds': curr_odds,
-                            'movement_percent': pct,
-                            'direction': 'down'
-                        }
+        # Spreads (Asian Handicap) outcomes — disabled for now (line changes cause noise)
+        # latest_s = latest_spreads.get(match_id)
+        # opening_s = opening_spreads.get(match_id)
+        # if latest_s and opening_s:
+        #     ...
 
         if best_move and abs(best_pct) > 0.1:
             movers.append(best_move)
@@ -662,45 +642,8 @@ async def get_syndicate_moves(
                             'moved_at': latest_totals.fetched_at
                         }
 
-        # === SPREADS (ASIAN HANDICAP) MARKET ===
-        baseline_spreads = (
-            db.query(SpreadsSnapshot)
-            .filter(SpreadsSnapshot.match_id == match.id)
-            .filter(SpreadsSnapshot.fetched_at >= window_start)
-            .order_by(SpreadsSnapshot.fetched_at.asc())
-            .first()
-        )
-        latest_spreads = (
-            db.query(SpreadsSnapshot)
-            .filter(SpreadsSnapshot.match_id == match.id)
-            .order_by(SpreadsSnapshot.fetched_at.desc())
-            .first()
-        )
-
-        if baseline_spreads and latest_spreads and baseline_spreads.id != latest_spreads.id:
-            line = baseline_spreads.line
-            line_str = f"+{line}" if line > 0 else str(line)
-            outcomes = [
-                ('home_spread', f'AH {line_str}', baseline_spreads.home_odds, latest_spreads.home_odds),
-                ('away_spread', f'AH {-line if line else 0:+g}', baseline_spreads.away_odds, latest_spreads.away_odds),
-            ]
-            for outcome, name, baseline_odds, curr_odds in outcomes:
-                if baseline_odds and curr_odds and baseline_odds > 0 and curr_odds > 0:
-                    prob_move = _prob(curr_odds) - _prob(baseline_odds)
-                    if prob_move >= PROB_THRESHOLD and prob_move > best_prob_move:
-                        best_prob_move = prob_move
-                        best_move = {
-                            'match': match,
-                            'market': 'spreads',
-                            'outcome': outcome,
-                            'outcome_name': name,
-                            'baseline_odds': baseline_odds,
-                            'current_odds': curr_odds,
-                            'movement_percent': -prob_move,
-                            'direction': 'down',
-                            'minutes_to_kickoff': minutes_to_ko,
-                            'moved_at': latest_spreads.fetched_at
-                        }
+        # === SPREADS (ASIAN HANDICAP) MARKET === disabled for now (line changes cause noise)
+        # baseline_spreads / latest_spreads check skipped
 
         if best_move:
             syndicate_moves.append(best_move)

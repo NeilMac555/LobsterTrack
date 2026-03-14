@@ -74,15 +74,15 @@ class SyndicateAlerter:
                     db, match, window_start, minutes_to_ko
                 )
 
-                # Check Totals market
-                alerts_sent += await self._check_totals_market(
-                    db, match, window_start, minutes_to_ko
-                )
+                # Check Totals market — disabled for now (line changes cause noise)
+                # alerts_sent += await self._check_totals_market(
+                #     db, match, window_start, minutes_to_ko
+                # )
 
-                # Check Spreads market
-                alerts_sent += await self._check_spreads_market(
-                    db, match, window_start, minutes_to_ko
-                )
+                # Check Spreads market — disabled for now (line changes cause noise)
+                # alerts_sent += await self._check_spreads_market(
+                #     db, match, window_start, minutes_to_ko
+                # )
 
             db.commit()
             return {"alerts_sent": alerts_sent, "matches_checked": len(matches)}
