@@ -20,7 +20,7 @@ interface OddsChartProps {
   timeFrame?: TimeFrame;
 }
 
-type ViewMode = 'odds' | 'percent';
+type ViewMode = 'odds' | 'percent' | 'implied';
 type SelectedOutcome = 'all' | 'home' | 'draw' | 'away';
 
 export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' }: OddsChartProps) {
@@ -42,21 +42,26 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
     };
 
     // Add percentage change from opening
-    if (openingOdds) {
-      return {
-        ...baseData,
-        home_pct: openingOdds.home_odds && point.home_odds !== null
-          ? ((point.home_odds - openingOdds.home_odds) / openingOdds.home_odds) * 100
-          : 0,
-        draw_pct: openingOdds.draw_odds && point.draw_odds !== null
-          ? ((point.draw_odds - openingOdds.draw_odds) / openingOdds.draw_odds) * 100
-          : 0,
-        away_pct: openingOdds.away_odds && point.away_odds !== null
-          ? ((point.away_odds - openingOdds.away_odds) / openingOdds.away_odds) * 100
-          : 0,
-      };
-    }
-    return { ...baseData, home_pct: 0, draw_pct: 0, away_pct: 0 };
+    const pctData = openingOdds ? {
+      home_pct: openingOdds.home_odds && point.home_odds !== null
+        ? ((point.home_odds - openingOdds.home_odds) / openingOdds.home_odds) * 100
+        : 0,
+      draw_pct: openingOdds.draw_odds && point.draw_odds !== null
+        ? ((point.draw_odds - openingOdds.draw_odds) / openingOdds.draw_odds) * 100
+        : 0,
+      away_pct: openingOdds.away_odds && point.away_odds !== null
+        ? ((point.away_odds - openingOdds.away_odds) / openingOdds.away_odds) * 100
+        : 0,
+    } : { home_pct: 0, draw_pct: 0, away_pct: 0 };
+
+    // Add implied probability (1/odds * 100)
+    const impliedData = {
+      home_impl: point.home_odds ? (1 / point.home_odds) * 100 : 0,
+      draw_impl: point.draw_odds ? (1 / point.draw_odds) * 100 : 0,
+      away_impl: point.away_odds ? (1 / point.away_odds) * 100 : 0,
+    };
+
+    return { ...baseData, ...pctData, ...impliedData };
   });
 
   // Handle legend click - toggle between single outcome and all
@@ -111,6 +116,8 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
                 >
                   {viewMode === 'percent'
                     ? `${entry.value >= 0 ? '+' : ''}${entry.value?.toFixed(1)}%`
+                    : viewMode === 'implied'
+                    ? `${entry.value?.toFixed(1)}%`
                     : entry.value?.toFixed(2) ?? '-'}
                 </span>
               </div>
@@ -139,6 +146,7 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
   }
 
   const isPercentView = viewMode === 'percent';
+  const isImpliedView = viewMode === 'implied';
 
   return (
     <div className="h-full w-full flex flex-col">
@@ -166,6 +174,16 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
               }`}
             >
               % Change
+            </button>
+            <button
+              onClick={() => setViewMode('implied')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                viewMode === 'implied'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Implied %
             </button>
           </div>
 
@@ -245,12 +263,15 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
               tickLine={{ stroke: '#475569' }}
               axisLine={{ stroke: '#475569' }}
               domain={['auto', 'auto']}
+              reversed={isImpliedView}
               tickFormatter={(value) =>
                 isPercentView
                   ? `${value >= 0 ? '+' : ''}${value.toFixed(0)}%`
+                  : isImpliedView
+                  ? `${value.toFixed(0)}%`
                   : value.toFixed(2)
               }
-              width={isPercentView ? 45 : 40}
+              width={isPercentView || isImpliedView ? 45 : 40}
             />
             <Tooltip
               content={<CustomTooltip />}
@@ -270,7 +291,7 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
             )}
 
             {/* Opening price reference lines for odds view - only show for visible outcomes */}
-            {!isPercentView && openingOdds?.home_odds && isVisible('home') && (
+            {!isPercentView && !isImpliedView && openingOdds?.home_odds && isVisible('home') && (
               <ReferenceLine
                 y={openingOdds.home_odds}
                 stroke="#22c55e"
@@ -278,7 +299,7 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
                 strokeOpacity={0.25}
               />
             )}
-            {!isPercentView && openingOdds?.draw_odds && isVisible('draw') && (
+            {!isPercentView && !isImpliedView && openingOdds?.draw_odds && isVisible('draw') && (
               <ReferenceLine
                 y={openingOdds.draw_odds}
                 stroke="#eab308"
@@ -286,7 +307,7 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
                 strokeOpacity={0.25}
               />
             )}
-            {!isPercentView && openingOdds?.away_odds && isVisible('away') && (
+            {!isPercentView && !isImpliedView && openingOdds?.away_odds && isVisible('away') && (
               <ReferenceLine
                 y={openingOdds.away_odds}
                 stroke="#ef4444"
@@ -299,7 +320,7 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
             {isVisible('home') && (
               <Line
                 type="monotone"
-                dataKey={isPercentView ? 'home_pct' : 'home_odds'}
+                dataKey={isImpliedView ? 'home_impl' : isPercentView ? 'home_pct' : 'home_odds'}
                 name={homeTeam}
                 stroke="#22c55e"
                 strokeWidth={2.5}
@@ -311,7 +332,7 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
             {isVisible('draw') && (
               <Line
                 type="monotone"
-                dataKey={isPercentView ? 'draw_pct' : 'draw_odds'}
+                dataKey={isImpliedView ? 'draw_impl' : isPercentView ? 'draw_pct' : 'draw_odds'}
                 name="Draw"
                 stroke="#eab308"
                 strokeWidth={2.5}
@@ -323,7 +344,7 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
             {isVisible('away') && (
               <Line
                 type="monotone"
-                dataKey={isPercentView ? 'away_pct' : 'away_odds'}
+                dataKey={isImpliedView ? 'away_impl' : isPercentView ? 'away_pct' : 'away_odds'}
                 name={awayTeam}
                 stroke="#ef4444"
                 strokeWidth={2.5}
@@ -336,10 +357,15 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
         </ResponsiveContainer>
       </div>
 
-      {/* Helper text - only show for percent view */}
+      {/* Helper text */}
       {isPercentView && (
         <p className="text-[10px] text-slate-500 text-center mt-2">
           Negative = odds shortening (steam)
+        </p>
+      )}
+      {isImpliedView && (
+        <p className="text-[10px] text-slate-500 text-center mt-2">
+          Higher = shorter odds (more likely) · Raw implied probability, overround not removed
         </p>
       )}
     </div>
