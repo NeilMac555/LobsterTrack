@@ -1063,6 +1063,10 @@ async def get_match_totals(match_id: str, db: Session = Depends(get_db)):
         .all()
     )
 
+    # Lock onto the opening totals line — ignore snapshots where
+    # the bookmaker has shifted to a different line (e.g. 2.5 → 3.0)
+    opening_line = snapshots[0].line if snapshots else None
+
     totals_history = [
         TotalsPoint(
             timestamp=s.fetched_at,
@@ -1071,6 +1075,7 @@ async def get_match_totals(match_id: str, db: Session = Depends(get_db)):
             under_odds=s.under_odds
         )
         for s in snapshots
+        if s.line == opening_line
     ]
 
     return MatchTotalsResponse(
@@ -1098,6 +1103,10 @@ async def get_match_spreads(match_id: str, db: Session = Depends(get_db)):
         .all()
     )
 
+    # Lock onto the opening handicap line — ignore snapshots where
+    # the bookmaker has shifted to a different line (e.g. 0.5 → 0.75)
+    opening_line = snapshots[0].line if snapshots else None
+
     spreads_history = [
         SpreadsPoint(
             timestamp=s.fetched_at,
@@ -1106,6 +1115,7 @@ async def get_match_spreads(match_id: str, db: Session = Depends(get_db)):
             away_odds=s.away_odds
         )
         for s in snapshots
+        if s.line == opening_line
     ]
 
     return MatchSpreadsResponse(
