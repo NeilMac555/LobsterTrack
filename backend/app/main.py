@@ -88,7 +88,17 @@ if os.path.exists(static_dir):
 
     @app.get("/{full_path:path}")
     async def serve_frontend(full_path: str):
-        """Serve frontend for all non-API routes"""
+        """Serve frontend for all non-API routes.
+        Priority: exact static file > pre-rendered page > SPA index.html."""
+        if full_path:
+            # Serve root-level static files (robots.txt, sitemap.xml, etc.)
+            static_file = os.path.join(static_dir, full_path)
+            if os.path.isfile(static_file):
+                return FileResponse(static_file)
+            # Check for pre-rendered page (e.g. /blog/slug -> blog/slug/index.html)
+            prerendered = os.path.join(static_dir, full_path, "index.html")
+            if os.path.exists(prerendered):
+                return FileResponse(prerendered)
         index_path = os.path.join(static_dir, "index.html")
         if os.path.exists(index_path):
             return FileResponse(index_path)
