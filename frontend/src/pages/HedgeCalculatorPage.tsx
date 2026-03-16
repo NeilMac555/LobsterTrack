@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Helmet } from 'react-helmet-async';
 
 interface CalculationResult {
   hedgeAmount: number;
@@ -81,6 +82,25 @@ export default function HedgeCalculatorPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
+      <Helmet>
+        <title>Football Hedge Calculator — SteamWatch</title>
+        <meta name="description" content="Calculate optimal hedge bet sizes for football wagers with real-time calculations." />
+        <meta property="og:title" content="Football Hedge Calculator — SteamWatch" />
+        <meta property="og:description" content="Calculate optimal hedge bet sizes for football wagers with real-time calculations." />
+        <meta property="og:url" content="https://www.steamwatch.io/tools/hedge-calculator" />
+        <link rel="canonical" href="https://www.steamwatch.io/tools/hedge-calculator" />
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebApplication",
+          "name": "Football Hedge Calculator",
+          "url": "https://www.steamwatch.io/tools/hedge-calculator",
+          "description": "Calculate optimal hedge bet sizes for football wagers with real-time calculations",
+          "applicationCategory": "FinanceApplication",
+          "operatingSystem": "Web",
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
+        })}</script>
+      </Helmet>
+
       {/* Page Header */}
       <div className="mb-6 sm:mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Hedging Calculator</h1>

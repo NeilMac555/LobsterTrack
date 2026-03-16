@@ -11,6 +11,13 @@ export default function AboutPage() {
         <meta property="og:description" content="SteamWatch tracks sharp money movement across football betting markets using Pinnacle odds. Built on the Dixon-Coles probability model with real-time syndicate move alerts." />
         <meta property="og:url" content="https://www.steamwatch.io/about" />
         <link rel="canonical" href="https://www.steamwatch.io/about" />
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Person",
+          "name": "Neil Macdonald",
+          "url": "https://www.steamwatch.io/about",
+          "knowsAbout": ["football betting", "sharp money", "Dixon-Coles model", "sports analytics"]
+        })}</script>
       </Helmet>
 
       <h1 className="text-3xl sm:text-4xl font-bold text-white mb-8">About SteamWatch</h1>

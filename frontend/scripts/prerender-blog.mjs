@@ -188,3 +188,139 @@ for (const post of POSTS) {
 }
 
 console.log(`\nPre-rendered ${POSTS.length} blog page(s).`);
+
+// ---------------------------------------------------------------------------
+// Static pages — pre-render with page-specific meta + JSON-LD + noscript
+// ---------------------------------------------------------------------------
+const PAGES = [
+  {
+    path: 'steam-results',
+    title: 'Steam Results — SteamWatch',
+    description:
+      'Historical performance data for tracked football steam moves across major European leagues, including win rates and P/L.',
+    ogType: 'website',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'Dataset',
+      name: 'SteamWatch Football Steam Move Results',
+      description:
+        'Historical performance data for tracked football steam moves across major European leagues, including win rates and P/L',
+      url: `${DOMAIN}/steam-results`,
+      temporalCoverage: '2025/..',
+      creator: { '@type': 'Organization', name: 'SteamWatch', url: DOMAIN },
+      keywords: ['steam moves', 'sharp money', 'football betting', 'line movement'],
+    },
+    noscriptHtml: `<h1>Steam Results — SteamWatch</h1>
+<p>Historical performance tracking of football steam moves across major European leagues. See win rates, profit/loss, and team rankings for sharp money signals tracked by SteamWatch.</p>
+<p>Leagues covered: Premier League, La Liga, Bundesliga, Serie A, Ligue 1, Champions League, Europa League.</p>
+<p><a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
+  },
+  {
+    path: 'tools/hedge-calculator',
+    title: 'Football Hedge Calculator — SteamWatch',
+    description:
+      'Calculate optimal hedge bet sizes for football wagers with real-time calculations.',
+    ogType: 'website',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      name: 'Football Hedge Calculator',
+      url: `${DOMAIN}/tools/hedge-calculator`,
+      description:
+        'Calculate optimal hedge bet sizes for football wagers with real-time calculations',
+      applicationCategory: 'FinanceApplication',
+      operatingSystem: 'Web',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
+    },
+    noscriptHtml: `<h1>Football Hedge Calculator — SteamWatch</h1>
+<p>Calculate the optimal hedge bet size for any football wager. Enter your original stake, original odds, and current hedge odds to see guaranteed profit calculations in real time.</p>
+<p><a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
+  },
+  {
+    path: 'about',
+    title: 'About SteamWatch — Sharp Money Tracking for Football Betting',
+    description:
+      'SteamWatch tracks sharp money movement across football betting markets using Pinnacle odds. Built on the Dixon-Coles probability model with real-time syndicate move alerts.',
+    ogType: 'website',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'Person',
+      name: 'Neil Macdonald',
+      url: `${DOMAIN}/about`,
+      knowsAbout: ['football betting', 'sharp money', 'Dixon-Coles model', 'sports analytics'],
+    },
+    noscriptHtml: `<h1>About SteamWatch</h1>
+<p>SteamWatch tracks sharp money movement across major European football betting markets. We monitor Pinnacle odds — widely regarded as the sharpest bookmaker in the world — and surface the moves that matter: steam, syndicate action, and closing line shifts.</p>
+<h2>How It Works</h2>
+<ul>
+<li><strong>Biggest Movers</strong> — Matches ranked by the largest odds movements.</li>
+<li><strong>Syndicate Moves</strong> — Late sharp action detected within 3 hours of kickoff.</li>
+<li><strong>Steam Results</strong> — Historical performance tracking with win rates and P/L.</li>
+<li><strong>Closing Line Analysis</strong> — Compare opening and closing odds for CLV.</li>
+</ul>
+<h2>The Match Model</h2>
+<p>SteamWatch Pro includes a Dixon-Coles adjusted Poisson regression model that generates fair odds baselines for every match via an 11-step pipeline.</p>
+<h2>Who's Behind It</h2>
+<p>Built by Neil Macdonald, a football analytics and betting markets researcher.</p>
+<p><a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
+  },
+];
+
+for (const page of PAGES) {
+  const url = `${DOMAIN}/${page.path}`;
+
+  let html = template.replace(/<title>[^<]*<\/title>/, `<title>${page.title}</title>`);
+
+  html = html.replace(
+    /<meta name="description" content="[^"]*"\s*\/?>/,
+    `<meta name="description" content="${page.description}" />`
+  );
+  html = html.replace(
+    /<meta property="og:type" content="[^"]*"\s*\/?>/,
+    `<meta property="og:type" content="${page.ogType}" />`
+  );
+  html = html.replace(
+    /<meta property="og:url" content="[^"]*"\s*\/?>/,
+    `<meta property="og:url" content="${url}" />`
+  );
+  html = html.replace(
+    /<meta property="og:title" content="[^"]*"\s*\/?>/,
+    `<meta property="og:title" content="${page.title}" />`
+  );
+  html = html.replace(
+    /<meta property="og:description" content="[^"]*"\s*\/?>/,
+    `<meta property="og:description" content="${page.description}" />`
+  );
+  html = html.replace(
+    /<meta name="twitter:title" content="[^"]*"\s*\/?>/,
+    `<meta name="twitter:title" content="${page.title}" />`
+  );
+  html = html.replace(
+    /<meta name="twitter:description" content="[^"]*"\s*\/?>/,
+    `<meta name="twitter:description" content="${page.description}" />`
+  );
+  html = html.replace(
+    /<link rel="canonical" href="[^"]*"\s*\/?>/,
+    `<link rel="canonical" href="${url}" />`
+  );
+
+  // Replace the homepage WebApplication JSON-LD with the page-specific one
+  html = html.replace(
+    /<script type="application\/ld\+json">[\s\S]*?<\/script>\s*\n\s*<!-- Privacy/,
+    `<script type="application/ld+json">${JSON.stringify(page.jsonLd)}</script>\n\n    <!-- Privacy`
+  );
+
+  // Replace generic noscript with page-specific content
+  html = html.replace(
+    /<noscript>[\s\S]*?<\/noscript>/,
+    `<noscript>\n      ${page.noscriptHtml}\n    </noscript>`
+  );
+
+  const outDir = resolve(DIST, ...page.path.split('/'));
+  mkdirSync(outDir, { recursive: true });
+  writeFileSync(resolve(outDir, 'index.html'), html, 'utf-8');
+
+  console.log(`  ✓ /${page.path}`);
+}
+
+console.log(`Pre-rendered ${PAGES.length} static page(s).`);

@@ -4,6 +4,9 @@ import { getSteamResults } from '../api';
 import type { SteamResultsData } from '../types';
 import { LEAGUE_CONFIG } from '../types';
 import LeagueLogo from '../components/LeagueLogo';
+import { Helmet } from 'react-helmet-async';
+import { useAuth } from '../contexts/AuthContext';
+import PaywallOverlay from '../components/PaywallOverlay';
 
 type SortField = 'profit_loss' | 'total_moves' | 'wins' | 'win_rate' | 'avg_move_size';
 type SortDir = 'asc' | 'desc';
@@ -39,6 +42,7 @@ function SortIcon({ active, direction }: { active: boolean; direction: SortDir }
 }
 
 export default function SteamResultsPage() {
+  const { isSubscribed } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const league = searchParams.get('league');
 
@@ -128,6 +132,25 @@ export default function SteamResultsPage() {
 
   return (
     <div>
+      <Helmet>
+        <title>Steam Results — SteamWatch</title>
+        <meta name="description" content="Historical performance data for tracked football steam moves across major European leagues, including win rates and P/L." />
+        <meta property="og:title" content="Steam Results — SteamWatch" />
+        <meta property="og:description" content="Historical performance data for tracked football steam moves across major European leagues, including win rates and P/L." />
+        <meta property="og:url" content="https://www.steamwatch.io/steam-results" />
+        <link rel="canonical" href="https://www.steamwatch.io/steam-results" />
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Dataset",
+          "name": "SteamWatch Football Steam Move Results",
+          "description": "Historical performance data for tracked football steam moves across major European leagues, including win rates and P/L",
+          "url": "https://www.steamwatch.io/steam-results",
+          "temporalCoverage": "2025/..",
+          "creator": { "@type": "Organization", "name": "SteamWatch", "url": "https://www.steamwatch.io" },
+          "keywords": ["steam moves", "sharp money", "football betting", "line movement"]
+        })}</script>
+      </Helmet>
+
       {/* Page Header */}
       <div className="mb-6 sm:mb-8">
         <div className="flex items-center gap-3 mb-2">
@@ -231,7 +254,33 @@ export default function SteamResultsPage() {
       </div>
 
       {/* Team Rankings */}
-      {data.team_rankings.length > 0 && (
+      {!isSubscribed && data.team_rankings.length > 0 && (
+        <div className="relative mb-6 sm:mb-8">
+          {/* Blurred teaser of the table */}
+          <div className="blur-sm opacity-40 pointer-events-none select-none">
+            <div className="bg-slate-800/80 rounded-2xl border border-amber-500/30 overflow-hidden p-6">
+              <div className="h-8 bg-slate-700/40 rounded mb-4 w-48"></div>
+              {[1,2,3,4,5].map(i => (
+                <div key={i} className="flex items-center gap-4 py-3 border-b border-slate-700/30">
+                  <div className="w-6 h-6 bg-slate-700/60 rounded"></div>
+                  <div className="h-4 bg-slate-700/40 rounded flex-1"></div>
+                  <div className="h-4 bg-emerald-500/20 rounded w-12"></div>
+                  <div className="h-4 bg-amber-500/20 rounded w-16"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Paywall overlay on top */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <PaywallOverlay
+              title="Unlock Steam Results"
+              description="See which teams sharp money backs most often, win rates, P/L tracking, and full team rankings with SteamWatch Pro."
+            />
+          </div>
+        </div>
+      )}
+
+      {isSubscribed && data.team_rankings.length > 0 && (
         <div className="bg-slate-800/80 rounded-2xl border border-amber-500/30 overflow-hidden card-shadow mb-6 sm:mb-8"
           style={{ boxShadow: '0 0 20px -5px rgba(245, 158, 11, 0.15)' }}
         >
