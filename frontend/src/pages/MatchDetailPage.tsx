@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { format } from 'date-fns';
 import { getMatchDetail, getMatchTotals, getMatchSpreads } from '../api';
 import type { MatchDetail, MatchTotals, MatchSpreads } from '../types';
@@ -80,8 +81,19 @@ export default function MatchDetailPage() {
   const latestOdds = match.odds_history[match.odds_history.length - 1];
   const firstOdds = match.odds_history[0];
 
+  const metaDesc = `Sharp money movement for ${match.home_team} vs ${match.away_team} — track line moves, steam alerts and model probabilities on SteamWatch.`;
+
   return (
     <div>
+      <Helmet>
+        <title>{`${match.home_team} vs ${match.away_team} — SteamWatch`}</title>
+        <meta name="description" content={metaDesc} />
+        <meta property="og:title" content={`${match.home_team} vs ${match.away_team} — SteamWatch`} />
+        <meta property="og:description" content={metaDesc} />
+        <meta property="og:url" content={`https://www.steamwatch.io/match/${matchId}`} />
+        <link rel="canonical" href={`https://www.steamwatch.io/match/${matchId}`} />
+      </Helmet>
+
       {/* Back Button */}
       <Link
         to={`/?league=${match.sport_key}`}
