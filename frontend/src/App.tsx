@@ -12,6 +12,8 @@ import CLClosingLinesPage from './pages/CLClosingLinesPage';
 import AdminEmailsPage from './pages/AdminEmailsPage';
 import AuthVerifyPage from './pages/AuthVerifyPage';
 import AboutPage from './pages/AboutPage';
+import BlogIndexPage from './pages/BlogIndexPage';
+import BlogPostPage from './pages/BlogPostPage';
 
 function App() {
   return (
@@ -30,6 +32,8 @@ function App() {
               <Route path="auth/verify" element={<AuthVerifyPage />} />
               <Route path="admin/emails" element={<AdminEmailsPage />} />
               <Route path="about" element={<AboutPage />} />
+              <Route path="blog" element={<BlogIndexPage />} />
+              <Route path="blog/:slug" element={<BlogPostPage />} />
             </Route>
           </Routes>
         </AuthProvider>

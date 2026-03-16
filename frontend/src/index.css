@@ -145,6 +145,70 @@ main {
   }
 }
 
+/* Blog article typography */
+.prose-steamwatch h2 {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.025em;
+}
+
+.prose-steamwatch h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.prose-steamwatch p {
+  color: #94a3b8;
+  font-size: 0.9375rem;
+  line-height: 1.75;
+  margin-bottom: 1rem;
+}
+
+.prose-steamwatch ul,
+.prose-steamwatch ol {
+  color: #94a3b8;
+  font-size: 0.9375rem;
+  line-height: 1.75;
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+}
+
+.prose-steamwatch ul {
+  list-style-type: disc;
+}
+
+.prose-steamwatch ol {
+  list-style-type: decimal;
+}
+
+.prose-steamwatch li {
+  margin-bottom: 0.5rem;
+}
+
+.prose-steamwatch strong {
+  color: #cbd5e1;
+  font-weight: 600;
+}
+
+.prose-steamwatch em {
+  color: #cbd5e1;
+}
+
+.prose-steamwatch hr {
+  border-color: #334155;
+  margin: 2rem 0;
+}
+
+.prose-steamwatch a {
+  transition: color 0.15s ease;
+}
+
 /* Extra small breakpoint helper */
 @media (min-width: 480px) {
   .xs\:block {
