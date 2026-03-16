@@ -62,6 +62,7 @@ export default function BlogPostPage() {
         {schemaFAQ && (
           <script type="application/ld+json">{JSON.stringify(schemaFAQ)}</script>
         )}
+        <noscript>{`${post.noscriptHtml}`}</noscript>
       </Helmet>
 
       {/* Breadcrumb */}

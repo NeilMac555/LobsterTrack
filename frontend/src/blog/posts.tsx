@@ -10,6 +10,7 @@ export interface BlogPost {
   dateFormatted: string;
   readTime: string;
   faq?: { question: string; answer: string }[];
+  noscriptHtml: string;
   content: ReactNode;
 }
 
@@ -45,6 +46,21 @@ export const BLOG_POSTS: BlogPost[] = [
           'Pinnacle takes the highest limits in the world and their lines are shaped by the sharpest bettors. When Pinnacle moves a line, the rest of the market follows. It is the benchmark for identifying genuine sharp action.',
       },
     ],
+    noscriptHtml: `<h1>What Are Steam Moves in Football Betting?</h1>
+<p>By Neil Macdonald — March 16, 2026</p>
+<p>A steam move is a sudden, significant shift in a betting line caused by sharp money hitting the market. Not square money. Not public money. Sharp money — from syndicates, professional bettors, and algorithms that have identified an edge.</p>
+<p>When a sharp bettor or group places a large wager at one sportsbook, that book adjusts its line. Other books see the move and adjust too, even if they haven't taken the same action. This cascade effect — one book moves, then another, then another — is the "steam."</p>
+<p>It happens fast. Sometimes within minutes. If you blink, you miss it.</p>
+<h2>Frequently Asked Questions</h2>
+<h3>What is a steam move in football betting?</h3>
+<p>A steam move is a sudden, significant shift in a betting line caused by sharp money — from syndicates, professional bettors, and algorithms — hitting the market. When one sportsbook adjusts its line, others follow, creating a cascade effect known as steam.</p>
+<h3>How do you spot a steam move?</h3>
+<p>Look for reverse line movement (line moves opposite to public money), synchronised movement across multiple sportsbooks with no news trigger, and rapid line changes within minutes. Tracking tools that monitor Pinnacle odds in real-time are the most reliable way to identify steam.</p>
+<h3>What is the difference between steam moves and regular line movement?</h3>
+<p>Regular line movement can be caused by team news, public money, or liability management. Steam moves are specifically driven by sharp, informed money and typically cascade across multiple books quickly.</p>
+<h3>Why is Pinnacle important for tracking steam moves?</h3>
+<p>Pinnacle takes the highest limits in the world and their lines are shaped by the sharpest bettors. When Pinnacle moves a line, the rest of the market follows. It is the benchmark for identifying genuine sharp action.</p>
+<p><a href="https://www.steamwatch.io/steam-results">View Steam Results on SteamWatch</a></p>`,
     content: (
       <>
         <p>
