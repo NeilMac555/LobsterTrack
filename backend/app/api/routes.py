@@ -1413,7 +1413,8 @@ async def get_alert_diagnostics(
             .first()
         )
 
-        moves = {}
+        # 1X2 moves
+        moves_1x2 = {}
         if baseline and latest and baseline.id != latest.id:
             for outcome, b_odds, c_odds in [
                 ('home', baseline.home_odds, latest.home_odds),
@@ -1422,11 +1423,74 @@ async def get_alert_diagnostics(
             ]:
                 if b_odds and c_odds and b_odds > 0 and c_odds > 0:
                     prob_move = (1/c_odds)*100 - (1/b_odds)*100
-                    moves[outcome] = {
+                    moves_1x2[outcome] = {
                         "baseline_odds": round(b_odds, 3),
                         "current_odds": round(c_odds, 3),
                         "prob_move_pp": round(prob_move, 2),
                         "would_alert": prob_move >= 3.0
+                    }
+
+        # Totals moves
+        moves_totals = {}
+        totals_base = (
+            db.query(TotalsSnapshot)
+            .filter(TotalsSnapshot.match_id == match.id)
+            .filter(TotalsSnapshot.fetched_at >= window_start)
+            .order_by(TotalsSnapshot.fetched_at.asc())
+            .first()
+        )
+        totals_latest = (
+            db.query(TotalsSnapshot)
+            .filter(TotalsSnapshot.match_id == match.id)
+            .order_by(TotalsSnapshot.fetched_at.desc())
+            .first()
+        )
+        if totals_base and totals_latest and totals_base.id != totals_latest.id:
+            line_same = totals_base.line == totals_latest.line
+            for outcome, b_odds, c_odds in [
+                (f'O {totals_base.line}', totals_base.over_odds, totals_latest.over_odds),
+                (f'U {totals_base.line}', totals_base.under_odds, totals_latest.under_odds),
+            ]:
+                if b_odds and c_odds and b_odds > 0 and c_odds > 0:
+                    prob_move = (1/c_odds)*100 - (1/b_odds)*100
+                    moves_totals[outcome] = {
+                        "baseline_odds": round(b_odds, 3),
+                        "current_odds": round(c_odds, 3),
+                        "prob_move_pp": round(prob_move, 2),
+                        "line_changed": not line_same,
+                        "would_alert": prob_move >= 3.0 and line_same
+                    }
+
+        # Spreads / Asian Handicap moves
+        moves_spreads = {}
+        spreads_base = (
+            db.query(SpreadsSnapshot)
+            .filter(SpreadsSnapshot.match_id == match.id)
+            .filter(SpreadsSnapshot.fetched_at >= window_start)
+            .order_by(SpreadsSnapshot.fetched_at.asc())
+            .first()
+        )
+        spreads_latest = (
+            db.query(SpreadsSnapshot)
+            .filter(SpreadsSnapshot.match_id == match.id)
+            .order_by(SpreadsSnapshot.fetched_at.desc())
+            .first()
+        )
+        if spreads_base and spreads_latest and spreads_base.id != spreads_latest.id:
+            line_same = spreads_base.line == spreads_latest.line
+            sp_line = spreads_base.line
+            for outcome, b_odds, c_odds in [
+                (f'AH {sp_line:+g} ({match.home_team})', spreads_base.home_odds, spreads_latest.home_odds),
+                (f'AH {-sp_line if sp_line else 0:+g} ({match.away_team})', spreads_base.away_odds, spreads_latest.away_odds),
+            ]:
+                if b_odds and c_odds and b_odds > 0 and c_odds > 0:
+                    prob_move = (1/c_odds)*100 - (1/b_odds)*100
+                    moves_spreads[outcome] = {
+                        "baseline_odds": round(b_odds, 3),
+                        "current_odds": round(c_odds, 3),
+                        "prob_move_pp": round(prob_move, 2),
+                        "line_changed": not line_same,
+                        "would_alert": prob_move >= 3.0 and line_same
                     }
 
         time_to_ko = match.commence_time - now
@@ -1434,11 +1498,9 @@ async def get_alert_diagnostics(
             "match": f"{match.home_team} vs {match.away_team}",
             "kickoff": match.commence_time.isoformat(),
             "minutes_to_ko": int(time_to_ko.total_seconds() / 60),
-            "snapshots": {
-                "baseline_at": baseline.fetched_at.isoformat() if baseline else None,
-                "latest_at": latest.fetched_at.isoformat() if latest else None,
-            },
-            "prob_moves": moves
+            "1x2": moves_1x2,
+            "totals": moves_totals,
+            "spreads": moves_spreads,
         })
 
     return {
