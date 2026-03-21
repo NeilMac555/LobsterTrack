@@ -74,15 +74,15 @@ class SyndicateAlerter:
                     db, match, window_start, minutes_to_ko
                 )
 
-                # Check Totals market — disabled for now (line changes cause noise)
-                # alerts_sent += await self._check_totals_market(
-                #     db, match, window_start, minutes_to_ko
-                # )
+                # Check Totals market (only same-line comparisons)
+                alerts_sent += await self._check_totals_market(
+                    db, match, window_start, minutes_to_ko
+                )
 
-                # Check Spreads market — disabled for now (line changes cause noise)
-                # alerts_sent += await self._check_spreads_market(
-                #     db, match, window_start, minutes_to_ko
-                # )
+                # Check Spreads / Asian Handicap market (only same-line comparisons)
+                alerts_sent += await self._check_spreads_market(
+                    db, match, window_start, minutes_to_ko
+                )
 
             db.commit()
             return {"alerts_sent": alerts_sent, "matches_checked": len(matches)}
@@ -141,7 +141,7 @@ class SyndicateAlerter:
     async def _check_totals_market(
         self, db: Session, match: Match, window_start: datetime, minutes_to_ko: int
     ) -> int:
-        """Check Totals market for syndicate moves."""
+        """Check Totals market for syndicate moves. Only compares when line hasn't changed."""
         baseline = (
             db.query(TotalsSnapshot)
             .filter(TotalsSnapshot.match_id == match.id)
@@ -158,6 +158,10 @@ class SyndicateAlerter:
         )
 
         if not baseline or not latest or baseline.id == latest.id:
+            return 0
+
+        # Skip if the line has moved (e.g. 2.5 -> 3.5) — only compare same-line odds
+        if baseline.line != latest.line:
             return 0
 
         alerts_sent = 0
@@ -184,7 +188,7 @@ class SyndicateAlerter:
     async def _check_spreads_market(
         self, db: Session, match: Match, window_start: datetime, minutes_to_ko: int
     ) -> int:
-        """Check Spreads (Asian Handicap) market for syndicate moves."""
+        """Check Spreads (Asian Handicap) market for syndicate moves. Only compares when line hasn't changed."""
         baseline = (
             db.query(SpreadsSnapshot)
             .filter(SpreadsSnapshot.match_id == match.id)
@@ -201,6 +205,10 @@ class SyndicateAlerter:
         )
 
         if not baseline or not latest or baseline.id == latest.id:
+            return 0
+
+        # Skip if the handicap line has moved (e.g. -1.25 -> -1.75) — only compare same-line odds
+        if baseline.line != latest.line:
             return 0
 
         alerts_sent = 0
