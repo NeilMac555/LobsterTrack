@@ -2,7 +2,12 @@ import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import LoginModal from './LoginModal';
 
-export default function PaywallOverlay() {
+interface PaywallOverlayProps {
+  title?: string;
+  description?: string;
+}
+
+export default function PaywallOverlay({ title, description }: PaywallOverlayProps = {}) {
   const { user, isLoading, subscribe } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
@@ -42,10 +47,10 @@ export default function PaywallOverlay() {
           </div>
 
           <h3 className="text-xl font-bold text-white mb-2">
-            Unlock Match Model Results
+            {title || 'Unlock Match Model Results'}
           </h3>
           <p className="text-sm text-slate-400 mb-6 max-w-sm mx-auto">
-            Get Dixon-Coles probability baselines, fair odds, and full calculation breakdowns with a SteamWatch Pro subscription.
+            {description || 'Get Dixon-Coles probability baselines, fair odds, and full calculation breakdowns with a SteamWatch Pro subscription.'}
           </p>
 
           {isLoading ? (

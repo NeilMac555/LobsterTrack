@@ -4,7 +4,7 @@ from sqlalchemy import func, desc, text
 from datetime import datetime, timedelta
 from typing import Optional
 
-from app.models import get_db, Match, OddsSnapshot, SteamMove, EmailSubscriber, TotalsSnapshot, SpreadsSnapshot, ClosingLine
+from app.models import get_db, Match, OddsSnapshot, SteamMove, EmailSubscriber, TotalsSnapshot, SpreadsSnapshot, ClosingLine, SyndicateAlert
 from app.config import get_settings
 from app.services.scheduler import odds_scheduler
 from .schemas import (
@@ -1353,12 +1353,111 @@ async def send_test_telegram_alert(
         outcome_name="Test Home",
         outcome_type="H",
         current_odds=2.05,
-        movement_percent=-6.5,
+        prob_change=6.5,
         minutes_to_kickoff=120,
         market="1x2"
     )
 
     return {"success": success}
+
+
+@router.get("/admin/alert-diagnostics")
+async def get_alert_diagnostics(
+    password: str = Query(..., description="Admin password"),
+    db: Session = Depends(get_db)
+):
+    """
+    Diagnostic endpoint: show recent syndicate alerts and upcoming match move data.
+    """
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid password")
+
+    from datetime import timedelta
+    now = datetime.utcnow()
+
+    # Recent syndicate alerts (last 7 days)
+    seven_days_ago = now - timedelta(days=7)
+    recent_alerts = (
+        db.query(SyndicateAlert)
+        .filter(SyndicateAlert.alerted_at >= seven_days_ago)
+        .order_by(desc(SyndicateAlert.alerted_at))
+        .limit(20)
+        .all()
+    )
+
+    # Upcoming matches within 3 hours (what the alerter checks)
+    three_hours = now + timedelta(hours=3)
+    upcoming_matches = (
+        db.query(Match)
+        .filter(Match.commence_time > now)
+        .filter(Match.commence_time <= three_hours)
+        .all()
+    )
+
+    # For each upcoming match, check biggest prob move in last 3h
+    match_moves = []
+    for match in upcoming_matches:
+        window_start = match.commence_time - timedelta(hours=3)
+
+        baseline = (
+            db.query(OddsSnapshot)
+            .filter(OddsSnapshot.match_id == match.id)
+            .filter(OddsSnapshot.fetched_at >= window_start)
+            .order_by(OddsSnapshot.fetched_at.asc())
+            .first()
+        )
+        latest = (
+            db.query(OddsSnapshot)
+            .filter(OddsSnapshot.match_id == match.id)
+            .order_by(OddsSnapshot.fetched_at.desc())
+            .first()
+        )
+
+        moves = {}
+        if baseline and latest and baseline.id != latest.id:
+            for outcome, b_odds, c_odds in [
+                ('home', baseline.home_odds, latest.home_odds),
+                ('draw', baseline.draw_odds, latest.draw_odds),
+                ('away', baseline.away_odds, latest.away_odds),
+            ]:
+                if b_odds and c_odds and b_odds > 0 and c_odds > 0:
+                    prob_move = (1/c_odds)*100 - (1/b_odds)*100
+                    moves[outcome] = {
+                        "baseline_odds": round(b_odds, 3),
+                        "current_odds": round(c_odds, 3),
+                        "prob_move_pp": round(prob_move, 2),
+                        "would_alert": prob_move >= 3.0
+                    }
+
+        time_to_ko = match.commence_time - now
+        match_moves.append({
+            "match": f"{match.home_team} vs {match.away_team}",
+            "kickoff": match.commence_time.isoformat(),
+            "minutes_to_ko": int(time_to_ko.total_seconds() / 60),
+            "snapshots": {
+                "baseline_at": baseline.fetched_at.isoformat() if baseline else None,
+                "latest_at": latest.fetched_at.isoformat() if latest else None,
+            },
+            "prob_moves": moves
+        })
+
+    return {
+        "recent_alerts": [
+            {
+                "match_id": a.match_id,
+                "market": a.market,
+                "outcome": a.outcome,
+                "movement_pp": a.movement_percent,
+                "odds": a.odds_at_alert,
+                "alerted_at": a.alerted_at.isoformat()
+            }
+            for a in recent_alerts
+        ],
+        "upcoming_matches_checked": len(upcoming_matches),
+        "match_prob_moves": match_moves,
+        "threshold_pp": 3.0,
+        "now_utc": now.isoformat()
+    }
 
 
 @router.get("/admin/scheduler-status")
