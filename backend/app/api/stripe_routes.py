@@ -9,6 +9,7 @@ from app.models.database import get_db
 from app.models.user import User
 from app.models.subscription import Subscription
 from app.api.deps import require_user
+from app.services.telegram_notifier import telegram_notifier
 
 logger = structlog.get_logger()
 settings = get_settings()
@@ -127,6 +128,15 @@ def _handle_checkout_completed(session_data: dict, db: Session):
     db.commit()
 
     logger.info("Subscription activated", user_id=user.id, subscription_id=subscription_id)
+
+    # Notify via Telegram
+    try:
+        import asyncio
+        asyncio.ensure_future(telegram_notifier._send_message(
+            f"💰 NEW PRO SUBSCRIBER\n\n{user.email}\n\nSteamWatch Pro is growing 🚀"
+        ))
+    except Exception:
+        pass  # Don't fail the webhook over a notification
 
 
 def _handle_subscription_updated(sub_data: dict, db: Session):
