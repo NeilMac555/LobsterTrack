@@ -277,3 +277,28 @@ class MatchClosingLinesListResponse(BaseModel):
     matches: list[MatchClosingLines]
 
 
+class XGDataPoint(BaseModel):
+    """Single match npxG data point"""
+    team_name: str
+    league: str
+    match_number: int
+    npxg_for: float
+    npxg_against: float
+    match_date: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class XGDataResponse(BaseModel):
+    """All npxG data for a team"""
+    team_name: str
+    league: str
+    data: list[XGDataPoint]
+
+
+class XGTeamsResponse(BaseModel):
+    """List of teams with xG data for a league"""
+    teams: list[str]
+
+

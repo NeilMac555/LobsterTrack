@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Header
+from fastapi import APIRouter, Depends, HTTPException, Query, Header, UploadFile, File
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, text
 from datetime import datetime, timedelta
 from typing import Optional
 
-from app.models import get_db, Match, OddsSnapshot, SteamMove, EmailSubscriber, TotalsSnapshot, SpreadsSnapshot, ClosingLine, SyndicateAlert
+from app.models import get_db, Match, OddsSnapshot, SteamMove, EmailSubscriber, TotalsSnapshot, SpreadsSnapshot, ClosingLine, SyndicateAlert, XGData
 from app.config import get_settings
 from app.services.scheduler import odds_scheduler
 from .schemas import (
@@ -32,6 +32,9 @@ from .schemas import (
     ClosingLinesListResponse,
     MatchClosingLines,
     MatchClosingLinesListResponse,
+    XGDataPoint,
+    XGDataResponse,
+    XGTeamsResponse,
 )
 
 # Simple admin password
@@ -618,7 +621,7 @@ async def get_syndicate_moves(
             .first()
         )
 
-        if baseline_totals and latest_totals and baseline_totals.id != latest_totals.id:
+        if baseline_totals and latest_totals and baseline_totals.id != latest_totals.id and baseline_totals.line == latest_totals.line:
             line = baseline_totals.line
             outcomes = [
                 ('over', f'O {line}', baseline_totals.over_odds, latest_totals.over_odds),
@@ -1583,3 +1586,90 @@ async def get_scheduler_status(
         "scheduled_ko_jobs": len(odds_scheduler._scheduled_ko_jobs),
         "leagues": league_status
     }
+
+
+# ============================================================
+# Rolling xG Data
+# ============================================================
+
+@router.get("/xg-data/teams", response_model=XGTeamsResponse)
+async def get_xg_teams(
+    db: Session = Depends(get_db),
+    league: str = Query(..., description="Sport key e.g. soccer_epl"),
+):
+    """Return distinct team names that have xG data for a league."""
+    rows = (
+        db.query(XGData.team_name)
+        .filter(XGData.league == league)
+        .distinct()
+        .order_by(XGData.team_name)
+        .all()
+    )
+    return XGTeamsResponse(teams=[r[0] for r in rows])
+
+
+@router.get("/xg-data", response_model=XGDataResponse)
+async def get_xg_data(
+    db: Session = Depends(get_db),
+    league: str = Query(..., description="Sport key e.g. soccer_epl"),
+    team: str = Query(..., description="Team name"),
+):
+    """Return all match-level npxG data for a team, ordered by match number."""
+    rows = (
+        db.query(XGData)
+        .filter(XGData.league == league, XGData.team_name == team)
+        .order_by(XGData.match_number)
+        .all()
+    )
+    return XGDataResponse(
+        team_name=team,
+        league=league,
+        data=[XGDataPoint.model_validate(r) for r in rows],
+    )
+
+
+@router.post("/admin/upload-xg")
+async def upload_xg_data(
+    db: Session = Depends(get_db),
+    password: str = Query(..., description="Admin password"),
+    file: UploadFile = File(...),
+):
+    """
+    Bulk upload xG data from CSV.
+    CSV columns: league,team_name,match_number,npxg_for,npxg_against,match_date
+    Replaces all existing data for each league found in the CSV.
+    """
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=403, detail="Invalid admin password")
+
+    import csv
+    import io
+    from datetime import date as date_type
+
+    content = await file.read()
+    text = content.decode("utf-8-sig")  # handle BOM from Excel
+    reader = csv.DictReader(io.StringIO(text))
+
+    # Collect rows and track which leagues appear
+    rows = []
+    leagues_seen = set()
+    for row in reader:
+        league = row["league"].strip()
+        leagues_seen.add(league)
+        rows.append({
+            "league": league,
+            "team_name": row["team_name"].strip(),
+            "match_number": int(row["match_number"]),
+            "npxg_for": float(row["npxg_for"]),
+            "npxg_against": float(row["npxg_against"]),
+            "match_date": date_type.fromisoformat(row["match_date"].strip()),
+        })
+
+    # Delete existing data for those leagues, then insert fresh
+    for league in leagues_seen:
+        db.query(XGData).filter(XGData.league == league).delete()
+
+    db.bulk_insert_mappings(XGData, rows)
+    db.commit()
+
+    return {"success": True, "rows_inserted": len(rows), "leagues_updated": list(leagues_seen)}

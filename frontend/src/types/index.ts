@@ -189,6 +189,21 @@ export interface MatchClosingLinesResponse {
   matches: MatchClosingLines[];
 }
 
+export interface XGDataPoint {
+  team_name: string;
+  league: string;
+  match_number: number;
+  npxg_for: number;
+  npxg_against: number;
+  match_date: string;
+}
+
+export interface XGDataResponse {
+  team_name: string;
+  league: string;
+  data: XGDataPoint[];
+}
+
 export const LEAGUE_CONFIG: Record<string, { name: string; shortName: string; color: string }> = {
   soccer_epl: { name: 'Premier League', shortName: 'EPL', color: '#3D195B' },
   soccer_spain_la_liga: { name: 'La Liga', shortName: 'LAL', color: '#EE8707' },

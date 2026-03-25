@@ -14,6 +14,7 @@ import AuthVerifyPage from './pages/AuthVerifyPage';
 import AboutPage from './pages/AboutPage';
 import BlogIndexPage from './pages/BlogIndexPage';
 import BlogPostPage from './pages/BlogPostPage';
+import RollingXGPage from './pages/RollingXGPage';
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
               <Route path="cl-closing-lines" element={<CLClosingLinesPage />} />
               <Route path="tools/hedge-calculator" element={<HedgeCalculatorPage />} />
               <Route path="tools/match-predictor" element={<MatchPredictorPage />} />
+              <Route path="tools/rolling-xg" element={<RollingXGPage />} />
               <Route path="auth/verify" element={<AuthVerifyPage />} />
               <Route path="admin/emails" element={<AdminEmailsPage />} />
               <Route path="about" element={<AboutPage />} />

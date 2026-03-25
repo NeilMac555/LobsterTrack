@@ -10,5 +10,6 @@ from .closing_line import ClosingLine, MarketType
 from .user import User
 from .subscription import Subscription
 from .magic_link import MagicLink
+from .xg_data import XGData
 
-__all__ = ["Base", "get_db", "engine", "Match", "OddsSnapshot", "SteamMove", "EmailSubscriber", "TotalsSnapshot", "SpreadsSnapshot", "SyndicateAlert", "ClosingLine", "MarketType", "User", "Subscription", "MagicLink"]
+__all__ = ["Base", "get_db", "engine", "Match", "OddsSnapshot", "SteamMove", "EmailSubscriber", "TotalsSnapshot", "SpreadsSnapshot", "SyndicateAlert", "ClosingLine", "MarketType", "User", "Subscription", "MagicLink", "XGData"]
