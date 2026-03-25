@@ -1364,6 +1364,22 @@ async def send_test_telegram_alert(
     return {"success": success}
 
 
+@router.get("/admin/test-sub-notification")
+async def test_subscription_notification(
+    password: str = Query(..., description="Admin password"),
+):
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=403, detail="Invalid admin password")
+
+    from app.services.telegram_notifier import telegram_notifier
+
+    success = await telegram_notifier._send_message(
+        "💰 NEW PRO SUBSCRIBER\n\ntest@example.com\n\nSteamWatch Pro is growing 🚀"
+    )
+
+    return {"success": success}
+
+
 @router.get("/admin/alert-diagnostics")
 async def get_alert_diagnostics(
     password: str = Query(..., description="Admin password"),
