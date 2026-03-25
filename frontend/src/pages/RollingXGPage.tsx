@@ -144,16 +144,16 @@ export default function RollingXGPage() {
     <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-white">Rolling npxG</h1>
+        <h1 className="text-2xl font-bold text-white">Rolling xG</h1>
         <p className="text-slate-400 text-sm mt-1">
-          Non-penalty expected goals trends by team
+          Expected goals trends by team
         </p>
       </div>
 
       {!isSubscribed ? (
         <PaywallOverlay
           title="Unlock Rolling xG Analysis"
-          description="Track team performance trends with rolling non-penalty expected goals data across Europe's top leagues."
+          description="Track team performance trends with rolling expected goals data across Europe's top leagues."
         />
       ) : (
         <>
@@ -226,10 +226,10 @@ export default function RollingXGPage() {
           {/* Stat Cards */}
           {stats && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <StatCard label="Avg npxG For" value={stats.avgFor.toFixed(2)} color="text-cyan-400" />
-              <StatCard label="Avg npxG Against" value={stats.avgAgainst.toFixed(2)} color="text-red-400" />
+              <StatCard label="Avg xG For" value={stats.avgFor.toFixed(2)} color="text-cyan-400" />
+              <StatCard label="Avg xGA" value={stats.avgAgainst.toFixed(2)} color="text-red-400" />
               <StatCard
-                label="npxG Difference"
+                label="xG Difference"
                 value={`${stats.diff > 0 ? '+' : ''}${stats.diff.toFixed(2)}`}
                 color={stats.diff > 0 ? 'text-emerald-400' : stats.diff < 0 ? 'text-red-400' : 'text-slate-400'}
               />
@@ -258,7 +258,7 @@ export default function RollingXGPage() {
             <div className="bg-slate-800 rounded-xl border border-slate-700 p-4">
               <div className="flex flex-wrap items-center gap-2 mb-4">
                 <h2 className="text-base font-bold text-white">
-                  Rolling {windowSize}-Game npxG
+                  Rolling {windowSize}-Game xG
                 </h2>
                 <span className="text-slate-400 text-sm">—</span>
                 <span className="text-cyan-400 text-sm font-bold">{team}</span>
@@ -268,7 +268,7 @@ export default function RollingXGPage() {
               <div className="flex flex-wrap gap-x-5 gap-y-1 mb-4 text-xs">
                 <span className="flex items-center gap-1.5">
                   <span className="w-5 h-0.5 bg-cyan-400 inline-block" />
-                  <span className="text-slate-300">npxG For</span>
+                  <span className="text-slate-300">xG For</span>
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="w-5 h-0.5 border-t-2 border-dashed border-cyan-400/60 inline-block" />
@@ -276,7 +276,7 @@ export default function RollingXGPage() {
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="w-5 h-0.5 bg-red-400 inline-block" />
-                  <span className="text-slate-300">npxG Against</span>
+                  <span className="text-slate-300">xGA</span>
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="w-5 h-0.5 border-t-2 border-dashed border-red-400/60 inline-block" />
@@ -296,7 +296,7 @@ export default function RollingXGPage() {
                   <YAxis
                     stroke="#94a3b8"
                     tick={{ fill: '#94a3b8', fontSize: 12 }}
-                    label={{ value: 'Rolling Avg npxG', angle: -90, position: 'insideLeft', offset: 15, fill: '#64748b', fontSize: 12 }}
+                    label={{ value: 'Rolling Avg xG', angle: -90, position: 'insideLeft', offset: 15, fill: '#64748b', fontSize: 12 }}
                     domain={[0, 'auto']}
                   />
                   <Tooltip content={<CustomTooltip />} />
@@ -304,7 +304,7 @@ export default function RollingXGPage() {
                   <Line
                     type="monotone"
                     dataKey="rollingFor"
-                    name="npxG For"
+                    name="xG For"
                     stroke="#22d3ee"
                     strokeWidth={2.5}
                     dot={{ r: 3, fill: '#22d3ee', strokeWidth: 0 }}
@@ -313,7 +313,7 @@ export default function RollingXGPage() {
                   <Line
                     type="monotone"
                     dataKey="trendFor"
-                    name="npxG For Trend"
+                    name="xG For Trend"
                     stroke="#22d3ee"
                     strokeWidth={1.5}
                     strokeDasharray="6 4"
@@ -324,7 +324,7 @@ export default function RollingXGPage() {
                   <Line
                     type="monotone"
                     dataKey="rollingAgainst"
-                    name="npxG Against"
+                    name="xGA"
                     stroke="#f87171"
                     strokeWidth={2.5}
                     dot={{ r: 3, fill: '#f87171', strokeWidth: 0 }}
@@ -333,7 +333,7 @@ export default function RollingXGPage() {
                   <Line
                     type="monotone"
                     dataKey="trendAgainst"
-                    name="npxG Against Trend"
+                    name="xGA Trend"
                     stroke="#f87171"
                     strokeWidth={1.5}
                     strokeDasharray="6 4"
