@@ -253,8 +253,7 @@ const PAGES = [
       sameAs: [
         'https://x.com/NeilMac555',
         'https://neilmac.substack.com/',
-        'https://www.ylose.com/soccer',
-        'https://www.honestbettingreviews.com/best-football-tipster-telegram/',
+'https://www.honestbettingreviews.com/best-football-tipster-telegram/',
         'https://smartsportstrader.com/bookie-insiders-football-review/',
         'https://www.bet-experts.com/tipster-review/neil-mac/',
       ],
@@ -270,7 +269,6 @@ const PAGES = [
 <li><a href="https://neilmac.substack.com/">Substack</a></li>
 <li><a href="https://x.com/NeilMac555">X / Twitter</a></li>
 <li><a href="https://t.me/steamwatchalerts">Telegram Alerts</a></li>
-<li><a href="https://www.ylose.com/soccer">Ylose Results</a></li>
 </ul>
 <p><a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
   },
