@@ -240,7 +240,7 @@ const PAGES = [
     path: 'about',
     title: 'About Neil Mac | Football Betting Analyst & SteamWatch Founder',
     description:
-      "Neil Mac is a professional football betting analyst with 10+ years' experience and 7,800+ tracked bets. Creator of SteamWatch, a steam move and sharp money tracking platform.",
+      "Neil Mac is a professional football betting analyst with 20+ years' experience and 7,800+ tracked bets. Creator of SteamWatch, a steam move and sharp money tracking platform.",
     ogType: 'website',
     jsonLd: {
       '@context': 'https://schema.org',
@@ -259,7 +259,7 @@ const PAGES = [
       ],
     },
     noscriptHtml: `<h1>About Neil Mac — Football Betting Analyst & SteamWatch Founder</h1>
-<p>Neil Mac is a professional football betting analyst with over 10 years of experience in sports betting markets. He has worked with Paddy Power, Oddschecker, and Covers.com.</p>
+<p>Neil Mac is a professional football betting analyst with over 20 years of experience in sports betting markets. He has worked with Paddy Power, Oddschecker, and Covers.com.</p>
 <h2>Track Record</h2>
 <p>7,800+ bets tracked, +464 units profit, 4%+ ROI. All results independently tracked and publicly verifiable.</p>
 <h2>What is SteamWatch?</h2>

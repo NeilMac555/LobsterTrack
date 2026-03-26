@@ -22,9 +22,9 @@ export default function AboutPage() {
     <div className="max-w-3xl mx-auto">
       <Helmet>
         <title>About Neil Mac | Football Betting Analyst &amp; SteamWatch Founder</title>
-        <meta name="description" content="Neil Mac is a professional football betting analyst with 10+ years' experience and 7,800+ tracked bets. Creator of SteamWatch, a steam move and sharp money tracking platform." />
+        <meta name="description" content="Neil Mac is a professional football betting analyst with 20+ years' experience and 7,800+ tracked bets. Creator of SteamWatch, a steam move and sharp money tracking platform." />
         <meta property="og:title" content="About Neil Mac | Football Betting Analyst & SteamWatch Founder" />
-        <meta property="og:description" content="Neil Mac is a professional football betting analyst with 10+ years' experience and 7,800+ tracked bets. Creator of SteamWatch, a steam move and sharp money tracking platform." />
+        <meta property="og:description" content="Neil Mac is a professional football betting analyst with 20+ years' experience and 7,800+ tracked bets. Creator of SteamWatch, a steam move and sharp money tracking platform." />
         <meta property="og:url" content="https://www.steamwatch.io/about" />
         <link rel="canonical" href="https://www.steamwatch.io/about" />
         <script type="application/ld+json">{JSON.stringify(PERSON_SCHEMA)}</script>
@@ -37,7 +37,7 @@ export default function AboutPage() {
       <section className="mb-10">
         <h2 className="text-xl font-bold text-white mb-4">Who I Am</h2>
         <p className="text-slate-300 leading-relaxed mb-4">
-          I'm Neil Mac — a professional football betting analyst with over 10 years of experience
+          I'm Neil Mac — a professional football betting analyst with over 20 years of experience
           in sports betting markets. I've worked with and contributed to some of the biggest names
           in the industry including Paddy Power, Oddschecker, and Covers.com.
         </p>
