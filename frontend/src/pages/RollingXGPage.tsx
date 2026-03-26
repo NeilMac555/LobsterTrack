@@ -9,8 +9,6 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-import { useAuth } from '../contexts/AuthContext';
-import PaywallOverlay from '../components/PaywallOverlay';
 import { getXGTeams, getXGData } from '../api';
 import type { XGDataPoint } from '../types';
 import { LEAGUE_CONFIG } from '../types';
@@ -91,7 +89,6 @@ function CustomTooltip({ active, payload, label }: any) {
 }
 
 export default function RollingXGPage() {
-  const { isSubscribed } = useAuth();
   const [league, setLeague] = useState('soccer_epl');
   const [team, setTeam] = useState('');
   const [windowSize, setWindowSize] = useState<RollingWindow>(10);
@@ -103,7 +100,6 @@ export default function RollingXGPage() {
 
   // Fetch teams when league changes
   useEffect(() => {
-    if (!isSubscribed) return;
     setTeamsLoading(true);
     setTeam('');
     setRawData([]);
@@ -114,18 +110,18 @@ export default function RollingXGPage() {
       })
       .catch(() => setTeams([]))
       .finally(() => setTeamsLoading(false));
-  }, [league, isSubscribed]);
+  }, [league]);
 
   // Fetch xG data when team changes
   useEffect(() => {
-    if (!isSubscribed || !team) return;
+    if (!team) return;
     setLoading(true);
     setError(null);
     getXGData(league, team)
       .then((res) => setRawData(res.data))
       .catch(() => setError('Failed to load xG data'))
       .finally(() => setLoading(false));
-  }, [league, team, isSubscribed]);
+  }, [league, team]);
 
   const chartData = useMemo(() => computeChartData(rawData, windowSize), [rawData, windowSize]);
 
@@ -150,14 +146,7 @@ export default function RollingXGPage() {
         </p>
       </div>
 
-      {!isSubscribed ? (
-        <PaywallOverlay
-          title="Unlock Rolling xG Analysis"
-          description="Track team performance trends with rolling expected goals data across Europe's top leagues."
-        />
-      ) : (
-        <>
-          {/* Filters */}
+      {/* Filters */}
           <div className="bg-slate-800 rounded-xl border border-slate-700 p-4">
             <div className="flex flex-wrap items-end gap-4">
               {/* League */}
@@ -345,8 +334,6 @@ export default function RollingXGPage() {
               </ResponsiveContainer>
             </div>
           )}
-        </>
-      )}
     </div>
   );
 }
