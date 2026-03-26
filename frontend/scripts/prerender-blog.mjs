@@ -256,6 +256,7 @@ const PAGES = [
 'https://www.honestbettingreviews.com/best-football-tipster-telegram/',
         'https://smartsportstrader.com/bookie-insiders-football-review/',
         'https://www.bet-experts.com/tipster-review/neil-mac/',
+        'https://www.youtube.com/@neilmac555',
       ],
     },
     noscriptHtml: `<h1>About Neil Mac — Football Betting Analyst & SteamWatch Founder</h1>
