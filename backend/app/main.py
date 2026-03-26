@@ -1,10 +1,10 @@
 import os
 import structlog
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 
 from app.config import get_settings
 from app.models.database import Base, engine
@@ -77,6 +77,19 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 301 redirect trailing slashes to non-trailing (SEO canonical URLs)
+@app.middleware("http")
+async def redirect_trailing_slash(request: Request, call_next):
+    path = request.url.path
+    if len(path) > 1 and path.endswith("/"):
+        # Preserve query string if present
+        query = str(request.url.query)
+        new_url = path.rstrip("/")
+        if query:
+            new_url = f"{new_url}?{query}"
+        return RedirectResponse(url=new_url, status_code=301)
+    return await call_next(request)
 
 # Include API routes
 app.include_router(router, prefix="/api")

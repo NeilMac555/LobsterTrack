@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Link, useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import { getClosingLines } from '../api';
@@ -151,6 +152,11 @@ export default function ClosingLinesPage() {
 
   return (
     <div>
+      <Helmet>
+        <title>Closing Lines — SteamWatch</title>
+        <meta name="description" content="Compare opening and closing odds across major European football leagues. Track closing line value and market efficiency." />
+        <link rel="canonical" href="https://www.steamwatch.io/closing-lines" />
+      </Helmet>
       {/* Page Header */}
       <div className="mb-6 sm:mb-8">
         <div className="flex items-center gap-3 mb-2">

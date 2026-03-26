@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import PaywallOverlay from '../components/PaywallOverlay';
@@ -586,6 +587,11 @@ export default function MatchPredictorPage() {
 
   return (
     <div className="max-w-7xl mx-auto">
+      <Helmet>
+        <title>Match Predictor — SteamWatch Dixon-Coles Model</title>
+        <meta name="description" content="Generate match probability predictions using the SteamWatch Dixon-Coles adjusted Poisson model. Fair odds for 1X2, Asian Handicap, and Totals markets." />
+        <link rel="canonical" href="https://www.steamwatch.io/tools/match-predictor" />
+      </Helmet>
       {/* Page Header */}
       <div className="mb-6 sm:mb-8 text-center">
         <div className="flex items-center justify-center gap-3 mb-1">

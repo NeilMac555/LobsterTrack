@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useSearchParams, Link } from 'react-router-dom';
 import { format, isToday, isTomorrow, startOfDay, formatDistanceToNow } from 'date-fns';
 import { getMatches, getStats, getBiggestMovers, getSyndicateMoves } from '../api';
@@ -111,6 +112,10 @@ export default function HomePage() {
 
   return (
     <div>
+      <Helmet>
+        <title>SteamWatch - Track Sharp Money Movement in Football Betting</title>
+        <link rel="canonical" href="https://www.steamwatch.io/" />
+      </Helmet>
       {/* Match Model Promo */}
       <Link
         to="/tools/match-predictor"

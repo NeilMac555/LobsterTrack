@@ -264,6 +264,89 @@ const PAGES = [
 <p>Built by Neil Macdonald, a football analytics and betting markets researcher.</p>
 <p><a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
   },
+  {
+    path: 'closing-lines',
+    title: 'Closing Lines — SteamWatch',
+    description:
+      'Compare opening and closing odds across major European football leagues. Track closing line value and market efficiency on 1X2, Asian Handicap, and Totals markets.',
+    ogType: 'website',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'Dataset',
+      name: 'SteamWatch Closing Line Analysis',
+      description:
+        'Opening vs closing odds comparison across major European football leagues',
+      url: `${DOMAIN}/closing-lines`,
+      temporalCoverage: '2025/..',
+      creator: { '@type': 'Organization', name: 'SteamWatch', url: DOMAIN },
+    },
+    noscriptHtml: `<h1>Closing Lines — SteamWatch</h1>
+<p>Compare opening and closing odds across major European football leagues. Track closing line value and market efficiency on 1X2, Asian Handicap, and Totals markets.</p>
+<p>Leagues: Premier League, La Liga, Bundesliga, Serie A, Ligue 1.</p>
+<p><a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
+  },
+  {
+    path: 'cl-closing-lines',
+    title: 'Champions League Closing Lines — SteamWatch',
+    description:
+      'Champions League closing line analysis. Compare opening and closing odds for every UCL match across 1X2, Asian Handicap, and Totals markets.',
+    ogType: 'website',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'Dataset',
+      name: 'SteamWatch Champions League Closing Lines',
+      description:
+        'Opening vs closing odds for Champions League matches',
+      url: `${DOMAIN}/cl-closing-lines`,
+      temporalCoverage: '2025/..',
+      creator: { '@type': 'Organization', name: 'SteamWatch', url: DOMAIN },
+    },
+    noscriptHtml: `<h1>Champions League Closing Lines — SteamWatch</h1>
+<p>Compare opening and closing odds for every Champions League match. Grouped by matchday with 1X2, Asian Handicap, and Totals analysis.</p>
+<p><a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
+  },
+  {
+    path: 'tools/match-predictor',
+    title: 'Match Predictor — SteamWatch Dixon-Coles Model',
+    description:
+      'Generate match probability predictions using the SteamWatch Dixon-Coles adjusted Poisson model. Fair odds for 1X2, Asian Handicap, and Totals markets.',
+    ogType: 'website',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      name: 'SteamWatch Match Predictor',
+      url: `${DOMAIN}/tools/match-predictor`,
+      description:
+        'Dixon-Coles adjusted Poisson model for football match probability predictions',
+      applicationCategory: 'SportsApplication',
+      operatingSystem: 'Web',
+    },
+    noscriptHtml: `<h1>Match Predictor — SteamWatch</h1>
+<p>Generate match probability predictions using the Dixon-Coles adjusted Poisson regression model. Input team stats to get fair odds for 1X2, Asian Handicap, and Totals markets.</p>
+<p><a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
+  },
+  {
+    path: 'tools/rolling-xg',
+    title: 'Rolling xG — SteamWatch',
+    description:
+      'Track rolling expected goals (xG) trends for every team across Europe\'s top football leagues. Identify form changes and performance shifts.',
+    ogType: 'website',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      name: 'SteamWatch Rolling xG',
+      url: `${DOMAIN}/tools/rolling-xg`,
+      description:
+        'Rolling expected goals trends for teams across major European football leagues',
+      applicationCategory: 'SportsApplication',
+      operatingSystem: 'Web',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
+    },
+    noscriptHtml: `<h1>Rolling xG — SteamWatch</h1>
+<p>Track rolling expected goals (xG For and xG Against) trends for every team across Europe's top football leagues. Visualise form changes with 5 and 10 game rolling windows.</p>
+<p>Leagues: Premier League, La Liga, Bundesliga, Serie A, Ligue 1.</p>
+<p><a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
+  },
 ];
 
 for (const page of PAGES) {

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { format, isToday, startOfDay } from 'date-fns';
 import { getClosingLinesGrouped } from '../api';
@@ -349,6 +350,11 @@ export default function CLClosingLinesPage() {
 
   return (
     <div>
+      <Helmet>
+        <title>Champions League Closing Lines — SteamWatch</title>
+        <meta name="description" content="Champions League closing line analysis. Compare opening and closing odds for every UCL match." />
+        <link rel="canonical" href="https://www.steamwatch.io/cl-closing-lines" />
+      </Helmet>
       {/* Page Header */}
       <div className="mb-6 sm:mb-8">
         <div className="flex items-center gap-3 mb-2">
