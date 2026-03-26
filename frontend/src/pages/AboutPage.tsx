@@ -1,46 +1,94 @@
 import { Helmet } from 'react-helmet-async';
-import { Link } from 'react-router-dom';
+
+const PERSON_SCHEMA = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "Neil Mac",
+  "alternateName": ["Neil Macdonald", "Neil Mac Tips", "NeilMac555", "Bookie Insiders Football"],
+  "url": "https://www.steamwatch.io/about",
+  "jobTitle": "Professional Football Betting Analyst",
+  "knowsAbout": ["football betting", "steam moves", "sharp money", "closing line value", "Dixon-Coles model"],
+  "sameAs": [
+    "https://x.com/NeilMac555",
+    "https://neilmac.substack.com/",
+    "https://www.ylose.com/soccer",
+    "https://www.honestbettingreviews.com/best-football-tipster-telegram/",
+    "https://smartsportstrader.com/bookie-insiders-football-review/",
+    "https://www.bet-experts.com/tipster-review/neil-mac/"
+  ]
+};
 
 export default function AboutPage() {
   return (
     <div className="max-w-3xl mx-auto">
       <Helmet>
-        <title>About SteamWatch — Sharp Money Tracking for Football Betting</title>
-        <meta name="description" content="SteamWatch tracks sharp money movement across football betting markets using Pinnacle odds. Built on the Dixon-Coles probability model with real-time syndicate move alerts." />
-        <meta property="og:title" content="About SteamWatch — Sharp Money Tracking for Football Betting" />
-        <meta property="og:description" content="SteamWatch tracks sharp money movement across football betting markets using Pinnacle odds. Built on the Dixon-Coles probability model with real-time syndicate move alerts." />
+        <title>About Neil Mac | Football Betting Analyst &amp; SteamWatch Founder</title>
+        <meta name="description" content="Neil Mac is a professional football betting analyst with 10+ years' experience and 7,800+ tracked bets. Creator of SteamWatch, a steam move and sharp money tracking platform." />
+        <meta property="og:title" content="About Neil Mac | Football Betting Analyst & SteamWatch Founder" />
+        <meta property="og:description" content="Neil Mac is a professional football betting analyst with 10+ years' experience and 7,800+ tracked bets. Creator of SteamWatch, a steam move and sharp money tracking platform." />
         <meta property="og:url" content="https://www.steamwatch.io/about" />
         <link rel="canonical" href="https://www.steamwatch.io/about" />
-        <script type="application/ld+json">{JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "Person",
-          "name": "Neil Macdonald",
-          "url": "https://www.steamwatch.io/about",
-          "knowsAbout": ["football betting", "sharp money", "Dixon-Coles model", "sports analytics"]
-        })}</script>
+        <script type="application/ld+json">{JSON.stringify(PERSON_SCHEMA)}</script>
       </Helmet>
 
-      <h1 className="text-3xl sm:text-4xl font-bold text-white mb-8">About SteamWatch</h1>
+      <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">About Neil Mac</h1>
+      <p className="text-slate-400 text-sm mb-10">Football Betting Analyst &amp; SteamWatch Founder</p>
+
+      {/* Who I Am */}
+      <section className="mb-10">
+        <h2 className="text-xl font-bold text-white mb-4">Who I Am</h2>
+        <p className="text-slate-300 leading-relaxed mb-4">
+          I'm Neil Mac — a professional football betting analyst with over 10 years of experience
+          in sports betting markets. I've worked with and contributed to some of the biggest names
+          in the industry including Paddy Power, Oddschecker, and Covers.com.
+        </p>
+        <p className="text-slate-300 leading-relaxed">
+          My approach combines quantitative modelling with real-time market analysis. I focus on
+          European football across the Premier League, La Liga, Bundesliga, Serie A, Ligue 1,
+          and Champions League — tracking where the sharp money flows and why.
+        </p>
+      </section>
+
+      {/* Track Record */}
+      <section className="mb-10">
+        <h2 className="text-xl font-bold text-white mb-4">Track Record</h2>
+        <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-6">
+          <div className="bg-slate-800/60 rounded-xl border border-slate-700/50 p-4 text-center">
+            <p className="text-2xl sm:text-3xl font-extrabold text-emerald-400">7,800+</p>
+            <p className="text-xs sm:text-sm text-slate-400 mt-1">Bets Tracked</p>
+          </div>
+          <div className="bg-slate-800/60 rounded-xl border border-slate-700/50 p-4 text-center">
+            <p className="text-2xl sm:text-3xl font-extrabold text-emerald-400">+464u</p>
+            <p className="text-xs sm:text-sm text-slate-400 mt-1">Units Profit</p>
+          </div>
+          <div className="bg-slate-800/60 rounded-xl border border-slate-700/50 p-4 text-center">
+            <p className="text-2xl sm:text-3xl font-extrabold text-emerald-400">4%+</p>
+            <p className="text-xs sm:text-sm text-slate-400 mt-1">ROI</p>
+          </div>
+        </div>
+        <p className="text-slate-400 text-sm leading-relaxed">
+          All results independently tracked and publicly verifiable. Long-term profitability
+          built on disciplined staking, closing line value, and a systematic approach to
+          identifying market inefficiencies.
+        </p>
+      </section>
 
       {/* What is SteamWatch */}
       <section className="mb-10">
         <h2 className="text-xl font-bold text-white mb-4">What is SteamWatch?</h2>
         <p className="text-slate-300 leading-relaxed mb-4">
-          SteamWatch tracks sharp money movement across major European football betting markets.
-          We monitor Pinnacle odds — widely regarded as the sharpest bookmaker in the world — and
-          surface the moves that matter: steam, syndicate action, and closing line shifts.
+          SteamWatch is a platform I built to track sharp money movement across major European
+          football betting markets. We monitor Pinnacle odds — widely regarded as the sharpest
+          bookmaker in the world — and surface the moves that matter: steam, syndicate action,
+          and closing line shifts.
         </p>
-        <p className="text-slate-300 leading-relaxed">
-          Our data updates every 15 minutes, capturing odds snapshots across 1x2, Over/Under,
+        <p className="text-slate-300 leading-relaxed mb-6">
+          Our data updates every 15 minutes, capturing odds snapshots across 1X2, Over/Under,
           and Asian Handicap markets for the Premier League, La Liga, Bundesliga, Serie A,
           Ligue 1, Champions League, and Europa League.
         </p>
-      </section>
 
-      {/* How It Works */}
-      <section className="mb-10">
-        <h2 className="text-xl font-bold text-white mb-4">How It Works</h2>
-        <div className="space-y-6">
+        <div className="space-y-4">
           <div className="bg-slate-800/60 rounded-xl border border-slate-700/50 p-5">
             <h3 className="text-white font-semibold mb-2">Biggest Movers</h3>
             <p className="text-slate-400 text-sm leading-relaxed">
@@ -52,70 +100,77 @@ export default function AboutPage() {
             <h3 className="text-white font-semibold mb-2">Syndicate Moves</h3>
             <p className="text-slate-400 text-sm leading-relaxed">
               Late sharp action detected within 3 hours of kickoff with 3+ percentage point
-              implied probability shifts. These are the moves that professional syndicates
-              typically make close to game time.
+              implied probability shifts. Real-time Telegram alerts so you never miss a move.
             </p>
           </div>
           <div className="bg-slate-800/60 rounded-xl border border-slate-700/50 p-5">
             <h3 className="text-white font-semibold mb-2">Steam Results</h3>
             <p className="text-slate-400 text-sm leading-relaxed">
-              Historical performance tracking of steam moves across all leagues.
+              Historical performance tracking with P/L, win rates, and team rankings.
               See which teams consistently attract sharp money and whether following
-              steam has been profitable over time.
+              steam has been profitable.
             </p>
           </div>
           <div className="bg-slate-800/60 rounded-xl border border-slate-700/50 p-5">
             <h3 className="text-white font-semibold mb-2">Closing Line Analysis</h3>
             <p className="text-slate-400 text-sm leading-relaxed">
               Compare opening and closing odds for every match. Closing line value (CLV)
-              is the single best predictor of long-term betting success — if you consistently
-              beat the closing line, you're making +EV bets.
+              is the single best predictor of long-term betting success.
+            </p>
+          </div>
+          <div className="bg-slate-800/60 rounded-xl border border-slate-700/50 p-5">
+            <h3 className="text-white font-semibold mb-2">Rolling xG</h3>
+            <p className="text-slate-400 text-sm leading-relaxed">
+              Track expected goals trends for every team across Europe's top leagues.
+              Rolling 5 and 10-game windows with trend lines to identify form changes.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Match Model */}
+      {/* The Match Model */}
       <section className="mb-10">
-        <h2 className="text-xl font-bold text-white mb-4">The Match Model</h2>
+        <h2 className="text-xl font-bold text-white mb-4">The Dixon-Coles Match Model</h2>
         <p className="text-slate-300 leading-relaxed mb-4">
-          SteamWatch Pro includes a Dixon-Coles adjusted Poisson regression model that
-          generates fair odds baselines for every match. The model runs an 11-step pipeline:
+          SteamWatch includes a Dixon-Coles adjusted Poisson regression model that generates
+          fair odds baselines for every match. The model runs an 11-step pipeline covering
+          penalty xG adjustment, set piece discounting, red card normalisation, xG per shot
+          quality, form weighting, attack/defence ratings, motivation and absence factors,
+          and the Dixon-Coles low-score correction.
         </p>
-        <ul className="space-y-2 text-slate-400 text-sm">
-          <li className="flex gap-2"><span className="text-emerald-400 font-mono text-xs mt-0.5">01</span> Penalty xG adjustment</li>
-          <li className="flex gap-2"><span className="text-emerald-400 font-mono text-xs mt-0.5">02</span> Set piece xG discount</li>
-          <li className="flex gap-2"><span className="text-emerald-400 font-mono text-xs mt-0.5">03</span> Red card normalisation</li>
-          <li className="flex gap-2"><span className="text-emerald-400 font-mono text-xs mt-0.5">04</span> xG per shot quality adjustment</li>
-          <li className="flex gap-2"><span className="text-emerald-400 font-mono text-xs mt-0.5">05</span> Form weighting (season vs last 6)</li>
-          <li className="flex gap-2"><span className="text-emerald-400 font-mono text-xs mt-0.5">06</span> Attack & defence strength ratings</li>
-          <li className="flex gap-2"><span className="text-emerald-400 font-mono text-xs mt-0.5">07</span> Expected goals (Poisson lambda)</li>
-          <li className="flex gap-2"><span className="text-emerald-400 font-mono text-xs mt-0.5">08</span> Motivation & absence adjustments</li>
-          <li className="flex gap-2"><span className="text-emerald-400 font-mono text-xs mt-0.5">09</span> Poisson goal distribution</li>
-          <li className="flex gap-2"><span className="text-emerald-400 font-mono text-xs mt-0.5">10</span> Dixon-Coles low-score correction</li>
-          <li className="flex gap-2"><span className="text-emerald-400 font-mono text-xs mt-0.5">11</span> Draw inflation & normalisation</li>
-        </ul>
-        <p className="text-slate-400 text-sm mt-4">
+        <p className="text-slate-400 text-sm">
           All calculations run in your browser — no data leaves your device.
-          The model is based on the original Dixon & Coles (1997) paper with modern adjustments
-          for xG data, form weighting, and contextual factors.
+          Based on the original Dixon &amp; Coles (1997) paper with modern adjustments
+          for xG data and contextual factors.
         </p>
       </section>
 
-      {/* Who's Behind It */}
+      {/* Find Me */}
       <section className="mb-10">
-        <h2 className="text-xl font-bold text-white mb-4">Who's Behind It</h2>
-        <p className="text-slate-300 leading-relaxed">
-          SteamWatch is built by Neil Macdonald, a football analytics and betting markets
-          researcher. The project combines quantitative modelling with real-time market
-          data to surface actionable signals for serious bettors.
-        </p>
-      </section>
-
-      {/* Links */}
-      <section className="mb-10">
-        <h2 className="text-xl font-bold text-white mb-4">Connect</h2>
+        <h2 className="text-xl font-bold text-white mb-4">Find Me</h2>
         <div className="flex flex-wrap gap-3">
+          <a
+            href="https://neilmac.substack.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-4 py-2 bg-orange-500/20 border border-orange-500/40 rounded-lg text-orange-400 text-sm font-medium hover:bg-orange-500/30 transition-colors"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z"/>
+            </svg>
+            Substack
+          </a>
+          <a
+            href="https://x.com/NeilMac555"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-4 py-2 bg-slate-600/30 border border-slate-500/40 rounded-lg text-slate-300 text-sm font-medium hover:bg-slate-600/40 transition-colors"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+            </svg>
+            @NeilMac555
+          </a>
           <a
             href="https://t.me/steamwatchalerts"
             target="_blank"
@@ -127,12 +182,47 @@ export default function AboutPage() {
             </svg>
             Telegram Alerts
           </a>
-          <Link
-            to="/tools/match-predictor"
-            className="flex items-center gap-2 px-4 py-2 bg-red-500/20 border border-red-500/40 rounded-lg text-red-400 text-sm font-medium hover:bg-red-500/30 transition-colors"
+          <a
+            href="https://www.ylose.com/soccer"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-4 py-2 bg-violet-500/20 border border-violet-500/40 rounded-lg text-violet-400 text-sm font-medium hover:bg-violet-500/30 transition-colors"
           >
-            Match Model
-          </Link>
+            Ylose Results
+          </a>
+        </div>
+
+        {/* Reviews */}
+        <div className="mt-6">
+          <p className="text-xs text-slate-500 uppercase tracking-wider font-medium mb-3">Independent Reviews</p>
+          <div className="flex flex-wrap gap-2">
+            <a
+              href="https://www.honestbettingreviews.com/best-football-tipster-telegram/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-slate-400 hover:text-slate-300 underline underline-offset-2 transition-colors"
+            >
+              Honest Betting Reviews
+            </a>
+            <span className="text-slate-600">·</span>
+            <a
+              href="https://smartsportstrader.com/bookie-insiders-football-review/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-slate-400 hover:text-slate-300 underline underline-offset-2 transition-colors"
+            >
+              Smart Sports Trader
+            </a>
+            <span className="text-slate-600">·</span>
+            <a
+              href="https://www.bet-experts.com/tipster-review/neil-mac/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-slate-400 hover:text-slate-300 underline underline-offset-2 transition-colors"
+            >
+              Bet Experts
+            </a>
+          </div>
         </div>
       </section>
 

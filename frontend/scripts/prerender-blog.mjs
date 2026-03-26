@@ -238,30 +238,40 @@ const PAGES = [
   },
   {
     path: 'about',
-    title: 'About SteamWatch — Sharp Money Tracking for Football Betting',
+    title: 'About Neil Mac | Football Betting Analyst & SteamWatch Founder',
     description:
-      'SteamWatch tracks sharp money movement across football betting markets using Pinnacle odds. Built on the Dixon-Coles probability model with real-time syndicate move alerts.',
+      "Neil Mac is a professional football betting analyst with 10+ years' experience and 7,800+ tracked bets. Creator of SteamWatch, a steam move and sharp money tracking platform.",
     ogType: 'website',
     jsonLd: {
       '@context': 'https://schema.org',
       '@type': 'Person',
-      name: 'Neil Macdonald',
+      name: 'Neil Mac',
+      alternateName: ['Neil Macdonald', 'Neil Mac Tips', 'NeilMac555', 'Bookie Insiders Football'],
       url: `${DOMAIN}/about`,
-      knowsAbout: ['football betting', 'sharp money', 'Dixon-Coles model', 'sports analytics'],
+      jobTitle: 'Professional Football Betting Analyst',
+      knowsAbout: ['football betting', 'steam moves', 'sharp money', 'closing line value', 'Dixon-Coles model'],
+      sameAs: [
+        'https://x.com/NeilMac555',
+        'https://neilmac.substack.com/',
+        'https://www.ylose.com/soccer',
+        'https://www.honestbettingreviews.com/best-football-tipster-telegram/',
+        'https://smartsportstrader.com/bookie-insiders-football-review/',
+        'https://www.bet-experts.com/tipster-review/neil-mac/',
+      ],
     },
-    noscriptHtml: `<h1>About SteamWatch</h1>
-<p>SteamWatch tracks sharp money movement across major European football betting markets. We monitor Pinnacle odds — widely regarded as the sharpest bookmaker in the world — and surface the moves that matter: steam, syndicate action, and closing line shifts.</p>
-<h2>How It Works</h2>
+    noscriptHtml: `<h1>About Neil Mac — Football Betting Analyst & SteamWatch Founder</h1>
+<p>Neil Mac is a professional football betting analyst with over 10 years of experience in sports betting markets. He has worked with Paddy Power, Oddschecker, and Covers.com.</p>
+<h2>Track Record</h2>
+<p>7,800+ bets tracked, +464 units profit, 4%+ ROI. All results independently tracked and publicly verifiable.</p>
+<h2>What is SteamWatch?</h2>
+<p>SteamWatch tracks sharp money movement across major European football betting markets using Pinnacle odds data updated every 15 minutes. Features include Biggest Movers, Syndicate Moves with Telegram alerts, Steam Results with P/L tracking, Closing Line Analysis, Rolling xG, and a Dixon-Coles Match Prediction Model.</p>
+<h2>Find Neil Mac</h2>
 <ul>
-<li><strong>Biggest Movers</strong> — Matches ranked by the largest odds movements.</li>
-<li><strong>Syndicate Moves</strong> — Late sharp action detected within 3 hours of kickoff.</li>
-<li><strong>Steam Results</strong> — Historical performance tracking with win rates and P/L.</li>
-<li><strong>Closing Line Analysis</strong> — Compare opening and closing odds for CLV.</li>
+<li><a href="https://neilmac.substack.com/">Substack</a></li>
+<li><a href="https://x.com/NeilMac555">X / Twitter</a></li>
+<li><a href="https://t.me/steamwatchalerts">Telegram Alerts</a></li>
+<li><a href="https://www.ylose.com/soccer">Ylose Results</a></li>
 </ul>
-<h2>The Match Model</h2>
-<p>SteamWatch Pro includes a Dixon-Coles adjusted Poisson regression model that generates fair odds baselines for every match via an 11-step pipeline.</p>
-<h2>Who's Behind It</h2>
-<p>Built by Neil Macdonald, a football analytics and betting markets researcher.</p>
 <p><a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
   },
   {
