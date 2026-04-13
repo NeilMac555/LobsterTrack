@@ -1799,3 +1799,31 @@ async def admin_fix_subscription(
             "subscription_status": "active",
             "note": f"Force-activated (Stripe lookup failed: {str(e)})",
         }
+
+
+@router.post("/admin/force-activate")
+async def admin_force_activate(
+    password: str = Query(..., description="Admin password"),
+    email: str = Query(..., description="User email to activate"),
+    db: Session = Depends(get_db)
+):
+    """Admin: force-activate a subscription without Stripe lookup."""
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=403, detail="Invalid admin password")
+
+    from app.models.user import User
+    from app.models.subscription import Subscription
+
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail=f"User {email} not found")
+
+    sub = db.query(Subscription).filter(Subscription.user_id == user.id).first()
+    if not sub:
+        sub = Subscription(user_id=user.id)
+        db.add(sub)
+
+    sub.status = "active"
+    db.commit()
+
+    return {"activated": True, "email": email, "user_id": user.id}
