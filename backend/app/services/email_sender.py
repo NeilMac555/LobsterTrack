@@ -71,4 +71,72 @@ class EmailSender:
             return False
 
 
+    async def send_welcome_pro(self, to_email: str) -> bool:
+        """Send welcome email to new Pro subscribers."""
+        if not self.is_configured():
+            logger.warning("Resend not configured, skipping welcome email")
+            return False
+
+        html = """
+        <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; color: #1e293b;">
+            <h2 style="color: #dc2626;">Welcome to SteamWatch Pro! 🚀</h2>
+            <p>Thanks for subscribing — you now have full access to every tool on SteamWatch:</p>
+            <ul style="line-height: 1.8;">
+                <li><strong>Dixon-Coles Match Predictor</strong> — fair odds for every match</li>
+                <li><strong>Rolling xG</strong> — track team form across Europe's top leagues</li>
+                <li><strong>Steam Results & Syndicate Alerts</strong> — sharp money tracking</li>
+                <li><strong>Closing Line Analysis</strong> — opening vs closing odds</li>
+            </ul>
+            <p>If you have any questions or feedback, reply directly to this email or reach out at
+               <a href="mailto:neilmac@bookieinsiders.io" style="color: #dc2626;">neilmac@bookieinsiders.io</a>.</p>
+            <p style="margin-top: 24px;">
+                <a href="https://www.steamwatch.io"
+                   style="display: inline-block; background: #dc2626; color: white;
+                          padding: 12px 24px; border-radius: 6px; text-decoration: none;
+                          font-weight: 600;">
+                    Go to SteamWatch
+                </a>
+            </p>
+            <p style="color: #64748b; font-size: 13px; margin-top: 32px;">
+                — Neil Mac<br>
+                <a href="https://x.com/NeilMac555" style="color: #64748b;">@NeilMac555</a> ·
+                <a href="https://neilmac.substack.com" style="color: #64748b;">Substack</a> ·
+                <a href="https://t.me/steamwatchalerts" style="color: #64748b;">Telegram</a>
+            </p>
+        </div>
+        """
+
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.post(
+                    "https://api.resend.com/emails",
+                    headers={
+                        "Authorization": f"Bearer {self.api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "from": self.from_address,
+                        "to": [to_email],
+                        "reply_to": "neilmac@bookieinsiders.io",
+                        "subject": "Welcome to SteamWatch Pro 🚀",
+                        "html": html,
+                    },
+                )
+
+                if response.status_code == 200:
+                    logger.info("Welcome email sent", to=to_email)
+                    return True
+                else:
+                    logger.error(
+                        "Failed to send welcome email",
+                        status=response.status_code,
+                        response=response.text,
+                    )
+                    return False
+
+        except Exception as e:
+            logger.error("Error sending welcome email", error=str(e))
+            return False
+
+
 email_sender = EmailSender()

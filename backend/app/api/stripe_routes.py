@@ -10,6 +10,7 @@ from app.models.user import User
 from app.models.subscription import Subscription
 from app.api.deps import require_user
 from app.services.telegram_notifier import telegram_notifier
+from app.services.email_sender import email_sender
 
 logger = structlog.get_logger()
 settings = get_settings()
@@ -80,8 +81,8 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
 
     try:
         if event_type == "checkout.session.completed":
-            _handle_checkout_completed(data, db)
-        elif event_type == "customer.subscription.updated":
+            await _handle_checkout_completed(data, db)
+        elif event_type in ("customer.subscription.created", "customer.subscription.updated"):
             _handle_subscription_updated(data, db)
         elif event_type == "customer.subscription.deleted":
             _handle_subscription_deleted(data, db)
@@ -94,19 +95,31 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
     return {"status": "ok"}
 
 
-def _handle_checkout_completed(session_data: dict, db: Session):
+async def _handle_checkout_completed(session_data: dict, db: Session):
     customer_id = session_data.get("customer")
     subscription_id = session_data.get("subscription")
 
     if not customer_id or not subscription_id:
+        logger.warning("Checkout missing customer/subscription", data=session_data)
         return
 
     user = db.query(User).filter(User.stripe_customer_id == customer_id).first()
+
+    # Fallback: look up by email from the checkout session
+    if not user:
+        checkout_email = session_data.get("customer_details", {}).get("email") or session_data.get("customer_email")
+        if checkout_email:
+            user = db.query(User).filter(User.email == checkout_email).first()
+            if user:
+                user.stripe_customer_id = customer_id
+                logger.info("Linked Stripe customer via email fallback", email=checkout_email, customer_id=customer_id)
+
     if not user:
         logger.warning("Checkout completed for unknown customer", customer_id=customer_id)
         return
 
     sub = db.query(Subscription).filter(Subscription.user_id == user.id).first()
+    was_new = sub is None
     if not sub:
         sub = Subscription(user_id=user.id)
         db.add(sub)
@@ -129,12 +142,18 @@ def _handle_checkout_completed(session_data: dict, db: Session):
 
     logger.info("Subscription activated", user_id=user.id, subscription_id=subscription_id)
 
-    # Notify via Telegram
+    # Send welcome email to new subscriber
+    if was_new:
+        try:
+            await email_sender.send_welcome_pro(user.email)
+        except Exception as e:
+            logger.warning("Failed to send welcome email", error=str(e))
+
+    # Notify Neil via Telegram
     try:
-        import asyncio
-        asyncio.ensure_future(telegram_notifier._send_message(
+        await telegram_notifier._send_message(
             f"💰 NEW PRO SUBSCRIBER\n\n{user.email}\n\nSteamWatch Pro is growing 🚀"
-        ))
+        )
     except Exception:
         pass  # Don't fail the webhook over a notification
 
