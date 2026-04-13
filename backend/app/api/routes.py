@@ -1733,52 +1733,69 @@ async def admin_fix_subscription(
     if password != ADMIN_PASSWORD:
         raise HTTPException(status_code=403, detail="Invalid admin password")
 
-    import stripe as stripe_lib
     from app.models.user import User
     from app.models.subscription import Subscription
-
-    settings_local = get_settings()
-    stripe_lib.api_key = settings_local.stripe_secret_key
 
     user = db.query(User).filter(User.email == email).first()
     if not user:
         raise HTTPException(status_code=404, detail=f"User {email} not found")
 
-    # If user has no stripe_customer_id, search Stripe by email
-    if not user.stripe_customer_id:
-        customers = stripe_lib.Customer.list(email=email, limit=1)
-        if customers.data:
-            user.stripe_customer_id = customers.data[0].id
-            db.commit()
-        else:
-            raise HTTPException(status_code=404, detail=f"No Stripe customer found for {email}")
+    try:
+        import stripe as stripe_lib
+        settings_local = get_settings()
+        stripe_lib.api_key = settings_local.stripe_secret_key
 
-    # Look up active subscriptions for this customer
-    subs = stripe_lib.Subscription.list(customer=user.stripe_customer_id, status="active", limit=1)
-    if not subs.data:
-        subs = stripe_lib.Subscription.list(customer=user.stripe_customer_id, limit=1)
+        # If user has no stripe_customer_id, search Stripe by email
+        if not user.stripe_customer_id:
+            customers = stripe_lib.Customer.list(email=email, limit=1)
+            if customers.data:
+                user.stripe_customer_id = customers.data[0].id
+                db.commit()
+            else:
+                raise HTTPException(status_code=404, detail=f"No Stripe customer found for {email}")
 
-    if not subs.data:
-        raise HTTPException(status_code=404, detail=f"No Stripe subscription found for {email}")
+        # Look up active subscriptions for this customer
+        subs = stripe_lib.Subscription.list(customer=user.stripe_customer_id, status="active", limit=1)
+        if not subs.data:
+            subs = stripe_lib.Subscription.list(customer=user.stripe_customer_id, limit=1)
 
-    stripe_sub = subs.data[0]
+        if not subs.data:
+            raise HTTPException(status_code=404, detail=f"No Stripe subscription found for {email}")
 
-    # Create or update local subscription record
-    sub = db.query(Subscription).filter(Subscription.user_id == user.id).first()
-    if not sub:
-        sub = Subscription(user_id=user.id)
-        db.add(sub)
+        stripe_sub = subs.data[0]
 
-    sub.stripe_subscription_id = stripe_sub.id
-    sub.status = stripe_sub.status
-    sub.current_period_end = datetime.utcfromtimestamp(stripe_sub.current_period_end) if stripe_sub.current_period_end else None
-    sub.cancel_at_period_end = stripe_sub.cancel_at_period_end
-    db.commit()
+        # Create or update local subscription record
+        sub = db.query(Subscription).filter(Subscription.user_id == user.id).first()
+        if not sub:
+            sub = Subscription(user_id=user.id)
+            db.add(sub)
 
-    return {
-        "fixed": True,
-        "email": email,
-        "subscription_status": sub.status,
-        "stripe_subscription_id": sub.stripe_subscription_id,
-        "current_period_end": sub.current_period_end.isoformat() if sub.current_period_end else None,
-    }
+        sub.stripe_subscription_id = stripe_sub.id
+        sub.status = stripe_sub.status
+        sub.current_period_end = datetime.utcfromtimestamp(stripe_sub.current_period_end) if stripe_sub.current_period_end else None
+        sub.cancel_at_period_end = stripe_sub.cancel_at_period_end
+        db.commit()
+
+        return {
+            "fixed": True,
+            "email": email,
+            "subscription_status": sub.status,
+            "stripe_subscription_id": sub.stripe_subscription_id,
+            "current_period_end": sub.current_period_end.isoformat() if sub.current_period_end else None,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Fallback: just force-activate if Stripe lookup fails
+        sub = db.query(Subscription).filter(Subscription.user_id == user.id).first()
+        if not sub:
+            sub = Subscription(user_id=user.id)
+            db.add(sub)
+        sub.status = "active"
+        db.commit()
+        return {
+            "fixed": True,
+            "email": email,
+            "subscription_status": "active",
+            "note": f"Force-activated (Stripe lookup failed: {str(e)})",
+        }
