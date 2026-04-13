@@ -1689,3 +1689,96 @@ async def upload_xg_data(
     db.commit()
 
     return {"success": True, "rows_inserted": len(rows), "leagues_updated": list(leagues_seen)}
+
+
+@router.get("/admin/users")
+async def admin_list_users(
+    password: str = Query(..., description="Admin password"),
+    db: Session = Depends(get_db)
+):
+    """Admin: list all users with subscription status."""
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=403, detail="Invalid admin password")
+
+    from app.models.user import User
+    from app.models.subscription import Subscription
+
+    users = db.query(User).all()
+    result = []
+    for u in users:
+        sub = db.query(Subscription).filter(Subscription.user_id == u.id).first()
+        result.append({
+            "id": u.id,
+            "email": u.email,
+            "stripe_customer_id": u.stripe_customer_id,
+            "created_at": u.created_at.isoformat() if u.created_at else None,
+            "subscription": {
+                "status": sub.status,
+                "stripe_subscription_id": sub.stripe_subscription_id,
+                "current_period_end": sub.current_period_end.isoformat() if sub and sub.current_period_end else None,
+                "cancel_at_period_end": sub.cancel_at_period_end if sub else None,
+            } if sub else None,
+        })
+
+    return {"users": result, "total": len(result)}
+
+
+@router.post("/admin/fix-subscription")
+async def admin_fix_subscription(
+    password: str = Query(..., description="Admin password"),
+    email: str = Query(..., description="User email to fix"),
+    db: Session = Depends(get_db)
+):
+    """Admin: manually activate a user's subscription by looking up their Stripe customer."""
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=403, detail="Invalid admin password")
+
+    import stripe as stripe_lib
+    from app.models.user import User
+    from app.models.subscription import Subscription
+
+    settings_local = get_settings()
+    stripe_lib.api_key = settings_local.stripe_secret_key
+
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail=f"User {email} not found")
+
+    # If user has no stripe_customer_id, search Stripe by email
+    if not user.stripe_customer_id:
+        customers = stripe_lib.Customer.list(email=email, limit=1)
+        if customers.data:
+            user.stripe_customer_id = customers.data[0].id
+            db.commit()
+        else:
+            raise HTTPException(status_code=404, detail=f"No Stripe customer found for {email}")
+
+    # Look up active subscriptions for this customer
+    subs = stripe_lib.Subscription.list(customer=user.stripe_customer_id, status="active", limit=1)
+    if not subs.data:
+        subs = stripe_lib.Subscription.list(customer=user.stripe_customer_id, limit=1)
+
+    if not subs.data:
+        raise HTTPException(status_code=404, detail=f"No Stripe subscription found for {email}")
+
+    stripe_sub = subs.data[0]
+
+    # Create or update local subscription record
+    sub = db.query(Subscription).filter(Subscription.user_id == user.id).first()
+    if not sub:
+        sub = Subscription(user_id=user.id)
+        db.add(sub)
+
+    sub.stripe_subscription_id = stripe_sub.id
+    sub.status = stripe_sub.status
+    sub.current_period_end = datetime.utcfromtimestamp(stripe_sub.current_period_end) if stripe_sub.current_period_end else None
+    sub.cancel_at_period_end = stripe_sub.cancel_at_period_end
+    db.commit()
+
+    return {
+        "fixed": True,
+        "email": email,
+        "subscription_status": sub.status,
+        "stripe_subscription_id": sub.stripe_subscription_id,
+        "current_period_end": sub.current_period_end.isoformat() if sub.current_period_end else None,
+    }
