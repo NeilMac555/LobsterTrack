@@ -13,7 +13,12 @@ import {
 import { getXGTeams, getXGData } from '../api';
 import type { XGDataPoint } from '../types';
 import { LEAGUE_CONFIG } from '../types';
+import { useAuth } from '../contexts/AuthContext';
+import PaywallOverlay from '../components/PaywallOverlay';
 type RollingWindow = 5 | 10;
+
+const FREE_LEAGUE = 'soccer_epl';
+const FREE_TEAM = 'Arsenal';
 
 // Simple linear regression: returns [slope, intercept]
 function linearRegression(ys: number[]): [number, number] {
@@ -90,7 +95,8 @@ function CustomTooltip({ active, payload, label }: any) {
 }
 
 export default function RollingXGPage() {
-  const [league, setLeague] = useState('soccer_epl');
+  const { isSubscribed } = useAuth();
+  const [league, setLeague] = useState(FREE_LEAGUE);
   const [team, setTeam] = useState('');
   const [windowSize, setWindowSize] = useState<RollingWindow>(10);
   const [teams, setTeams] = useState<string[]>([]);
@@ -98,6 +104,26 @@ export default function RollingXGPage() {
   const [loading, setLoading] = useState(false);
   const [teamsLoading, setTeamsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPaywall, setShowPaywall] = useState(false);
+
+  // Gate league/team changes for free users
+  const handleLeagueChange = (newLeague: string) => {
+    if (!isSubscribed && newLeague !== FREE_LEAGUE) {
+      setShowPaywall(true);
+      return;
+    }
+    setShowPaywall(false);
+    setLeague(newLeague);
+  };
+
+  const handleTeamChange = (newTeam: string) => {
+    if (!isSubscribed && (league !== FREE_LEAGUE || newTeam !== FREE_TEAM)) {
+      setShowPaywall(true);
+      return;
+    }
+    setShowPaywall(false);
+    setTeam(newTeam);
+  };
 
   // Fetch teams when league changes
   useEffect(() => {
@@ -107,11 +133,18 @@ export default function RollingXGPage() {
     getXGTeams(league)
       .then((res) => {
         setTeams(res.teams);
-        if (res.teams.length > 0) setTeam(res.teams[0]);
+        // Default to FREE_TEAM for free users on free league, else first team
+        if (res.teams.length > 0) {
+          if (!isSubscribed && league === FREE_LEAGUE && res.teams.includes(FREE_TEAM)) {
+            setTeam(FREE_TEAM);
+          } else {
+            setTeam(res.teams[0]);
+          }
+        }
       })
       .catch(() => setTeams([]))
       .finally(() => setTeamsLoading(false));
-  }, [league]);
+  }, [league, isSubscribed]);
 
   // Fetch xG data when team changes
   useEffect(() => {
@@ -162,7 +195,7 @@ export default function RollingXGPage() {
                 </label>
                 <select
                   value={league}
-                  onChange={(e) => setLeague(e.target.value)}
+                  onChange={(e) => handleLeagueChange(e.target.value)}
                   className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-500"
                 >
                   {Object.entries(LEAGUE_CONFIG).map(([key, cfg]) => (
@@ -178,7 +211,7 @@ export default function RollingXGPage() {
                 </label>
                 <select
                   value={team}
-                  onChange={(e) => setTeam(e.target.value)}
+                  onChange={(e) => handleTeamChange(e.target.value)}
                   disabled={teamsLoading || teams.length === 0}
                   className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-500 disabled:opacity-50"
                 >
@@ -217,6 +250,14 @@ export default function RollingXGPage() {
               </div>
             </div>
           </div>
+
+          {/* Paywall prompt */}
+          {showPaywall && (
+            <PaywallOverlay
+              title="Unlock All Teams & Leagues"
+              description="Free preview shows Arsenal (EPL). Upgrade to SteamWatch Pro to view rolling xG for every team across all five leagues."
+            />
+          )}
 
           {/* Stat Cards */}
           {stats && (
