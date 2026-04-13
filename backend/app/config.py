@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     # Telegram notifications
     telegram_bot_token: str = ""
     telegram_channel_id: str = ""
+    admin_notify_email: str = "neilmac@bookieinsiders.io"  # Where sign-up/payment alerts go
 
     # Auth
     jwt_secret: str = "change-me-in-production"

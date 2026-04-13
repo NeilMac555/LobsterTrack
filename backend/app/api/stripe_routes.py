@@ -9,7 +9,6 @@ from app.models.database import get_db
 from app.models.user import User
 from app.models.subscription import Subscription
 from app.api.deps import require_user
-from app.services.telegram_notifier import telegram_notifier
 from app.services.email_sender import email_sender
 
 logger = structlog.get_logger()
@@ -149,10 +148,11 @@ async def _handle_checkout_completed(session_data: dict, db: Session):
         except Exception as e:
             logger.warning("Failed to send welcome email", error=str(e))
 
-    # Notify Neil via Telegram
+    # Notify Neil via private email (never public)
     try:
-        await telegram_notifier._send_message(
-            f"💰 NEW PRO SUBSCRIBER\n\n{user.email}\n\nSteamWatch Pro is growing 🚀"
+        await email_sender.send_admin_notification(
+            "New Pro Subscriber",
+            f"New Pro subscriber: {user.email}\nUser ID: #{user.id}"
         )
     except Exception:
         pass  # Don't fail the webhook over a notification

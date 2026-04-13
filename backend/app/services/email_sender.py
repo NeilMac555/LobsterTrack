@@ -139,4 +139,55 @@ class EmailSender:
             return False
 
 
+    async def send_admin_notification(self, subject: str, body: str) -> bool:
+        """Send a private notification email to the admin (Neil). Never exposes user data publicly."""
+        if not self.is_configured():
+            logger.warning("Resend not configured, skipping admin notification")
+            return False
+
+        admin_email = settings.admin_notify_email
+        if not admin_email:
+            logger.warning("No admin email configured, skipping notification")
+            return False
+
+        html = f"""
+        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+            <h2 style="color: #1e293b;">SteamWatch Admin Alert</h2>
+            <pre style="background: #f1f5f9; padding: 16px; border-radius: 8px; font-size: 14px; white-space: pre-wrap;">{body}</pre>
+            <p style="color: #64748b; font-size: 12px; margin-top: 24px;">This is a private admin notification from SteamWatch.</p>
+        </div>
+        """
+
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.post(
+                    "https://api.resend.com/emails",
+                    headers={
+                        "Authorization": f"Bearer {self.api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "from": self.from_address,
+                        "to": [admin_email],
+                        "subject": f"[SteamWatch] {subject}",
+                        "html": html,
+                    },
+                )
+
+                if response.status_code == 200:
+                    logger.info("Admin notification sent", subject=subject)
+                    return True
+                else:
+                    logger.error(
+                        "Failed to send admin notification",
+                        status=response.status_code,
+                        response=response.text,
+                    )
+                    return False
+
+        except Exception as e:
+            logger.error("Error sending admin notification", error=str(e))
+            return False
+
+
 email_sender = EmailSender()

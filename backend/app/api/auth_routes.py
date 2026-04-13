@@ -12,7 +12,6 @@ from app.models.subscription import Subscription
 from app.models.magic_link import MagicLink
 from app.services.auth import create_jwt
 from app.services.email_sender import email_sender
-from app.services.telegram_notifier import telegram_notifier
 from app.api.deps import require_user
 from app.api.auth_schemas import (
     MagicLinkRequest,
@@ -66,11 +65,12 @@ async def request_magic_link(body: MagicLinkRequest, db: Session = Depends(get_d
         db.commit()
         db.refresh(user)
 
-    # Notify on new sign-up
+    # Notify Neil on new sign-up (private email, never public)
     if is_new_user:
         try:
-            await telegram_notifier._send_message(
-                f"👤 NEW SIGN-UP\n\n{email}\n\nUser #{user.id}"
+            await email_sender.send_admin_notification(
+                "New Sign-Up",
+                f"New user: {email}\nUser ID: #{user.id}"
             )
         except Exception:
             pass
