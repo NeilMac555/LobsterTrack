@@ -8,6 +8,8 @@ import { LEAGUE_CONFIG } from '../types';
 import MatchCard from '../components/MatchCard';
 import LeagueLogo from '../components/LeagueLogo';
 import { SteamGuideModal, HelpButton } from '../components/SteamGuideModal';
+import { useAuth } from '../contexts/AuthContext';
+import LoginModal from '../components/LoginModal';
 
 interface GroupedMatches {
   label: string;
@@ -47,6 +49,9 @@ function groupMatchesByDay(matches: MatchSummary[]): GroupedMatches[] {
 export default function HomePage() {
   const [searchParams] = useSearchParams();
   const league = searchParams.get('league');
+  const { user, isSubscribed, subscribe } = useAuth();
+  const [showLoginFromCTA, setShowLoginFromCTA] = useState(false);
+  const [subscribing, setSubscribing] = useState(false);
 
   const [matches, setMatches] = useState<MatchSummary[]>([]);
   const [biggestMovers, setBiggestMovers] = useState<BiggestMover[]>([]);
@@ -522,60 +527,89 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Telegram CTA - Free Alerts */}
-      {!league && (
-        <a
-          href="https://t.me/steamwatchalerts"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block mb-6 sm:mb-10 group"
-        >
-          <div className="relative overflow-hidden rounded-2xl border border-[#2AABEE]/40 bg-gradient-to-r from-[#2AABEE]/20 via-[#229ED9]/15 to-[#2AABEE]/20 p-5 sm:p-6 transition-all duration-300 hover:border-[#2AABEE]/60 hover:shadow-lg hover:shadow-[#2AABEE]/10"
-            style={{
-              boxShadow: '0 0 30px -10px rgba(42, 171, 238, 0.3)'
-            }}
+      {/* Two-tier CTA: Free (Telegram) + Pro */}
+      {!league && !isSubscribed && (
+        <div className="mb-6 sm:mb-10 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* FREE TIER — Telegram Alerts */}
+          <a
+            href="https://t.me/steamwatchalerts"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group relative overflow-hidden rounded-2xl border border-[#2AABEE]/40 bg-gradient-to-br from-[#2AABEE]/15 to-slate-800 p-5 sm:p-6 transition-all duration-300 hover:border-[#2AABEE]/60 hover:shadow-lg hover:shadow-[#2AABEE]/10"
           >
-            {/* Animated background pulse */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#2AABEE]/10 to-transparent animate-pulse"></div>
-
-            <div className="relative flex items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                {/* Telegram Icon */}
-                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-[#2AABEE] flex items-center justify-center shadow-lg shadow-[#2AABEE]/30 group-hover:scale-110 transition-transform duration-300">
-                  <svg className="w-7 h-7 sm:w-8 sm:h-8 text-white" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+            <div className="flex items-start gap-4">
+              <div className="w-11 h-11 rounded-xl bg-[#2AABEE] flex items-center justify-center shadow-lg shadow-[#2AABEE]/30 flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 uppercase tracking-wide">
+                    Free
+                  </span>
+                </div>
+                <h3 className="text-base sm:text-lg font-bold text-white group-hover:text-[#2AABEE] transition-colors">
+                  Telegram Alerts
+                </h3>
+                <p className="text-slate-400 text-xs sm:text-sm mt-1">
+                  Real-time syndicate move alerts straight to your phone
+                </p>
+                <div className="mt-3 inline-flex items-center gap-1.5 text-[#2AABEE] text-sm font-semibold group-hover:translate-x-1 transition-transform duration-300">
+                  Join Channel
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
                 </div>
-
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-bold bg-emerald-500/20 text-emerald-400 uppercase tracking-wide">
-                      Free
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-bold bg-amber-500/20 text-amber-400 uppercase tracking-wide">
-                      Real-time
-                    </span>
-                  </div>
-                  <h3 className="text-lg sm:text-xl font-bold text-white group-hover:text-[#2AABEE] transition-colors">
-                    Get Instant Telegram Alerts
-                  </h3>
-                  <p className="text-slate-400 text-xs sm:text-sm mt-0.5">
-                    Syndicate moves delivered straight to your phone — never miss sharp action
-                  </p>
-                </div>
               </div>
+            </div>
+          </a>
 
-              {/* Arrow */}
-              <div className="hidden sm:flex items-center gap-2 text-[#2AABEE] group-hover:translate-x-1 transition-transform duration-300">
-                <span className="font-semibold text-sm">Join Channel</span>
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+          {/* PRO TIER — Full Access */}
+          <div
+            className="group relative overflow-hidden rounded-2xl border border-red-500/40 bg-gradient-to-br from-red-500/15 to-slate-800 p-5 sm:p-6 transition-all duration-300 hover:border-red-500/60 hover:shadow-lg hover:shadow-red-500/10 cursor-pointer"
+            onClick={async () => {
+              if (!user) {
+                setShowLoginFromCTA(true);
+              } else {
+                setSubscribing(true);
+                try { await subscribe(); } catch { setSubscribing(false); }
+              }
+            }}
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg shadow-red-500/30 flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
+                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/20 text-red-400 uppercase tracking-wide">
+                    Pro
+                  </span>
+                </div>
+                <h3 className="text-base sm:text-lg font-bold text-white group-hover:text-red-400 transition-colors">
+                  Unlock Full Access
+                </h3>
+                <ul className="text-slate-400 text-xs sm:text-sm mt-1 space-y-0.5">
+                  <li>Dixon-Coles Match Predictor</li>
+                  <li>Rolling xG Tables (5 leagues)</li>
+                  <li>Steam Results Directory</li>
+                </ul>
+                <div className="mt-3 inline-flex items-center gap-1.5 text-red-400 text-sm font-semibold group-hover:translate-x-1 transition-transform duration-300">
+                  {subscribing ? 'Redirecting...' : user ? 'Subscribe Now' : 'Sign In to Subscribe'}
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </div>
               </div>
             </div>
           </div>
-        </a>
+        </div>
       )}
+
+      <LoginModal isOpen={showLoginFromCTA} onClose={() => setShowLoginFromCTA(false)} />
 
       {/* Page Header */}
       <div className="mb-6 sm:mb-8">
