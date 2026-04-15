@@ -373,12 +373,19 @@ class OddsFetcher:
     async def _fetch_league_totals(self, client: httpx.AsyncClient, sport_key: str) -> dict:
         """
         Fetch totals (over/under) odds for a league from The Odds API.
+
+        Requests BOTH `totals` (current main line) and `alternate_totals`
+        (every line Pinnacle offers). This lets us:
+          1. Keep tracking the opening line all the way to kickoff even
+             when the market shifts to a different main line.
+          2. Deterministically identify which line was the "main" line
+             at opening — we insert it first so it has the lowest id.
         """
         url = f"{self.base_url}/sports/{sport_key}/odds"
         params = {
             "apiKey": self.api_key,
             "regions": "eu",
-            "markets": "totals",
+            "markets": "totals,alternate_totals",
             "bookmakers": "pinnacle",
             "oddsFormat": "decimal"
         }
@@ -401,7 +408,9 @@ class OddsFetcher:
         """
         Store fetched totals odds in the database.
         Only stores if match already exists (from 1X2 fetch).
-        Always stores regardless of line changes so closing lines are accurate.
+        Stores a snapshot for EVERY line Pinnacle offers (via alternate_totals),
+        so the opening line continues to be tracked even when the market
+        shifts to a different main line.
         """
         db = SessionLocal()
         try:
@@ -416,20 +425,21 @@ class OddsFetcher:
                 if not match:
                     continue
 
-                # Extract Pinnacle totals
-                totals_data = self._extract_pinnacle_totals(event)
+                # Extract Pinnacle totals — returns a list of line snapshots
+                totals_list = self._extract_pinnacle_totals(event)
 
-                if totals_data:
-                    snapshot = TotalsSnapshot(
-                        match_id=match_id,
-                        line=totals_data["line"],
-                        over_odds=totals_data.get("over"),
-                        under_odds=totals_data.get("under"),
-                        fetched_at=fetch_time,
-                        last_update=totals_data.get("last_update")
-                    )
-                    db.add(snapshot)
-                    totals_stored += 1
+                if totals_list:
+                    for td in totals_list:
+                        snapshot = TotalsSnapshot(
+                            match_id=match_id,
+                            line=td["line"],
+                            over_odds=td.get("over"),
+                            under_odds=td.get("under"),
+                            fetched_at=fetch_time,
+                            last_update=td.get("last_update")
+                        )
+                        db.add(snapshot)
+                        totals_stored += 1
 
             db.commit()
 
@@ -441,10 +451,14 @@ class OddsFetcher:
         finally:
             db.close()
 
-    def _extract_pinnacle_totals(self, event: dict) -> Optional[dict]:
+    def _extract_pinnacle_totals(self, event: dict) -> list:
         """
         Extract Pinnacle totals odds from event data.
-        Returns dict with line, over, under odds or None if not found.
+        Returns a list of dicts, one per line offered by Pinnacle:
+        [{"line": 2.5, "over": 1.91, "under": 1.91, "last_update": ...}, ...]
+
+        Handles both `totals` (main line only) and `alternate_totals` (all lines)
+        market keys — merging them into a single list keyed by line number.
         """
         bookmakers = event.get("bookmakers", [])
 
@@ -452,38 +466,62 @@ class OddsFetcher:
             if bookmaker["key"] == "pinnacle":
                 markets = bookmaker.get("markets", [])
 
-                for market in markets:
-                    if market["key"] == "totals":
-                        outcomes = market.get("outcomes", [])
-                        totals = {}
+                # Collect lines across `totals` and `alternate_totals` markets,
+                # keyed by line number so duplicates merge. Process `totals`
+                # (the main line) FIRST so the main line is inserted into the
+                # dict first — giving it the lowest DB id downstream, which
+                # makes "opening line" deterministic for this match.
+                by_line: dict = {}
+                ordered_markets = sorted(
+                    [m for m in markets if m.get("key") in ("totals", "alternate_totals")],
+                    key=lambda m: 0 if m.get("key") == "totals" else 1,
+                )
 
-                        for outcome in outcomes:
-                            name = outcome["name"]
-                            price = outcome["price"]
-                            point = outcome.get("point")
+                for market in ordered_markets:
 
-                            if name == "Over":
-                                totals["over"] = price
-                                totals["line"] = point
-                            elif name == "Under":
-                                totals["under"] = price
-                                # line should be same for over/under
-                                if "line" not in totals:
-                                    totals["line"] = point
+                    outcomes = market.get("outcomes", [])
 
-                        # Parse last_update if available
-                        last_update_str = market.get("last_update")
-                        if last_update_str:
-                            try:
-                                totals["last_update"] = datetime.fromisoformat(
-                                    last_update_str.replace("Z", "+00:00")
-                                )
-                            except (ValueError, TypeError):
-                                totals["last_update"] = None
+                    last_update = None
+                    last_update_str = market.get("last_update")
+                    if last_update_str:
+                        try:
+                            last_update = datetime.fromisoformat(
+                                last_update_str.replace("Z", "+00:00")
+                            )
+                        except (ValueError, TypeError):
+                            last_update = None
 
-                        return totals if totals.get("line") else None
+                    for outcome in outcomes:
+                        name = outcome.get("name")
+                        price = outcome.get("price")
+                        point = outcome.get("point")
 
-        return None
+                        if point is None or price is None:
+                            continue
+
+                        entry = by_line.setdefault(point, {
+                            "line": point,
+                            "over": None,
+                            "under": None,
+                            "last_update": last_update,
+                        })
+
+                        if name == "Over":
+                            entry["over"] = price
+                        elif name == "Under":
+                            entry["under"] = price
+
+                        # Prefer the most recent last_update we see
+                        if last_update and (
+                            entry["last_update"] is None
+                            or last_update > entry["last_update"]
+                        ):
+                            entry["last_update"] = last_update
+
+                # Keep only lines where we have BOTH over and under odds
+                return [e for e in by_line.values() if e["over"] and e["under"]]
+
+        return []
 
     async def _fetch_league_spreads(self, client: httpx.AsyncClient, sport_key: str) -> dict:
         """

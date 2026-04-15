@@ -141,10 +141,28 @@ class SyndicateAlerter:
     async def _check_totals_market(
         self, db: Session, match: Match, window_start: datetime, minutes_to_ko: int
     ) -> int:
-        """Check Totals market for syndicate moves. Only compares when line hasn't changed."""
+        """Check Totals market for syndicate moves on the OPENING line.
+
+        With alternate_totals we store many lines per fetch, so we pin the
+        comparison to the opening line — that way the market's main line
+        drifting (e.g. 2.5 -> 3.0) doesn't silence alerts, and we still
+        compare like-for-like odds.
+        """
+        opening = (
+            db.query(TotalsSnapshot)
+            .filter(TotalsSnapshot.match_id == match.id)
+            .order_by(TotalsSnapshot.fetched_at.asc(), TotalsSnapshot.id.asc())
+            .first()
+        )
+        if not opening:
+            return 0
+
+        opening_line = opening.line
+
         baseline = (
             db.query(TotalsSnapshot)
             .filter(TotalsSnapshot.match_id == match.id)
+            .filter(TotalsSnapshot.line == opening_line)
             .filter(TotalsSnapshot.fetched_at >= window_start)
             .order_by(TotalsSnapshot.fetched_at.asc())
             .first()
@@ -153,15 +171,12 @@ class SyndicateAlerter:
         latest = (
             db.query(TotalsSnapshot)
             .filter(TotalsSnapshot.match_id == match.id)
+            .filter(TotalsSnapshot.line == opening_line)
             .order_by(TotalsSnapshot.fetched_at.desc())
             .first()
         )
 
         if not baseline or not latest or baseline.id == latest.id:
-            return 0
-
-        # Skip if the line has moved (e.g. 2.5 -> 3.5) — only compare same-line odds
-        if baseline.line != latest.line:
             return 0
 
         alerts_sent = 0

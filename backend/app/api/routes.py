@@ -367,6 +367,9 @@ async def get_biggest_movers(
     opening_1x2 = {row.match_id: row for row in db.query(opening_1x2_subq).filter(opening_1x2_subq.c.rn == 1).all()}
 
     # === TOTALS MARKET ===
+    # With alternate_totals we store many lines per fetch, so partition by
+    # (match_id, line) to get latest/opening per line. The "opening" line
+    # is determined by whichever line appears in the very first fetch.
     latest_totals_subq = (
         db.query(
             TotalsSnapshot.match_id,
@@ -374,14 +377,15 @@ async def get_biggest_movers(
             TotalsSnapshot.over_odds,
             TotalsSnapshot.under_odds,
             func.row_number().over(
-                partition_by=TotalsSnapshot.match_id,
+                partition_by=(TotalsSnapshot.match_id, TotalsSnapshot.line),
                 order_by=TotalsSnapshot.fetched_at.desc()
             ).label('rn')
         )
         .filter(TotalsSnapshot.match_id.in_(match_ids))
         .subquery()
     )
-    latest_totals = {row.match_id: row for row in db.query(latest_totals_subq).filter(latest_totals_subq.c.rn == 1).all()}
+    latest_totals_by_line = db.query(latest_totals_subq).filter(latest_totals_subq.c.rn == 1).all()
+    latest_totals_map = {(row.match_id, row.line): row for row in latest_totals_by_line}
 
     opening_totals_subq = (
         db.query(
@@ -391,13 +395,20 @@ async def get_biggest_movers(
             TotalsSnapshot.under_odds,
             func.row_number().over(
                 partition_by=TotalsSnapshot.match_id,
-                order_by=TotalsSnapshot.fetched_at.asc()
+                # id tiebreak so the first-inserted (main) line wins when
+                # multiple alternate lines share the same fetched_at.
+                order_by=(TotalsSnapshot.fetched_at.asc(), TotalsSnapshot.id.asc())
             ).label('rn')
         )
         .filter(TotalsSnapshot.match_id.in_(match_ids))
         .subquery()
     )
     opening_totals = {row.match_id: row for row in db.query(opening_totals_subq).filter(opening_totals_subq.c.rn == 1).all()}
+    # latest_totals lookup: grab the latest snapshot AT the opening line
+    latest_totals = {
+        match_id: latest_totals_map.get((match_id, opening_t.line))
+        for match_id, opening_t in opening_totals.items()
+    }
 
     # === SPREADS (ASIAN HANDICAP) MARKET ===
     latest_spreads_subq = (
@@ -607,19 +618,33 @@ async def get_syndicate_moves(
                         }
 
         # === TOTALS MARKET ===
+        # Pin to opening line so we compare like-for-like across the window,
+        # even when the market's main line has shifted since we stored many
+        # alternate lines per fetch.
+        opening_totals = (
+            db.query(TotalsSnapshot)
+            .filter(TotalsSnapshot.match_id == match.id)
+            .order_by(TotalsSnapshot.fetched_at.asc(), TotalsSnapshot.id.asc())
+            .first()
+        )
+        opening_totals_line = opening_totals.line if opening_totals else None
+
         baseline_totals = (
             db.query(TotalsSnapshot)
             .filter(TotalsSnapshot.match_id == match.id)
+            .filter(TotalsSnapshot.line == opening_totals_line)
             .filter(TotalsSnapshot.fetched_at >= window_start)
             .order_by(TotalsSnapshot.fetched_at.asc())
             .first()
-        )
+        ) if opening_totals_line is not None else None
+
         latest_totals = (
             db.query(TotalsSnapshot)
             .filter(TotalsSnapshot.match_id == match.id)
+            .filter(TotalsSnapshot.line == opening_totals_line)
             .order_by(TotalsSnapshot.fetched_at.desc())
             .first()
-        )
+        ) if opening_totals_line is not None else None
 
         if baseline_totals and latest_totals and baseline_totals.id != latest_totals.id and baseline_totals.line == latest_totals.line:
             line = baseline_totals.line
@@ -1000,12 +1025,15 @@ async def get_match_totals(match_id: str, db: Session = Depends(get_db)):
     if not match:
         raise HTTPException(status_code=404, detail="Match not found")
 
-    # Get only pre-kickoff totals snapshots (exclude in-play odds)
+    # Get only pre-kickoff totals snapshots (exclude in-play odds).
+    # Secondary sort by id so that — on the first fetch, which now stores
+    # many alternate lines at the same fetched_at — the main line (inserted
+    # first, lowest id) is picked as the opening line below.
     snapshots = (
         db.query(TotalsSnapshot)
         .filter(TotalsSnapshot.match_id == match_id)
         .filter(TotalsSnapshot.fetched_at < match.commence_time)
-        .order_by(TotalsSnapshot.fetched_at.asc())
+        .order_by(TotalsSnapshot.fetched_at.asc(), TotalsSnapshot.id.asc())
         .all()
     )
 
