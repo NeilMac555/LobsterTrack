@@ -326,6 +326,10 @@ export default function RollingXGPage() {
                 </span>
               </div>
 
+              <div className="relative">
+                <div className="absolute top-2 right-3 pointer-events-none select-none text-slate-500/40 text-[11px] font-semibold tracking-wide z-10">
+                  steamwatch.io
+                </div>
               <ResponsiveContainer width="100%" height={360}>
                 <LineChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#334155" strokeOpacity={0.5} />
@@ -385,6 +389,7 @@ export default function RollingXGPage() {
                   />
                 </LineChart>
               </ResponsiveContainer>
+              </div>
             </div>
           )}
     </div>

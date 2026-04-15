@@ -101,7 +101,10 @@ export default function SpreadsChart({ data, timeFrame = 'all' }: SpreadsChartPr
   }
 
   return (
-    <div className="h-full w-full">
+    <div className="h-full w-full relative">
+      <div className="absolute top-2 right-3 pointer-events-none select-none text-slate-500/40 text-[11px] font-semibold tracking-wide z-10">
+        steamwatch.io
+      </div>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={chartData}
