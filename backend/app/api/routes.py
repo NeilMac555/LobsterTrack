@@ -1830,21 +1830,39 @@ async def admin_fix_subscription(
 
 
 @router.post("/admin/force-activate")
+@router.get("/admin/force-activate")
 async def admin_force_activate(
     password: str = Query(..., description="Admin password"),
     email: str = Query(..., description="User email to activate"),
     db: Session = Depends(get_db)
 ):
-    """Admin: force-activate a subscription without Stripe lookup."""
+    """Admin: force-activate a subscription. Creates the user and sends a
+    magic link automatically if they don't have an account yet (e.g. they
+    paid via a Stripe Payment Link without signing up on the site first).
+    Accepts GET too so you can paste the URL in a browser.
+    """
     if password != ADMIN_PASSWORD:
         raise HTTPException(status_code=403, detail="Invalid admin password")
 
+    import secrets
+    from datetime import datetime, timedelta
     from app.models.user import User
     from app.models.subscription import Subscription
+    from app.models.magic_link import MagicLink
+    from app.services.email_sender import email_sender
+    from app.config import get_settings as _gs
+
+    email = email.lower().strip()
+    settings = _gs()
+    created_user = False
 
     user = db.query(User).filter(User.email == email).first()
     if not user:
-        raise HTTPException(status_code=404, detail=f"User {email} not found")
+        user = User(email=email)
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        created_user = True
 
     sub = db.query(Subscription).filter(Subscription.user_id == user.id).first()
     if not sub:
@@ -1854,4 +1872,26 @@ async def admin_force_activate(
     sub.status = "active"
     db.commit()
 
-    return {"activated": True, "email": email, "user_id": user.id}
+    # If we just created them, send a magic sign-in link so they can log in.
+    magic_link_sent = False
+    if created_user:
+        try:
+            token = secrets.token_urlsafe(32)
+            link = MagicLink(
+                email=email,
+                token=token,
+                expires_at=datetime.utcnow() + timedelta(minutes=settings.magic_link_expiry_minutes),
+            )
+            db.add(link)
+            db.commit()
+            magic_link_sent = await email_sender.send_magic_link(email, token)
+        except Exception:
+            pass
+
+    return {
+        "activated": True,
+        "email": email,
+        "user_id": user.id,
+        "user_created": created_user,
+        "magic_link_sent": magic_link_sent,
+    }
