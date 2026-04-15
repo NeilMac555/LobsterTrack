@@ -104,17 +104,59 @@ async def _handle_checkout_completed(session_data: dict, db: Session):
 
     user = db.query(User).filter(User.stripe_customer_id == customer_id).first()
 
-    # Fallback: look up by email from the checkout session
-    if not user:
-        checkout_email = session_data.get("customer_details", {}).get("email") or session_data.get("customer_email")
-        if checkout_email:
-            user = db.query(User).filter(User.email == checkout_email).first()
-            if user:
-                user.stripe_customer_id = customer_id
-                logger.info("Linked Stripe customer via email fallback", email=checkout_email, customer_id=customer_id)
+    # Fallback 1: look up by email from the checkout session
+    checkout_email = (
+        session_data.get("customer_details", {}).get("email")
+        or session_data.get("customer_email")
+    )
+
+    if not user and checkout_email:
+        user = db.query(User).filter(User.email == checkout_email).first()
+        if user:
+            user.stripe_customer_id = customer_id
+            logger.info(
+                "Linked Stripe customer via email fallback",
+                email=checkout_email,
+                customer_id=customer_id,
+            )
+
+    # Fallback 2: no user at all — they paid via a Stripe Payment Link
+    # before signing up on the site. Auto-create the account so Pro access
+    # activates immediately, and send them a magic link to log in.
+    if not user and checkout_email:
+        user = User(email=checkout_email, stripe_customer_id=customer_id)
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        logger.info(
+            "Auto-created user from Stripe checkout",
+            email=checkout_email,
+            user_id=user.id,
+        )
+
+        # Send a magic link so they can sign in immediately.
+        try:
+            import secrets
+            from datetime import timedelta
+            from app.models.magic_link import MagicLink
+
+            token = secrets.token_urlsafe(32)
+            link = MagicLink(
+                email=user.email,
+                token=token,
+                expires_at=datetime.utcnow() + timedelta(minutes=settings.magic_link_expiry_minutes),
+            )
+            db.add(link)
+            db.commit()
+            await email_sender.send_magic_link(user.email, token)
+        except Exception as e:
+            logger.warning("Failed to send post-checkout magic link", error=str(e))
 
     if not user:
-        logger.warning("Checkout completed for unknown customer", customer_id=customer_id)
+        logger.warning(
+            "Checkout completed with no customer email — cannot activate",
+            customer_id=customer_id,
+        )
         return
 
     sub = db.query(Subscription).filter(Subscription.user_id == user.id).first()
