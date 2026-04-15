@@ -243,7 +243,7 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
       {/* Chart */}
       <div className="flex-1 min-h-0 relative">
         {/* Watermark — visible in screenshots, subtle in-app */}
-        <div className="absolute top-2 right-3 pointer-events-none select-none text-slate-500/40 text-[11px] font-semibold tracking-wide z-10">
+        <div className="absolute top-2 right-3 pointer-events-none select-none text-white/30 text-xs font-bold tracking-wider z-10">
           steamwatch.io
         </div>
         <ResponsiveContainer width="100%" height="100%">

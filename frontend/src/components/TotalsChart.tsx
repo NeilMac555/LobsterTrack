@@ -102,7 +102,7 @@ export default function TotalsChart({ data, timeFrame = 'all' }: TotalsChartProp
 
   return (
     <div className="h-full w-full relative">
-      <div className="absolute top-2 right-3 pointer-events-none select-none text-slate-500/40 text-[11px] font-semibold tracking-wide z-10">
+      <div className="absolute top-2 right-3 pointer-events-none select-none text-white/30 text-xs font-bold tracking-wider z-10">
         steamwatch.io
       </div>
       <ResponsiveContainer width="100%" height="100%">
