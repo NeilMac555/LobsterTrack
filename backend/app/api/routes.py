@@ -975,6 +975,59 @@ async def get_admin_emails(
     )
 
 
+@router.get("/admin/users")
+async def get_admin_users(
+    password: str = Query(..., description="Admin password"),
+    db: Session = Depends(get_db)
+):
+    """
+    Return all SteamWatch user accounts with their subscription status.
+    Useful for spotting historical free-tier signups that never paid
+    (before free signup was locked down).
+    """
+    from app.models.user import User
+    from app.models.subscription import Subscription
+
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid password")
+
+    users = db.query(User).order_by(desc(User.created_at)).all()
+
+    # Left-join style lookup: build a map of user_id -> subscription for speed
+    sub_map = {s.user_id: s for s in db.query(Subscription).all()}
+
+    rows = []
+    for u in users:
+        sub = sub_map.get(u.id)
+        status = sub.status if sub else "never_paid"
+        rows.append({
+            "id": u.id,
+            "email": u.email,
+            "created_at": u.created_at.isoformat() if u.created_at else None,
+            "stripe_customer_id": u.stripe_customer_id,
+            "subscription_status": status,
+            "current_period_end": sub.current_period_end.isoformat() if sub and sub.current_period_end else None,
+            "cancel_at_period_end": sub.cancel_at_period_end if sub else False,
+        })
+
+    # Counts for the header
+    never_paid = sum(1 for r in rows if r["subscription_status"] == "never_paid")
+    active = sum(1 for r in rows if r["subscription_status"] == "active")
+    canceled = sum(1 for r in rows if r["subscription_status"] == "canceled")
+    past_due = sum(1 for r in rows if r["subscription_status"] == "past_due")
+    other = len(rows) - never_paid - active - canceled - past_due
+
+    return {
+        "total": len(rows),
+        "never_paid": never_paid,
+        "active": active,
+        "canceled": canceled,
+        "past_due": past_due,
+        "other": other,
+        "users": rows,
+    }
+
+
 @router.get("/admin/totals-test")
 async def get_totals_test(
     password: str = Query(..., description="Admin password"),

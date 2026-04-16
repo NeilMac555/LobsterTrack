@@ -187,7 +187,7 @@ export default function HomePage() {
                 <li className="flex items-center gap-2"><span className="text-emerald-400 text-xs">&#10003;</span> Steam Results Directory</li>
               </ul>
               <span className="inline-flex items-center gap-1.5 text-red-400 text-sm font-semibold group-hover:translate-x-1 transition-transform duration-300">
-                {subscribing ? 'Redirecting to Stripe...' : user ? 'Subscribe Now' : 'Sign In to Subscribe'}
+                {subscribing ? 'Redirecting to Stripe...' : 'Subscribe Now'}
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>

@@ -56,24 +56,18 @@ async def request_magic_link(body: MagicLinkRequest, db: Session = Depends(get_d
     if recent:
         raise HTTPException(status_code=429, detail="Please wait before requesting another link")
 
-    # Create or get user
+    # Only send magic links to EXISTING users. Accounts are created
+    # exclusively through Stripe checkout (the webhook auto-creates them
+    # on successful payment). This prevents free-account sign-ups — if
+    # you want an account, you subscribe to Pro.
     user = db.query(User).filter(User.email == email).first()
-    is_new_user = user is None
     if not user:
-        user = User(email=email)
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-
-    # Notify Neil on new sign-up (private email, never public)
-    if is_new_user:
-        try:
-            await email_sender.send_admin_notification(
-                "New Sign-Up",
-                f"New user: {email}\nUser ID: #{user.id}"
-            )
-        except Exception:
-            pass
+        # 404 is the sentinel the frontend uses to swap the login modal
+        # into a "Subscribe to create an account" CTA.
+        raise HTTPException(
+            status_code=404,
+            detail="No account found for that email. Subscribe to SteamWatch Pro to create one.",
+        )
 
     # Generate token
     token = secrets.token_urlsafe(32)
@@ -90,8 +84,7 @@ async def request_magic_link(body: MagicLinkRequest, db: Session = Depends(get_d
     if not sent:
         logger.warning("Magic link email not sent (Resend not configured?)", email=email)
 
-    # Always return success to avoid email enumeration
-    return {"message": "If that email is registered, you'll receive a sign-in link shortly."}
+    return {"message": "Sign-in link sent. Check your email."}
 
 
 @auth_router.post("/verify", response_model=AuthResponse)

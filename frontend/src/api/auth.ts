@@ -17,6 +17,13 @@ export interface AuthResponse {
   user: UserInfo;
 }
 
+export class NoAccountError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'NoAccountError';
+  }
+}
+
 export async function requestMagicLink(email: string): Promise<{ message: string }> {
   const res = await fetch(`${API_BASE}/auth/magic-link`, {
     method: 'POST',
@@ -25,6 +32,9 @@ export async function requestMagicLink(email: string): Promise<{ message: string
   });
   if (!res.ok) {
     const data = await res.json().catch(() => ({ detail: 'Request failed' }));
+    if (res.status === 404) {
+      throw new NoAccountError(data.detail || 'No account found for that email.');
+    }
     throw new Error(data.detail || 'Request failed');
   }
   return res.json();
@@ -48,6 +58,19 @@ export async function getMe(token: string): Promise<UserInfo> {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) throw new Error('Not authenticated');
+  return res.json();
+}
+
+export async function createPublicCheckoutSession(email: string): Promise<{ checkout_url: string }> {
+  const res = await fetch(`${API_BASE}/stripe/create-public-checkout-session`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({ detail: 'Failed to start checkout' }));
+    throw new Error(data.detail || 'Failed to start checkout');
+  }
   return res.json();
 }
 

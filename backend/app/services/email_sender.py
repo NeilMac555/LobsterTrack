@@ -23,7 +23,7 @@ class EmailSender:
 
         link = f"{self.frontend_url}/auth/verify?token={token}"
         html = f"""
-        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1e293b;">
             <h2 style="color: #1e293b;">Sign in to SteamWatch</h2>
             <p>Click the button below to sign in:</p>
             <a href="{link}"
@@ -35,6 +35,11 @@ class EmailSender:
             <p style="color: #64748b; font-size: 14px; margin-top: 24px;">
                 This link expires in {settings.magic_link_expiry_minutes} minutes.
                 If you didn't request this, you can safely ignore this email.
+            </p>
+            <p style="color: #64748b; font-size: 13px; margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 16px;">
+                Any problems with your account? Email
+                <a href="mailto:neilmac@bookieinsiders.io" style="color: #dc2626;">neilmac@bookieinsiders.io</a>
+                and Neil will sort it out personally.
             </p>
         </div>
         """
@@ -50,6 +55,7 @@ class EmailSender:
                     json={
                         "from": self.from_address,
                         "to": [to_email],
+                        "reply_to": "neilmac@bookieinsiders.io",
                         "subject": "Sign in to SteamWatch",
                         "html": html,
                     },

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { NoAccountError, createPublicCheckoutSession } from '../api/auth';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -9,9 +10,10 @@ interface LoginModalProps {
 export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
-  const [step, setStep] = useState<'email' | 'sent'>('email');
+  const [step, setStep] = useState<'email' | 'sent' | 'no-account'>('email');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
 
   if (!isOpen) return null;
 
@@ -23,9 +25,25 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       await login(email);
       setStep('sent');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong');
+      if (err instanceof NoAccountError) {
+        setStep('no-account');
+      } else {
+        setError(err instanceof Error ? err.message : 'Something went wrong');
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSubscribe = async () => {
+    setRedirecting(true);
+    setError('');
+    try {
+      const { checkout_url } = await createPublicCheckoutSession(email);
+      window.location.href = checkout_url;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to start checkout');
+      setRedirecting(false);
     }
   };
 
@@ -33,6 +51,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     setStep('email');
     setEmail('');
     setError('');
+    setRedirecting(false);
     onClose();
   };
 
@@ -53,11 +72,11 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
           </svg>
         </button>
 
-        {step === 'email' ? (
+        {step === 'email' && (
           <>
             <h2 className="text-xl font-bold text-white mb-2">Sign in to SteamWatch</h2>
             <p className="text-sm text-slate-400 mb-6">
-              Enter your email and we'll send you a magic link to sign in.
+              Enter your email and we'll send you a magic link to sign in. SteamWatch accounts are for Pro subscribers only.
             </p>
 
             <form onSubmit={handleSubmit}>
@@ -81,7 +100,9 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
               </button>
             </form>
           </>
-        ) : (
+        )}
+
+        {step === 'sent' && (
           <div className="text-center py-4">
             <div className="text-4xl mb-4">&#9993;</div>
             <h2 className="text-xl font-bold text-white mb-2">Check your email</h2>
@@ -94,6 +115,33 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
               className="text-sm text-slate-400 hover:text-white transition-colors"
             >
               Close
+            </button>
+          </div>
+        )}
+
+        {step === 'no-account' && (
+          <div className="text-center py-2">
+            <div className="text-4xl mb-4">&#128274;</div>
+            <h2 className="text-xl font-bold text-white mb-2">No account yet</h2>
+            <p className="text-sm text-slate-400 mb-6">
+              We couldn't find an account for <span className="text-white font-medium">{email}</span>.
+              SteamWatch accounts are created when you subscribe to Pro. Subscribe now and we'll email you a sign-in link automatically.
+            </p>
+            {error && (
+              <p className="text-red-400 text-sm mb-4">{error}</p>
+            )}
+            <button
+              onClick={handleSubscribe}
+              disabled={redirecting}
+              className="w-full bg-gradient-to-br from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 disabled:from-slate-600 disabled:to-slate-700 text-slate-900 font-bold py-3 rounded-lg transition-all duration-200 mb-3"
+            >
+              {redirecting ? 'Redirecting to Stripe...' : 'Subscribe to Pro'}
+            </button>
+            <button
+              onClick={() => { setStep('email'); setError(''); }}
+              className="text-sm text-slate-400 hover:text-white transition-colors"
+            >
+              Try a different email
             </button>
           </div>
         )}

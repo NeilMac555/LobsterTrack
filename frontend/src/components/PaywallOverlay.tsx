@@ -61,9 +61,9 @@ export default function PaywallOverlay({ title, description }: PaywallOverlayPro
                 onClick={() => setShowLogin(true)}
                 className="w-full max-w-xs mx-auto block bg-gradient-to-br from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 text-white font-bold py-3 rounded-lg transition-all duration-200"
               >
-                Sign In to Subscribe
+                Subscribe Now
               </button>
-              <p className="text-xs text-slate-500">Passwordless email sign-in</p>
+              <p className="text-xs text-slate-500">Your account is created automatically at checkout</p>
             </div>
           ) : (
             <div className="space-y-3">
