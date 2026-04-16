@@ -26,7 +26,10 @@ const FREE_TEAMS: Record<string, string> = {
 };
 
 const XG_LEAGUES = Object.entries(LEAGUE_CONFIG).filter(
-  ([key]) => key !== 'soccer_uefa_champs_league' && key !== 'soccer_uefa_europa_league'
+  ([key]) =>
+    key !== 'soccer_uefa_champs_league' &&
+    key !== 'soccer_uefa_europa_league' &&
+    key !== 'soccer_uefa_europa_conference_league'
 );
 
 // Simple linear regression: returns [slope, intercept]

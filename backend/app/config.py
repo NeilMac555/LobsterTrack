@@ -45,7 +45,9 @@ class Settings(BaseSettings):
         "soccer_germany_bundesliga": "Bundesliga",
         "soccer_france_ligue_one": "Ligue 1",
         "soccer_italy_serie_a": "Serie A",
-        "soccer_uefa_champs_league": "Champions League"
+        "soccer_uefa_champs_league": "Champions League",
+        "soccer_uefa_europa_league": "Europa League",
+        "soccer_uefa_europa_conference_league": "Conference League",
     }
 
     class Config:
