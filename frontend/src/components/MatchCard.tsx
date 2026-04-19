@@ -83,14 +83,32 @@ export default function MatchCard({ match }: MatchCardProps) {
           </div>
         </div>
 
-        {/* Odds footer with inline sparkline showing home implied-prob trajectory */}
-        <div className="flex items-center justify-between pt-3 sm:pt-4 border-t border-slate-700/50">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="text-[10px] sm:text-[11px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">1 · X · 2</div>
-            {match.home_prob_spark && match.home_prob_spark.length >= 2 && (
-              <Sparkline values={match.home_prob_spark} width={56} height={18} color="auto" />
-            )}
+        {/* Movement sparkline — between the teams and the odds. Full-width,
+            makes the home implied-probability trajectory impossible to miss. */}
+        {match.home_prob_spark && match.home_prob_spark.length >= 2 && (
+          <div className="flex items-center gap-3 mb-3 sm:mb-4 py-2 px-3 rounded-lg bg-slate-900/60 border border-slate-700/40">
+            <span className="text-[9px] sm:text-[10px] font-mono font-semibold uppercase tracking-[0.12em] text-slate-500 flex-shrink-0">Home Trend</span>
+            <div className="flex-1 min-w-0 flex items-center justify-center">
+              <Sparkline values={match.home_prob_spark} width={160} height={30} color="auto" />
+            </div>
+            <span className={`text-[10px] sm:text-xs font-mono font-bold tabular-nums flex-shrink-0 ${(() => {
+              const d = match.home_prob_spark[match.home_prob_spark.length - 1] - match.home_prob_spark[0];
+              if (d > 0.15) return 'text-emerald-400';
+              if (d < -0.15) return 'text-red-400';
+              return 'text-slate-400';
+            })()}`}>
+              {(() => {
+                const d = match.home_prob_spark[match.home_prob_spark.length - 1] - match.home_prob_spark[0];
+                const arrow = d > 0.15 ? '↑' : d < -0.15 ? '↓' : '·';
+                return `${arrow} ${Math.abs(d).toFixed(1)}pp`;
+              })()}
+            </span>
           </div>
+        )}
+
+        {/* Odds footer */}
+        <div className="flex items-center justify-between pt-3 sm:pt-4 border-t border-slate-700/50">
+          <div className="text-[10px] sm:text-[11px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">1 · X · 2</div>
           <OddsDisplayWithMovement
             home={match.current_home_odds}
             draw={match.current_draw_odds}

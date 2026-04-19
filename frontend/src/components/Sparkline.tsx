@@ -19,8 +19,8 @@ interface SparklineProps {
  */
 export default function Sparkline({
   values,
-  width = 64,
-  height = 20,
+  width = 96,
+  height = 28,
   color = 'auto',
   fill = true,
   className = '',
@@ -32,10 +32,10 @@ export default function Sparkline({
   const span = max - min || 1;
   const stepX = width / (values.length - 1);
 
-  // Pad 1.5px top/bottom so the stroke doesn't clip at extremes.
+  // Pad 2px top/bottom so the stroke doesn't clip at extremes.
   const pts = values.map((v, i) => {
     const x = i * stepX;
-    const y = height - ((v - min) / span) * (height - 3) - 1.5;
+    const y = height - ((v - min) / span) * (height - 4) - 2;
     return [x, y] as const;
   });
 
@@ -44,15 +44,17 @@ export default function Sparkline({
     .join(' ');
   const area = line + ` L${width},${height} L0,${height} Z`;
 
-  // Auto color: compare last value against first — rising = emerald (home
-  // implied-prob going up = being backed), falling = red, flat = slate.
+  // Auto color: rising = emerald (home backed), falling = red (home drifting),
+  // flat = slate. Use a tight threshold so tiny 0.5pp moves still read as "drift".
   let stroke = color;
   if (color === 'auto') {
     const delta = values[values.length - 1] - values[0];
-    if (delta > 0.3) stroke = '#34d399';      // emerald-400
-    else if (delta < -0.3) stroke = '#f87171'; // red-400
-    else stroke = '#94a3b8';                    // slate-400
+    if (delta > 0.15) stroke = '#34d399';      // emerald-400
+    else if (delta < -0.15) stroke = '#f87171'; // red-400
+    else stroke = '#94a3b8';                     // slate-400
   }
+
+  const lastPt = pts[pts.length - 1];
 
   return (
     <svg
@@ -60,17 +62,30 @@ export default function Sparkline({
       height={height}
       viewBox={`0 0 ${width} ${height}`}
       className={`inline-block align-middle ${className}`}
-      style={{ color: stroke }}
       aria-hidden="true"
     >
-      {fill && <path d={area} fill={stroke as string} opacity="0.14" />}
+      {fill && <path d={area} fill={stroke as string} opacity="0.18" />}
       <path
         d={line}
         stroke={stroke as string}
-        strokeWidth="1.3"
+        strokeWidth="1.8"
         fill="none"
         strokeLinecap="round"
         strokeLinejoin="round"
+      />
+      {/* Bright terminal-style dot marking the latest value */}
+      <circle
+        cx={lastPt[0].toFixed(1)}
+        cy={lastPt[1].toFixed(1)}
+        r="2"
+        fill={stroke as string}
+      />
+      <circle
+        cx={lastPt[0].toFixed(1)}
+        cy={lastPt[1].toFixed(1)}
+        r="4"
+        fill={stroke as string}
+        opacity="0.25"
       />
     </svg>
   );
