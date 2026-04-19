@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 48" width="240" height="48">
+  <title>SteamWatch horizontal lockup — light background</title>
+  
+  <g>
+    <path d="M6 22 H22 L28 34 L34 30 L42 32" fill="none" stroke="#0d1418" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>
+    <line x1="22" y1="10" x2="22" y2="38" stroke="#0d1418" stroke-width="1" stroke-dasharray="2 3" opacity="0.5"></line>
+    <circle cx="22" cy="22" r="3" fill="#ffffff" stroke="#0d1418" stroke-width="1.8"></circle>
+  </g>
+  
+  <text x="60" y="32" font-family="Inter Tight, system-ui, sans-serif" font-weight="700" font-size="22" letter-spacing="-0.5" fill="#0d1418">SteamWatch<tspan fill="#6b7680" font-weight="500">.io</tspan></text>
+</svg>

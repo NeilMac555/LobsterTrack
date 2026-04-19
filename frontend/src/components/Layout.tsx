@@ -63,19 +63,22 @@ export default function Layout() {
       <header className="bg-slate-900/90 backdrop-blur-md border-b border-slate-700/50 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-[52px] gap-4">
-            {/* Brand — gradient mark + wordmark with muted .io */}
+            {/* Brand — "Line Break" mark + wordmark with muted .io.
+                Brand guide: Inter Tight 700 wordmark, .io in 500/ink-sub. */}
             <Link to="/" className="flex items-center gap-2.5 group flex-shrink-0">
-              <div
-                className="w-[26px] h-[26px] rounded-md flex items-center justify-center font-mono font-black text-[13px] text-slate-900 flex-shrink-0"
-                style={{
-                  background: 'linear-gradient(135deg, #22d3ee 0%, #0891b2 100%)',
-                  boxShadow: '0 0 0 1px rgba(34, 211, 238, 0.3), 0 0 20px -6px #22d3ee',
-                }}
+              <img
+                src="/logos/mark-on-dark.svg"
+                width={28}
+                height={28}
+                alt=""
+                className="flex-shrink-0 rounded-[7px]"
+                style={{ display: 'block' }}
+              />
+              <span
+                className="text-[18px] font-bold tracking-tight group-hover:opacity-90 transition-opacity"
+                style={{ color: '#e8edf0', letterSpacing: '-0.02em' }}
               >
-                S
-              </div>
-              <span className="text-[15px] font-bold text-white tracking-tight group-hover:text-cyan-300 transition-colors">
-                SteamWatch<span className="text-slate-500 font-medium">.io</span>
+                SteamWatch<span className="font-medium" style={{ color: '#8a94a0' }}>.io</span>
               </span>
             </Link>
 
