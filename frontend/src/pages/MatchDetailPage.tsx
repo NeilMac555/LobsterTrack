@@ -10,7 +10,22 @@ import TotalsChart from '../components/TotalsChart';
 import SpreadsChart from '../components/SpreadsChart';
 import TimeFrameFilter, { type TimeFrame } from '../components/TimeFrameFilter';
 import LeagueLogo from '../components/LeagueLogo';
-import OddsWithMovement from '../components/OddsWithMovement';
+import Sparkline from '../components/Sparkline';
+
+// Format ms-until-kickoff as a readable T-minus string, or a T-plus if the
+// match has already kicked off. Kept inside this module because match detail
+// is the only place we use it.
+function formatCountdown(ms: number): string {
+  if (Math.abs(ms) < 60_000) return ms > 0 ? 'kickoff imminent' : 'in play';
+  const sign = ms < 0 ? 'T+' : 'T-';
+  const abs = Math.abs(ms);
+  const d = Math.floor(abs / (24 * 3600_000));
+  const h = Math.floor((abs % (24 * 3600_000)) / 3600_000);
+  const m = Math.floor((abs % 3600_000) / 60_000);
+  if (d > 0) return `${sign}${d}d ${h}h`;
+  if (h > 0) return `${sign}${h}h ${String(m).padStart(2, '0')}m`;
+  return `${sign}${m}m`;
+}
 
 export default function MatchDetailPage() {
   const { matchId } = useParams<{ matchId: string }>();
@@ -105,78 +120,118 @@ export default function MatchDetailPage() {
         Back to {leagueConfig?.name || 'matches'}
       </Link>
 
-      {/* Match Header */}
-      <div className="bg-slate-800/80 rounded-2xl border border-slate-700/50 overflow-hidden mb-6 sm:mb-8 card-shadow">
-        {/* League Bar */}
-        <div className="px-4 sm:px-6 py-3 sm:py-4 bg-slate-700/30 border-b border-slate-700/50 flex items-center gap-2 sm:gap-3">
-          <LeagueLogo sportKey={match.sport_key} size="md" />
-          <span className="text-slate-300 font-semibold text-sm sm:text-base">{leagueConfig?.name || match.league_name}</span>
+      {/* Unified match header — league strip, teams, kickoff with T-minus,
+          and a 3-column odds book with inline sparklines. One dense terminal
+          hero card instead of four separate panels. */}
+      <div
+        className="rounded-2xl border border-slate-700/50 overflow-hidden mb-6 sm:mb-8 card-shadow"
+        style={{ background: 'linear-gradient(180deg, rgba(30,41,59,0.85) 0%, rgba(15,23,42,0.95) 100%)' }}
+      >
+        {/* League strip */}
+        <div className="px-4 sm:px-6 py-2.5 sm:py-3 border-b border-slate-700/50 flex items-center gap-2 flex-wrap">
+          <LeagueLogo sportKey={match.sport_key} size="sm" />
+          <span className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.12em] text-slate-400 font-semibold">
+            {leagueConfig?.name || match.league_name}
+          </span>
+          <span className="text-slate-600">·</span>
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-slate-700/60 text-[10px] font-mono uppercase tracking-[0.12em] text-slate-400">
+            <span className="relative flex h-1.5 w-1.5">
+              {matchDate.getTime() > Date.now() && (
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              )}
+              <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${
+                matchDate.getTime() > Date.now() ? 'bg-emerald-500' : 'bg-slate-500'
+              }`}></span>
+            </span>
+            {matchDate.getTime() > Date.now() ? 'Market Open' : 'Market Closed'}
+          </span>
         </div>
 
-        {/* Teams and Date */}
-        <div className="p-4 sm:p-8">
-          <div className="flex flex-col gap-4 sm:gap-8">
-            {/* Teams */}
-            <div className="flex-1 space-y-3 sm:space-y-4">
-              <div className="flex items-center gap-3 sm:gap-4">
-                <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/30 flex-shrink-0"></div>
-                <h1 className="text-xl sm:text-3xl font-bold text-white truncate">{match.home_team}</h1>
-              </div>
-              <div className="flex items-center gap-3 sm:gap-4">
-                <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-red-500 shadow-lg shadow-red-500/30 flex-shrink-0"></div>
-                <h1 className="text-xl sm:text-3xl font-bold text-white truncate">{match.away_team}</h1>
-              </div>
+        {/* Teams + Kickoff */}
+        <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-700/50 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4 min-w-0">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/40 flex-shrink-0"></div>
+              <h1 className="text-lg sm:text-2xl font-bold text-white tracking-tight truncate">{match.home_team}</h1>
             </div>
+            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-500 flex-shrink-0">vs</span>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <h1 className="text-lg sm:text-2xl font-bold text-white tracking-tight truncate">{match.away_team}</h1>
+              <div className="w-2 h-2 rounded-full bg-red-500 shadow-lg shadow-red-500/40 flex-shrink-0"></div>
+            </div>
+          </div>
 
-            {/* Date/Time */}
-            <div className="flex items-center justify-between sm:justify-end gap-4 pt-3 sm:pt-0 border-t border-slate-700/50 sm:border-0">
-              <div className="text-slate-400 text-sm sm:text-base font-medium">
-                {format(matchDate, 'EEE, MMM d')}
-              </div>
-              <div className="text-3xl sm:text-5xl font-bold text-white">{format(matchDate, 'HH:mm')}</div>
+          <div className="text-right flex-shrink-0">
+            <div className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">Kickoff</div>
+            <div className="flex items-baseline gap-3 justify-end mt-0.5">
+              <span className="text-xs font-mono text-slate-400 tabular-nums">{format(matchDate, 'EEE, MMM d')}</span>
+              <span className="text-3xl sm:text-4xl font-mono font-bold text-white tabular-nums tracking-tight leading-none">{format(matchDate, 'HH:mm')}</span>
+            </div>
+            <div className="text-[10px] font-mono text-slate-500 mt-1 tabular-nums uppercase tracking-wider">
+              UTC · {formatCountdown(matchDate.getTime() - Date.now())}
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Current Odds with Movement */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-5 mb-6 sm:mb-8">
-        <OddsWithMovement
-          current={latestOdds?.home_odds ?? null}
-          opening={firstOdds?.home_odds ?? null}
-          label="Home"
-          colorClass="text-emerald-400"
-          bgClass="bg-slate-800/80 border border-slate-700/50 rounded-xl sm:rounded-2xl card-shadow"
-        />
-        <OddsWithMovement
-          current={latestOdds?.draw_odds ?? null}
-          opening={firstOdds?.draw_odds ?? null}
-          label="Draw"
-          colorClass="text-yellow-400"
-          bgClass="bg-slate-800/80 border border-slate-700/50 rounded-xl sm:rounded-2xl card-shadow"
-        />
-        <OddsWithMovement
-          current={latestOdds?.away_odds ?? null}
-          opening={firstOdds?.away_odds ?? null}
-          label="Away"
-          colorClass="text-red-400"
-          bgClass="bg-slate-800/80 border border-slate-700/50 rounded-xl sm:rounded-2xl card-shadow"
-        />
-      </div>
-
-      {/* Opening Odds Reference */}
-      {firstOdds && (
-        <div className="bg-slate-800/50 rounded-xl sm:rounded-2xl border border-slate-700/50 p-4 sm:p-5 mb-6 sm:mb-8">
-          <div className="flex items-center justify-between">
-            <span className="text-slate-400 text-xs sm:text-sm font-medium">Opening Odds</span>
-            <div className="flex gap-4 sm:gap-6 text-xs sm:text-sm font-mono font-semibold">
-              <span className="text-slate-300">{firstOdds.home_odds?.toFixed(2) ?? '-'}</span>
-              <span className="text-slate-300">{firstOdds.draw_odds?.toFixed(2) ?? '-'}</span>
-              <span className="text-slate-300">{firstOdds.away_odds?.toFixed(2) ?? '-'}</span>
-            </div>
-          </div>
+        {/* 3-column 1X2 odds book with per-outcome sparklines */}
+        <div className="grid grid-cols-3">
+          {(() => {
+            const outcomes = [
+              { key: 'home' as const, label: 'Home', team: match.home_team, color: '#34d399', accentText: 'text-emerald-400', accentBg: 'bg-emerald-400' },
+              { key: 'draw' as const, label: 'Draw', team: null, color: '#fbbf24', accentText: 'text-amber-400', accentBg: 'bg-amber-400' },
+              { key: 'away' as const, label: 'Away', team: match.away_team, color: '#f87171', accentText: 'text-red-400', accentBg: 'bg-red-400' },
+            ];
+            return outcomes.map((o, i) => {
+              const cur = latestOdds?.[`${o.key}_odds`] ?? null;
+              const open = firstOdds?.[`${o.key}_odds`] ?? null;
+              const pct = (cur && open && open > 0) ? ((cur - open) / open) * 100 : 0;
+              const direction = pct < -0.1 ? 'down' : pct > 0.1 ? 'up' : 'flat';
+              const sparkValues = match.odds_history
+                .map((h) => h[`${o.key}_odds`])
+                .filter((v): v is number => v != null && v > 0)
+                .map((v) => (1 / v) * 100); // implied prob — rising = backed
+              return (
+                <div
+                  key={o.key}
+                  className={`px-3 sm:px-4 py-3 sm:py-4 ${i < 2 ? 'border-r border-slate-700/50' : ''}`}
+                >
+                  <div className="flex items-center gap-1.5 mb-1.5 min-w-0">
+                    <div className={`w-1.5 h-1.5 rounded-full ${o.accentBg} flex-shrink-0`}></div>
+                    <span className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold truncate">
+                      {o.label}
+                      {o.team && <span className="text-slate-600 hidden sm:inline"> · {o.team.split(' ').slice(0, 2).join(' ')}</span>}
+                    </span>
+                  </div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="text-2xl sm:text-3xl font-mono font-bold tabular-nums tracking-tight text-white leading-none">
+                        {cur != null ? cur.toFixed(2) : '—'}
+                      </div>
+                      <div className="text-[9px] sm:text-[10px] font-mono text-slate-500 mt-1.5 tabular-nums whitespace-nowrap">
+                        <span className="hidden sm:inline">Open </span>{open != null ? open.toFixed(2) : '—'}
+                        <span className="text-slate-600 mx-1">·</span>
+                        {cur ? `${((1 / cur) * 100).toFixed(1)}%` : '—'}
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                      <span className={`px-1.5 py-0.5 rounded font-mono text-[9px] sm:text-[10px] font-bold tabular-nums whitespace-nowrap ${
+                        direction === 'down' ? 'bg-emerald-500/20 text-emerald-400' :
+                        direction === 'up' ? 'bg-red-500/20 text-red-400' :
+                        'bg-slate-700/40 text-slate-400'
+                      }`}>
+                        {direction === 'down' ? '↓' : direction === 'up' ? '↑' : '·'} {Math.abs(pct).toFixed(1)}%
+                      </span>
+                      {sparkValues.length >= 2 && (
+                        <Sparkline values={sparkValues} width={68} height={22} color={o.color} />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            });
+          })()}
         </div>
-      )}
+      </div>
 
       {/* Odds History Chart */}
       <div className="bg-slate-800/80 rounded-xl sm:rounded-2xl border border-slate-700/50 p-3 sm:p-6 mb-6 sm:mb-8 card-shadow">
