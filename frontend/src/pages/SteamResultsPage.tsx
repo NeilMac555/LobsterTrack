@@ -154,60 +154,74 @@ export default function SteamResultsPage() {
       {/* Page Header */}
       <div className="mb-6 sm:mb-8">
         <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
+          {/* Vertical amber accent bar — matches the terminal rhythm */}
+          <div className="w-1 h-8 sm:h-10 rounded-full bg-gradient-to-b from-amber-400 to-amber-600 flex-shrink-0" />
+          <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0">
             <svg className="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
           </div>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white">Steam Results</h1>
-            <p className="text-slate-400 text-sm sm:text-base mt-0.5">
-              Teams backed by sharp money &mdash; odds shortened pre-KO
+            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Steam Results</h1>
+            <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em]">
+              Teams backed by sharp money &middot; odds shortened pre-KO
             </p>
           </div>
         </div>
       </div>
 
-      {/* Stats Banner */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
-        <div className="bg-slate-800/80 rounded-xl border border-slate-700/50 p-4 text-center">
-          <div className="text-2xl sm:text-3xl font-bold text-white">{data.total_moves}</div>
-          <div className="text-xs sm:text-sm text-slate-400 mt-1">Matches</div>
-        </div>
-        <div className="bg-slate-800/80 rounded-xl border border-emerald-500/30 p-4 text-center">
-          <div className="text-2xl sm:text-3xl font-bold text-emerald-400">
-            {data.win_rate !== null ? `${data.win_rate}%` : '-'}
+      {/* Stats Banner — terminal stat strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4 sm:mb-6">
+        <div className="bg-slate-800/80 rounded-xl border border-slate-700/60 px-3 sm:px-4 py-2.5 sm:py-3">
+          <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">Matches</div>
+          <div className="text-2xl sm:text-3xl font-mono font-bold tabular-nums tracking-tight text-white leading-none mt-1.5">
+            {data.total_moves}
           </div>
-          <div className="text-xs sm:text-sm text-slate-400 mt-1">Win Rate</div>
+          <div className="text-[10px] sm:text-xs text-slate-500 mt-1">completed steam moves</div>
         </div>
-        <div className="bg-slate-800/80 rounded-xl border border-slate-700/50 p-4 text-center">
-          <div className="text-2xl sm:text-3xl font-bold text-white">
+        <div className="bg-slate-800/80 rounded-xl border border-emerald-500/30 px-3 sm:px-4 py-2.5 sm:py-3">
+          <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-emerald-400/80 font-semibold">Win Rate</div>
+          <div className="text-2xl sm:text-3xl font-mono font-bold tabular-nums tracking-tight text-emerald-400 leading-none mt-1.5">
+            {data.win_rate !== null ? `${data.win_rate}%` : '—'}
+          </div>
+          <div className="text-[10px] sm:text-xs text-slate-500 mt-1">hit rate vs. close</div>
+        </div>
+        <div className="bg-slate-800/80 rounded-xl border border-slate-700/60 px-3 sm:px-4 py-2.5 sm:py-3">
+          <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">W / D / L</div>
+          <div className="text-2xl sm:text-3xl font-mono font-bold tabular-nums tracking-tight leading-none mt-1.5">
             <span className="text-emerald-400">{data.total_wins}</span>
-            <span className="text-slate-600 mx-1">/</span>
+            <span className="text-slate-600 mx-1">·</span>
             <span className="text-yellow-400">{data.total_draws}</span>
-            <span className="text-slate-600 mx-1">/</span>
+            <span className="text-slate-600 mx-1">·</span>
             <span className="text-red-400">{data.total_losses}</span>
           </div>
-          <div className="text-xs sm:text-sm text-slate-400 mt-1">W / D / L</div>
+          <div className="text-[10px] sm:text-xs text-slate-500 mt-1">wins · draws · losses</div>
         </div>
-        <div className="bg-slate-800/80 rounded-xl border border-slate-700/50 p-4 text-center">
-          <div className="text-2xl sm:text-3xl font-bold text-amber-400">
-            {data.avg_movement_percent !== null ? `${data.avg_movement_percent}%` : '-'}
+        <div className="bg-slate-800/80 rounded-xl border border-slate-700/60 px-3 sm:px-4 py-2.5 sm:py-3">
+          <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-amber-400/80 font-semibold">Avg Move</div>
+          <div className="text-2xl sm:text-3xl font-mono font-bold tabular-nums tracking-tight text-amber-400 leading-none mt-1.5">
+            {data.avg_movement_percent !== null ? `${data.avg_movement_percent}%` : '—'}
           </div>
-          <div className="text-xs sm:text-sm text-slate-400 mt-1">Avg Move</div>
+          <div className="text-[10px] sm:text-xs text-slate-500 mt-1">steam size</div>
         </div>
       </div>
 
-      {/* Win Rate Bar */}
+      {/* Win Rate Bar — terminal distribution readout */}
       {data.total_moves > 0 && (
-        <div className="bg-slate-800/80 rounded-xl border border-slate-700/50 p-4 mb-6 sm:mb-8">
+        <div className="bg-slate-800/80 rounded-xl border border-slate-700/60 p-4 mb-4 sm:mb-6">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-slate-400 font-medium">Result Distribution</span>
-            <span className="text-xs text-slate-500">
-              {data.total_wins}W &mdash; {data.total_draws}D &mdash; {data.total_losses}L
+            <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">
+              Result Distribution
+            </span>
+            <span className="text-[10px] font-mono tabular-nums text-slate-400">
+              <span className="text-emerald-400 font-bold">{((data.total_wins / data.total_moves) * 100).toFixed(0)}%</span>
+              <span className="text-slate-600 mx-1">·</span>
+              <span className="text-yellow-400 font-bold">{((data.total_draws / data.total_moves) * 100).toFixed(0)}%</span>
+              <span className="text-slate-600 mx-1">·</span>
+              <span className="text-red-400 font-bold">{((data.total_losses / data.total_moves) * 100).toFixed(0)}%</span>
             </span>
           </div>
-          <div className="h-3 bg-slate-700 rounded-full overflow-hidden flex">
+          <div className="h-2.5 bg-slate-900/80 rounded-full overflow-hidden flex">
             <div
               className="bg-emerald-500 rounded-l-full transition-all duration-500"
               style={{ width: `${(data.total_wins / data.total_moves) * 100}%` }}
@@ -224,31 +238,35 @@ export default function SteamResultsPage() {
         </div>
       )}
 
-      {/* League Filter */}
-      <div className="flex flex-wrap gap-2 mb-6 sm:mb-8">
+      {/* League Filter — mono chip row */}
+      <div className="flex flex-wrap gap-1.5 mb-4 sm:mb-6">
         <button
           onClick={() => setSearchParams({})}
-          className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
+          className={`px-3 py-1.5 rounded-md font-mono text-[11px] uppercase tracking-[0.1em] font-semibold transition-colors border ${
             !league
-              ? 'bg-amber-600 text-white shadow-lg shadow-amber-500/20'
-              : 'bg-slate-700/80 text-slate-300 hover:bg-slate-600 hover:text-white'
+              ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+              : 'bg-slate-800/60 text-slate-400 border-slate-700/60 hover:bg-slate-700/60 hover:text-white'
           }`}
         >
-          All Leagues
+          All
         </button>
         {leagues.map(([key, config]) => (
           <button
             key={key}
             onClick={() => setSearchParams({ league: key })}
-            className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200 ${
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md transition-colors border ${
               league === key
-                ? 'bg-amber-600 ring-2 ring-amber-400/50 shadow-lg shadow-amber-500/20'
-                : 'bg-slate-700/80 hover:bg-slate-600 hover:scale-105'
+                ? 'bg-amber-500/20 border-amber-500/40'
+                : 'bg-slate-800/60 border-slate-700/60 hover:bg-slate-700/60'
             }`}
             title={config.name}
           >
             <LeagueLogo sportKey={key} size="sm" />
-            <span className="text-sm text-white font-medium hidden sm:inline">{config.shortName}</span>
+            <span className={`font-mono text-[11px] uppercase tracking-[0.1em] font-semibold hidden sm:inline ${
+              league === key ? 'text-amber-300' : 'text-slate-300'
+            }`}>
+              {config.shortName}
+            </span>
           </button>
         ))}
       </div>
@@ -284,44 +302,51 @@ export default function SteamResultsPage() {
         <div className="bg-slate-800/80 rounded-2xl border border-amber-500/30 overflow-hidden card-shadow mb-6 sm:mb-8"
           style={{ boxShadow: '0 0 20px -5px rgba(245, 158, 11, 0.15)' }}
         >
-          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-700/50 bg-gradient-to-r from-amber-500/10 to-transparent">
-            <h2 className="text-lg sm:text-xl font-bold text-white">Most Steamed Teams</h2>
-            <p className="text-slate-400 text-xs sm:text-sm mt-0.5">
-              Ranked by {sortLabels[sortField]} ({sortDir === 'desc' ? 'highest' : 'lowest'} first)
-            </p>
+          <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-700/50 bg-gradient-to-r from-amber-500/10 to-transparent flex items-center gap-3">
+            <div className="w-1 h-6 sm:h-7 rounded-full bg-gradient-to-b from-amber-400 to-amber-600 flex-shrink-0" />
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">Most Steamed Teams</h2>
+              <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em]">
+                Sorted by {sortLabels[sortField]} &middot; {sortDir === 'desc' ? 'highest first' : 'lowest first'}
+              </p>
+            </div>
           </div>
 
-          {/* Filter Controls */}
-          <div className="px-4 sm:px-6 py-3 border-b border-slate-700/50 flex flex-wrap items-center gap-3 sm:gap-4 bg-slate-800/50">
+          {/* Filter Controls — segmented mono row */}
+          <div className="px-4 sm:px-6 py-3 border-b border-slate-700/50 flex flex-wrap items-center gap-3 sm:gap-4 bg-slate-900/30">
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400 font-medium">Min moves:</span>
-              {([3, 5, 10] as MinMoves[]).map(n => (
-                <button
-                  key={n}
-                  onClick={() => setMinMoves(n)}
-                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
-                    minMoves === n
-                      ? 'bg-amber-600 text-white'
-                      : 'bg-slate-700/80 text-slate-400 hover:bg-slate-600 hover:text-white'
-                  }`}
-                >
-                  {n}+
-                </button>
-              ))}
+              <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">Min moves</span>
+              <div className="inline-flex bg-slate-900/60 border border-slate-700/60 rounded-md overflow-hidden">
+                {([3, 5, 10] as MinMoves[]).map((n, i) => (
+                  <button
+                    key={n}
+                    onClick={() => setMinMoves(n)}
+                    className={`px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-[0.1em] transition-colors ${
+                      i > 0 ? 'border-l border-slate-700/60' : ''
+                    } ${
+                      minMoves === n
+                        ? 'bg-amber-500/20 text-amber-300'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                    }`}
+                  >
+                    {n}+
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="w-px h-5 bg-slate-700 hidden sm:block"></div>
             <button
               onClick={() => setDaysFilter(d => d === 30 ? null : 30)}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+              className={`px-3 py-1 rounded-md font-mono text-[11px] font-semibold uppercase tracking-[0.1em] transition-colors border ${
                 daysFilter === 30
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-700/80 text-slate-400 hover:bg-slate-600 hover:text-white'
+                  ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
+                  : 'bg-slate-900/60 text-slate-400 border-slate-700/60 hover:text-white hover:bg-slate-800/60'
               }`}
             >
-              Last 30 days
+              Last 30d
             </button>
-            <span className="text-xs text-slate-500 ml-auto">
-              {filteredRankings.length} team{filteredRankings.length !== 1 ? 's' : ''}
+            <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 ml-auto tabular-nums">
+              {filteredRankings.length} {filteredRankings.length === 1 ? 'team' : 'teams'}
             </span>
           </div>
 
@@ -329,48 +354,48 @@ export default function SteamResultsPage() {
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-slate-700/30">
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider w-12">
+                <tr className="bg-slate-900/40">
+                  <th className="px-4 py-2.5 text-center text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em] w-12">
                     #
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  <th className="px-4 py-2.5 text-left text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">
                     Team
                   </th>
-                  <th className="px-3 py-3 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    League
+                  <th className="px-3 py-2.5 text-center text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">
+                    Lg
                   </th>
                   <th
-                    className="px-3 py-3 text-center text-xs font-semibold text-amber-400/80 uppercase tracking-wider cursor-pointer hover:text-amber-300 select-none"
+                    className="px-3 py-2.5 text-center text-[10px] font-mono font-semibold text-amber-400/80 uppercase tracking-[0.12em] cursor-pointer hover:text-amber-300 select-none"
                     onClick={() => handleSort('total_moves')}
                   >
                     Moves<SortIcon active={sortField === 'total_moves'} direction={sortDir} />
                   </th>
                   <th
-                    className="px-3 py-3 text-center text-xs font-semibold text-emerald-400/80 uppercase tracking-wider cursor-pointer hover:text-emerald-300 select-none"
+                    className="px-3 py-2.5 text-center text-[10px] font-mono font-semibold text-emerald-400/80 uppercase tracking-[0.12em] cursor-pointer hover:text-emerald-300 select-none"
                     onClick={() => handleSort('wins')}
                   >
                     W<SortIcon active={sortField === 'wins'} direction={sortDir} />
                   </th>
-                  <th className="px-3 py-3 text-center text-xs font-semibold text-yellow-400/80 uppercase tracking-wider">
+                  <th className="px-3 py-2.5 text-center text-[10px] font-mono font-semibold text-yellow-400/80 uppercase tracking-[0.12em]">
                     D
                   </th>
-                  <th className="px-3 py-3 text-center text-xs font-semibold text-red-400/80 uppercase tracking-wider">
+                  <th className="px-3 py-2.5 text-center text-[10px] font-mono font-semibold text-red-400/80 uppercase tracking-[0.12em]">
                     L
                   </th>
                   <th
-                    className="px-3 py-3 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider cursor-pointer hover:text-slate-300 select-none"
+                    className="px-3 py-2.5 text-center text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em] cursor-pointer hover:text-slate-300 select-none"
                     onClick={() => handleSort('win_rate')}
                   >
                     Win%<SortIcon active={sortField === 'win_rate'} direction={sortDir} />
                   </th>
                   <th
-                    className="px-3 py-3 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider cursor-pointer hover:text-slate-300 select-none"
+                    className="px-3 py-2.5 text-center text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em] cursor-pointer hover:text-slate-300 select-none"
                     onClick={() => handleSort('avg_move_size')}
                   >
                     Avg Move<SortIcon active={sortField === 'avg_move_size'} direction={sortDir} />
                   </th>
                   <th
-                    className="px-3 py-3 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider cursor-pointer hover:text-slate-300 select-none"
+                    className="px-3 py-2.5 text-center text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em] cursor-pointer hover:text-slate-300 select-none"
                     onClick={() => handleSort('profit_loss')}
                   >
                     P/L<SortIcon active={sortField === 'profit_loss'} direction={sortDir} />
@@ -382,8 +407,8 @@ export default function SteamResultsPage() {
                   const leagueInfo = LEAGUE_CONFIG[team.sport_key];
                   return (
                     <tr key={team.team_name} className="hover:bg-slate-700/20 transition-colors duration-150">
-                      <td className="px-4 py-3 text-center">
-                        <span className={`font-bold ${
+                      <td className="px-4 py-2.5 text-center">
+                        <span className={`font-mono font-bold tabular-nums ${
                           index === 0 ? 'text-amber-400 text-lg' :
                           index === 1 ? 'text-slate-300 text-base' :
                           index === 2 ? 'text-orange-400 text-base' :
@@ -392,41 +417,41 @@ export default function SteamResultsPage() {
                           {index + 1}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
-                        <span className="text-white font-semibold text-sm">{team.team_name}</span>
+                      <td className="px-4 py-2.5">
+                        <span className="text-white font-semibold text-sm tracking-tight">{team.team_name}</span>
                       </td>
-                      <td className="px-3 py-3 text-center">
+                      <td className="px-3 py-2.5 text-center">
                         <div className="flex items-center justify-center gap-1.5">
                           <LeagueLogo sportKey={team.sport_key} size="sm" />
-                          <span className="text-slate-400 text-xs hidden lg:inline">
+                          <span className="text-slate-500 text-[11px] font-mono uppercase tracking-wider hidden lg:inline">
                             {leagueInfo?.shortName || ''}
                           </span>
                         </div>
                       </td>
-                      <td className="px-3 py-3 text-center">
-                        <span className="font-mono font-bold text-amber-400 text-sm">{team.total_moves}</span>
+                      <td className="px-3 py-2.5 text-center">
+                        <span className="font-mono font-bold text-amber-400 text-sm tabular-nums">{team.total_moves}</span>
                       </td>
-                      <td className="px-3 py-3 text-center">
-                        <span className="font-mono font-bold text-emerald-400 text-sm">{team.wins}</span>
+                      <td className="px-3 py-2.5 text-center">
+                        <span className="font-mono font-bold text-emerald-400 text-sm tabular-nums">{team.wins}</span>
                       </td>
-                      <td className="px-3 py-3 text-center">
-                        <span className="font-mono font-bold text-yellow-400 text-sm">{team.draws}</span>
+                      <td className="px-3 py-2.5 text-center">
+                        <span className="font-mono font-bold text-yellow-400 text-sm tabular-nums">{team.draws}</span>
                       </td>
-                      <td className="px-3 py-3 text-center">
-                        <span className="font-mono font-bold text-red-400 text-sm">{team.losses}</span>
+                      <td className="px-3 py-2.5 text-center">
+                        <span className="font-mono font-bold text-red-400 text-sm tabular-nums">{team.losses}</span>
                       </td>
-                      <td className="px-3 py-3 text-center">
-                        <span className={`font-mono font-bold text-sm ${winRateColor(team.win_rate)}`}>
-                          {team.win_rate !== null ? `${team.win_rate}%` : '-'}
+                      <td className="px-3 py-2.5 text-center">
+                        <span className={`font-mono font-bold text-sm tabular-nums ${winRateColor(team.win_rate)}`}>
+                          {team.win_rate !== null ? `${team.win_rate}%` : '—'}
                         </span>
                       </td>
-                      <td className="px-3 py-3 text-center">
-                        <span className="font-mono font-bold text-sm text-slate-300">
-                          {team.avg_move_size !== null ? `${team.avg_move_size}%` : '-'}
+                      <td className="px-3 py-2.5 text-center">
+                        <span className="font-mono font-bold text-sm tabular-nums text-slate-300">
+                          {team.avg_move_size !== null ? `${team.avg_move_size}%` : '—'}
                         </span>
                       </td>
-                      <td className="px-3 py-3 text-center">
-                        <span className={`font-mono font-bold text-sm ${plColor(team.profit_loss)}`}>
+                      <td className="px-3 py-2.5 text-center">
+                        <span className={`font-mono font-bold text-base tabular-nums tracking-tight ${plColor(team.profit_loss)}`}>
                           {formatPL(team.profit_loss)}
                         </span>
                       </td>
@@ -442,10 +467,10 @@ export default function SteamResultsPage() {
             {filteredRankings.map((team, index) => {
               const leagueInfo = LEAGUE_CONFIG[team.sport_key];
               return (
-                <div key={team.team_name} className="p-4">
+                <div key={team.team_name} className="p-3.5">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <span className={`font-bold w-6 text-center ${
+                      <span className={`font-mono font-bold tabular-nums w-6 text-center ${
                         index === 0 ? 'text-amber-400 text-lg' :
                         index === 1 ? 'text-slate-300' :
                         index === 2 ? 'text-orange-400' :
@@ -454,34 +479,38 @@ export default function SteamResultsPage() {
                         {index + 1}
                       </span>
                       <div className="min-w-0">
-                        <div className="text-white font-semibold text-sm truncate">{team.team_name}</div>
+                        <div className="text-white font-semibold text-sm truncate tracking-tight">{team.team_name}</div>
                         <div className="flex items-center gap-1.5 mt-0.5">
                           <LeagueLogo sportKey={team.sport_key} size="sm" />
-                          <span className="text-xs text-slate-500">{leagueInfo?.shortName}</span>
+                          <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500">{leagueInfo?.shortName}</span>
                         </div>
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <div className="flex items-center justify-end gap-2">
-                        <span className="font-mono font-bold text-amber-400 text-sm">{team.total_moves} moves</span>
-                        <span className={`font-mono font-bold text-sm ${plColor(team.profit_loss)}`}>
-                          {formatPL(team.profit_loss)}
-                        </span>
+                      {/* P/L hero */}
+                      <div className={`font-mono font-bold text-lg tabular-nums leading-none tracking-tight ${plColor(team.profit_loss)}`}>
+                        {formatPL(team.profit_loss)}
                       </div>
-                      <div className="text-xs mt-0.5">
-                        <span className="text-emerald-400 font-semibold">{team.wins}W</span>
-                        <span className="text-slate-600 mx-1">/</span>
-                        <span className="text-yellow-400 font-semibold">{team.draws}D</span>
-                        <span className="text-slate-600 mx-1">/</span>
-                        <span className="text-red-400 font-semibold">{team.losses}L</span>
-                        <span className="text-slate-600 mx-1">&middot;</span>
-                        <span className={`font-semibold ${winRateColor(team.win_rate)}`}>
-                          {team.win_rate !== null ? `${team.win_rate}%` : '-'}
+                      <div className="text-[10px] font-mono tabular-nums mt-1">
+                        <span className="text-amber-400 font-bold">{team.total_moves}</span>
+                        <span className="text-slate-500 mx-0.5">moves</span>
+                        <span className="text-slate-600 mx-1">·</span>
+                        <span className="text-emerald-400 font-bold">{team.wins}</span>
+                        <span className="text-slate-600 mx-0.5">·</span>
+                        <span className="text-yellow-400 font-bold">{team.draws}</span>
+                        <span className="text-slate-600 mx-0.5">·</span>
+                        <span className="text-red-400 font-bold">{team.losses}</span>
+                      </div>
+                      <div className="text-[10px] font-mono tabular-nums mt-0.5">
+                        <span className={`font-bold ${winRateColor(team.win_rate)}`}>
+                          {team.win_rate !== null ? `${team.win_rate}%` : '—'}
                         </span>
-                        <span className="text-slate-600 mx-1">&middot;</span>
-                        <span className="text-slate-400 font-semibold">
-                          {team.avg_move_size !== null ? `${team.avg_move_size}%` : '-'}
+                        <span className="text-slate-500 mx-1">win</span>
+                        <span className="text-slate-600 mx-1">·</span>
+                        <span className="text-slate-300 font-bold">
+                          {team.avg_move_size !== null ? `${team.avg_move_size}%` : '—'}
                         </span>
+                        <span className="text-slate-500 mx-1">move</span>
                       </div>
                     </div>
                   </div>
