@@ -5,9 +5,13 @@ import { NoAccountError, createPublicCheckoutSession } from '../api/auth';
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
+  /** 'subscribe' flips the modal to 'Subscribe to Pro' framing — used
+   *  when opened from the header Go Pro button so users aren't confused
+   *  by a 'Sign in' title when they clicked a subscribe CTA. */
+  mode?: 'signin' | 'subscribe';
 }
 
-export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
+export default function LoginModal({ isOpen, onClose, mode = 'signin' }: LoginModalProps) {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [step, setStep] = useState<'email' | 'sent' | 'no-account'>('email');
@@ -21,6 +25,21 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     e.preventDefault();
     setError('');
     setLoading(true);
+
+    // 'subscribe' mode: skip the magic-link detour and go straight to Stripe.
+    // The backend blocks existing active subscribers with a 409, which we
+    // surface as a friendly inline error that points them to Sign In.
+    if (mode === 'subscribe') {
+      try {
+        const { checkout_url } = await createPublicCheckoutSession(email);
+        window.location.href = checkout_url;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to start checkout');
+        setLoading(false);
+      }
+      return;
+    }
+
     try {
       await login(email);
       setStep('sent');
@@ -74,10 +93,29 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
         {step === 'email' && (
           <>
-            <h2 className="text-xl font-bold text-white mb-2">Sign in to SteamWatch</h2>
-            <p className="text-sm text-slate-400 mb-6">
-              Enter your email and we'll send you a magic link to sign in. SteamWatch accounts are for Pro subscribers only.
-            </p>
+            {mode === 'subscribe' ? (
+              <>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="px-1.5 py-0.5 rounded font-mono text-[10px] font-bold uppercase tracking-[0.12em] bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                    Pro
+                  </span>
+                  <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">
+                    Subscribe
+                  </span>
+                </div>
+                <h2 className="text-xl font-bold text-white mb-2 tracking-tight">Subscribe to SteamWatch Pro</h2>
+                <p className="text-sm text-slate-400 mb-6">
+                  Enter your email — we'll take you straight to Stripe to complete checkout. Your account is created automatically on payment.
+                </p>
+              </>
+            ) : (
+              <>
+                <h2 className="text-xl font-bold text-white mb-2 tracking-tight">Sign in to SteamWatch</h2>
+                <p className="text-sm text-slate-400 mb-6">
+                  Enter your email and we'll send you a magic link to sign in. SteamWatch accounts are for Pro subscribers only.
+                </p>
+              </>
+            )}
 
             <form onSubmit={handleSubmit}>
               <input
@@ -86,7 +124,9 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 required
-                className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent mb-4"
+                className={`w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:border-transparent mb-4 ${
+                  mode === 'subscribe' ? 'focus:ring-cyan-400' : 'focus:ring-red-500'
+                }`}
               />
               {error && (
                 <p className="text-red-400 text-sm mb-4">{error}</p>
@@ -94,9 +134,15 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
               <button
                 type="submit"
                 disabled={loading || !email}
-                className="w-full bg-gradient-to-br from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 disabled:from-slate-600 disabled:to-slate-700 text-white font-bold py-3 rounded-lg transition-all duration-200"
+                className={`w-full font-bold py-3 rounded-lg transition-all duration-200 disabled:from-slate-600 disabled:to-slate-700 ${
+                  mode === 'subscribe'
+                    ? 'bg-gradient-to-br from-cyan-400 to-cyan-500 hover:brightness-110 text-slate-900 shadow-sm shadow-cyan-500/40'
+                    : 'bg-gradient-to-br from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 text-white'
+                }`}
               >
-                {loading ? 'Sending...' : 'Send Magic Link'}
+                {loading
+                  ? (mode === 'subscribe' ? 'Redirecting to Stripe…' : 'Sending...')
+                  : (mode === 'subscribe' ? 'Continue to Stripe →' : 'Send Magic Link')}
               </button>
             </form>
           </>

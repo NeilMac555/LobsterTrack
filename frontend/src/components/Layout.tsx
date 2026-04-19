@@ -17,8 +17,10 @@ const tools = [
 
 export default function Layout() {
   const location = useLocation();
-  const { user, logout, manageSubscription, isSubscribed } = useAuth();
+  const { user, logout, manageSubscription, isSubscribed, subscribe } = useAuth();
+  const [subscribing, setSubscribing] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
+  const [loginMode, setLoginMode] = useState<'signin' | 'subscribe'>('signin');
   const currentLeague = new URLSearchParams(location.search).get('league');
   const [toolsOpen, setToolsOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -134,6 +136,31 @@ export default function Layout() {
                 Live · Pinnacle
               </span>
 
+              {/* Primary CTA: Go Pro for anyone who isn't subscribed.
+                  Anonymous users trigger the email-modal which flows straight
+                  into Stripe public checkout. Signed-in non-subscribers use
+                  the authenticated subscribe() flow directly. */}
+              {!isSubscribed && (
+                <button
+                  onClick={async () => {
+                    if (!user) {
+                      setLoginMode('subscribe');
+                      setShowLogin(true);
+                    } else {
+                      setSubscribing(true);
+                      try { await subscribe(); } catch { setSubscribing(false); }
+                    }
+                  }}
+                  disabled={subscribing}
+                  className="px-3.5 py-1.5 rounded-md font-mono text-[11px] font-bold uppercase tracking-[0.1em] bg-gradient-to-br from-cyan-400 to-cyan-500 text-slate-900 hover:brightness-110 transition-all shadow-sm shadow-cyan-500/40 disabled:opacity-70"
+                >
+                  {subscribing ? 'Redirecting…' : 'Go Pro →'}
+                </button>
+              )}
+
+              {/* Account badge (signed-in) OR a subtle 'sign in' text link
+                  (anonymous). Sign In is now tertiary — the primary path is
+                  Go Pro. */}
               {user ? (
                 <div className="relative" ref={accountRef}>
                   <button
@@ -175,22 +202,10 @@ export default function Layout() {
                 </div>
               ) : (
                 <button
-                  onClick={() => setShowLogin(true)}
-                  className="px-3 py-1.5 rounded-md font-mono text-[11px] font-semibold uppercase tracking-[0.1em] bg-slate-800/60 border border-slate-700/60 text-slate-300 hover:text-white hover:bg-slate-700/60 transition-colors"
+                  onClick={() => { setLoginMode('signin'); setShowLogin(true); }}
+                  className="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400 hover:text-white transition-colors px-1"
                 >
                   Sign In
-                </button>
-              )}
-
-              {user && !isSubscribed && (
-                <button
-                  onClick={() => {
-                    // Scroll to top and trigger paywall CTA on homepage, or nav to match-predictor
-                    window.location.href = '/tools/match-predictor';
-                  }}
-                  className="px-3 py-1.5 rounded-md font-mono text-[11px] font-bold uppercase tracking-[0.1em] bg-gradient-to-br from-cyan-400 to-cyan-600 text-slate-900 hover:brightness-110 transition-all shadow-sm shadow-cyan-500/30"
-                >
-                  Upgrade Pro
                 </button>
               )}
             </div>
@@ -359,7 +374,11 @@ export default function Layout() {
         </div>
       </footer>
 
-      <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
+      <LoginModal
+        isOpen={showLogin}
+        onClose={() => setShowLogin(false)}
+        mode={loginMode}
+      />
     </div>
   );
 }
