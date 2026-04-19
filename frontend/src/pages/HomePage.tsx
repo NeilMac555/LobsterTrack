@@ -267,44 +267,46 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Two-tier CTA: Free (Telegram) + Pro */}
+      {/* Two-tier CTA: Free (Telegram) + Pro — terminal aesthetic */}
       {!league && !isSubscribed && (
-        <div className="mb-6 sm:mb-8 rounded-2xl border border-slate-700/60 bg-slate-800/80 overflow-hidden">
+        <div className="mb-6 sm:mb-8 rounded-xl border border-slate-700/60 bg-slate-800/80 overflow-hidden">
           <div className="grid grid-cols-1 sm:grid-cols-2">
             {/* FREE TIER — Telegram Alerts */}
             <a
               href="https://t.me/steamwatchalerts"
               target="_blank"
               rel="noopener noreferrer"
-              className="group p-5 sm:p-6 border-b sm:border-b-0 sm:border-r border-slate-700/50 hover:bg-[#2AABEE]/5 transition-colors"
+              className="group relative p-4 sm:p-5 border-b sm:border-b-0 sm:border-r border-slate-700/50 hover:bg-slate-900/30 transition-colors"
             >
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-9 h-9 rounded-lg bg-[#2AABEE] flex items-center justify-center shadow-md shadow-[#2AABEE]/20">
-                  <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
-                  </svg>
+              {/* Accent bar for visual rhythm */}
+              <div className="absolute left-0 top-4 bottom-4 w-[3px] rounded-r-full bg-[#2AABEE]/70" />
+              <div className="pl-3">
+                <div className="flex items-center gap-2 mb-2.5">
+                  <span className="px-1.5 py-0.5 rounded font-mono text-[10px] font-bold uppercase tracking-[0.12em] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    Free
+                  </span>
+                  <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">
+                    Telegram Alerts
+                  </span>
                 </div>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 uppercase tracking-wide">
-                  Free
+                <h3 className="text-base sm:text-lg font-bold text-white tracking-tight mb-1.5">
+                  Real-time syndicate alerts to your phone
+                </h3>
+                <p className="text-slate-400 text-xs sm:text-sm mb-3 leading-relaxed">
+                  Sharp money detected — you get pinged instantly. No login required, just join the channel.
+                </p>
+                <span className="inline-flex items-center gap-1.5 text-[#2AABEE] font-mono text-[11px] font-bold uppercase tracking-[0.12em] group-hover:gap-2.5 transition-all duration-200">
+                  Join Channel
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
                 </span>
               </div>
-              <h3 className="text-lg font-bold text-white mb-1 group-hover:text-[#2AABEE] transition-colors">
-                Free Telegram Alerts
-              </h3>
-              <p className="text-slate-400 text-sm mb-3">
-                Get real-time syndicate move alerts delivered straight to your phone. Sharp money detected — you get notified.
-              </p>
-              <span className="inline-flex items-center gap-1.5 text-[#2AABEE] text-sm font-semibold group-hover:translate-x-1 transition-transform duration-300">
-                Join Channel
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </span>
             </a>
 
             {/* PRO TIER — Full Access */}
             <div
-              className="group p-5 sm:p-6 hover:bg-red-500/5 transition-colors cursor-pointer"
+              className="group relative p-4 sm:p-5 hover:bg-slate-900/30 transition-colors cursor-pointer"
               onClick={async () => {
                 if (!user) {
                   setShowLoginFromCTA(true);
@@ -314,30 +316,41 @@ export default function HomePage() {
                 }
               }}
             >
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-md shadow-red-500/20">
-                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
+              {/* Accent bar — cyan to match brand */}
+              <div className="absolute left-0 top-4 bottom-4 w-[3px] rounded-r-full bg-cyan-400/70" />
+              <div className="pl-3">
+                <div className="flex items-center gap-2 mb-2.5">
+                  <span className="px-1.5 py-0.5 rounded font-mono text-[10px] font-bold uppercase tracking-[0.12em] bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                    Pro
+                  </span>
+                  <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">
+                    Full Terminal Access
+                  </span>
                 </div>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/20 text-red-400 uppercase tracking-wide">
-                  Pro
+                <h3 className="text-base sm:text-lg font-bold text-white tracking-tight mb-1.5">
+                  Every tool the sharps use
+                </h3>
+                <ul className="text-slate-400 text-xs sm:text-sm mb-3 space-y-1 font-mono">
+                  <li className="flex items-center gap-2">
+                    <span className="text-cyan-400 text-[10px] font-bold">▸</span>
+                    <span className="tracking-tight">Dixon-Coles Match Predictor</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-cyan-400 text-[10px] font-bold">▸</span>
+                    <span className="tracking-tight">Rolling xG · 5 leagues</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-cyan-400 text-[10px] font-bold">▸</span>
+                    <span className="tracking-tight">Steam Results Directory</span>
+                  </li>
+                </ul>
+                <span className="inline-flex items-center gap-1.5 text-cyan-300 font-mono text-[11px] font-bold uppercase tracking-[0.12em] group-hover:gap-2.5 transition-all duration-200">
+                  {subscribing ? 'Redirecting to Stripe…' : 'Subscribe Now'}
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
                 </span>
               </div>
-              <h3 className="text-lg font-bold text-white mb-1 group-hover:text-red-400 transition-colors">
-                SteamWatch Pro
-              </h3>
-              <ul className="text-slate-400 text-sm mb-3 space-y-1">
-                <li className="flex items-center gap-2"><span className="text-emerald-400 text-xs">&#10003;</span> Dixon-Coles Match Predictor</li>
-                <li className="flex items-center gap-2"><span className="text-emerald-400 text-xs">&#10003;</span> Rolling xG Tables — 5 leagues</li>
-                <li className="flex items-center gap-2"><span className="text-emerald-400 text-xs">&#10003;</span> Steam Results Directory</li>
-              </ul>
-              <span className="inline-flex items-center gap-1.5 text-red-400 text-sm font-semibold group-hover:translate-x-1 transition-transform duration-300">
-                {subscribing ? 'Redirecting to Stripe...' : 'Subscribe Now'}
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </span>
             </div>
           </div>
         </div>
