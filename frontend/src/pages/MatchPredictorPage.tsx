@@ -593,14 +593,17 @@ export default function MatchPredictorPage() {
         <link rel="canonical" href="https://www.steamwatch.io/tools/match-predictor" />
       </Helmet>
       {/* Page Header */}
-      <div className="mb-6 sm:mb-8 text-center">
-        <div className="flex items-center justify-center gap-3 mb-1">
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-wider">
-            Match Model
-          </h1>
-          <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full">Beta</span>
+      <div className="mb-6 sm:mb-8">
+        <div className="flex items-center gap-3">
+          <div className="w-1 h-10 sm:h-11 rounded-full bg-gradient-to-b from-red-400 to-red-600 flex-shrink-0" />
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Match Model</h1>
+              <span className="px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.12em] bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded">Beta</span>
+            </div>
+            <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em]">Dixon-Coles Probability Baseline</p>
+          </div>
         </div>
-        <p className="text-slate-400 text-xs sm:text-sm uppercase tracking-widest">Poisson / Dixon-Coles Probability Baseline</p>
       </div>
 
       <div className="flex gap-6">
@@ -739,11 +742,11 @@ export default function MatchPredictorPage() {
 
       {/* League Selector + Reset */}
       <div className="flex items-center justify-center gap-3 sm:gap-4 mb-6">
-        <label className="text-xs sm:text-sm text-slate-400 font-semibold uppercase tracking-wider">League</label>
+        <label className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">League</label>
         <select
           value={league}
           onChange={(e) => handleLeagueChange(e.target.value)}
-          className="bg-slate-800 text-white border border-slate-600 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition-colors"
+          className="bg-slate-900/60 text-white border border-slate-700/60 rounded-md px-3 py-2 font-mono text-[12px] font-semibold focus:outline-none focus:border-blue-500 transition-colors"
         >
           {Object.entries(LEAGUES).map(([key, lg]) => (
             <option key={key} value={key}>{lg.name}</option>
@@ -751,7 +754,7 @@ export default function MatchPredictorPage() {
         </select>
         <button
           onClick={handleReset}
-          className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white rounded-lg text-xs sm:text-sm font-medium transition-all duration-200"
+          className="px-3 py-1.5 bg-slate-900/60 hover:bg-slate-800/60 text-slate-400 hover:text-white border border-slate-700/60 rounded-md font-mono text-[11px] font-semibold uppercase tracking-[0.1em] transition-colors"
         >
           Reset
         </button>
@@ -848,9 +851,9 @@ export default function MatchPredictorPage() {
       <div className="text-center my-8">
         <button
           onClick={calculate}
-          className="bg-gradient-to-br from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 text-white font-bold text-sm sm:text-base uppercase tracking-widest px-12 sm:px-16 py-4 rounded-xl shadow-lg shadow-red-500/25 hover:shadow-red-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
+          className="bg-gradient-to-br from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 text-white font-mono font-bold text-sm sm:text-base uppercase tracking-[0.18em] px-12 sm:px-16 py-4 rounded-xl shadow-lg shadow-red-500/25 hover:shadow-red-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
         >
-          Calculate Probabilities
+          Calculate Probabilities →
         </button>
       </div>
 
@@ -865,53 +868,66 @@ export default function MatchPredictorPage() {
       {result && (
         <div ref={resultRef} className="bg-slate-800 rounded-xl border border-slate-600 p-5 sm:p-8 animate-in fade-in slide-in-from-bottom-3 duration-400">
           {/* Title */}
-          <p className="text-center text-slate-400 text-sm mb-6 tracking-wide">
-            <span className="text-emerald-400 font-bold">{homeName}</span> vs{' '}
-            <span className="text-red-400 font-bold">{awayName}</span> — Probability Baseline
-          </p>
-
-          {/* Lambda Display */}
-          <div className="flex justify-center gap-6 sm:gap-12 mb-8">
-            <div className="text-center bg-slate-900/50 border border-slate-700 rounded-xl px-8 sm:px-12 py-5">
-              <span className="block text-[10px] text-slate-400 uppercase tracking-widest font-semibold mb-2">Home &lambda;</span>
-              <span className="text-3xl sm:text-4xl font-extrabold text-emerald-400 font-mono">{result.lambdaHome.toFixed(2)}</span>
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-700/50">
+            <div className="w-1 h-7 rounded-full bg-gradient-to-b from-red-400 to-red-600 flex-shrink-0" />
+            <div>
+              <h3 className="text-white font-bold text-base sm:text-lg tracking-tight">
+                <span className="text-emerald-400">{homeName}</span>
+                <span className="text-slate-500 mx-2">vs</span>
+                <span className="text-red-400">{awayName}</span>
+              </h3>
+              <p className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">Probability Baseline</p>
             </div>
-            <div className="text-center bg-slate-900/50 border border-slate-700 rounded-xl px-8 sm:px-12 py-5">
-              <span className="block text-[10px] text-slate-400 uppercase tracking-widest font-semibold mb-2">Away &lambda;</span>
-              <span className="text-3xl sm:text-4xl font-extrabold text-red-400 font-mono">{result.lambdaAway.toFixed(2)}</span>
+          </div>
+
+          {/* Lambda Display — terminal stat blocks */}
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6">
+            <div className="bg-slate-900/50 border border-emerald-500/30 rounded-xl px-4 py-4 text-center">
+              <div className="text-[10px] font-mono uppercase tracking-[0.12em] text-emerald-400/80 font-semibold">Home &lambda;</div>
+              <div className="text-3xl sm:text-4xl font-mono font-bold tabular-nums tracking-tight text-emerald-400 leading-none mt-1.5">
+                {result.lambdaHome.toFixed(2)}
+              </div>
+              <div className="text-[10px] sm:text-xs text-slate-500 mt-1.5 truncate">expected goals</div>
+            </div>
+            <div className="bg-slate-900/50 border border-red-500/30 rounded-xl px-4 py-4 text-center">
+              <div className="text-[10px] font-mono uppercase tracking-[0.12em] text-red-400/80 font-semibold">Away &lambda;</div>
+              <div className="text-3xl sm:text-4xl font-mono font-bold tabular-nums tracking-tight text-red-400 leading-none mt-1.5">
+                {result.lambdaAway.toFixed(2)}
+              </div>
+              <div className="text-[10px] sm:text-xs text-slate-500 mt-1.5 truncate">expected goals</div>
             </div>
           </div>
 
           {/* Probability Bar */}
-          <p className="text-center text-xs text-slate-400 uppercase tracking-widest font-semibold mb-3">Match Result Probabilities</p>
-          <div className="flex rounded-xl overflow-hidden h-[72px] mb-2">
-            <div className="flex flex-col items-center justify-center bg-gradient-to-br from-green-700 to-green-600" style={{ flex: result.probHome }}>
-              <span className="text-[10px] font-bold uppercase tracking-wide text-white/90">{homeName}</span>
-              <span className="text-lg sm:text-xl font-extrabold text-white">{(result.probHome * 100).toFixed(1)}%</span>
+          <p className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold mb-2">Match Result Probabilities</p>
+          <div className="flex rounded-lg overflow-hidden h-[76px] mb-0">
+            <div className="flex flex-col items-center justify-center bg-gradient-to-br from-emerald-600 to-emerald-500" style={{ flex: result.probHome }}>
+              <span className="text-[9px] font-mono font-bold uppercase tracking-[0.12em] text-white/90 truncate max-w-full px-1">{homeName}</span>
+              <span className="text-xl sm:text-2xl font-mono font-bold tabular-nums tracking-tight text-white leading-none mt-0.5">{(result.probHome * 100).toFixed(1)}%</span>
             </div>
             <div className="flex flex-col items-center justify-center bg-gradient-to-br from-amber-600 to-amber-500" style={{ flex: result.probDraw }}>
-              <span className="text-[10px] font-bold uppercase tracking-wide text-white/90">Draw</span>
-              <span className="text-lg sm:text-xl font-extrabold text-white">{(result.probDraw * 100).toFixed(1)}%</span>
+              <span className="text-[9px] font-mono font-bold uppercase tracking-[0.12em] text-white/90">Draw</span>
+              <span className="text-xl sm:text-2xl font-mono font-bold tabular-nums tracking-tight text-white leading-none mt-0.5">{(result.probDraw * 100).toFixed(1)}%</span>
             </div>
-            <div className="flex flex-col items-center justify-center bg-gradient-to-br from-red-700 to-red-600" style={{ flex: result.probAway }}>
-              <span className="text-[10px] font-bold uppercase tracking-wide text-white/90">{awayName}</span>
-              <span className="text-lg sm:text-xl font-extrabold text-white">{(result.probAway * 100).toFixed(1)}%</span>
+            <div className="flex flex-col items-center justify-center bg-gradient-to-br from-red-600 to-red-500" style={{ flex: result.probAway }}>
+              <span className="text-[9px] font-mono font-bold uppercase tracking-[0.12em] text-white/90 truncate max-w-full px-1">{awayName}</span>
+              <span className="text-xl sm:text-2xl font-mono font-bold tabular-nums tracking-tight text-white leading-none mt-0.5">{(result.probAway * 100).toFixed(1)}%</span>
             </div>
           </div>
 
           {/* Fair Odds */}
-          <div className="flex mb-6">
-            <div className="flex flex-col items-center py-2" style={{ flex: result.probHome }}>
-              <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Fair Odds</span>
-              <span className="text-base sm:text-lg font-bold font-mono text-yellow-400">{(1 / result.probHome).toFixed(2)}</span>
+          <div className="flex mb-6 border-t border-slate-700/50">
+            <div className="flex flex-col items-center py-2.5" style={{ flex: result.probHome }}>
+              <span className="text-[9px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">Fair Odds</span>
+              <span className="text-base sm:text-lg font-mono font-bold tabular-nums tracking-tight text-amber-400 mt-0.5">{(1 / result.probHome).toFixed(2)}</span>
             </div>
-            <div className="flex flex-col items-center py-2" style={{ flex: result.probDraw }}>
-              <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Fair Odds</span>
-              <span className="text-base sm:text-lg font-bold font-mono text-yellow-400">{(1 / result.probDraw).toFixed(2)}</span>
+            <div className="flex flex-col items-center py-2.5" style={{ flex: result.probDraw }}>
+              <span className="text-[9px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">Fair Odds</span>
+              <span className="text-base sm:text-lg font-mono font-bold tabular-nums tracking-tight text-amber-400 mt-0.5">{(1 / result.probDraw).toFixed(2)}</span>
             </div>
-            <div className="flex flex-col items-center py-2" style={{ flex: result.probAway }}>
-              <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Fair Odds</span>
-              <span className="text-base sm:text-lg font-bold font-mono text-yellow-400">{(1 / result.probAway).toFixed(2)}</span>
+            <div className="flex flex-col items-center py-2.5" style={{ flex: result.probAway }}>
+              <span className="text-[9px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">Fair Odds</span>
+              <span className="text-base sm:text-lg font-mono font-bold tabular-nums tracking-tight text-amber-400 mt-0.5">{(1 / result.probAway).toFixed(2)}</span>
             </div>
           </div>
 
