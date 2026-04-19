@@ -62,6 +62,7 @@ export default function HomePage() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [showSteamGuide, setShowSteamGuide] = useState(false);
 
+  // Full-page data fetch — runs on mount and whenever the league filter changes.
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
@@ -90,6 +91,37 @@ export default function HomePage() {
       }
     }
     fetchData();
+  }, [league]);
+
+  // Keep the stat strip honest even when the page has been open a while.
+  // Every 60s: re-fetch stats + top mover so "LAST FETCH" reflects real time.
+  // Every 10s: tick a dummy state to force the "X ago" label to recompute.
+  const [, setClockTick] = useState(0);
+  useEffect(() => {
+    if (league) return; // stat strip only shows on unfiltered view
+
+    const refreshStats = async () => {
+      try {
+        const [statsData, moversData] = await Promise.all([
+          getStats(),
+          getBiggestMovers(4),
+        ]);
+        setStats(statsData);
+        setBiggestMovers(moversData);
+        if (statsData.newest_data) {
+          setLastUpdated(new Date(statsData.newest_data));
+        }
+      } catch {
+        /* ignore background refresh errors */
+      }
+    };
+
+    const statsInterval = setInterval(refreshStats, 60 * 1000);
+    const clockInterval = setInterval(() => setClockTick(t => t + 1), 10 * 1000);
+    return () => {
+      clearInterval(statsInterval);
+      clearInterval(clockInterval);
+    };
   }, [league]);
 
   const groupedMatches = useMemo(() => groupMatchesByDay(matches), [matches]);
