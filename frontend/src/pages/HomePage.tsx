@@ -8,6 +8,7 @@ import { LEAGUE_CONFIG } from '../types';
 import MatchCard from '../components/MatchCard';
 import LeagueLogo from '../components/LeagueLogo';
 import { SteamGuideModal, HelpButton } from '../components/SteamGuideModal';
+import SteamHeatmap from '../components/SteamHeatmap';
 import { useAuth } from '../contexts/AuthContext';
 import LoginModal from '../components/LoginModal';
 
@@ -355,6 +356,9 @@ export default function HomePage() {
 
       {/* Steam Guide Modal */}
       <SteamGuideModal isOpen={showSteamGuide} onClose={() => setShowSteamGuide(false)} />
+
+      {/* Steam Heatmap — when steam tends to fire across leagues × hours */}
+      {!league && <SteamHeatmap />}
 
       {/* Biggest Movers - Mobile Card / Desktop Table */}
       {biggestMovers.length > 0 && (
