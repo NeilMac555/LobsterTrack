@@ -39,6 +39,25 @@ body {
   letter-spacing: -0.01em;
 }
 
+/* Live ticker — horizontal scrolling track. The content is duplicated in
+   React, so translating -50% produces a seamless loop. Pauses on hover
+   so users can click a move before it scrolls away. */
+.ticker-track {
+  animation: ticker-scroll 90s linear infinite;
+}
+.ticker-track:hover {
+  animation-play-state: paused;
+}
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    animation: none;
+  }
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

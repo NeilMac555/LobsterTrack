@@ -5,6 +5,7 @@ import LeagueLogo from './LeagueLogo';
 import { useAuth } from '../contexts/AuthContext';
 import LoginModal from './LoginModal';
 import CheckoutSuccessBanner from './CheckoutSuccessBanner';
+import LiveTicker from './LiveTicker';
 
 const leagues = Object.entries(LEAGUE_CONFIG);
 
@@ -344,6 +345,9 @@ export default function Layout() {
           </div>
         )}
       </header>
+
+      {/* Live odds ticker — real-time biggest movers scrolling */}
+      <LiveTicker />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
