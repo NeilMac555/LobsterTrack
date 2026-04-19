@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+/* Point Tailwind's font-mono utility at JetBrains Mono.
+   Every existing `font-mono` class (used on odds, prices,
+   percentages) auto-upgrades. Falls back gracefully if the
+   Google Font hasn't loaded yet. */
+@theme {
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
 :root {
   --color-primary: #0f172a;
   --color-secondary: #1e293b;
@@ -19,6 +27,16 @@ body {
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Mono-numeric utility: JetBrains Mono + tabular figures for odds,
+   percentages, prices, counts. Keeps columns aligned and gives the
+   site a sharper "terminal" feel without touching layout. */
+.num {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "ss01" 1;
+  letter-spacing: -0.01em;
 }
 
 /* Custom scrollbar */
