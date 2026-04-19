@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useSearchParams, Link } from 'react-router-dom';
-import { format, isToday, isTomorrow, startOfDay, formatDistanceToNow } from 'date-fns';
+import { format, isToday, isTomorrow, startOfDay } from 'date-fns';
 import { getMatches, getStats, getBiggestMovers, getSyndicateMoves } from '../api';
 import type { MatchSummary, BiggestMover, SyndicateMove, Stats } from '../types';
 import { LEAGUE_CONFIG } from '../types';
@@ -193,18 +193,23 @@ export default function HomePage() {
             <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">Top Mover</div>
             {biggestMovers[0] ? (
               <>
-                <div className="flex items-baseline gap-0.5 leading-none mt-1.5">
-                  <span className="font-mono text-emerald-400 text-base leading-none">
-                    {biggestMovers[0].direction === 'down' ? '↓' : '↑'}
-                  </span>
-                  <span className={`font-mono font-bold tabular-nums tracking-tight leading-none text-2xl sm:text-3xl ${
-                    biggestMovers[0].direction === 'down' ? 'text-emerald-400' : 'text-red-400'
-                  }`}>
-                    {Math.abs(biggestMovers[0].movement_percent).toFixed(1)}
-                  </span>
-                  <span className="font-mono text-emerald-400/70 text-xs leading-none">%</span>
-                </div>
-                <div className="text-[10px] sm:text-xs text-slate-400 mt-1 truncate font-medium">
+                {(() => {
+                  const down = biggestMovers[0].direction === 'down';
+                  const colorClass = down ? 'text-emerald-400' : 'text-red-400';
+                  const dimClass = down ? 'text-emerald-400/70' : 'text-red-400/70';
+                  return (
+                    <div className="flex items-baseline gap-0.5 leading-none mt-1.5">
+                      <span className={`font-mono text-base leading-none ${colorClass}`}>
+                        {down ? '↓' : '↑'}
+                      </span>
+                      <span className={`font-mono font-bold tabular-nums tracking-tight leading-none text-2xl sm:text-3xl ${colorClass}`}>
+                        {Math.abs(biggestMovers[0].movement_percent).toFixed(1)}
+                      </span>
+                      <span className={`font-mono text-xs leading-none ${dimClass}`}>%</span>
+                    </div>
+                  );
+                })()}
+                <div className="text-[10px] sm:text-xs text-slate-400 mt-1 truncate font-medium tracking-tight">
                   {biggestMovers[0].home_team.split(' ').slice(0, 2).join(' ')} v {biggestMovers[0].away_team.split(' ').slice(0, 2).join(' ')}
                 </div>
               </>
@@ -371,16 +376,6 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Last Updated Indicator */}
-      {lastUpdated && (
-        <div className="flex items-center justify-end mb-4 sm:mb-6">
-          <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500">
-            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-            <span>Updated {formatDistanceToNow(lastUpdated, { addSuffix: true })}</span>
-          </div>
-        </div>
-      )}
-
       {/* Steam Guide Modal */}
       <SteamGuideModal isOpen={showSteamGuide} onClose={() => setShowSteamGuide(false)} />
 
@@ -394,15 +389,15 @@ export default function HomePage() {
               <div className="flex items-center gap-2">
                 <div>
                   <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">Biggest Movers</h2>
-                  <p className="text-slate-400 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-wider">Sharp money signals</p>
+                  <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em] font-semibold">Sharp money signals</p>
                 </div>
                 <HelpButton onClick={() => setShowSteamGuide(true)} />
               </div>
             </div>
-            <div className="hidden sm:flex items-center gap-2 text-[10px] font-mono uppercase tracking-wider text-slate-500">
-              <span className="relative flex h-2 w-2">
+            <div className="hidden sm:flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">
+              <span className="relative flex h-1.5 w-1.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
               </span>
               Live · Pinnacle
             </div>
@@ -549,9 +544,9 @@ export default function HomePage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <LeagueLogo sportKey={mover.sport_key} size="sm" />
-                        <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500">{leagueInfo?.shortName}</span>
+                        <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">{leagueInfo?.shortName}</span>
                         <span className="text-slate-600">·</span>
-                        <span className="text-[10px] font-mono text-slate-500">{format(matchDate, 'EEE HH:mm')}</span>
+                        <span className="text-[10px] font-mono tabular-nums text-slate-500">{format(matchDate, 'EEE HH:mm')}</span>
                       </div>
                       <div className="text-white font-semibold text-sm truncate tracking-tight">
                         {mover.home_team} vs {mover.away_team}
@@ -596,23 +591,20 @@ export default function HomePage() {
         >
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-700/50 flex items-center justify-between bg-gradient-to-r from-amber-500/10 to-transparent">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
-                <svg className="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
+              {/* Amber accent bar matching the terminal rhythm */}
+              <div className="w-1 h-6 sm:h-7 rounded-full bg-gradient-to-b from-amber-400 to-amber-600 flex-shrink-0" />
               <div>
-                <h2 className="text-lg sm:text-xl font-bold text-white">Syndicate Moves</h2>
-                <p className="text-slate-400 text-xs sm:text-sm mt-0.5">Late sharp action on closing lines</p>
+                <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">Syndicate Moves</h2>
+                <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em] font-semibold">Late sharp action on closing lines</p>
               </div>
             </div>
-            <span className="text-[10px] sm:text-xs text-amber-400/80 font-medium hidden sm:block">Within 3hrs • 3pp+ move</span>
+            <span className="hidden sm:inline-block text-[10px] font-mono uppercase tracking-[0.12em] text-amber-400/80 font-semibold">Within 3h · 3pp+ move</span>
           </div>
 
           {syndicateMoves.length === 0 ? (
             <div className="px-6 py-8 text-center">
               <p className="text-slate-500 text-sm">No late sharp action detected</p>
-              <p className="text-slate-600 text-xs mt-1">Matches within 3 hours with 3pp+ implied probability shift will appear here</p>
+              <p className="text-slate-600 text-xs mt-1 font-mono tracking-tight">Matches within 3 hours with 3pp+ implied probability shift will appear here</p>
             </div>
           ) : (
             <>
@@ -621,23 +613,23 @@ export default function HomePage() {
                 <table className="w-full">
                   <thead>
                     <tr className="bg-slate-700/30">
-                      <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">
                         Match
                       </th>
-                      <th className="px-4 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-center text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">
                         League
                       </th>
-                      <th className="px-4 py-3.5 text-center text-xs font-semibold text-amber-400/80 uppercase tracking-wider">
-                        Time to KO
+                      <th className="px-4 py-3 text-center text-[10px] font-mono font-semibold text-amber-400/80 uppercase tracking-[0.12em]">
+                        KO In
                       </th>
-                      <th className="px-4 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">
                         Outcome
                       </th>
-                      <th className="px-4 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-center text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">
                         Prob &Delta;
                       </th>
-                      <th className="px-4 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                        Current
+                      <th className="px-4 py-3 text-center text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">
+                        Now
                       </th>
                     </tr>
                   </thead>
@@ -672,7 +664,7 @@ export default function HomePage() {
                               to={`/match/${move.match_id}`}
                               className="text-white hover:text-amber-400 transition-colors"
                             >
-                              <div className="font-semibold text-base">
+                              <div className="font-semibold text-base tracking-tight">
                                 {move.home_team} vs {move.away_team}
                               </div>
                             </Link>
@@ -680,33 +672,37 @@ export default function HomePage() {
                           <td className="px-4 py-4 text-center">
                             <div className="flex items-center justify-center gap-2">
                               <LeagueLogo sportKey={move.sport_key} size="sm" />
-                              <span className="text-slate-400 text-sm hidden lg:inline font-medium">
+                              <span className="text-slate-500 text-[11px] hidden lg:inline font-mono uppercase tracking-[0.1em] font-semibold">
                                 {leagueInfo?.shortName || ''}
                               </span>
                             </div>
                           </td>
                           <td className="px-4 py-4 text-center">
-                            <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500/20 text-amber-400">
+                            <span className="px-2 py-0.5 rounded font-mono text-[11px] font-bold tabular-nums tracking-tight bg-amber-500/20 text-amber-400 border border-amber-500/30">
                               {timeToKO}
                             </span>
                           </td>
                           <td className="px-4 py-4">
                             <div className="flex items-center gap-2">
-                              <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${outcomeColor}`}>
+                              <span className={`px-2 py-0.5 rounded font-mono text-[11px] font-bold tracking-wide ${outcomeColor}`}>
                                 {outcomeLabel}
                               </span>
-                              <span className="text-slate-300 text-sm truncate max-w-[100px] font-medium">
+                              <span className="text-slate-300 text-sm truncate max-w-[120px] font-medium">
                                 {move.outcome_name}
                               </span>
                             </div>
                           </td>
                           <td className="px-4 py-4 text-center">
-                            <span className="font-mono font-bold text-lg text-emerald-400">
-                              ↓{Math.abs(move.movement_percent).toFixed(1)}pp
-                            </span>
+                            <div className="inline-flex items-baseline gap-0.5">
+                              <span className="font-mono text-emerald-400 text-base leading-none">↓</span>
+                              <span className="font-mono font-bold text-emerald-400 tabular-nums tracking-tight leading-none text-xl">
+                                {Math.abs(move.movement_percent).toFixed(1)}
+                              </span>
+                              <span className="font-mono text-emerald-400/70 text-xs leading-none">pp</span>
+                            </div>
                           </td>
                           <td className="px-4 py-4 text-center">
-                            <span className="font-mono font-bold text-white">
+                            <span className="font-mono font-bold text-white tabular-nums text-lg tracking-tight">
                               {move.current_odds.toFixed(2)}
                             </span>
                           </td>
@@ -748,31 +744,37 @@ export default function HomePage() {
                       to={`/match/${move.match_id}`}
                       className="block p-4 hover:bg-slate-700/20 active:bg-slate-700/30 transition-colors"
                     >
-                      <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center justify-between gap-3">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
                             <LeagueLogo sportKey={move.sport_key} size="sm" />
-                            <span className="text-xs text-slate-500">{leagueInfo?.shortName}</span>
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400">
+                            <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">{leagueInfo?.shortName}</span>
+                            <span className="px-1.5 py-0.5 rounded font-mono text-[10px] font-bold tabular-nums tracking-tight bg-amber-500/20 text-amber-400 border border-amber-500/30">
                               {timeToKO}
                             </span>
                           </div>
-                          <div className="text-white font-semibold text-sm truncate">
+                          <div className="text-white font-semibold text-sm truncate tracking-tight">
                             {move.home_team} vs {move.away_team}
                           </div>
                           <div className="flex items-center gap-2 mt-2">
-                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${outcomeColor}`}>
+                            <span className={`px-2 py-0.5 rounded font-mono text-[10px] font-bold tracking-wide ${outcomeColor}`}>
                               {outcomeLabel}
                             </span>
                             <span className="text-slate-400 text-xs truncate">{move.outcome_name}</span>
                           </div>
                         </div>
-                        <div className="text-right flex-shrink-0">
-                          <div className="font-mono font-bold text-lg text-emerald-400">
-                            ↓{Math.abs(move.movement_percent).toFixed(1)}pp
+                        <div className="text-right flex-shrink-0 flex flex-col items-end">
+                          <div className="flex items-baseline gap-0.5 leading-none">
+                            <span className="text-emerald-400 text-lg font-mono leading-none">↓</span>
+                            <span className="font-mono font-bold text-emerald-400 tabular-nums tracking-tight leading-none text-2xl">
+                              {Math.abs(move.movement_percent).toFixed(1)}
+                            </span>
+                            <span className="font-mono text-emerald-400/70 text-xs leading-none">pp</span>
                           </div>
-                          <div className="text-xs text-slate-500 mt-1">
-                            <span className="text-white font-semibold">{move.current_odds.toFixed(2)}</span>
+                          <div className="text-[11px] font-mono mt-1.5 tabular-nums">
+                            <span className="text-slate-500">Now</span>
+                            <span className="text-slate-600 mx-1">·</span>
+                            <span className="text-white font-bold">{move.current_odds.toFixed(2)}</span>
                           </div>
                         </div>
                       </div>
@@ -788,20 +790,26 @@ export default function HomePage() {
       <LoginModal isOpen={showLoginFromCTA} onClose={() => setShowLoginFromCTA(false)} />
 
       {/* Page Header */}
-      <div className="mb-6 sm:mb-8">
-        <h2 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-3 sm:gap-4">
-          {league && leagueConfig ? (
-            <>
-              <LeagueLogo sportKey={league} size="lg" />
-              <span className="truncate">{leagueConfig.name}</span>
-            </>
-          ) : (
-            'All Matches'
-          )}
-        </h2>
-        <p className="text-slate-400 mt-1 sm:mt-2 text-sm sm:text-base">
-          {matches.length} upcoming match{matches.length !== 1 ? 'es' : ''} with Pinnacle odds
-        </p>
+      <div className="mb-5 sm:mb-6 flex items-center gap-3">
+        <div className="w-1 h-9 sm:h-10 rounded-full bg-gradient-to-b from-cyan-400 to-cyan-600 flex-shrink-0" />
+        {league && leagueConfig ? (
+          <div className="flex items-center gap-3 min-w-0">
+            <LeagueLogo sportKey={league} size="lg" />
+            <div className="min-w-0">
+              <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight truncate">{leagueConfig.name}</h2>
+              <p className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold mt-0.5 tabular-nums">
+                {matches.length} upcoming match{matches.length !== 1 ? 'es' : ''} · Pinnacle odds
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">All Matches</h2>
+            <p className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold mt-0.5 tabular-nums">
+              {matches.length} upcoming match{matches.length !== 1 ? 'es' : ''} · Pinnacle odds
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Matches by Day */}
