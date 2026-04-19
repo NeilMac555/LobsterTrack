@@ -4,6 +4,7 @@ import type { MatchSummary } from '../types';
 import { LEAGUE_CONFIG } from '../types';
 import { OddsDisplayWithMovement, calculateMovement, getBiggestMover } from './OddsWithMovement';
 import LeagueLogo from './LeagueLogo';
+import Sparkline from './Sparkline';
 
 interface MatchCardProps {
   match: MatchSummary;
@@ -82,9 +83,14 @@ export default function MatchCard({ match }: MatchCardProps) {
           </div>
         </div>
 
-        {/* Odds footer */}
+        {/* Odds footer with inline sparkline showing home implied-prob trajectory */}
         <div className="flex items-center justify-between pt-3 sm:pt-4 border-t border-slate-700/50">
-          <div className="text-[10px] sm:text-[11px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">1 · X · 2</div>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="text-[10px] sm:text-[11px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">1 · X · 2</div>
+            {match.home_prob_spark && match.home_prob_spark.length >= 2 && (
+              <Sparkline values={match.home_prob_spark} width={56} height={18} color="auto" />
+            )}
+          </div>
           <OddsDisplayWithMovement
             home={match.current_home_odds}
             draw={match.current_draw_odds}

@@ -26,6 +26,9 @@ class MatchSummary(BaseModel):
     opening_draw_odds: Optional[float] = None
     opening_away_odds: Optional[float] = None
     odds_count: int = 0
+    # Last ~12 home implied probabilities (0-100) in chronological order,
+    # used to render an inline sparkline on the match card.
+    home_prob_spark: Optional[list[float]] = None
 
     class Config:
         from_attributes = True

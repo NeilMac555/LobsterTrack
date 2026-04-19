@@ -19,6 +19,9 @@ export interface MatchSummary {
   opening_draw_odds: number | null;
   opening_away_odds: number | null;
   odds_count: number;
+  /** Last ~12 home implied probabilities (0-100) in chronological order.
+   *  Powers the inline sparkline on match cards. */
+  home_prob_spark?: number[] | null;
 }
 
 export interface MatchDetail {

@@ -195,6 +195,40 @@ async def get_matches(
     )
     odds_count_map = {row.match_id: row.count for row in odds_counts_query}
 
+    # Batch query: get the most recent N home_odds for each match to power
+    # inline sparklines on match cards. We keep this modest (N=12) to cap
+    # payload size — a dozen points is enough to show a trend.
+    SPARK_POINTS = 12
+    spark_subq = (
+        db.query(
+            OddsSnapshot.match_id,
+            OddsSnapshot.home_odds,
+            OddsSnapshot.fetched_at,
+            func.row_number().over(
+                partition_by=OddsSnapshot.match_id,
+                order_by=OddsSnapshot.fetched_at.desc()
+            ).label('rn')
+        )
+        .filter(OddsSnapshot.match_id.in_(match_ids))
+        .filter(OddsSnapshot.home_odds.isnot(None))
+        .filter(OddsSnapshot.home_odds > 0)
+        .subquery()
+    )
+    spark_rows = (
+        db.query(spark_subq)
+        .filter(spark_subq.c.rn <= SPARK_POINTS)
+        .order_by(spark_subq.c.match_id, spark_subq.c.fetched_at.asc())
+        .all()
+    )
+    # Group into a per-match list of home implied probabilities (0-100).
+    # Rising line = home being backed, falling = home drifting. Consistent
+    # with the green/red movement convention elsewhere on the site.
+    spark_map: dict[str, list[float]] = {}
+    for row in spark_rows:
+        spark_map.setdefault(row.match_id, []).append(
+            round((1.0 / row.home_odds) * 100, 2)
+        )
+
     result = []
     for match in matches:
         latest = latest_odds_map.get(match.id, {})
@@ -213,7 +247,8 @@ async def get_matches(
             opening_home_odds=opening.get('home'),
             opening_draw_odds=opening.get('draw'),
             opening_away_odds=opening.get('away'),
-            odds_count=odds_count_map.get(match.id, 0)
+            odds_count=odds_count_map.get(match.id, 0),
+            home_prob_spark=spark_map.get(match.id) or None,
         ))
 
     return result
