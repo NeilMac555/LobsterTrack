@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 
 interface Subscriber {
@@ -34,14 +34,53 @@ interface UsersData {
 
 type UserFilter = 'all' | 'never_paid' | 'active' | 'canceled' | 'past_due';
 
+interface LeagueHealth {
+  current_interval_minutes: number;
+  last_fetch_at: string | null;
+  seconds_since_last_fetch: number | null;
+  is_stale: boolean;
+  latest_snapshot_at?: string | null;
+  seconds_since_latest_snapshot?: number | null;
+}
+
+interface FetcherHealth {
+  scheduler_running: boolean;
+  started_at: string | null;
+  now: string;
+  last_tick_at: string | null;
+  seconds_since_last_tick: number | null;
+  last_tick_result: string | null;
+  last_fetch_summary: Record<string, unknown> | null;
+  tick_interval_seconds: number;
+  windows_minutes: { default: number; early: number; closing: number };
+  leagues: Record<string, LeagueHealth>;
+  api_quota: {
+    last_seen: { remaining: string; used: string; market: string } | null;
+    last_seen_at: string | null;
+    seconds_since_last_seen: number | null;
+  };
+  recent_errors: { at: string; where: string; error: string }[];
+  scheduled_ko_jobs: number;
+}
+
+function fmtSeconds(s: number | null | undefined): string {
+  if (s === null || s === undefined) return '—';
+  if (s < 60) return `${s}s`;
+  if (s < 3600) return `${Math.floor(s / 60)}m ${s % 60}s`;
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  return `${h}h ${m}m`;
+}
+
 export default function AdminEmailsPage() {
   const [password, setPassword] = useState('');
   const [data, setData] = useState<AdminData | null>(null);
   const [users, setUsers] = useState<UsersData | null>(null);
+  const [health, setHealth] = useState<FetcherHealth | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
-  const [tab, setTab] = useState<'accounts' | 'newsletter'>('accounts');
+  const [tab, setTab] = useState<'accounts' | 'newsletter' | 'health'>('accounts');
   const [userFilter, setUserFilter] = useState<UserFilter>('never_paid');
   const [activating, setActivating] = useState<number | null>(null);
   const [activateMsg, setActivateMsg] = useState<string>('');
@@ -52,9 +91,10 @@ export default function AdminEmailsPage() {
     setError('');
 
     try {
-      const [emailsRes, usersRes] = await Promise.all([
+      const [emailsRes, usersRes, healthRes] = await Promise.all([
         fetch(`/api/admin/emails?password=${encodeURIComponent(password)}`),
         fetch(`/api/admin/users?password=${encodeURIComponent(password)}`),
+        fetch(`/api/admin/fetcher-health?password=${encodeURIComponent(password)}`),
       ]);
 
       if (emailsRes.status === 401 || usersRes.status === 401) {
@@ -71,6 +111,7 @@ export default function AdminEmailsPage() {
 
       setData(await emailsRes.json());
       setUsers(await usersRes.json());
+      if (healthRes.ok) setHealth(await healthRes.json());
       setAuthenticated(true);
     } catch {
       setError('Failed to connect');
@@ -78,6 +119,19 @@ export default function AdminEmailsPage() {
       setLoading(false);
     }
   };
+
+  // Auto-refresh health data every 15s when the Health tab is open
+  useEffect(() => {
+    if (!authenticated || tab !== 'health') return;
+    const refresh = async () => {
+      try {
+        const res = await fetch(`/api/admin/fetcher-health?password=${encodeURIComponent(password)}`);
+        if (res.ok) setHealth(await res.json());
+      } catch { /* ignore */ }
+    };
+    const id = setInterval(refresh, 15000);
+    return () => clearInterval(id);
+  }, [authenticated, tab, password]);
 
   const refreshUsers = async () => {
     try {
@@ -233,6 +287,28 @@ export default function AdminEmailsPage() {
           }`}
         >
           Newsletter ({data?.count ?? 0})
+        </button>
+        <button
+          onClick={() => setTab('health')}
+          className={`px-4 py-2.5 font-semibold transition-colors border-b-2 -mb-px flex items-center gap-2 ${
+            tab === 'health'
+              ? 'text-white border-blue-500'
+              : 'text-slate-400 border-transparent hover:text-slate-300'
+          }`}
+        >
+          {health && (
+            <span className={`relative flex h-2 w-2`}>
+              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                health.scheduler_running && (health.seconds_since_last_tick ?? 9999) < 300
+                  ? 'bg-emerald-400' : 'bg-red-400'
+              }`}></span>
+              <span className={`relative inline-flex rounded-full h-2 w-2 ${
+                health.scheduler_running && (health.seconds_since_last_tick ?? 9999) < 300
+                  ? 'bg-emerald-500' : 'bg-red-500'
+              }`}></span>
+            </span>
+          )}
+          Fetcher Health
         </button>
       </div>
 
@@ -401,6 +477,129 @@ export default function AdminEmailsPage() {
             </div>
           )}
         </>
+      )}
+
+      {tab === 'health' && health && (
+        <>
+          {/* Top summary */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            <div className="bg-slate-800/80 border border-slate-700/50 rounded-xl px-4 py-3">
+              <div className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">Scheduler</div>
+              <div className={`text-xl font-mono font-bold mt-1 ${health.scheduler_running ? 'text-emerald-400' : 'text-red-400'}`}>
+                {health.scheduler_running ? 'RUNNING' : 'STOPPED'}
+              </div>
+              <div className="text-xs text-slate-500 mt-1 font-mono">
+                up {fmtSeconds(health.started_at ? Math.floor((Date.now() - new Date(health.started_at).getTime()) / 1000) : null)}
+              </div>
+            </div>
+            <div className="bg-slate-800/80 border border-slate-700/50 rounded-xl px-4 py-3">
+              <div className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">Last Tick</div>
+              <div className={`text-xl font-mono font-bold mt-1 ${
+                (health.seconds_since_last_tick ?? 9999) < 180 ? 'text-emerald-400' :
+                (health.seconds_since_last_tick ?? 9999) < 300 ? 'text-amber-400' : 'text-red-400'
+              }`}>
+                {fmtSeconds(health.seconds_since_last_tick)} ago
+              </div>
+              <div className="text-xs text-slate-500 mt-1 font-mono truncate" title={health.last_tick_result || ''}>
+                {health.last_tick_result || '—'}
+              </div>
+            </div>
+            <div className="bg-slate-800/80 border border-slate-700/50 rounded-xl px-4 py-3">
+              <div className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">API Quota</div>
+              <div className="text-xl font-mono font-bold mt-1 text-white">
+                {health.api_quota.last_seen?.remaining ?? '—'}
+              </div>
+              <div className="text-xs text-slate-500 mt-1 font-mono">
+                remaining · used {health.api_quota.last_seen?.used ?? '—'}
+              </div>
+            </div>
+            <div className="bg-slate-800/80 border border-slate-700/50 rounded-xl px-4 py-3">
+              <div className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">KO Jobs</div>
+              <div className="text-xl font-mono font-bold mt-1 text-white">
+                {health.scheduled_ko_jobs}
+              </div>
+              <div className="text-xs text-slate-500 mt-1 font-mono">
+                closing-line captures queued
+              </div>
+            </div>
+          </div>
+
+          {/* Per-league table */}
+          <div className="bg-slate-800/80 rounded-xl border border-slate-700/50 overflow-hidden mb-6">
+            <div className="px-4 py-3 border-b border-slate-700/50 flex items-center justify-between">
+              <h3 className="text-white font-semibold">Per-league status</h3>
+              <span className="text-xs text-slate-500 font-mono">auto-refreshes every 15s</span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[640px]">
+                <thead>
+                  <tr className="bg-slate-700/30">
+                    <th className="px-4 py-2.5 text-left text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">League</th>
+                    <th className="px-4 py-2.5 text-right text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">Interval</th>
+                    <th className="px-4 py-2.5 text-right text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">Last Fetch</th>
+                    <th className="px-4 py-2.5 text-right text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">Last Snapshot (DB)</th>
+                    <th className="px-4 py-2.5 text-center text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-700/50">
+                  {Object.entries(health.leagues).map(([key, info]) => (
+                    <tr key={key} className="hover:bg-slate-700/20">
+                      <td className="px-4 py-2.5 text-white font-medium text-sm">{key}</td>
+                      <td className="px-4 py-2.5 text-right font-mono text-slate-300 text-sm tabular-nums">
+                        {info.current_interval_minutes}m
+                      </td>
+                      <td className="px-4 py-2.5 text-right font-mono text-slate-300 text-sm tabular-nums">
+                        {fmtSeconds(info.seconds_since_last_fetch)}
+                      </td>
+                      <td className="px-4 py-2.5 text-right font-mono text-slate-300 text-sm tabular-nums">
+                        {fmtSeconds(info.seconds_since_latest_snapshot)}
+                      </td>
+                      <td className="px-4 py-2.5 text-center">
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase border ${
+                          info.is_stale
+                            ? 'bg-red-500/20 text-red-400 border-red-500/30'
+                            : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                        }`}>
+                          {info.is_stale ? 'Stale' : 'OK'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Recent errors */}
+          <div className="bg-slate-800/80 rounded-xl border border-slate-700/50 overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-700/50">
+              <h3 className="text-white font-semibold">Recent errors ({health.recent_errors.length})</h3>
+            </div>
+            {health.recent_errors.length === 0 ? (
+              <div className="p-6 text-center text-slate-500 text-sm">No errors recorded — everything's healthy.</div>
+            ) : (
+              <div className="divide-y divide-slate-700/50">
+                {health.recent_errors.slice().reverse().map((err, i) => (
+                  <div key={i} className="px-4 py-3 font-mono text-xs">
+                    <div className="flex items-center gap-3 mb-1">
+                      <span className="text-slate-500">{new Date(err.at).toLocaleTimeString()}</span>
+                      <span className="px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 font-bold uppercase text-[10px]">
+                        {err.where}
+                      </span>
+                    </div>
+                    <div className="text-slate-300 break-all">{err.error}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {tab === 'health' && !health && (
+        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-12 text-center">
+          <p className="text-slate-400">Loading health data...</p>
+        </div>
       )}
     </div>
   );

@@ -38,6 +38,24 @@ class OddsScheduler:
         self._last_fetch_by_league: dict[str, datetime] = {}
         self._scheduled_ko_jobs: set[str] = set()  # match IDs with KO jobs scheduled
 
+        # Health / diagnostics — surfaced via /api/admin/fetcher-health
+        self._started_at: datetime | None = None
+        self._last_tick_at: datetime | None = None
+        self._last_tick_result: str | None = None  # "ok:<count> leagues" / "idle" / "error:..."
+        self._last_fetch_summary: dict | None = None  # last cycle's summary dict
+        self._recent_errors: list[dict] = []          # bounded to 10 most recent
+
+    def _record_error(self, where: str, message: str):
+        """Keep the last 10 errors so the admin health page can display them."""
+        self._recent_errors.append({
+            "at": datetime.utcnow().isoformat() + "Z",
+            "where": where,
+            "error": message,
+        })
+        # Keep bounded
+        if len(self._recent_errors) > 10:
+            self._recent_errors = self._recent_errors[-10:]
+
     def _get_league_refresh_info(self, sport_key: str) -> tuple[int, list]:
         """
         Check upcoming matches for a league and return:
@@ -95,6 +113,7 @@ class OddsScheduler:
         """
         try:
             now = datetime.utcnow()
+            self._last_tick_at = now
             leagues_to_fetch = []
 
             for sport_key in settings.leagues:
@@ -117,6 +136,7 @@ class OddsScheduler:
                     self._schedule_ko_fetch(sport_key, match_id, ko_time)
 
             if not leagues_to_fetch:
+                self._last_tick_result = "idle (no leagues due)"
                 return
 
             sport_keys = [sk for sk, _ in leagues_to_fetch]
@@ -124,6 +144,12 @@ class OddsScheduler:
             logger.info("Smart fetch", leagues=intervals_str)
 
             summary = await odds_fetcher.fetch_all_leagues(sport_keys=sport_keys)
+            self._last_fetch_summary = summary
+            self._last_tick_result = f"ok: fetched {len(sport_keys)} leagues, {summary.get('odds_stored', 0)} snapshots"
+
+            # Surface any fetch-level errors into the recent-errors log
+            for err in summary.get("errors", []) or []:
+                self._record_error("fetch", str(err))
 
             # Update last fetch times
             for sk, _ in leagues_to_fetch:
@@ -151,6 +177,8 @@ class OddsScheduler:
 
         except Exception as e:
             logger.error("Smart tick failed", error=str(e))
+            self._last_tick_result = f"error: {e}"
+            self._record_error("smart_tick", str(e))
 
     def _schedule_ko_fetch(self, sport_key: str, match_id: str, ko_time: datetime):
         """
@@ -247,11 +275,66 @@ class OddsScheduler:
 
         self.scheduler.start()
         self._is_running = True
+        self._started_at = datetime.utcnow()
         logger.info(
             "Smart scheduler started",
             tick_interval=f"{TICK_INTERVAL}m",
             windows=f"default={WINDOW_DEFAULT}m, early={WINDOW_EARLY}m, closing={WINDOW_CLOSING}m"
         )
+
+    def get_health(self) -> dict:
+        """
+        Return a snapshot of scheduler + fetcher health for the admin UI.
+        Everything here is in-memory state (no DB query) so it's always fast.
+        """
+        from app.services.odds_fetcher import odds_fetcher
+
+        now = datetime.utcnow()
+
+        def iso(dt):
+            return (dt.isoformat() + "Z") if dt else None
+
+        def seconds_ago(dt):
+            return int((now - dt).total_seconds()) if dt else None
+
+        # Per-league status — intended interval + last in-process fetch + computed staleness
+        leagues = {}
+        for sport_key in settings.leagues:
+            interval, _ = self._get_league_refresh_info(sport_key)
+            last_fetch = self._last_fetch_by_league.get(sport_key)
+            leagues[sport_key] = {
+                "current_interval_minutes": interval,
+                "last_fetch_at": iso(last_fetch),
+                "seconds_since_last_fetch": seconds_ago(last_fetch),
+                "is_stale": (
+                    last_fetch is None
+                    or (now - last_fetch).total_seconds() > interval * 60 + 60
+                ),
+            }
+
+        return {
+            "scheduler_running": self._is_running,
+            "started_at": iso(self._started_at),
+            "now": iso(now),
+            "last_tick_at": iso(self._last_tick_at),
+            "seconds_since_last_tick": seconds_ago(self._last_tick_at),
+            "last_tick_result": self._last_tick_result,
+            "last_fetch_summary": self._last_fetch_summary,
+            "tick_interval_seconds": TICK_INTERVAL * 60,
+            "windows_minutes": {
+                "default": WINDOW_DEFAULT,
+                "early": WINDOW_EARLY,
+                "closing": WINDOW_CLOSING,
+            },
+            "leagues": leagues,
+            "api_quota": {
+                "last_seen": odds_fetcher.last_quota,
+                "last_seen_at": iso(odds_fetcher.last_quota_at),
+                "seconds_since_last_seen": seconds_ago(odds_fetcher.last_quota_at),
+            },
+            "recent_errors": list(self._recent_errors),
+            "scheduled_ko_jobs": len(self._scheduled_ko_jobs),
+        }
 
     def stop(self):
         """

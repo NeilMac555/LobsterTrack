@@ -32,6 +32,11 @@ class OddsFetcher:
         self.base_url = settings.odds_api_base_url
         self.api_key = settings.odds_api_key
         self.leagues = settings.leagues
+        # Health: last seen quota headers from The Odds API.
+        # Updated on every successful request so the admin health
+        # endpoint can surface "requests remaining" live.
+        self.last_quota: dict | None = None
+        self.last_quota_at: datetime | None = None
 
     async def fetch_all_leagues(self, sport_keys: list = None) -> dict:
         """
@@ -127,6 +132,8 @@ class OddsFetcher:
         remaining = response.headers.get("x-requests-remaining", "unknown")
         used = response.headers.get("x-requests-used", "unknown")
         logger.debug("API quota", remaining=remaining, used=used)
+        self.last_quota = {"remaining": remaining, "used": used, "market": "h2h"}
+        self.last_quota_at = datetime.utcnow()
 
         # Store in database
         result = self._store_odds(events, sport_key, league_name)
@@ -397,7 +404,10 @@ class OddsFetcher:
 
         # Log API usage
         remaining = response.headers.get("x-requests-remaining", "unknown")
+        used = response.headers.get("x-requests-used", "unknown")
         logger.debug("API quota (totals)", remaining=remaining)
+        self.last_quota = {"remaining": remaining, "used": used, "market": "totals"}
+        self.last_quota_at = datetime.utcnow()
 
         # Store totals in database
         result = self._store_totals(events)
@@ -543,7 +553,10 @@ class OddsFetcher:
 
         # Log API usage
         remaining = response.headers.get("x-requests-remaining", "unknown")
+        used = response.headers.get("x-requests-used", "unknown")
         logger.debug("API quota (spreads)", remaining=remaining)
+        self.last_quota = {"remaining": remaining, "used": used, "market": "spreads"}
+        self.last_quota_at = datetime.utcnow()
 
         # Store spreads in database
         result = self._store_spreads(events)

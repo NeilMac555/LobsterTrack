@@ -1028,6 +1028,47 @@ async def get_admin_users(
     }
 
 
+@router.get("/admin/fetcher-health")
+async def get_fetcher_health(
+    password: str = Query(..., description="Admin password"),
+    db: Session = Depends(get_db),
+):
+    """
+    Scheduler + odds-fetcher health snapshot.
+
+    Returns scheduler state, last tick timestamp, current per-league
+    refresh intervals and staleness flags, the most recently seen
+    Odds API quota headers, and the last 10 errors. Used to diagnose
+    issues like 'LAST FETCH shows 1 hour ago' without trawling Railway logs.
+    """
+    from app.services.scheduler import odds_scheduler
+    from sqlalchemy import func
+
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid password")
+
+    health = odds_scheduler.get_health()
+
+    # Enrich per-league info with the actual latest OddsSnapshot timestamp
+    # from the database. This tells us whether fetches are landing real data.
+    try:
+        for sport_key, info in health["leagues"].items():
+            latest_ts = (
+                db.query(func.max(OddsSnapshot.fetched_at))
+                .join(Match, Match.id == OddsSnapshot.match_id)
+                .filter(Match.sport_key == sport_key)
+                .scalar()
+            )
+            info["latest_snapshot_at"] = latest_ts.isoformat() + "Z" if latest_ts else None
+            info["seconds_since_latest_snapshot"] = (
+                int((datetime.utcnow() - latest_ts).total_seconds()) if latest_ts else None
+            )
+    except Exception as e:
+        logger.error("Failed to enrich fetcher health with DB snapshots", error=str(e))
+
+    return health
+
+
 @router.get("/admin/totals-test")
 async def get_totals_test(
     password: str = Query(..., description="Admin password"),
