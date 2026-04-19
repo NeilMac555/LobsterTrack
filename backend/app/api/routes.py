@@ -347,51 +347,6 @@ async def get_stats(db: Session = Depends(get_db)):
     }
 
 
-@router.get("/steam-heatmap")
-async def get_steam_heatmap(
-    db: Session = Depends(get_db),
-    days: int = Query(7, ge=1, le=90, description="Look back window in days"),
-):
-    """
-    Aggregate steam-move counts into a league × hour-of-day grid for the
-    homepage heatmap. Each cell is the number of steam moves detected
-    in that (league, hour-UTC) bucket over the trailing `days` window.
-    """
-    cutoff = datetime.utcnow() - timedelta(days=days)
-    # Pull all steam moves in the window, group client-side.
-    rows = (
-        db.query(SteamMove.sport_key, SteamMove.detected_at)
-        .filter(SteamMove.detected_at >= cutoff)
-        .all()
-    )
-
-    leagues = list(settings.leagues.keys())
-    # Seed: every league has zeros for every hour (keeps the grid rectangular
-    # even for leagues with no steam activity in the window).
-    grid: dict[str, list[int]] = {k: [0] * 24 for k in leagues}
-
-    total = 0
-    for sport_key, detected_at in rows:
-        if sport_key not in grid:
-            continue
-        grid[sport_key][detected_at.hour] += 1
-        total += 1
-
-    # Flat max across the whole grid — used by the frontend to normalise
-    # cell opacity so one blazing cell doesn't wash out everything else.
-    max_cell = max((max(row) for row in grid.values()), default=0)
-
-    return {
-        "days": days,
-        "from_at": cutoff.isoformat() + "Z",
-        "to_at": datetime.utcnow().isoformat() + "Z",
-        "total_moves": total,
-        "max_cell": max_cell,
-        "leagues": leagues,
-        "data": grid,
-    }
-
-
 @router.get("/biggest-movers", response_model=list[BiggestMover])
 async def get_biggest_movers(
     db: Session = Depends(get_db),
