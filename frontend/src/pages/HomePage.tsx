@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { useSearchParams, Link } from 'react-router-dom';
 import { format, isToday, isTomorrow, startOfDay, formatDistanceToNow } from 'date-fns';
 import { getMatches, getStats, getBiggestMovers, getSyndicateMoves } from '../api';
-import type { MatchSummary, BiggestMover, SyndicateMove } from '../types';
+import type { MatchSummary, BiggestMover, SyndicateMove, Stats } from '../types';
 import { LEAGUE_CONFIG } from '../types';
 import MatchCard from '../components/MatchCard';
 import LeagueLogo from '../components/LeagueLogo';
@@ -56,6 +56,7 @@ export default function HomePage() {
   const [matches, setMatches] = useState<MatchSummary[]>([]);
   const [biggestMovers, setBiggestMovers] = useState<BiggestMover[]>([]);
   const [syndicateMoves, setSyndicateMoves] = useState<SyndicateMove[]>([]);
+  const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -77,6 +78,7 @@ export default function HomePage() {
         setMatches(matchesData);
         setBiggestMovers(moversData);
         setSyndicateMoves(syndicateData);
+        setStats(statsData);
         if (statsData.newest_data) {
           setLastUpdated(new Date(statsData.newest_data));
         }
@@ -121,6 +123,97 @@ export default function HomePage() {
         <title>SteamWatch - Track Sharp Money Movement in Football Betting</title>
         <link rel="canonical" href="https://www.steamwatch.io/" />
       </Helmet>
+
+      {/* Terminal-style stat strip — live snapshot of what SteamWatch is tracking.
+          Only shown on the main (unfiltered) homepage view. */}
+      {!league && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 mb-4 sm:mb-6">
+          {/* TRACKING */}
+          <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 relative overflow-hidden">
+            <div className="flex items-center gap-1.5">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+              </span>
+              <span className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">Tracking</span>
+            </div>
+            <div className="text-2xl sm:text-3xl font-mono font-bold tabular-nums tracking-tight text-white leading-none mt-1.5">
+              {matches.length}
+            </div>
+            <div className="text-[10px] sm:text-xs text-slate-500 mt-1">
+              upcoming matches
+            </div>
+          </div>
+
+          {/* LEAGUES */}
+          <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3">
+            <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">Leagues</div>
+            <div className="text-2xl sm:text-3xl font-mono font-bold tabular-nums tracking-tight text-white leading-none mt-1.5">
+              {stats?.tracked_leagues?.length ?? 8}
+            </div>
+            <div className="text-[10px] sm:text-xs text-slate-500 mt-1">
+              Pinnacle feeds
+            </div>
+          </div>
+
+          {/* TOP MOVER — the biggest movement in our tracked set right now */}
+          <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 relative overflow-hidden">
+            <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">Top Mover</div>
+            {biggestMovers[0] ? (
+              <>
+                <div className="flex items-baseline gap-0.5 leading-none mt-1.5">
+                  <span className="font-mono text-emerald-400 text-base leading-none">
+                    {biggestMovers[0].direction === 'down' ? '↓' : '↑'}
+                  </span>
+                  <span className={`font-mono font-bold tabular-nums tracking-tight leading-none text-2xl sm:text-3xl ${
+                    biggestMovers[0].direction === 'down' ? 'text-emerald-400' : 'text-red-400'
+                  }`}>
+                    {Math.abs(biggestMovers[0].movement_percent).toFixed(1)}
+                  </span>
+                  <span className="font-mono text-emerald-400/70 text-xs leading-none">%</span>
+                </div>
+                <div className="text-[10px] sm:text-xs text-slate-400 mt-1 truncate font-medium">
+                  {biggestMovers[0].home_team.split(' ').slice(0, 2).join(' ')} v {biggestMovers[0].away_team.split(' ').slice(0, 2).join(' ')}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-2xl sm:text-3xl font-mono font-bold tabular-nums tracking-tight text-slate-600 leading-none mt-1.5">
+                  —
+                </div>
+                <div className="text-[10px] sm:text-xs text-slate-500 mt-1">
+                  no movement yet
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* LAST FETCH */}
+          <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3">
+            <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">Last Fetch</div>
+            {lastUpdated ? (
+              <>
+                <div className="text-lg sm:text-2xl font-mono font-bold tabular-nums tracking-tight text-white leading-none mt-2 sm:mt-1.5">
+                  {formatDistanceToNow(lastUpdated)
+                    .replace('about ', '')
+                    .replace('less than a minute', '<1m')
+                    .replace(/ minutes?/, 'm')
+                    .replace(/ hours?/, 'h')
+                    .replace(/ days?/, 'd')}
+                </div>
+                <div className="text-[10px] sm:text-xs text-slate-500 mt-1">
+                  ago · auto refresh
+                </div>
+              </>
+            ) : (
+              <div className="text-lg sm:text-2xl font-mono font-bold text-slate-600 leading-none mt-2 sm:mt-1.5">
+                —
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Two-tier CTA: Free (Telegram) + Pro */}
       {!league && !isSubscribed && (
         <div className="mb-6 sm:mb-8 rounded-2xl border border-slate-700/60 bg-slate-800/80 overflow-hidden">
