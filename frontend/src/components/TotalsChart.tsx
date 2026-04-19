@@ -1,6 +1,7 @@
 import {
-  LineChart,
+  ComposedChart,
   Line,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -12,6 +13,17 @@ import { format } from 'date-fns';
 import type { TotalsPoint } from '../types';
 import { filterByTimeFrame, type TimeFrame } from './TimeFrameFilter';
 
+// Shared terminal-feel typography and palette (mirrors OddsChart).
+const MONO_STACK = '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace';
+const AXIS_TICK = {
+  fill: '#94a3b8',
+  fontSize: 10,
+  fontFamily: MONO_STACK,
+  letterSpacing: '-0.02em',
+};
+const COLOR_OVER = '#34d399';  // emerald-400
+const COLOR_UNDER = '#fb923c'; // orange-400
+
 interface TotalsChartProps {
   data: TotalsPoint[];
   timeFrame?: TimeFrame;
@@ -20,7 +32,6 @@ interface TotalsChartProps {
 export default function TotalsChart({ data, timeFrame = 'all' }: TotalsChartProps) {
   const filteredData = filterByTimeFrame(data, timeFrame);
 
-  // Get opening totals for reference lines
   const openingTotals = data.length > 0 ? data[0] : null;
 
   const chartData = filteredData.map((point) => ({
@@ -34,43 +45,44 @@ export default function TotalsChart({ data, timeFrame = 'all' }: TotalsChartProp
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const dataPoint = payload[0]?.payload;
+      const seen = new Set<string>();
+      const entries = (payload as any[]).filter((e) => {
+        const k = e?.dataKey as string;
+        if (!k || seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      });
       return (
         <div
-          className="bg-slate-900/95 backdrop-blur-md border border-slate-600/50 rounded-xl shadow-2xl overflow-hidden"
+          className="bg-slate-900/95 backdrop-blur-md border border-slate-600/50 rounded-lg shadow-2xl overflow-hidden"
           style={{
             animation: 'fadeIn 0.15s ease-out',
-            boxShadow: '0 20px 40px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+            boxShadow: '0 20px 40px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05)',
           }}
         >
-          {/* Header with timestamp */}
-          <div className="px-3 py-2 bg-slate-800/50 border-b border-slate-700/50">
-            <p className="text-slate-300 text-xs font-semibold">
+          <div className="px-3 py-1.5 bg-slate-800/50 border-b border-slate-700/50">
+            <p className="text-slate-300 text-[10px] font-mono uppercase tracking-[0.12em] font-semibold">
               {dataPoint?.fullTime || label}
             </p>
           </div>
-
-          {/* Values */}
-          <div className="p-2.5 space-y-1">
+          <div className="p-2 space-y-1 min-w-[160px]">
             <div className="flex items-center justify-between gap-4 px-1">
               <span className="text-slate-400 text-xs font-medium">Line</span>
-              <span className="font-mono font-bold text-sm tabular-nums text-white">
+              <span className="font-mono font-bold text-sm tabular-nums tracking-tight text-white">
                 {dataPoint?.line?.toFixed(2) ?? '-'}
               </span>
             </div>
-            {payload.map((entry: any, index: number) => (
-              <div
-                key={index}
-                className="flex items-center justify-between gap-4 px-1"
-              >
+            {entries.map((entry: any, index: number) => (
+              <div key={index} className="flex items-center justify-between gap-4 px-1">
                 <div className="flex items-center gap-2">
                   <div
-                    className="w-2 h-2 rounded-full ring-2 ring-white/10"
-                    style={{ backgroundColor: entry.color }}
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: entry.color, boxShadow: `0 0 6px ${entry.color}` }}
                   />
-                  <span className="text-slate-400 text-xs font-medium">{entry.name}</span>
+                  <span className="text-slate-300 text-xs font-medium">{entry.name}</span>
                 </div>
                 <span
-                  className="font-mono font-bold text-sm tabular-nums"
+                  className="font-mono font-bold text-sm tabular-nums tracking-tight"
                   style={{ color: entry.color }}
                 >
                   {entry.value?.toFixed(2) ?? '-'}
@@ -108,75 +120,78 @@ export default function TotalsChart({ data, timeFrame = 'all' }: TotalsChartProp
         </span>
       </div>
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart
-          data={chartData}
-          margin={{ top: 8, right: 8, left: 0, bottom: 8 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" stroke="#334155" strokeOpacity={0.5} />
+        <ComposedChart data={chartData} margin={{ top: 10, right: 12, left: 0, bottom: 8 }}>
+          <defs>
+            <linearGradient id="totalsArea-over" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={COLOR_OVER} stopOpacity={0.28} />
+              <stop offset="100%" stopColor={COLOR_OVER} stopOpacity={0} />
+            </linearGradient>
+            <linearGradient id="totalsArea-under" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={COLOR_UNDER} stopOpacity={0.28} />
+              <stop offset="100%" stopColor={COLOR_UNDER} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+
+          <CartesianGrid strokeDasharray="2 6" stroke="#475569" strokeOpacity={0.4} vertical={false} />
           <XAxis
             dataKey="shortTime"
-            stroke="#64748b"
-            tick={{ fill: '#94a3b8', fontSize: 9, fontFamily: 'Inter' }}
-            tickLine={{ stroke: '#475569' }}
-            axisLine={{ stroke: '#475569' }}
+            stroke="#475569"
+            tick={AXIS_TICK}
+            tickLine={false}
+            axisLine={{ stroke: '#334155', strokeWidth: 1 }}
             interval="preserveStartEnd"
             minTickGap={30}
           />
           <YAxis
-            stroke="#64748b"
-            tick={{ fill: '#94a3b8', fontSize: 9, fontFamily: 'Inter' }}
-            tickLine={{ stroke: '#475569' }}
-            axisLine={{ stroke: '#475569' }}
+            stroke="#475569"
+            tick={AXIS_TICK}
+            tickLine={false}
+            axisLine={false}
             domain={['auto', 'auto']}
             tickFormatter={(value) => value.toFixed(2)}
-            width={40}
+            width={42}
           />
           <Tooltip
             content={<CustomTooltip />}
-            cursor={{ stroke: '#64748b', strokeWidth: 1, strokeDasharray: '4 4' }}
+            cursor={{ stroke: '#94a3b8', strokeWidth: 1, strokeDasharray: '3 3', strokeOpacity: 0.5 }}
             offset={15}
             allowEscapeViewBox={{ x: false, y: true }}
           />
 
           {/* Opening price reference lines */}
           {openingTotals?.over_odds && (
-            <ReferenceLine
-              y={openingTotals.over_odds}
-              stroke="#10b981"
-              strokeDasharray="4 4"
-              strokeOpacity={0.25}
-            />
+            <ReferenceLine y={openingTotals.over_odds} stroke={COLOR_OVER} strokeDasharray="2 4" strokeOpacity={0.25} />
           )}
           {openingTotals?.under_odds && (
-            <ReferenceLine
-              y={openingTotals.under_odds}
-              stroke="#f97316"
-              strokeDasharray="4 4"
-              strokeOpacity={0.25}
-            />
+            <ReferenceLine y={openingTotals.under_odds} stroke={COLOR_UNDER} strokeDasharray="2 4" strokeOpacity={0.25} />
           )}
 
+          {/* Area fills underneath */}
+          <Area type="monotone" dataKey="over_odds" stroke="none" fill="url(#totalsArea-over)" isAnimationActive={false} activeDot={false} />
+          <Area type="monotone" dataKey="under_odds" stroke="none" fill="url(#totalsArea-under)" isAnimationActive={false} activeDot={false} />
+
+          {/* Lines on top */}
           <Line
             type="monotone"
             dataKey="over_odds"
             name="Over"
-            stroke="#10b981"
-            strokeWidth={2.5}
-            dot={{ fill: '#10b981', strokeWidth: 0, r: 2 }}
-            activeDot={{ r: 5, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }}
+            stroke={COLOR_OVER}
+            strokeWidth={2.2}
+            dot={false}
+            activeDot={{ r: 5, fill: COLOR_OVER, stroke: '#0f172a', strokeWidth: 2 }}
             animationDuration={300}
           />
           <Line
             type="monotone"
             dataKey="under_odds"
             name="Under"
-            stroke="#f97316"
-            strokeWidth={2.5}
-            dot={{ fill: '#f97316', strokeWidth: 0, r: 2 }}
-            activeDot={{ r: 5, fill: '#f97316', stroke: '#fff', strokeWidth: 2 }}
+            stroke={COLOR_UNDER}
+            strokeWidth={2.2}
+            dot={false}
+            activeDot={{ r: 5, fill: COLOR_UNDER, stroke: '#0f172a', strokeWidth: 2 }}
             animationDuration={300}
           />
-        </LineChart>
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   );
