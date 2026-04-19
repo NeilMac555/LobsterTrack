@@ -18,12 +18,10 @@ export default function MatchCard({ match }: MatchCardProps) {
   const awayMovement = calculateMovement(match.current_away_odds, match.opening_away_odds);
   const biggestMover = getBiggestMover(homeMovement, drawMovement, awayMovement);
 
-  // Determine visual treatment based on movement
   const movementPercent = biggestMover ? Math.abs(biggestMover.percentage) : 0;
   const isSignificantMove = movementPercent >= 5;
   const isMinimalMove = movementPercent < 3;
 
-  // Dynamic classes based on movement significance
   const cardClasses = `block bg-slate-800 rounded-2xl sm:rounded-3xl border transition-all duration-200 ease-out hover:shadow-xl hover:-translate-y-1 active:scale-[0.98] overflow-hidden group card-shadow ${
     isSignificantMove
       ? 'border-emerald-500/40 hover:border-emerald-500/60 hover:shadow-emerald-500/15'
@@ -32,7 +30,6 @@ export default function MatchCard({ match }: MatchCardProps) {
       : 'border-slate-700/80 hover:border-blue-500/50 hover:shadow-blue-500/10'
   }`;
 
-  // Glow effect for significant moves
   const cardStyle = isSignificantMove
     ? { boxShadow: '0 0 20px -5px rgba(16, 185, 129, 0.2)' }
     : {};
@@ -43,46 +40,51 @@ export default function MatchCard({ match }: MatchCardProps) {
       className={cardClasses}
       style={cardStyle}
     >
-      {/* League Header */}
-      <div className="px-4 sm:px-5 py-2.5 sm:py-3 bg-slate-700/30 border-b border-slate-700/50 flex items-center justify-between">
+      {/* League Header — compact mono strip */}
+      <div className="px-4 sm:px-5 py-2 sm:py-2.5 bg-slate-700/30 border-b border-slate-700/50 flex items-center justify-between">
         <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
           <LeagueLogo sportKey={match.sport_key} size="sm" />
-          <span className="text-xs sm:text-sm text-slate-400 font-medium truncate">{leagueConfig?.shortName || match.league_name}</span>
+          <span className="text-[10px] sm:text-[11px] font-mono font-semibold uppercase tracking-[0.12em] text-slate-400 truncate">
+            {leagueConfig?.shortName || match.league_name}
+          </span>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           {biggestMover && (
-            <span className={`px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full font-semibold bg-emerald-500/20 text-emerald-400 ${isSignificantMove ? 'text-xs sm:text-sm font-bold' : 'text-[10px] sm:text-xs'}`}>
-              {biggestMover.outcome} ↓ {Math.abs(biggestMover.percentage).toFixed(1)}%
+            <span className={`px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full font-mono font-bold bg-emerald-500/20 text-emerald-400 tabular-nums tracking-tight ${
+              isSignificantMove ? 'text-xs sm:text-sm' : 'text-[10px] sm:text-xs'
+            }`}>
+              {biggestMover.outcome} ↓{Math.abs(biggestMover.percentage).toFixed(1)}%
             </span>
           )}
         </div>
       </div>
 
-      {/* Match Info */}
+      {/* Match body — team names stacked on left, kickoff on right */}
       <div className="p-4 sm:p-6">
         <div className="flex items-center justify-between mb-4 sm:mb-5">
           <div className="flex-1 space-y-2 sm:space-y-2.5 min-w-0 pr-4">
             <div className="flex items-center">
-              <span className="text-white font-semibold text-sm sm:text-base truncate">{match.home_team}</span>
+              <span className="text-white font-semibold text-sm sm:text-base tracking-tight truncate">{match.home_team}</span>
             </div>
             <div className="flex items-center">
-              <span className="text-white font-semibold text-sm sm:text-base truncate">{match.away_team}</span>
+              <span className="text-white font-semibold text-sm sm:text-base tracking-tight truncate">{match.away_team}</span>
             </div>
           </div>
 
+          {/* Kickoff — mono for the terminal feel */}
           <div className="text-right flex-shrink-0">
-            <div className="text-xs sm:text-sm text-slate-400 font-medium">
+            <div className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.12em] text-slate-500">
               {format(matchDate, 'EEE, MMM d')}
             </div>
-            <div className="text-lg sm:text-xl font-bold text-white">
+            <div className="text-xl sm:text-2xl font-mono font-bold text-white tabular-nums tracking-tight leading-none mt-0.5">
               {format(matchDate, 'HH:mm')}
             </div>
           </div>
         </div>
 
-        {/* Odds with Movement */}
-        <div className="flex items-center justify-between pt-4 sm:pt-5 border-t border-slate-700/50">
-          <div className="text-[10px] sm:text-xs text-slate-500 uppercase tracking-wider font-medium">1 X 2</div>
+        {/* Odds footer */}
+        <div className="flex items-center justify-between pt-3 sm:pt-4 border-t border-slate-700/50">
+          <div className="text-[10px] sm:text-[11px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">1 · X · 2</div>
           <OddsDisplayWithMovement
             home={match.current_home_odds}
             draw={match.current_draw_odds}
