@@ -214,14 +214,24 @@ export default function HomePage() {
       {biggestMovers.length > 0 && (
         <div className="bg-slate-800/80 rounded-2xl border border-slate-700/50 overflow-hidden mb-6 sm:mb-10 card-shadow">
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-700/50 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div>
-                <h2 className="text-lg sm:text-xl font-bold text-white">Biggest Movers</h2>
-                <p className="text-slate-400 text-xs sm:text-sm mt-0.5">Sharp money signals</p>
+            <div className="flex items-center gap-3">
+              {/* Accent bar — terminal-style visual rhythm */}
+              <div className="w-1 h-6 sm:h-7 rounded-full bg-gradient-to-b from-emerald-400 to-emerald-600 flex-shrink-0" />
+              <div className="flex items-center gap-2">
+                <div>
+                  <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">Biggest Movers</h2>
+                  <p className="text-slate-400 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-wider">Sharp money signals</p>
+                </div>
+                <HelpButton onClick={() => setShowSteamGuide(true)} />
               </div>
-              <HelpButton onClick={() => setShowSteamGuide(true)} />
             </div>
-            <span className="text-[10px] sm:text-xs text-slate-500 font-medium hidden sm:block">Sharp money indicators</span>
+            <div className="hidden sm:flex items-center gap-2 text-[10px] font-mono uppercase tracking-wider text-slate-500">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              Live · Pinnacle
+            </div>
           </div>
 
           {/* Desktop Table */}
@@ -229,23 +239,23 @@ export default function HomePage() {
             <table className="w-full">
               <thead>
                 <tr className="bg-slate-700/30">
-                  <th className="px-6 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">
                     Match
                   </th>
-                  <th className="px-4 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-center text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">
                     League
                   </th>
-                  <th className="px-4 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">
                     Backed
                   </th>
-                  <th className="px-4 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-center text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">
                     Move
                   </th>
-                  <th className="px-4 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    Opening
+                  <th className="px-4 py-3 text-center text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">
+                    Open
                   </th>
-                  <th className="px-4 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    Current
+                  <th className="px-4 py-3 text-center text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">
+                    Now
                   </th>
                 </tr>
               </thead>
@@ -279,25 +289,25 @@ export default function HomePage() {
                           to={`/match/${mover.match_id}`}
                           className="text-white hover:text-blue-400 transition-colors"
                         >
-                          <div className="font-semibold text-base">
+                          <div className="font-semibold text-base tracking-tight">
                             {mover.home_team} vs {mover.away_team}
                           </div>
-                          <div className="text-xs text-slate-500 mt-0.5">
-                            {format(matchDate, 'EEE, MMM d HH:mm')}
+                          <div className="text-[11px] text-slate-500 mt-0.5 font-mono">
+                            {format(matchDate, 'EEE, MMM d  HH:mm')}
                           </div>
                         </Link>
                       </td>
                       <td className="px-4 py-4 text-center">
                         <div className="flex items-center justify-center gap-2">
                           <LeagueLogo sportKey={mover.sport_key} size="sm" />
-                          <span className="text-slate-400 text-sm hidden lg:inline font-medium">
+                          <span className="text-slate-400 text-xs hidden lg:inline font-mono font-medium">
                             {leagueInfo?.shortName || ''}
                           </span>
                         </div>
                       </td>
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-2">
-                          <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${outcomeColor}`}>
+                          <span className={`px-2 py-0.5 rounded font-mono text-[11px] font-bold tracking-wide ${outcomeColor}`}>
                             {outcomeLabel}
                           </span>
                           <span className="text-slate-300 text-sm truncate max-w-[120px] font-medium">
@@ -306,17 +316,21 @@ export default function HomePage() {
                         </div>
                       </td>
                       <td className="px-4 py-4 text-center">
-                        <span className={`font-mono font-bold text-emerald-400 ${isSignificant ? 'text-lg' : ''}`}>
-                          ↓{Math.abs(mover.movement_percent).toFixed(1)}%
-                        </span>
+                        <div className="inline-flex items-baseline gap-0.5">
+                          <span className="font-mono text-emerald-400 text-base leading-none">↓</span>
+                          <span className={`font-mono font-bold text-emerald-400 tabular-nums tracking-tight leading-none ${isSignificant ? 'text-2xl' : 'text-xl'}`}>
+                            {Math.abs(mover.movement_percent).toFixed(1)}
+                          </span>
+                          <span className="font-mono text-emerald-400/70 text-xs leading-none">%</span>
+                        </div>
                       </td>
                       <td className="px-4 py-4 text-center">
-                        <span className="font-mono text-slate-500 font-medium">
+                        <span className="font-mono text-slate-500 tabular-nums text-sm">
                           {mover.opening_odds.toFixed(2)}
                         </span>
                       </td>
                       <td className="px-4 py-4 text-center">
-                        <span className="font-mono font-bold text-white">
+                        <span className="font-mono font-bold text-white tabular-nums text-lg tracking-tight">
                           {mover.current_odds.toFixed(2)}
                         </span>
                       </td>
@@ -357,30 +371,38 @@ export default function HomePage() {
                   to={`/match/${mover.match_id}`}
                   className="block p-4 hover:bg-slate-700/20 active:bg-slate-700/30 transition-colors"
                 >
-                  <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <LeagueLogo sportKey={mover.sport_key} size="sm" />
-                        <span className="text-xs text-slate-500">{leagueInfo?.shortName}</span>
-                        <span className="text-xs text-slate-600">•</span>
-                        <span className="text-xs text-slate-500">{format(matchDate, 'EEE HH:mm')}</span>
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500">{leagueInfo?.shortName}</span>
+                        <span className="text-slate-600">·</span>
+                        <span className="text-[10px] font-mono text-slate-500">{format(matchDate, 'EEE HH:mm')}</span>
                       </div>
-                      <div className="text-white font-semibold text-sm truncate">
+                      <div className="text-white font-semibold text-sm truncate tracking-tight">
                         {mover.home_team} vs {mover.away_team}
                       </div>
                       <div className="flex items-center gap-2 mt-2">
-                        <span className={`px-2 py-0.5 rounded text-xs font-bold ${outcomeColor}`}>
+                        <span className={`px-2 py-0.5 rounded font-mono text-[10px] font-bold tracking-wide ${outcomeColor}`}>
                           {outcomeLabel}
                         </span>
                         <span className="text-slate-400 text-xs truncate">{mover.outcome_name}</span>
                       </div>
                     </div>
-                    <div className="text-right flex-shrink-0">
-                      <div className={`font-mono font-bold text-emerald-400 ${isSignificant ? 'text-lg' : 'text-base'}`}>
-                        ↓{Math.abs(mover.movement_percent).toFixed(1)}%
+                    <div className="text-right flex-shrink-0 flex flex-col items-end">
+                      {/* Hero number — huge mono percentage */}
+                      <div className="flex items-baseline gap-0.5 leading-none">
+                        <span className="text-emerald-400 text-lg font-mono leading-none">↓</span>
+                        <span className={`font-mono font-bold text-emerald-400 tabular-nums tracking-tight leading-none ${isSignificant ? 'text-3xl' : 'text-2xl'}`}>
+                          {Math.abs(mover.movement_percent).toFixed(1)}
+                        </span>
+                        <span className="font-mono text-emerald-400/70 text-xs leading-none">%</span>
                       </div>
-                      <div className="text-xs text-slate-500 mt-1">
-                        {mover.opening_odds.toFixed(2)} → <span className="text-white font-semibold">{mover.current_odds.toFixed(2)}</span>
+                      {/* Ticker-style opening → current */}
+                      <div className="text-[11px] font-mono mt-1.5 tabular-nums">
+                        <span className="text-slate-500">{mover.opening_odds.toFixed(2)}</span>
+                        <span className="text-slate-600 mx-1">→</span>
+                        <span className="text-white font-bold">{mover.current_odds.toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
