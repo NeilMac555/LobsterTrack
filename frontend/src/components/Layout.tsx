@@ -48,180 +48,122 @@ export default function Layout() {
   const isToolsPage = location.pathname.startsWith('/tools');
   const isSteamResultsPage = location.pathname === '/steam-results';
   const isCLClosingPage = location.pathname === '/cl-closing-lines';
+  const isOverviewPage = !currentLeague && !isToolsPage && !isSteamResultsPage && !isCLClosingPage && location.pathname === '/';
+
+  const navItemClass = (active: boolean) =>
+    `relative px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors ${
+      active
+        ? 'text-white'
+        : 'text-slate-400 hover:text-white'
+    } ${active ? "after:content-[''] after:absolute after:left-3 after:right-3 after:-bottom-[13px] after:h-[2px] after:bg-cyan-400 after:rounded-full" : ''}`;
+
   return (
     <div className="min-h-screen">
-      {/* Header */}
-      <header className="bg-slate-800/80 backdrop-blur-md border-b border-slate-700/50 sticky top-0 z-50">
+      {/* Main compact header — terminal style */}
+      <header className="bg-slate-900/90 backdrop-blur-md border-b border-slate-700/50 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-14 sm:h-16">
-            <Link to="/" className="flex items-center gap-2.5 sm:gap-3 group">
-              {/* SVG Logo */}
-              <svg
-                viewBox="0 0 32 32"
-                className="w-8 h-8 sm:w-9 sm:h-9"
-                fill="none"
+          <div className="flex items-center justify-between h-[52px] gap-4">
+            {/* Brand — gradient mark + wordmark with muted .io */}
+            <Link to="/" className="flex items-center gap-2.5 group flex-shrink-0">
+              <div
+                className="w-[26px] h-[26px] rounded-md flex items-center justify-center font-mono font-black text-[13px] text-slate-900 flex-shrink-0"
+                style={{
+                  background: 'linear-gradient(135deg, #22d3ee 0%, #0891b2 100%)',
+                  boxShadow: '0 0 0 1px rgba(34, 211, 238, 0.3), 0 0 20px -6px #22d3ee',
+                }}
               >
-                {/* Background circle */}
-                <circle cx="16" cy="16" r="15" className="fill-slate-700/50 stroke-slate-600" strokeWidth="1"/>
-                {/* Trend line chart */}
-                <path
-                  d="M7 22 L12 17 L17 19 L25 10"
-                  className="stroke-emerald-400"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  fill="none"
-                />
-                {/* Arrow head */}
-                <path
-                  d="M22 10 L25 10 L25 13"
-                  className="stroke-emerald-400"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  fill="none"
-                />
-              </svg>
-              <span className="text-lg sm:text-xl font-bold text-white group-hover:text-blue-400 transition-colors">
-                SteamWatch
+                S
+              </div>
+              <span className="text-[15px] font-bold text-white tracking-tight group-hover:text-cyan-300 transition-colors">
+                SteamWatch<span className="text-slate-500 font-medium">.io</span>
               </span>
             </Link>
 
-            {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-2">
-              <span className="text-sm text-slate-400 mr-2 font-medium">Leagues:</span>
-              {leagues.map(([key, config]) => (
-                <Link
-                  key={key}
-                  to={`/?league=${key}`}
-                  className={`p-2 rounded-xl transition-all duration-200 ${
-                    currentLeague === key
-                      ? 'bg-blue-600 ring-2 ring-blue-400/50 shadow-lg shadow-blue-500/20'
-                      : 'bg-slate-700/80 hover:bg-slate-600 hover:scale-105'
-                  }`}
-                  title={config.name}
-                >
-                  <LeagueLogo sportKey={key} size="sm" />
-                </Link>
-              ))}
-              <Link
-                to="/"
-                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                  !currentLeague && !isToolsPage && !isSteamResultsPage && !isCLClosingPage
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
-                    : 'bg-slate-700/80 text-slate-300 hover:bg-slate-600 hover:text-white'
-                }`}
-              >
-                All
-              </Link>
+            {/* Desktop flat nav */}
+            <nav className="hidden md:flex items-center gap-1 flex-1">
+              <Link to="/" className={navItemClass(isOverviewPage)}>Overview</Link>
+              <Link to="/steam-results" className={navItemClass(isSteamResultsPage)}>Steam Results</Link>
+              <Link to="/cl-closing-lines" className={navItemClass(isCLClosingPage)}>Closing Lines</Link>
 
-              {/* Divider */}
-              <div className="w-px h-6 bg-slate-600 mx-2"></div>
-
-              {/* Steam Results */}
-              <Link
-                to="/steam-results"
-                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                  isSteamResultsPage
-                    ? 'bg-amber-600 text-white shadow-lg shadow-amber-500/20'
-                    : 'bg-slate-700/80 text-slate-300 hover:bg-slate-600 hover:text-white'
-                }`}
-              >
-                Steam Results
-              </Link>
-
-              {/* CL Closing Lines */}
-              <Link
-                to="/cl-closing-lines"
-                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                  isCLClosingPage
-                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
-                    : 'bg-slate-700/80 text-slate-300 hover:bg-slate-600 hover:text-white'
-                }`}
-              >
-                Closing Lines
-              </Link>
-
-              {/* Tools Dropdown */}
+              {/* Tools dropdown */}
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setToolsOpen(!toolsOpen)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                    isToolsPage
-                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
-                      : 'bg-slate-700/80 text-slate-300 hover:bg-slate-600 hover:text-white'
-                  }`}
+                  className={navItemClass(isToolsPage) + ' flex items-center gap-1'}
                 >
                   Tools
                   <svg
-                    className={`w-4 h-4 transition-transform duration-200 ${toolsOpen ? 'rotate-180' : ''}`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
+                    className={`w-3 h-3 transition-transform duration-200 ${toolsOpen ? 'rotate-180' : ''}`}
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor"
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
-
-                {/* Dropdown Menu */}
                 {toolsOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-slate-800 border border-slate-700 rounded-xl shadow-xl shadow-black/20 overflow-hidden z-50">
+                  <div className="absolute left-0 mt-3 w-56 bg-slate-800 border border-slate-700 rounded-md shadow-xl shadow-black/30 overflow-hidden z-50">
                     {tools.map((tool) => (
                       <Link
                         key={tool.path}
                         to={tool.path}
                         onClick={() => setToolsOpen(false)}
-                        className={`flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
+                        className={`flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
                           location.pathname === tool.path
-                            ? 'bg-blue-600/20 text-blue-400'
+                            ? 'bg-cyan-500/10 text-cyan-300'
                             : 'text-slate-300 hover:bg-slate-700 hover:text-white'
                         }`}
                       >
-                        <span className="text-lg">{tool.icon}</span>
+                        <span className="text-base">{tool.icon}</span>
                         <span className="font-medium">{tool.name}</span>
                       </Link>
                     ))}
                   </div>
                 )}
               </div>
+            </nav>
 
-              {/* Divider */}
-              <div className="w-px h-6 bg-slate-600 mx-2"></div>
+            {/* Right side: Live pill + Account / Sign In / Upgrade */}
+            <div className="hidden md:flex items-center gap-2.5 flex-shrink-0">
+              <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full border border-slate-700/60 text-[10px] font-mono uppercase tracking-[0.12em] text-slate-400">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                </span>
+                Live · Pinnacle
+              </span>
 
-              {/* Account */}
               {user ? (
                 <div className="relative" ref={accountRef}>
                   <button
                     onClick={() => setAccountOpen(!accountOpen)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold bg-slate-700/80 text-slate-300 hover:bg-slate-600 hover:text-white transition-all duration-200"
+                    className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-800/60 border border-slate-700/60 text-slate-300 hover:text-white hover:bg-slate-700/60 transition-colors"
                   >
-                    <span className="w-6 h-6 rounded-full bg-red-500/20 border border-red-500/30 flex items-center justify-center text-xs text-red-400 font-bold">
+                    <span className="w-5 h-5 rounded-full bg-red-500/20 border border-red-500/30 flex items-center justify-center text-[10px] text-red-400 font-bold font-mono">
                       {user.email[0].toUpperCase()}
                     </span>
-                    {isSubscribed && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded-full font-bold uppercase">Pro</span>}
+                    {isSubscribed && <span className="text-[9px] font-mono font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1 py-0.5 rounded">Pro</span>}
                   </button>
                   {accountOpen && (
-                    <div className="absolute right-0 mt-2 w-56 bg-slate-800 border border-slate-700 rounded-xl shadow-xl shadow-black/20 overflow-hidden z-50">
-                      <div className="px-4 py-3 border-b border-slate-700/50">
-                        <p className="text-xs text-slate-400 truncate">{user.email}</p>
-                        <p className="text-xs mt-1">
+                    <div className="absolute right-0 mt-3 w-56 bg-slate-800 border border-slate-700 rounded-md shadow-xl shadow-black/30 overflow-hidden z-50">
+                      <div className="px-3 py-2.5 border-b border-slate-700/50">
+                        <p className="text-xs text-slate-400 truncate font-mono">{user.email}</p>
+                        <p className="text-[10px] font-mono uppercase tracking-wider mt-1">
                           {isSubscribed
-                            ? <span className="text-emerald-400 font-semibold">Pro subscriber</span>
-                            : <span className="text-slate-500">Free tier</span>
+                            ? <span className="text-emerald-400 font-bold">Pro Subscriber</span>
+                            : <span className="text-slate-500">Free Tier</span>
                           }
                         </p>
                       </div>
                       {isSubscribed && (
                         <button
                           onClick={() => { setAccountOpen(false); manageSubscription(); }}
-                          className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+                          className="w-full text-left px-3 py-2.5 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
                         >
                           Manage Subscription
                         </button>
                       )}
                       <button
                         onClick={() => { setAccountOpen(false); logout(); }}
-                        className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+                        className="w-full text-left px-3 py-2.5 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
                       >
                         Sign Out
                       </button>
@@ -231,29 +173,79 @@ export default function Layout() {
               ) : (
                 <button
                   onClick={() => setShowLogin(true)}
-                  className="px-4 py-2 rounded-xl text-sm font-semibold bg-slate-700/80 text-slate-300 hover:bg-slate-600 hover:text-white transition-all duration-200"
+                  className="px-3 py-1.5 rounded-md font-mono text-[11px] font-semibold uppercase tracking-[0.1em] bg-slate-800/60 border border-slate-700/60 text-slate-300 hover:text-white hover:bg-slate-700/60 transition-colors"
                 >
                   Sign In
                 </button>
               )}
-            </nav>
 
-            {/* Mobile Menu Button */}
+              {user && !isSubscribed && (
+                <button
+                  onClick={() => {
+                    // Scroll to top and trigger paywall CTA on homepage, or nav to match-predictor
+                    window.location.href = '/tools/match-predictor';
+                  }}
+                  className="px-3 py-1.5 rounded-md font-mono text-[11px] font-bold uppercase tracking-[0.1em] bg-gradient-to-br from-cyan-400 to-cyan-600 text-slate-900 hover:brightness-110 transition-all shadow-sm shadow-cyan-500/30"
+                >
+                  Upgrade Pro
+                </button>
+              )}
+            </div>
+
+            {/* Mobile menu button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-lg bg-slate-700/80 text-slate-300 hover:bg-slate-600 hover:text-white transition-colors"
+              className="md:hidden p-2 rounded-md bg-slate-800/60 border border-slate-700/60 text-slate-300 hover:text-white transition-colors"
               aria-label="Toggle menu"
             >
               {mobileMenuOpen ? (
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               ) : (
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               )}
             </button>
+          </div>
+        </div>
+
+        {/* League sub-bar — hidden on mobile (in the mobile menu) */}
+        <div className="hidden md:block border-t border-slate-700/30 bg-slate-900/60">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-10 flex items-center gap-3">
+            <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold flex-shrink-0">Leagues</span>
+            <div className="flex items-center gap-1 overflow-x-auto hide-scrollbar">
+              <Link
+                to="/"
+                className={`px-2.5 py-1 rounded font-mono text-[11px] uppercase tracking-[0.1em] font-semibold transition-colors border whitespace-nowrap ${
+                  isOverviewPage && !currentLeague
+                    ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30'
+                    : 'bg-transparent text-slate-400 border-transparent hover:text-white hover:bg-slate-800/60'
+                }`}
+              >
+                All
+              </Link>
+              {leagues.map(([key, config]) => (
+                <Link
+                  key={key}
+                  to={`/?league=${key}`}
+                  className={`flex items-center gap-1.5 px-2 py-1 rounded transition-colors border whitespace-nowrap ${
+                    currentLeague === key
+                      ? 'bg-cyan-500/15 border-cyan-500/30'
+                      : 'bg-transparent border-transparent hover:bg-slate-800/60'
+                  }`}
+                  title={config.name}
+                >
+                  <LeagueLogo sportKey={key} size="sm" />
+                  <span className={`font-mono text-[11px] uppercase tracking-[0.1em] font-semibold ${
+                    currentLeague === key ? 'text-cyan-300' : 'text-slate-400'
+                  }`}>
+                    {config.shortName}
+                  </span>
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
 
