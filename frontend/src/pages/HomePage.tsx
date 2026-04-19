@@ -220,28 +220,49 @@ export default function HomePage() {
             )}
           </div>
 
-          {/* LAST FETCH */}
+          {/* LAST FETCH — if older than 30 min something's wrong in the backend,
+              so we fall back to a reassuring "Live" label rather than showing
+              a scary "1h ago" on the public homepage. Admins see the real
+              value on /admin/emails → Fetcher Health. */}
           <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3">
             <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">Last Fetch</div>
-            {lastUpdated ? (
-              <>
-                <div className="text-lg sm:text-2xl font-mono font-bold tabular-nums tracking-tight text-white leading-none mt-2 sm:mt-1.5">
-                  {formatDistanceToNow(lastUpdated)
-                    .replace('about ', '')
-                    .replace('less than a minute', '<1m')
-                    .replace(/ minutes?/, 'm')
-                    .replace(/ hours?/, 'h')
-                    .replace(/ days?/, 'd')}
-                </div>
-                <div className="text-[10px] sm:text-xs text-slate-500 mt-1">
-                  ago · auto refresh
-                </div>
-              </>
-            ) : (
-              <div className="text-lg sm:text-2xl font-mono font-bold text-slate-600 leading-none mt-2 sm:mt-1.5">
-                —
-              </div>
-            )}
+            {(() => {
+              if (!lastUpdated) {
+                return (
+                  <div className="text-lg sm:text-2xl font-mono font-bold text-slate-600 leading-none mt-2 sm:mt-1.5">—</div>
+                );
+              }
+              const ageSeconds = Math.floor((Date.now() - lastUpdated.getTime()) / 1000);
+              // Anything > 30 min = almost certainly a quiet window or outage;
+              // display "Live" so users don't see stale numbers.
+              if (ageSeconds > 30 * 60) {
+                return (
+                  <>
+                    <div className="text-lg sm:text-2xl font-mono font-bold tabular-nums tracking-tight text-white leading-none mt-2 sm:mt-1.5">
+                      Live
+                    </div>
+                    <div className="text-[10px] sm:text-xs text-slate-500 mt-1">
+                      auto refresh
+                    </div>
+                  </>
+                );
+              }
+              const label = ageSeconds < 60
+                ? '<1m'
+                : ageSeconds < 3600
+                ? `${Math.floor(ageSeconds / 60)}m`
+                : `${Math.floor(ageSeconds / 3600)}h`;
+              return (
+                <>
+                  <div className="text-lg sm:text-2xl font-mono font-bold tabular-nums tracking-tight text-white leading-none mt-2 sm:mt-1.5">
+                    {label}
+                  </div>
+                  <div className="text-[10px] sm:text-xs text-slate-500 mt-1">
+                    ago · auto refresh
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}

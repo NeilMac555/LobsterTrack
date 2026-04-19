@@ -295,7 +295,10 @@ async def get_stats(db: Session = Depends(get_db)):
         .scalar()
     )
 
-    # Oldest and newest data
+    # Oldest and newest data. Append 'Z' so JS parses these as UTC
+    # instead of local time — that's what was causing the public homepage
+    # stat strip to show 'LAST FETCH: 1 hour ago' for UK/IE users when
+    # fetches were actually running every 2–15 minutes.
     oldest_snapshot = db.query(func.min(OddsSnapshot.fetched_at)).scalar()
     newest_snapshot = db.query(func.max(OddsSnapshot.fetched_at)).scalar()
 
@@ -303,8 +306,8 @@ async def get_stats(db: Session = Depends(get_db)):
         "total_matches": total_matches,
         "upcoming_matches": upcoming_matches,
         "total_odds_snapshots": total_snapshots,
-        "oldest_data": oldest_snapshot,
-        "newest_data": newest_snapshot,
+        "oldest_data": oldest_snapshot.isoformat() + "Z" if oldest_snapshot else None,
+        "newest_data": newest_snapshot.isoformat() + "Z" if newest_snapshot else None,
         "tracked_leagues": list(settings.leagues.keys())
     }
 
