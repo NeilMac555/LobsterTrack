@@ -539,13 +539,16 @@ export default function AdminEmailsPage() {
             <div className="bg-slate-800/80 border border-slate-700/50 rounded-xl px-4 py-3">
               <div className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">Last Tick</div>
               <div className={`text-xl font-mono font-bold mt-1 ${
-                (health.seconds_since_last_tick ?? 9999) < 180 ? 'text-emerald-400' :
-                (health.seconds_since_last_tick ?? 9999) < 300 ? 'text-amber-400' : 'text-red-400'
+                health.seconds_since_last_tick === null ? 'text-slate-500' :
+                health.seconds_since_last_tick < 180 ? 'text-emerald-400' :
+                health.seconds_since_last_tick < 300 ? 'text-amber-400' : 'text-red-400'
               }`}>
-                {fmtSeconds(health.seconds_since_last_tick)} ago
+                {health.seconds_since_last_tick === null
+                  ? 'pending'
+                  : `${fmtSeconds(health.seconds_since_last_tick)} ago`}
               </div>
               <div className="text-xs text-slate-500 mt-1 font-mono truncate" title={health.last_tick_result || ''}>
-                {health.last_tick_result || '—'}
+                {health.last_tick_result || 'awaiting first tick'}
               </div>
             </div>
             <div className="bg-slate-800/80 border border-slate-700/50 rounded-xl px-4 py-3">

@@ -1089,7 +1089,12 @@ async def get_fetcher_health(
 
     # Enrich per-league info with the actual latest OddsSnapshot timestamp
     # from the database. This tells us whether fetches are landing real data.
+    # We also recompute `is_stale` using the DB value — the scheduler's
+    # in-memory `_last_fetch_by_league` map is empty after a restart even
+    # though the DB has fresh data, which would otherwise show every
+    # league as red post-deploy.
     try:
+        now = datetime.utcnow()
         for sport_key, info in health["leagues"].items():
             latest_ts = (
                 db.query(func.max(OddsSnapshot.fetched_at))
@@ -1097,10 +1102,20 @@ async def get_fetcher_health(
                 .filter(Match.sport_key == sport_key)
                 .scalar()
             )
-            info["latest_snapshot_at"] = latest_ts.isoformat() + "Z" if latest_ts else None
-            info["seconds_since_latest_snapshot"] = (
-                int((datetime.utcnow() - latest_ts).total_seconds()) if latest_ts else None
-            )
+            if latest_ts:
+                seconds_since = int((now - latest_ts).total_seconds())
+                info["latest_snapshot_at"] = latest_ts.isoformat() + "Z"
+                info["seconds_since_latest_snapshot"] = seconds_since
+                # Consider the league stale only if the DB's latest snapshot
+                # is older than its current target interval (plus a 60s grace
+                # window for tick scheduling jitter).
+                interval_s = info["current_interval_minutes"] * 60 + 60
+                info["is_stale"] = seconds_since > interval_s
+            else:
+                info["latest_snapshot_at"] = None
+                info["seconds_since_latest_snapshot"] = None
+                # No snapshot at all = genuinely stale.
+                info["is_stale"] = True
     except Exception as e:
         logger.error("Failed to enrich fetcher health with DB snapshots", error=str(e))
 
