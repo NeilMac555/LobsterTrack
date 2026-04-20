@@ -186,10 +186,15 @@ export default function MatchDetailPage() {
               const open = firstOdds?.[`${o.key}_odds`] ?? null;
               const pct = (cur && open && open > 0) ? ((cur - open) / open) * 100 : 0;
               const direction = pct < -0.1 ? 'down' : pct > 0.1 ? 'up' : 'flat';
+              // Plot RAW odds so the mini-chart matches the big Odds Movement
+              // chart below — drifting outcomes trend up on both, backed
+              // outcomes trend down on both. Color is driven by direction
+              // (emerald = shortening, red = drifting) via color="auto"
+              // in the Sparkline component, so the line glance always reads
+              // "green = being backed, red = drifting".
               const sparkValues = match.odds_history
                 .map((h) => h[`${o.key}_odds`])
-                .filter((v): v is number => v != null && v > 0)
-                .map((v) => (1 / v) * 100); // implied prob — rising = backed
+                .filter((v): v is number => v != null && v > 0);
               return (
                 <div
                   key={o.key}
@@ -222,7 +227,19 @@ export default function MatchDetailPage() {
                         {direction === 'down' ? '↓' : direction === 'up' ? '↑' : '·'} {Math.abs(pct).toFixed(1)}%
                       </span>
                       {sparkValues.length >= 2 && (
-                        <Sparkline values={sparkValues} width={68} height={22} color={o.color} />
+                        <Sparkline
+                          values={sparkValues}
+                          width={68}
+                          height={22}
+                          // Color by the pill's direction (not by team identity).
+                          // Emerald = odds shortening = being backed,
+                          // Red = odds drifting, slate = flat.
+                          color={
+                            direction === 'down' ? '#34d399'
+                            : direction === 'up' ? '#f87171'
+                            : '#94a3b8'
+                          }
+                        />
                       )}
                     </div>
                   </div>
