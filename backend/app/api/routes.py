@@ -1107,6 +1107,21 @@ async def get_fetcher_health(
     return health
 
 
+@router.post("/admin/refresh-xg")
+async def admin_refresh_xg(password: str = Query(..., description="Admin password")):
+    """
+    Manually trigger the weekly Understat xG refresh (useful on demand —
+    the scheduled run happens every Monday 03:00 UTC).
+    """
+    from app.services.xg_refresher import xg_refresher
+
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=403, detail="Invalid admin password")
+
+    summary = await xg_refresher.refresh()
+    return summary
+
+
 @router.get("/admin/totals-test")
 async def get_totals_test(
     password: str = Query(..., description="Admin password"),

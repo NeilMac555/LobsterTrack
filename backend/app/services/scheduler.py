@@ -3,11 +3,13 @@ from datetime import datetime, timedelta, timezone
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.date import DateTrigger
+from apscheduler.triggers.cron import CronTrigger
 
 from app.config import get_settings
 from app.services.odds_fetcher import odds_fetcher
 from app.services.results_fetcher import results_fetcher
 from app.services.closing_line_capturer import closing_line_capturer
+from app.services.xg_refresher import xg_refresher
 
 logger = structlog.get_logger()
 settings = get_settings()
@@ -243,6 +245,18 @@ class OddsScheduler:
         except Exception as e:
             logger.error("Results update failed", error=str(e))
 
+    async def xg_refresh_job(self):
+        """
+        Weekly refresh of rolling-xG data scraped from Understat.
+        Failures are logged but don't propagate — worst case the xg_data
+        table keeps last week's numbers until the next run.
+        """
+        try:
+            logger.info("Starting weekly xG refresh")
+            await xg_refresher.refresh()
+        except Exception as e:
+            logger.error("xG refresh failed", error=str(e))
+
     def start(self):
         """
         Start the scheduler with smart dynamic intervals.
@@ -271,6 +285,19 @@ class OddsScheduler:
             replace_existing=True,
             max_instances=1,
             coalesce=True
+        )
+
+        # Weekly xG refresh from Understat — Monday 03:00 UTC. By that point
+        # the weekend games are all settled and Understat's xG has been
+        # retagged by their analysts. Catches every matchweek once.
+        self.scheduler.add_job(
+            self.xg_refresh_job,
+            trigger=CronTrigger(day_of_week="mon", hour=3, minute=0),
+            id="xg_refresh_weekly",
+            name="Weekly xG refresh from Understat",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
         )
 
         self.scheduler.start()
@@ -334,6 +361,14 @@ class OddsScheduler:
             },
             "recent_errors": list(self._recent_errors),
             "scheduled_ko_jobs": len(self._scheduled_ko_jobs),
+            # Weekly xG refresh status — last run, how long ago, result summary
+            "xg_refresh": {
+                "last_run_at": iso(xg_refresher.last_run_at),
+                "seconds_since_last_run": seconds_ago(xg_refresher.last_run_at),
+                "last_error": xg_refresher.last_error,
+                "summary": xg_refresher.last_run_summary,
+                "schedule": "Mondays 03:00 UTC",
+            },
         }
 
     def stop(self):

@@ -61,6 +61,17 @@ interface FetcherHealth {
   };
   recent_errors: { at: string; where: string; error: string }[];
   scheduled_ko_jobs: number;
+  xg_refresh?: {
+    last_run_at: string | null;
+    seconds_since_last_run: number | null;
+    last_error: string | null;
+    summary: {
+      total_rows_inserted?: number;
+      leagues?: Record<string, { rows: number; teams: number; note?: string }>;
+      errors?: string[];
+    } | null;
+    schedule: string;
+  };
 }
 
 function fmtSeconds(s: number | null | undefined): string {
@@ -84,6 +95,8 @@ export default function AdminEmailsPage() {
   const [userFilter, setUserFilter] = useState<UserFilter>('never_paid');
   const [activating, setActivating] = useState<number | null>(null);
   const [activateMsg, setActivateMsg] = useState<string>('');
+  const [refreshingXg, setRefreshingXg] = useState(false);
+  const [xgRefreshMsg, setXgRefreshMsg] = useState<string>('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,6 +152,37 @@ export default function AdminEmailsPage() {
       if (res.ok) setUsers(await res.json());
     } catch {
       /* ignore */
+    }
+  };
+
+  const handleRefreshXg = async () => {
+    setRefreshingXg(true);
+    setXgRefreshMsg('');
+    try {
+      const res = await fetch(
+        `/api/admin/refresh-xg?password=${encodeURIComponent(password)}`,
+        { method: 'POST' }
+      );
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ detail: 'Failed' }));
+        setXgRefreshMsg(`Error: ${body.detail || 'Failed to refresh'}`);
+      } else {
+        const body = await res.json();
+        setXgRefreshMsg(
+          `Refreshed ${body.total_rows_inserted ?? 0} rows across ` +
+          `${Object.keys(body.leagues ?? {}).length} leagues`
+        );
+        // Re-fetch health so the new last_run_at shows immediately
+        try {
+          const hres = await fetch(`/api/admin/fetcher-health?password=${encodeURIComponent(password)}`);
+          if (hres.ok) setHealth(await hres.json());
+        } catch { /* ignore */ }
+      }
+    } catch {
+      setXgRefreshMsg('Network error');
+    } finally {
+      setRefreshingXg(false);
+      setTimeout(() => setXgRefreshMsg(''), 6000);
     }
   };
 
@@ -523,6 +567,84 @@ export default function AdminEmailsPage() {
               </div>
             </div>
           </div>
+
+          {/* xG Refresh panel — weekly Understat scrape health + manual trigger */}
+          {health.xg_refresh && (
+            <div className="bg-slate-800/80 rounded-xl border border-slate-700/50 overflow-hidden mb-6">
+              <div className="px-4 py-3 border-b border-slate-700/50 flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <div className="w-1 h-6 rounded-full bg-gradient-to-b from-cyan-400 to-cyan-600 flex-shrink-0" />
+                  <div>
+                    <h3 className="text-white font-semibold tracking-tight">Rolling xG refresh</h3>
+                    <p className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">
+                      {health.xg_refresh.schedule}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleRefreshXg}
+                  disabled={refreshingXg}
+                  className="px-3 py-1.5 rounded-md font-mono text-[11px] font-bold uppercase tracking-[0.1em] bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/25 disabled:opacity-60 transition-colors"
+                >
+                  {refreshingXg ? 'Refreshing…' : 'Run Now'}
+                </button>
+              </div>
+              {xgRefreshMsg && (
+                <div className={`px-4 py-2 text-xs font-mono ${
+                  xgRefreshMsg.startsWith('Error') || xgRefreshMsg === 'Network error'
+                    ? 'bg-red-500/10 text-red-400 border-b border-red-500/30'
+                    : 'bg-emerald-500/10 text-emerald-400 border-b border-emerald-500/30'
+                }`}>
+                  {xgRefreshMsg}
+                </div>
+              )}
+              <div className="p-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <div className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">Last Run</div>
+                  <div className={`text-base font-mono font-bold mt-1 ${
+                    health.xg_refresh.last_run_at
+                      ? (health.xg_refresh.seconds_since_last_run ?? 0) < 8 * 24 * 3600
+                        ? 'text-emerald-400'
+                        : 'text-amber-400'
+                      : 'text-slate-500'
+                  }`}>
+                    {health.xg_refresh.last_run_at
+                      ? `${fmtSeconds(health.xg_refresh.seconds_since_last_run)} ago`
+                      : 'never'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">Rows Inserted</div>
+                  <div className="text-base font-mono font-bold mt-1 text-white tabular-nums">
+                    {health.xg_refresh.summary?.total_rows_inserted?.toLocaleString() ?? '—'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">Status</div>
+                  <div className={`text-base font-mono font-bold mt-1 ${
+                    health.xg_refresh.last_error ? 'text-red-400' : 'text-emerald-400'
+                  }`}>
+                    {health.xg_refresh.last_error ? 'Error' : health.xg_refresh.last_run_at ? 'Healthy' : 'Pending'}
+                  </div>
+                </div>
+              </div>
+              {health.xg_refresh.summary?.leagues && (
+                <div className="px-4 pb-4 grid grid-cols-2 sm:grid-cols-5 gap-2 text-[11px] font-mono">
+                  {Object.entries(health.xg_refresh.summary.leagues).map(([k, v]) => (
+                    <div key={k} className="bg-slate-900/40 border border-slate-700/40 rounded px-2 py-1.5">
+                      <div className="text-slate-500 uppercase tracking-wider text-[9px]">{k.replace('soccer_', '')}</div>
+                      <div className="text-white tabular-nums mt-0.5">{v.rows} rows · {v.teams} teams</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {health.xg_refresh.last_error && (
+                <div className="px-4 pb-3 text-[11px] font-mono text-red-400 break-all">
+                  {health.xg_refresh.last_error}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Per-league table */}
           <div className="bg-slate-800/80 rounded-xl border border-slate-700/50 overflow-hidden mb-6">
