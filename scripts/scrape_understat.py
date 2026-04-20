@@ -1,153 +1,134 @@
 """
 Scrape xG data from Understat for all leagues and output CSV rows.
-Usage: python scripts/scrape_understat.py
+
+Understat moved their data off the HTML page sometime in 2025/2026 — the
+league/team pages are now JS shells that fetch /getLeagueData/<slug>/<season>
+as JSON via XHR. This script hits that endpoint directly.
+
+Usage:
+    python scripts/scrape_understat.py                 # all 5 leagues
+    python scripts/scrape_understat.py EPL             # one league
+    python scripts/scrape_understat.py EPL 2025-08-01  # skip matches on/before cutoff
 """
-import urllib.request
+import gzip
 import json
-import re
 import sys
-from datetime import datetime
+import urllib.request
+import urllib.error
 
 LEAGUES = {
+    # Understat slug  -> our sport_key
+    'EPL':        'soccer_epl',
+    'La_liga':    'soccer_spain_la_liga',
     'Bundesliga': 'soccer_germany_bundesliga',
-    'EPL': 'soccer_epl',
-    'La_liga': 'soccer_spain_la_liga',
-    'Serie_A': 'soccer_italy_serie_a',
-    'Ligue_1': 'soccer_france_ligue_one',
+    'Serie_A':    'soccer_italy_serie_a',
+    'Ligue_1':    'soccer_france_ligue_one',
 }
 
-# Team name mapping: Understat -> our spreadsheet names
+SEASON = '2025'  # Understat uses the season-start year — 2025 = 2025/26
+
+# Any team-name mismatches between Understat and the Rolling xG frontend's
+# dropdown go here. Most teams match 1:1 so this stays small.
 NAME_MAP = {
-    # Bundesliga
-    'Borussia M.Gladbach': 'Borussia M.Gladbach',
-    'RasenBallsport Leipzig': 'RasenBallsport Leipzig',
-    # EPL
-    'Manchester United': 'Manchester United',
-    'Manchester City': 'Manchester City',
-    # Add more as needed
+    # (Understat name -> our name)
+    # Examples only — add entries when a team goes missing from the chart.
+    # 'Brighton':      'Brighton & Hove Albion',
+    # 'Wolverhampton': 'Wolves',
 }
 
-def fetch_league_matches(league_name, season='2025'):
-    """Fetch all matches for a league from Understat."""
-    url = f'https://understat.com/league/{league_name}/{season}'
-    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-    html = urllib.request.urlopen(req).read().decode('utf-8')
 
-    # Understat stores match data in hex-encoded JSON strings
-    # Look for datesData which contains all match results
-    # The pattern is: var datesData = JSON.parse('hex_encoded_json')
-
-    # Find all large hex-encoded strings between single quotes
-    results = []
-    i = 0
-    search = "\\x"
-    while i < len(html):
-        # Find a quote followed by hex escape
-        sq = html.find("'" + search[0], i)
-        if sq == -1:
-            break
-        # Check if it's \x pattern
-        if html[sq+1:sq+3] == '\\x':
-            # Find closing quote
-            end = sq + 1
-            while end < len(html) and html[end] != "'":
-                end += 1
-            content = html[sq+1:end]
-            if len(content) > 1000:
-                results.append(content)
-            i = end + 1
-        else:
-            i = sq + 2
-
-    # Try to decode each and find the one with match data
-    for raw in results:
-        try:
-            decoded = raw.encode('raw_unicode_escape').decode('unicode_escape')
-            data = json.loads(decoded)
-            # datesData is a list of date groups with matches
-            if isinstance(data, list) and len(data) > 0:
-                first = data[0]
-                if isinstance(first, dict) and 'id' in first:
-                    return data
-        except:
-            continue
-
-    return None
+def fetch_league_data(slug: str) -> dict:
+    """GET https://understat.com/getLeagueData/<slug>/<season> as JSON."""
+    url = f'https://understat.com/getLeagueData/{slug}/{SEASON}'
+    req = urllib.request.Request(
+        url,
+        headers={
+            'User-Agent': (
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                'AppleWebKit/537.36 (KHTML, like Gecko) '
+                'Chrome/131.0.0.0 Safari/537.36'
+            ),
+            'Accept': 'application/json, text/plain, */*',
+            'X-Requested-With': 'XMLHttpRequest',
+            'Referer': f'https://understat.com/league/{slug}/{SEASON}',
+        },
+    )
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        raw = resp.read()
+        # Understat's CDN transparently gzips responses even when we don't
+        # ask for it. Check the Content-Encoding header (case-insensitive)
+        # and decompress if needed — urllib doesn't handle this for us.
+        encoding = (resp.headers.get('Content-Encoding') or '').lower()
+        if encoding == 'gzip' or raw[:2] == b'\x1f\x8b':
+            raw = gzip.decompress(raw)
+        return json.loads(raw.decode('utf-8'))
 
 
-def fetch_team_data(league_name, season='2025'):
-    """Fetch per-team match data from Understat team pages."""
-    url = f'https://understat.com/league/{league_name}/{season}'
-    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-    html = urllib.request.urlopen(req).read().decode('utf-8')
-
-    # Find teamsData
-    results = []
-    i = 0
-    while i < len(html):
-        sq = html.find("'\\x", i)
-        if sq == -1:
-            break
-        end = sq + 1
-        while end < len(html) and html[end] != "'":
-            end += 1
-        content = html[sq+1:end]
-        if len(content) > 1000:
-            try:
-                decoded = content.encode('raw_unicode_escape').decode('unicode_escape')
-                data = json.loads(decoded)
-                results.append(data)
-            except:
-                pass
-        i = end + 1
-
-    # teamsData is a dict keyed by team ID
-    for data in results:
-        if isinstance(data, dict):
-            first_key = list(data.keys())[0]
-            first_val = data[first_key]
-            if isinstance(first_val, dict) and 'history' in first_val:
-                return data
-
-    return None
-
-
-if __name__ == '__main__':
+def main() -> int:
     league_filter = sys.argv[1] if len(sys.argv) > 1 else None
     cutoff_date = sys.argv[2] if len(sys.argv) > 2 else None
 
     if league_filter:
-        leagues = {k: v for k, v in LEAGUES.items() if k.lower() == league_filter.lower()}
+        leagues = {k: v for k, v in LEAGUES.items()
+                   if k.lower() == league_filter.lower()}
+        if not leagues:
+            sys.stderr.write(
+                f'Unknown league: {league_filter}. Valid: {list(LEAGUES)}\n'
+            )
+            return 2
     else:
         leagues = LEAGUES
 
+    # CSV header — this is exactly what /api/admin/upload-xg expects.
     print("league,team_name,match_number,npxg_for,npxg_against,match_date")
 
-    for league_name, sport_key in leagues.items():
-        sys.stderr.write(f"Fetching {league_name}...\n")
-        team_data = fetch_team_data(league_name)
-
-        if not team_data:
-            sys.stderr.write(f"  ERROR: Could not fetch data for {league_name}\n")
+    total_rows = 0
+    for slug, sport_key in leagues.items():
+        sys.stderr.write(f'Fetching {slug}...\n')
+        try:
+            data = fetch_league_data(slug)
+        except (urllib.error.URLError, json.JSONDecodeError) as e:
+            sys.stderr.write(f'  ERROR fetching {slug}: {e}\n')
             continue
 
-        for team_id, team_info in team_data.items():
-            team_name = NAME_MAP.get(team_info['title'], team_info['title'])
-            history = team_info.get('history', [])
+        teams = data.get('teams') or {}
+        if not teams:
+            sys.stderr.write(f'  ERROR: no teams in {slug} payload\n')
+            continue
 
-            # Sort by date
-            history.sort(key=lambda x: x.get('date', ''))
+        league_rows = 0
+        for _team_id, team_info in teams.items():
+            raw_name = team_info.get('title') or ''
+            team_name = NAME_MAP.get(raw_name, raw_name)
+            history = team_info.get('history') or []
 
-            for i, match in enumerate(history, 1):
-                match_date = match.get('date', '')[:10]
+            # History is returned in date order; sort explicitly as a safety net.
+            history.sort(key=lambda m: (m.get('date') or ''))
 
-                # Skip if before cutoff
+            match_number = 0
+            for match in history:
+                match_date = (match.get('date') or '')[:10]  # 'YYYY-MM-DD'
                 if cutoff_date and match_date <= cutoff_date:
                     continue
 
-                npxg_for = match.get('npxG', match.get('xG', 0))
-                npxg_against = match.get('npxGA', match.get('xGA', 0))
+                # npxG / npxGA fall back to xG / xGA if Understat ever serves
+                # a match without the npxG keys (rare, but historically possible).
+                npxg_for = match.get('npxG', match.get('xG', 0)) or 0
+                npxg_against = match.get('npxGA', match.get('xGA', 0)) or 0
 
-                print(f"{sport_key},{team_name},{i},{npxg_for},{npxg_against},{match_date}")
+                match_number += 1
+                print(
+                    f'{sport_key},{team_name},{match_number},'
+                    f'{npxg_for},{npxg_against},{match_date}'
+                )
+                league_rows += 1
 
-        sys.stderr.write(f"  Done: {len(team_data)} teams\n")
+        sys.stderr.write(f'  Done: {len(teams)} teams, {league_rows} rows\n')
+        total_rows += league_rows
+
+    sys.stderr.write(f'Total: {total_rows} rows across {len(leagues)} league(s)\n')
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())
