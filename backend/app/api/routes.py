@@ -1122,6 +1122,75 @@ async def get_fetcher_health(
     return health
 
 
+@router.get("/admin/email-config")
+async def admin_email_config(password: str = Query(..., description="Admin password")):
+    """
+    Report whether email is configured correctly. Never returns the actual
+    API key — only whether it's set, its prefix, and the from/admin addresses.
+    Use this first when 'nobody is getting emails' — catches RESEND_API_KEY
+    not being in Railway env vars (the most common cause after a redeploy).
+    """
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=403, detail="Invalid admin password")
+
+    key = settings.resend_api_key or ""
+    return {
+        "resend_api_key_configured": bool(key),
+        "resend_api_key_prefix": (key[:6] + "…" + key[-3:]) if len(key) >= 10 else None,
+        "resend_api_key_length": len(key),
+        "email_from": settings.email_from,
+        "admin_notify_email": settings.admin_notify_email,
+        "frontend_url": settings.frontend_url,
+    }
+
+
+@router.post("/admin/test-email")
+async def admin_test_email(
+    password: str = Query(..., description="Admin password"),
+    to: str = Query(..., description="Recipient email"),
+):
+    """
+    Send a diagnostic test email via Resend and return the exact response
+    (status code, body). If this fails, the Pro welcome / magic-link emails
+    fail too — they use the same plumbing.
+    """
+    import httpx
+
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=403, detail="Invalid admin password")
+    if not settings.resend_api_key:
+        return {"ok": False, "error": "RESEND_API_KEY not configured on backend"}
+
+    html = f"""
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1e293b;">
+      <h2>SteamWatch email test</h2>
+      <p>If you're reading this, the Resend pipeline is working.</p>
+      <p style="color: #64748b; font-size: 12px;">Sent at {datetime.utcnow().isoformat()}Z to {to}.</p>
+    </div>
+    """
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        response = await client.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {settings.resend_api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "from": settings.email_from,
+                "to": [to],
+                "reply_to": settings.admin_notify_email,
+                "subject": "SteamWatch — email pipeline test",
+                "html": html,
+            },
+        )
+
+    return {
+        "ok": response.status_code == 200,
+        "status": response.status_code,
+        "resend_response": response.json() if response.content else None,
+    }
+
+
 @router.post("/admin/refresh-xg")
 async def admin_refresh_xg(password: str = Query(..., description="Admin password")):
     """

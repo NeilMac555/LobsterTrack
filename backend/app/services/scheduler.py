@@ -10,6 +10,7 @@ from app.services.odds_fetcher import odds_fetcher
 from app.services.results_fetcher import results_fetcher
 from app.services.closing_line_capturer import closing_line_capturer
 from app.services.xg_refresher import xg_refresher
+from app.services.email_sender import email_sender
 
 logger = structlog.get_logger()
 settings = get_settings()
@@ -361,6 +362,19 @@ class OddsScheduler:
             },
             "recent_errors": list(self._recent_errors),
             "scheduled_ko_jobs": len(self._scheduled_ko_jobs),
+            # Email pipeline health — so a Resend outage is visible
+            # without reading Railway logs.
+            "email": {
+                "configured": email_sender.is_configured(),
+                "sent_count": email_sender.sent_count,
+                "failed_count": email_sender.failed_count,
+                "last_sent_at": iso(email_sender.last_sent_at),
+                "seconds_since_last_sent": seconds_ago(email_sender.last_sent_at),
+                "last_failed_at": iso(email_sender.last_failed_at),
+                "seconds_since_last_failed": seconds_ago(email_sender.last_failed_at),
+                "last_error": email_sender.last_error,
+                "last_failure_kind": email_sender.last_failure_kind,
+            },
             # Weekly xG refresh status — last run, how long ago, result summary
             "xg_refresh": {
                 "last_run_at": iso(xg_refresher.last_run_at),

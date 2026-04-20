@@ -1,5 +1,6 @@
 import httpx
 import structlog
+from datetime import datetime
 
 from app.config import get_settings
 
@@ -12,6 +13,28 @@ class EmailSender:
         self.api_key = settings.resend_api_key
         self.from_address = settings.email_from
         self.frontend_url = settings.frontend_url
+        # Minimal in-memory stats so the admin health panel can show
+        # 'emails are landing' (or not) without reading Railway logs.
+        # Lost on restart — that's fine, we only need recent signal.
+        self.sent_count: int = 0
+        self.failed_count: int = 0
+        self.last_sent_at: datetime | None = None
+        self.last_failed_at: datetime | None = None
+        self.last_error: str | None = None
+        self.last_failure_kind: str | None = None  # magic_link / welcome / admin
+
+    def _record_success(self, kind: str):
+        self.sent_count += 1
+        self.last_sent_at = datetime.utcnow()
+        # Don't clear last_error — seeing 'last failure was yesterday, last
+        # success was 10 min ago' is useful diagnostic info.
+        _ = kind
+
+    def _record_failure(self, kind: str, error: str):
+        self.failed_count += 1
+        self.last_failed_at = datetime.utcnow()
+        self.last_error = error[:400]
+        self.last_failure_kind = kind
 
     def is_configured(self) -> bool:
         return bool(self.api_key)
@@ -63,6 +86,7 @@ class EmailSender:
 
                 if response.status_code == 200:
                     logger.info("Magic link email sent", to=to_email)
+                    self._record_success("magic_link")
                     return True
                 else:
                     logger.error(
@@ -70,10 +94,15 @@ class EmailSender:
                         status=response.status_code,
                         response=response.text,
                     )
+                    self._record_failure(
+                        "magic_link",
+                        f"HTTP {response.status_code}: {response.text[:200]}",
+                    )
                     return False
 
         except Exception as e:
             logger.error("Error sending magic link email", error=str(e))
+            self._record_failure("magic_link", str(e))
             return False
 
 
@@ -131,6 +160,7 @@ class EmailSender:
 
                 if response.status_code == 200:
                     logger.info("Welcome email sent", to=to_email)
+                    self._record_success("welcome")
                     return True
                 else:
                     logger.error(
@@ -138,10 +168,15 @@ class EmailSender:
                         status=response.status_code,
                         response=response.text,
                     )
+                    self._record_failure(
+                        "welcome",
+                        f"HTTP {response.status_code}: {response.text[:200]}",
+                    )
                     return False
 
         except Exception as e:
             logger.error("Error sending welcome email", error=str(e))
+            self._record_failure("welcome", str(e))
             return False
 
 
@@ -182,6 +217,7 @@ class EmailSender:
 
                 if response.status_code == 200:
                     logger.info("Admin notification sent", subject=subject)
+                    self._record_success("admin")
                     return True
                 else:
                     logger.error(
@@ -189,10 +225,15 @@ class EmailSender:
                         status=response.status_code,
                         response=response.text,
                     )
+                    self._record_failure(
+                        "admin",
+                        f"HTTP {response.status_code}: {response.text[:200]}",
+                    )
                     return False
 
         except Exception as e:
             logger.error("Error sending admin notification", error=str(e))
+            self._record_failure("admin", str(e))
             return False
 
 
