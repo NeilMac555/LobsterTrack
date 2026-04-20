@@ -111,14 +111,14 @@ export default function Layout() {
                         key={tool.path}
                         to={tool.path}
                         onClick={() => setToolsOpen(false)}
-                        className={`flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
+                        className={`flex items-center gap-2.5 px-3 py-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors ${
                           location.pathname === tool.path
                             ? 'bg-cyan-500/10 text-cyan-300'
                             : 'text-slate-300 hover:bg-slate-700 hover:text-white'
                         }`}
                       >
-                        <span className="text-base">{tool.icon}</span>
-                        <span className="font-medium">{tool.name}</span>
+                        <span className="text-sm grayscale opacity-70">{tool.icon}</span>
+                        <span>{tool.name}</span>
                       </Link>
                     ))}
                   </div>
