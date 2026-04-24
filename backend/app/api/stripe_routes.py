@@ -169,28 +169,67 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
         elif event_type == "invoice.payment_failed":
             _handle_payment_failed(data, db)
     except Exception as e:
-        logger.error("Webhook handler error", event_type=event_type, error=str(e))
-        # URGENT: a payment-related webhook blew up. Alert Neil immediately
-        # with the full context so he can force-activate manually.
+        import traceback as _tb
+        tb_text = _tb.format_exc()
+        err_cls = type(e).__name__
+        err_msg = str(e) or repr(e)
+        logger.error(
+            "Webhook handler error",
+            event_type=event_type,
+            error_class=err_cls,
+            error=err_msg,
+            traceback=tb_text,
+        )
+        # Push into the scheduler's recent_errors so /admin/fetcher-health
+        # surfaces the EXACT exception class + message + file:line that blew
+        # up. That 'get' in {"detail":"get"} hides the real story.
         try:
-            customer_email = (
-                (data.get("customer_details") or {}).get("email")
-                or data.get("customer_email")
-                or data.get("receipt_email")
-                or "(unknown)"
+            from app.services.scheduler import odds_scheduler
+            # Grab the deepest traceback frame for a compact 'where'.
+            tb_last = tb_text.strip().splitlines()[-3:] if tb_text else []
+            odds_scheduler._record_error(
+                "stripe_webhook",
+                f"{event_type} -> {err_cls}: {err_msg} | {' | '.join(tb_last)}",
             )
+        except Exception:
+            pass
+
+        # URGENT: a payment-related webhook blew up. Alert Neil immediately
+        # with the full traceback so he can debug + force-activate manually.
+        try:
+            # `data` is a Stripe object that .get()s like a dict. Be defensive
+            # in case e was itself raised BY a .get() call on something weird.
+            try:
+                details = data.get("customer_details") or {}
+                checkout_email = details.get("email") if hasattr(details, "get") else None
+                customer_email = (
+                    checkout_email
+                    or data.get("customer_email")
+                    or data.get("receipt_email")
+                    or "(unknown)"
+                )
+                customer_id = data.get("customer")
+            except Exception:
+                customer_email = "(unknown — data introspection failed)"
+                customer_id = "(unknown)"
+
             await email_sender.send_admin_notification(
                 "URGENT: Stripe webhook handler failed",
                 f"Event type: {event_type}\n"
                 f"Customer email: {customer_email}\n"
-                f"Customer ID: {data.get('customer')}\n"
-                f"Error: {e}\n\n"
-                f"Action needed: check Stripe dashboard and run force-activate if "
-                f"the payment went through.",
+                f"Customer ID: {customer_id}\n"
+                f"Error class: {err_cls}\n"
+                f"Error message: {err_msg}\n\n"
+                f"Traceback:\n{tb_text}\n\n"
+                f"Action needed: check Stripe dashboard and run force-activate "
+                f"if the payment went through.",
             )
         except Exception:
             pass
-        raise HTTPException(status_code=500, detail=str(e))
+        # Return 200 so Stripe stops hammering us with retries while we
+        # debug the underlying cause — we've already logged, alerted, and
+        # recorded. Force-activate endpoint is the manual recovery path.
+        return {"status": "error_logged", "error_class": err_cls}
 
     return {"status": "ok"}
 
