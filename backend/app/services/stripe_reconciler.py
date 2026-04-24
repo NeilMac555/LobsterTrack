@@ -134,8 +134,11 @@ class StripeReconciler:
                     summary["errors"].append(msg)
 
             # Pass 2 — demote any local 'active' user whose email isn't in
-            # the legitimate Pro set. This heals any past drift (e.g. a
-            # previous unfiltered run that activated non-Pro customers).
+            # the legitimate Pro set AND who has a stripe_customer_id
+            # (meaning they originally paid via Stripe). Comps / manual
+            # force-activates don't get a stripe_customer_id, so they're
+            # protected from auto-demotion here — those are admin decisions
+            # the reconciler must not override.
             try:
                 legit_emails = set(active_by_email.keys())
                 active_subs = (
@@ -145,10 +148,16 @@ class StripeReconciler:
                     .all()
                 )
                 for sub, user in active_subs:
-                    if (user.email or "").lower().strip() not in legit_emails:
-                        sub.status = "inactive"
-                        summary["demoted"] += 1
-                        summary["demoted_emails"].append(user.email)
+                    email_lower = (user.email or "").lower().strip()
+                    if email_lower in legit_emails:
+                        continue  # legit Pro sub
+                    if not user.stripe_customer_id:
+                        continue  # manual comp — leave alone
+                    # Had a Stripe customer ID but isn't in active Pro list →
+                    # their Stripe sub is gone (cancelled, past-due, etc).
+                    sub.status = "inactive"
+                    summary["demoted"] += 1
+                    summary["demoted_emails"].append(user.email)
                 if summary["demoted"] > 0:
                     db.commit()
             except Exception as e:
