@@ -1206,6 +1206,23 @@ async def admin_refresh_xg(password: str = Query(..., description="Admin passwor
     return summary
 
 
+@router.post("/admin/reconcile-stripe")
+async def admin_reconcile_stripe(password: str = Query(..., description="Admin password")):
+    """
+    Manually run the Stripe reconciler (auto-runs every 10 min). Pulls
+    every active Stripe subscription, creates missing users, activates
+    missing local subscriptions, emails magic links + admin alerts.
+    Useful right after noticing a customer isn't active.
+    """
+    from app.services.stripe_reconciler import stripe_reconciler
+
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=403, detail="Invalid admin password")
+
+    summary = await stripe_reconciler.reconcile()
+    return summary
+
+
 @router.get("/admin/totals-test")
 async def get_totals_test(
     password: str = Query(..., description="Admin password"),

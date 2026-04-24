@@ -11,6 +11,7 @@ from app.services.results_fetcher import results_fetcher
 from app.services.closing_line_capturer import closing_line_capturer
 from app.services.xg_refresher import xg_refresher
 from app.services.email_sender import email_sender
+from app.services.stripe_reconciler import stripe_reconciler
 
 logger = structlog.get_logger()
 settings = get_settings()
@@ -258,6 +259,19 @@ class OddsScheduler:
         except Exception as e:
             logger.error("xG refresh failed", error=str(e))
 
+    async def stripe_reconcile_job(self):
+        """
+        Safety net for the Stripe webhook — lists every active Stripe
+        subscription and makes sure each one exists in our DB as active.
+        Auto-creates users, sends magic links, alerts Neil on anything
+        new. Runs every 10 minutes so the most a paid customer ever
+        waits is 10m even if the webhook is completely dead.
+        """
+        try:
+            await stripe_reconciler.reconcile()
+        except Exception as e:
+            logger.error("stripe reconcile failed", error=str(e))
+
     def start(self):
         """
         Start the scheduler with smart dynamic intervals.
@@ -296,6 +310,19 @@ class OddsScheduler:
             trigger=CronTrigger(day_of_week="mon", hour=3, minute=0),
             id="xg_refresh_weekly",
             name="Weekly xG refresh from Understat",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
+
+        # Stripe reconciler — every 10 minutes. Catches any Pro signup the
+        # webhook missed, creates the user, emails the magic link, and
+        # alerts Neil. Worst-case wait for a new customer is now 10 min.
+        self.scheduler.add_job(
+            self.stripe_reconcile_job,
+            trigger=IntervalTrigger(minutes=10),
+            id="stripe_reconcile",
+            name="Stripe subscription reconciler",
             replace_existing=True,
             max_instances=1,
             coalesce=True,
@@ -383,6 +410,14 @@ class OddsScheduler:
                 "seconds_since_last_failed": seconds_ago(email_sender.last_failed_at),
                 "last_error": email_sender.last_error,
                 "last_failure_kind": email_sender.last_failure_kind,
+            },
+            # Stripe reconciler — webhook safety net, runs every 10 min
+            "stripe_reconciler": {
+                "last_run_at": iso(stripe_reconciler.last_run_at),
+                "seconds_since_last_run": seconds_ago(stripe_reconciler.last_run_at),
+                "last_error": stripe_reconciler.last_error,
+                "summary": stripe_reconciler.last_run_summary,
+                "schedule": "Every 10 minutes",
             },
             # Weekly xG refresh status — last run, how long ago, result summary
             "xg_refresh": {
