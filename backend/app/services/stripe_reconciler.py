@@ -42,8 +42,13 @@ class StripeReconciler:
 
     async def reconcile(self) -> dict[str, Any]:
         """
-        Pull every active Stripe subscription and ensure our DB matches.
-        Reports how many subs were reconciled, activated fresh, or flagged.
+        Pull every active SteamWatch Pro Stripe subscription (filtered by
+        price_id so we don't accidentally activate Ghost / WooCommerce
+        customers as Pro) and ensure our DB matches.
+
+        Also runs a demotion pass — any local user currently marked 'active'
+        whose email isn't in Stripe's active Pro list gets demoted to
+        'inactive'. Keeps the DB self-healing.
         """
         started = datetime.utcnow()
         summary: dict[str, Any] = {
@@ -52,8 +57,10 @@ class StripeReconciler:
             "newly_created_users": 0,
             "newly_activated_subs": 0,
             "already_in_sync": 0,
+            "demoted": 0,
             "errors": [],
             "new_emails": [],
+            "demoted_emails": [],
         }
 
         if not settings.stripe_secret_key:
@@ -63,15 +70,28 @@ class StripeReconciler:
             self.last_error = summary["errors"][0]
             return summary
 
+        if not settings.stripe_price_id:
+            # Refuse to run without a price filter — without it we'd activate
+            # every Stripe customer across every product Neil sells.
+            summary["errors"].append(
+                "STRIPE_PRICE_ID not configured — refusing to run to prevent "
+                "cross-product activation"
+            )
+            self.last_run_at = datetime.utcnow()
+            self.last_run_summary = summary
+            self.last_error = summary["errors"][0]
+            return summary
+
         stripe.api_key = settings.stripe_secret_key
 
-        # Build an email-keyed map of every active Stripe subscription
-        # (expand customer so we can read the email in one call instead of
-        # needing a second Customer.retrieve per sub).
+        # Build an email-keyed map of every active *SteamWatch Pro* sub.
+        # The `price` filter is load-bearing — without it the list includes
+        # every Stripe product in the account.
         try:
             active_by_email: dict[str, Any] = {}
             for sub in stripe.Subscription.list(
                 status="active",
+                price=settings.stripe_price_id,
                 limit=100,
                 expand=["data.customer"],
             ).auto_paging_iter():
@@ -80,8 +100,6 @@ class StripeReconciler:
                 if not email:
                     continue
                 email = email.lower().strip()
-                # If Stripe has multiple active subs for the same email
-                # (shouldn't happen, but defensively) keep the newest.
                 existing = active_by_email.get(email)
                 if existing is None or sub.created > existing.created:
                     active_by_email[email] = sub
@@ -96,6 +114,7 @@ class StripeReconciler:
 
         db = SessionLocal()
         try:
+            # Pass 1 — ensure every legitimate Stripe Pro sub is reflected.
             for email, stripe_sub in active_by_email.items():
                 try:
                     result = await self._reconcile_one(db, email, stripe_sub)
@@ -113,6 +132,29 @@ class StripeReconciler:
                     msg = f"{email}: {type(e).__name__}: {e}"
                     logger.error("stripe_reconciler: per-sub error", email=email, error=str(e))
                     summary["errors"].append(msg)
+
+            # Pass 2 — demote any local 'active' user whose email isn't in
+            # the legitimate Pro set. This heals any past drift (e.g. a
+            # previous unfiltered run that activated non-Pro customers).
+            try:
+                legit_emails = set(active_by_email.keys())
+                active_subs = (
+                    db.query(Subscription, User)
+                    .join(User, Subscription.user_id == User.id)
+                    .filter(Subscription.status == "active")
+                    .all()
+                )
+                for sub, user in active_subs:
+                    if (user.email or "").lower().strip() not in legit_emails:
+                        sub.status = "inactive"
+                        summary["demoted"] += 1
+                        summary["demoted_emails"].append(user.email)
+                if summary["demoted"] > 0:
+                    db.commit()
+            except Exception as e:
+                db.rollback()
+                logger.error("stripe_reconciler: demotion pass failed", error=str(e))
+                summary["errors"].append(f"Demotion pass: {e}")
         finally:
             db.close()
 
