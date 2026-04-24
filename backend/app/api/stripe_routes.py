@@ -115,12 +115,45 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
 
+    # Count every inbound hit so the admin health panel can show 'Stripe
+    # is reaching us at all' regardless of whether the signature validates.
+    try:
+        from app.services.scheduler import odds_scheduler
+        odds_scheduler._webhook_hit_count = getattr(odds_scheduler, "_webhook_hit_count", 0) + 1
+        odds_scheduler._webhook_last_hit_at = datetime.utcnow()
+    except Exception:
+        pass
+
     try:
         stripe.api_key = settings.stripe_secret_key
         event = stripe.Webhook.construct_event(payload, sig_header, settings.stripe_webhook_secret)
-    except ValueError:
+    except ValueError as e:
+        logger.error("Stripe webhook: invalid payload", error=str(e))
+        try:
+            from app.services.scheduler import odds_scheduler
+            odds_scheduler._record_error("stripe_webhook", f"Invalid payload: {e}")
+        except Exception:
+            pass
         raise HTTPException(status_code=400, detail="Invalid payload")
-    except Exception:
+    except Exception as e:
+        # Signature mismatch is the #1 cause of 'no customers getting emails'.
+        # Log it loudly and pipe into recent_errors so /admin/fetcher-health
+        # makes it obvious without having to read Railway logs.
+        logger.error(
+            "Stripe webhook: invalid signature",
+            sig_header_prefix=(sig_header or "")[:20] + "...",
+            secret_prefix=(settings.stripe_webhook_secret or "")[:10] + "...",
+            error=str(e),
+        )
+        try:
+            from app.services.scheduler import odds_scheduler
+            odds_scheduler._record_error(
+                "stripe_webhook",
+                f"Invalid signature — STRIPE_WEBHOOK_SECRET on Railway doesn't "
+                f"match the endpoint's signing secret in Stripe Dashboard. {e}"
+            )
+        except Exception:
+            pass
         raise HTTPException(status_code=400, detail="Invalid signature")
 
     event_type = event["type"]

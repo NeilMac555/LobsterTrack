@@ -362,6 +362,15 @@ class OddsScheduler:
             },
             "recent_errors": list(self._recent_errors),
             "scheduled_ko_jobs": len(self._scheduled_ko_jobs),
+            # Stripe webhook — has the endpoint been hit at all? If hits=0
+            # then Stripe Dashboard doesn't have us configured OR the
+            # endpoint is disabled. If hits > 0 but recent_errors shows
+            # 'Invalid signature' then STRIPE_WEBHOOK_SECRET is wrong.
+            "stripe_webhook": {
+                "hits": getattr(self, "_webhook_hit_count", 0),
+                "last_hit_at": iso(getattr(self, "_webhook_last_hit_at", None)),
+                "seconds_since_last_hit": seconds_ago(getattr(self, "_webhook_last_hit_at", None)),
+            },
             # Email pipeline health — so a Resend outage is visible
             # without reading Railway logs.
             "email": {
