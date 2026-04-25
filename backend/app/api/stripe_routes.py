@@ -156,8 +156,15 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
             pass
         raise HTTPException(status_code=400, detail="Invalid signature")
 
-    event_type = event["type"]
-    data = event["data"]["object"]
+    # NOTE: Stripe SDK's StripeObject has __getattr__ but no .get() method,
+    # so calling `.get("id")` on it raises AttributeError. We re-parse the
+    # raw payload into plain dicts so every `.get()` in the handlers below
+    # works as Python dicts — and so do nested .get() chains. Signature
+    # validation already ran above on the original payload.
+    import json as _json
+    event_dict = _json.loads(payload)
+    event_type = event_dict["type"]
+    data = event_dict["data"]["object"]
 
     try:
         if event_type == "checkout.session.completed":
