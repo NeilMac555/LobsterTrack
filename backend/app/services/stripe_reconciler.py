@@ -151,10 +151,13 @@ class StripeReconciler:
                     email_lower = (user.email or "").lower().strip()
                     if email_lower in legit_emails:
                         continue  # legit Pro sub
-                    if not user.stripe_customer_id:
-                        continue  # manual comp — leave alone
-                    # Had a Stripe customer ID but isn't in active Pro list →
-                    # their Stripe sub is gone (cancelled, past-due, etc).
+                    if not sub.stripe_subscription_id:
+                        # No Stripe subscription linked = this was force-
+                        # activated manually (a comp, an admin, the founder).
+                        # Reconciler must never override that.
+                        continue
+                    # Sub WAS tied to a Stripe subscription that's no longer
+                    # in the active Pro list → cancelled / past-due / refund.
                     sub.status = "inactive"
                     summary["demoted"] += 1
                     summary["demoted_emails"].append(user.email)

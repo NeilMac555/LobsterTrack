@@ -2118,6 +2118,11 @@ async def admin_force_activate(
         db.add(sub)
 
     sub.status = "active"
+    # Force-activate is an admin grant. Clear any stale Stripe subscription
+    # link so the reconciler correctly identifies this as a manual comp
+    # (it skips users with NULL stripe_subscription_id). If they later
+    # subscribe through Stripe legitimately, the webhook will repopulate this.
+    sub.stripe_subscription_id = None
     db.commit()
 
     # If we just created them, send a magic sign-in link so they can log in.
