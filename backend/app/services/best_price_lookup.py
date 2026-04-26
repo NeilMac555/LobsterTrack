@@ -24,11 +24,15 @@ from app.config import get_settings
 logger = structlog.get_logger()
 settings = get_settings()
 
-# Map our internal market name → The Odds API's market key.
-_MARKET_KEY = {
-    "1x2": "h2h",
-    "totals": "totals",
-    "spreads": "spreads",
+# Map our internal market → the Odds API market keys we need to request.
+# For totals + spreads we ALSO request the 'alternate_*' variant so that
+# every line a book quotes is returned, not just their main line. Without
+# this we miss obvious better prices when other books happen to lead with
+# a different headline line (e.g. Pinnacle +1 vs William Hill +1.25).
+_MARKET_KEYS = {
+    "1x2":     ["h2h"],
+    "totals":  ["totals", "alternate_totals"],
+    "spreads": ["spreads", "alternate_spreads"],
 }
 
 # UK-licensed books we trust on alerts. Anything not in this set is dropped
@@ -145,15 +149,15 @@ async def find_best_alternative_price(
     if not settings.odds_api_key:
         return None
 
-    api_market = _MARKET_KEY.get(market)
-    if not api_market:
+    api_markets = _MARKET_KEYS.get(market)
+    if not api_markets:
         return None
 
     url = f"{settings.odds_api_base_url}/sports/{sport_key}/odds"
     params = {
         "apiKey": settings.odds_api_key,
-        "regions": "eu,uk",       # cover Pinnacle EU + the major UK books
-        "markets": api_market,
+        "regions": "eu,uk",          # cover Pinnacle EU + the major UK books
+        "markets": ",".join(api_markets),  # h2h | totals,alternate_totals | spreads,alternate_spreads
         "eventIds": event_id,
         "oddsFormat": "decimal",
     }
@@ -173,6 +177,7 @@ async def find_best_alternative_price(
     event = events[0]
     bookmakers = event.get("bookmakers") or []
 
+    api_markets_set = set(api_markets)
     candidates: list[tuple[float, str]] = []
     for bm in bookmakers:
         bm_key = bm.get("key")
@@ -182,7 +187,10 @@ async def find_best_alternative_price(
             continue
         title = bm.get("title") or bm_key or "?"
         for mkt in (bm.get("markets") or []):
-            if mkt.get("key") != api_market:
+            # Accept any of the requested market keys — for spreads/totals
+            # we ask for both main and alternate variants and either may
+            # carry the line we care about.
+            if mkt.get("key") not in api_markets_set:
                 continue
             for o in (mkt.get("outcomes") or []):
                 if not _matches_outcome(o, market, outcome, home_team, away_team, line):
@@ -196,6 +204,16 @@ async def find_best_alternative_price(
                     continue
 
     if not candidates:
+        # Useful breadcrumb when an alert ships without a 💰 line — usually
+        # means no UK book on the allowlist offered the alerted line/outcome.
+        logger.info(
+            "best_price_lookup: no matching candidates",
+            sport_key=sport_key,
+            market=market,
+            outcome=outcome,
+            line=line,
+            bookmakers_seen=len(bookmakers),
+        )
         return None
 
     # Sort high-to-low so [0] is the best price.
