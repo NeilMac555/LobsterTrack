@@ -138,7 +138,7 @@ class SyndicateAlerter:
 
         return alerts_sent
 
-    async def _check_totals_market(
+    async def _check_totals_market(  # noqa: D401
         self, db: Session, match: Match, window_start: datetime, minutes_to_ko: int
     ) -> int:
         """Check Totals market for syndicate moves on the OPENING line.
@@ -193,7 +193,8 @@ class SyndicateAlerter:
                 if prob_move >= SYNDICATE_THRESHOLD_PROB_POINTS:
                     sent = await self._send_alert_if_new(
                         db, match, 'totals', outcome, label, name,
-                        curr_odds, prob_move, minutes_to_ko
+                        curr_odds, prob_move, minutes_to_ko,
+                        line=opening_line,
                     )
                     if sent:
                         alerts_sent += 1
@@ -242,7 +243,8 @@ class SyndicateAlerter:
                 if prob_move >= SYNDICATE_THRESHOLD_PROB_POINTS:
                     sent = await self._send_alert_if_new(
                         db, match, 'spreads', outcome, label, name,
-                        curr_odds, prob_move, minutes_to_ko
+                        curr_odds, prob_move, minutes_to_ko,
+                        line=line,
                     )
                     if sent:
                         alerts_sent += 1
@@ -259,7 +261,8 @@ class SyndicateAlerter:
         outcome_name: str,
         current_odds: float,
         prob_change: float,
-        minutes_to_ko: int
+        minutes_to_ko: int,
+        line: float | None = None,
     ) -> bool:
         """Send alert if we haven't already alerted for this match/market/outcome."""
         # Check if already alerted
@@ -274,6 +277,24 @@ class SyndicateAlerter:
         if existing:
             return False
 
+        # Look up the best price for this outcome across all bookmakers.
+        # Best-effort — if it fails, the alert still goes out without it.
+        best_price_info = None
+        try:
+            from app.services.best_price_lookup import find_best_alternative_price
+            best_price_info = await find_best_alternative_price(
+                sport_key=match.sport_key,
+                event_id=match.id,
+                market=market,  # type: ignore[arg-type]
+                outcome=outcome,
+                home_team=match.home_team,
+                away_team=match.away_team,
+                line=line,
+                pinnacle_price=current_odds,
+            )
+        except Exception as e:
+            logger.warning("best-price lookup crashed", error=str(e))
+
         # Send Telegram alert
         success = await telegram_notifier.send_syndicate_alert(
             home_team=match.home_team,
@@ -283,7 +304,8 @@ class SyndicateAlerter:
             current_odds=current_odds,
             prob_change=prob_change,
             minutes_to_kickoff=minutes_to_ko,
-            market=market
+            market=market,
+            best_price=best_price_info,
         )
 
         if success:

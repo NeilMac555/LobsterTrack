@@ -32,11 +32,15 @@ class TelegramNotifier:
         current_odds: float,
         prob_change: float,
         minutes_to_kickoff: int,
-        market: str = '1x2'
+        market: str = '1x2',
+        best_price: Optional[dict] = None,
     ) -> bool:
         """
         Send a Syndicate Move alert to Telegram channel.
         prob_change is the implied probability shift in percentage points.
+        best_price is an optional {"price": float, "bookmaker": str} dict —
+        when present, the alert tells subscribers where they can still get
+        the OLD price.
         Returns True if sent successfully.
         """
         if not self.is_configured():
@@ -59,12 +63,23 @@ class TelegramNotifier:
         else:
             market_label = "AH"
 
+        # Best-price line — only included if a strictly higher price is
+        # still available somewhere else.
+        best_line = ""
+        if best_price and best_price.get("price") is not None:
+            try:
+                bp = float(best_price["price"])
+                book = best_price.get("bookmaker") or "?"
+                best_line = f"\n💰 Best price: {bp:.2f} @ {book}"
+            except (TypeError, ValueError):
+                best_line = ""
+
         # Build message
         message = f"""🚨 LATE SHARP ACTION
 
 {home_team} vs {away_team}
 → {outcome_name} ({market_label}) @ {current_odds:.2f}
-↓ {abs(prob_change):.1f}pp implied prob in last 3h
+↓ {abs(prob_change):.1f}pp implied prob in last 3h{best_line}
 ⏱ Kickoff: {time_str}
 
 steamwatch.io"""
