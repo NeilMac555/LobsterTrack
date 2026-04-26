@@ -82,7 +82,7 @@ export default function PaywallOverlay({ title, description }: PaywallOverlayPro
         </div>
       </div>
 
-      <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
+      <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} mode="subscribe" />
     </>
   );
 }

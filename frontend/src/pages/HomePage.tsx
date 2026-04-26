@@ -787,7 +787,11 @@ export default function HomePage() {
         </div>
       )}
 
-      <LoginModal isOpen={showLoginFromCTA} onClose={() => setShowLoginFromCTA(false)} />
+      <LoginModal
+        isOpen={showLoginFromCTA}
+        onClose={() => setShowLoginFromCTA(false)}
+        mode="subscribe"
+      />
 
       {/* Page Header */}
       <div className="mb-5 sm:mb-6 flex items-center gap-3">

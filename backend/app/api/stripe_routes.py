@@ -273,9 +273,12 @@ async def _handle_checkout_completed(session_data: dict, db: Session):
 
     user = db.query(User).filter(User.stripe_customer_id == customer_id).first()
 
-    # Fallback 1: look up by email from the checkout session
+    # Fallback 1: look up by email from the checkout session.
+    # `(... or {})` rather than `... , {}` — Stripe sometimes sends
+    # `customer_details: null` (key present, value null) and `.get(key, {})`
+    # would return None there, then `.get('email')` would throw on None.
     checkout_email = (
-        session_data.get("customer_details", {}).get("email")
+        (session_data.get("customer_details") or {}).get("email")
         or session_data.get("customer_email")
     )
 
@@ -416,7 +419,29 @@ async def _handle_checkout_completed(session_data: dict, db: Session):
         pass  # Don't fail the webhook over a notification
 
 
+def _is_steamwatch_pro_subscription(sub_data: dict) -> bool:
+    """
+    Stripe fires subscription events for every product in the account
+    (Ghost, WooCommerce, etc). Only events on the SteamWatch Pro price
+    should touch our Pro DB rows.
+    """
+    if not settings.stripe_price_id:
+        # Without a configured price we can't filter — refuse to act so
+        # we don't accidentally cross-activate.
+        return False
+    items = (sub_data.get("items") or {}).get("data") or []
+    for item in items:
+        price = (item.get("price") or {}).get("id")
+        if price == settings.stripe_price_id:
+            return True
+    return False
+
+
 def _handle_subscription_updated(sub_data: dict, db: Session):
+    if not _is_steamwatch_pro_subscription(sub_data):
+        # Not a SteamWatch Pro sub — ignore (likely Ghost / WooCommerce).
+        return
+
     subscription_id = sub_data.get("id")
     customer_id = sub_data.get("customer")
 
@@ -457,6 +482,9 @@ def _handle_subscription_updated(sub_data: dict, db: Session):
 
 
 def _handle_subscription_deleted(sub_data: dict, db: Session):
+    # Look up by stripe_subscription_id only — if we never stored the
+    # ID (price-filter rejected it on creation), we won't find it here
+    # and correctly no-op for non-Pro cancellations.
     subscription_id = sub_data.get("id")
     sub = db.query(Subscription).filter(Subscription.stripe_subscription_id == subscription_id).first()
     if not sub:
@@ -469,15 +497,19 @@ def _handle_subscription_deleted(sub_data: dict, db: Session):
 
 
 def _handle_payment_failed(invoice_data: dict, db: Session):
-    customer_id = invoice_data.get("customer")
-    user = db.query(User).filter(User.stripe_customer_id == customer_id).first()
-    if not user or not user.subscription:
+    # Only mark past_due for invoices on subscriptions we already track —
+    # avoids flipping a SteamWatch Pro to past_due because their Ghost
+    # invoice failed.
+    subscription_id = invoice_data.get("subscription")
+    if not subscription_id:
+        return
+    sub = db.query(Subscription).filter(Subscription.stripe_subscription_id == subscription_id).first()
+    if not sub:
         return
 
-    user.subscription.status = "past_due"
+    sub.status = "past_due"
     db.commit()
-
-    logger.info("Payment failed", user_id=user.id)
+    logger.info("Payment failed (Pro sub flagged past_due)", subscription_id=subscription_id)
 
 
 @stripe_router.get("/config/public")
