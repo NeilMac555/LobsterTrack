@@ -31,6 +31,35 @@ _MARKET_KEY = {
     "spreads": "spreads",
 }
 
+# UK-licensed books we trust on alerts. Anything not in this set is dropped
+# from the best-price comparison — protects subscribers from being told to
+# bet at books that don't accept their action (EU / US-facing) or that
+# Neil doesn't want associated with the alerts (Casumo / Grosvenor / 1xBet).
+#
+# Keys are The Odds API's bookmaker `key` values, not display titles —
+# they don't change when the marketing name does. Pull /api/admin/list-
+# bookmakers if you ever need to add/remove a book.
+ALLOWED_BOOKMAKER_KEYS: set[str] = {
+    "betvictor",          # Bet Victor
+    "betfair_ex_uk",      # Betfair Exchange (UK)
+    "betfair_sb_uk",      # Betfair Sportsbook
+    "betfred_uk",         # Betfred
+    "betway",             # Betway
+    "boylesports",        # BoyleSports
+    "coral",              # Coral
+    "ladbrokes_uk",       # Ladbrokes
+    "leovegas",           # LeoVegas (UK)
+    "livescorebet",       # LiveScore Bet
+    "matchbook",          # Matchbook
+    "paddypower",         # Paddy Power
+    "skybet",             # Sky Bet
+    "smarkets",           # Smarkets
+    "sport888",           # 888sport
+    "unibet_uk",          # Unibet (UK)
+    "virginbet",          # Virgin Bet
+    "williamhill",        # William Hill
+}
+
 # How an alert's outcome string maps onto the Odds API's outcome 'name'.
 # The Odds API returns 'name' as the team name for h2h-home/away, the
 # string 'Draw' for the draw, 'Over' / 'Under' for totals, and the team
@@ -146,7 +175,12 @@ async def find_best_alternative_price(
 
     candidates: list[tuple[float, str]] = []
     for bm in bookmakers:
-        title = bm.get("title") or bm.get("key") or "?"
+        bm_key = bm.get("key")
+        if bm_key not in ALLOWED_BOOKMAKER_KEYS:
+            # Skip anything not on the UK allowlist (Casumo, Grosvenor, 1xBet,
+            # all EU books, all US-facing books).
+            continue
+        title = bm.get("title") or bm_key or "?"
         for mkt in (bm.get("markets") or []):
             if mkt.get("key") != api_market:
                 continue
