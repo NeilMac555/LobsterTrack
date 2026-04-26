@@ -171,6 +171,21 @@ export default function DriftersPage() {
         </div>
       </div>
 
+      {/* Full-page paywall for non-Pro users — Drifters is Pro-only.
+          We deliberately don't show stats / win-rate / league filter
+          to free users either; they're meaningful only with the team
+          rankings underneath. */}
+      {!isSubscribed && (
+        <div className="mb-6 sm:mb-8">
+          <PaywallOverlay
+            title="Unlock Biggest Drifters"
+            description="See which teams the market consistently fades pre-kickoff, win rates, P/L tracking, and full team rankings with SteamWatch Pro."
+          />
+        </div>
+      )}
+
+      {isSubscribed && <>
+
       {/* Stats Banner — terminal stat strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4 sm:mb-6">
         <div className="bg-slate-800/80 rounded-xl border border-slate-700/60 px-3 sm:px-4 py-2.5 sm:py-3">
@@ -272,34 +287,9 @@ export default function DriftersPage() {
         ))}
       </div>
 
-      {/* Team Rankings */}
-      {!isSubscribed && data.team_rankings.length > 0 && (
-        <div className="relative mb-6 sm:mb-8">
-          {/* Blurred teaser of the table */}
-          <div className="blur-sm opacity-40 pointer-events-none select-none">
-            <div className="bg-slate-800/80 rounded-2xl border border-red-500/30 overflow-hidden p-6">
-              <div className="h-8 bg-slate-700/40 rounded mb-4 w-48"></div>
-              {[1,2,3,4,5].map(i => (
-                <div key={i} className="flex items-center gap-4 py-3 border-b border-slate-700/30">
-                  <div className="w-6 h-6 bg-slate-700/60 rounded"></div>
-                  <div className="h-4 bg-slate-700/40 rounded flex-1"></div>
-                  <div className="h-4 bg-emerald-500/20 rounded w-12"></div>
-                  <div className="h-4 bg-red-500/20 rounded w-16"></div>
-                </div>
-              ))}
-            </div>
-          </div>
-          {/* Paywall overlay on top */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <PaywallOverlay
-              title="Unlock Biggest Drifters"
-              description="See which teams the market consistently fades pre-kickoff, win rates, P/L tracking, and full rankings with SteamWatch Pro."
-            />
-          </div>
-        </div>
-      )}
-
-      {isSubscribed && data.team_rankings.length > 0 && (
+      {/* Team Rankings — only when subscribed (page-level gate above
+          already short-circuits non-Pro users into the paywall). */}
+      {data.team_rankings.length > 0 && (
         <div className="bg-slate-800/80 rounded-2xl border border-red-500/30 overflow-hidden card-shadow mb-6 sm:mb-8"
           style={{ boxShadow: '0 0 20px -5px rgba(245, 158, 11, 0.15)' }}
         >
@@ -536,6 +526,8 @@ export default function DriftersPage() {
           </p>
         </div>
       )}
+
+      </>}
     </div>
   );
 }
