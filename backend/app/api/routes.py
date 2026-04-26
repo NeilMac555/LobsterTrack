@@ -1206,6 +1206,87 @@ async def admin_refresh_xg(password: str = Query(..., description="Admin passwor
     return summary
 
 
+@router.get("/admin/list-bookmakers")
+async def admin_list_bookmakers(
+    password: str = Query(..., description="Admin password"),
+    league: str = Query("soccer_epl", description="Sport key to query"),
+    db: Session = Depends(get_db),
+):
+    """
+    Hit The Odds API for the next upcoming match in the given league with
+    regions=eu,uk and report every bookmaker that currently returns h2h
+    prices. Use this to verify which books power the 'Best price' line in
+    syndicate alerts.
+    """
+    import httpx as _httpx
+
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=403, detail="Invalid admin password")
+
+    if not settings.odds_api_key:
+        return {"error": "ODDS_API_KEY not configured"}
+
+    # Pick the next match for that league from our DB to use as the eventId.
+    next_match = (
+        db.query(Match)
+        .filter(Match.sport_key == league)
+        .filter(Match.commence_time > datetime.utcnow())
+        .order_by(Match.commence_time.asc())
+        .first()
+    )
+    if not next_match:
+        return {"error": f"No upcoming match for {league}"}
+
+    url = f"{settings.odds_api_base_url}/sports/{league}/odds"
+    params = {
+        "apiKey": settings.odds_api_key,
+        "regions": "eu,uk",
+        "markets": "h2h",
+        "eventIds": next_match.id,
+        "oddsFormat": "decimal",
+    }
+
+    try:
+        async with _httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.get(url, params=params)
+            resp.raise_for_status()
+            events = resp.json()
+    except Exception as e:
+        return {"error": f"Odds API call failed: {e}"}
+
+    if not events:
+        return {"error": "No event returned"}
+
+    event = events[0]
+    bookmakers = event.get("bookmakers") or []
+
+    # Per-bookmaker prices for the home outcome (just for visibility)
+    rows = []
+    for bm in bookmakers:
+        title = bm.get("title") or bm.get("key")
+        last_update = bm.get("last_update")
+        h2h = next((m for m in (bm.get("markets") or []) if m.get("key") == "h2h"), None)
+        prices = {}
+        if h2h:
+            for o in (h2h.get("outcomes") or []):
+                prices[o.get("name")] = o.get("price")
+        rows.append({
+            "title": title,
+            "key": bm.get("key"),
+            "last_update": last_update,
+            "prices": prices,
+        })
+
+    return {
+        "match": f"{next_match.home_team} vs {next_match.away_team}",
+        "match_id": next_match.id,
+        "league": league,
+        "regions_requested": "eu,uk",
+        "bookmaker_count": len(rows),
+        "bookmakers": rows,
+    }
+
+
 @router.post("/admin/reconcile-stripe")
 async def admin_reconcile_stripe(password: str = Query(..., description="Admin password")):
     """
