@@ -7,6 +7,7 @@ import MatchDetailPage from './pages/MatchDetailPage';
 import HedgeCalculatorPage from './pages/HedgeCalculatorPage';
 import MatchPredictorPage from './pages/MatchPredictorPage';
 import SteamResultsPage from './pages/SteamResultsPage';
+import DriftersPage from './pages/DriftersPage';
 import ClosingLinesPage from './pages/ClosingLinesPage';
 import CLClosingLinesPage from './pages/CLClosingLinesPage';
 import AdminEmailsPage from './pages/AdminEmailsPage';
@@ -26,6 +27,7 @@ function App() {
               <Route index element={<HomePage />} />
               <Route path="match/:matchId" element={<MatchDetailPage />} />
               <Route path="steam-results" element={<SteamResultsPage />} />
+              <Route path="drifters" element={<DriftersPage />} />
               <Route path="closing-lines" element={<ClosingLinesPage />} />
               <Route path="cl-closing-lines" element={<CLClosingLinesPage />} />
               <Route path="tools/hedge-calculator" element={<HedgeCalculatorPage />} />

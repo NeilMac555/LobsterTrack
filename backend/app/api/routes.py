@@ -958,6 +958,145 @@ async def get_steam_results(
     )
 
 
+@router.get("/drifter-results", response_model=SteamResultsResponse)
+async def get_drifter_results(
+    db: Session = Depends(get_db),
+    league: Optional[str] = Query(None, description="Filter by sport_key"),
+    limit: int = Query(200, le=500, description="Number of moves to return"),
+    days: Optional[int] = Query(None, description="Only include moves from the last N days"),
+):
+    """
+    The inverse of /steam-results — completed matches where 1X2 odds
+    DRIFTED (rose, money leaving) by 3+ percentage points in the last
+    3 hours pre-kickoff. Useful for spotting teams the market
+    consistently fades pre-KO.
+
+    Same response shape as /steam-results so the frontend can reuse
+    its types. P/L here represents 'what would happen if you blindly
+    backed the drifting team' — negative P/L confirms the market
+    was right to fade them.
+    """
+    base_query = (
+        db.query(SteamMove)
+        .filter(SteamMove.result_updated == True)
+        .filter(SteamMove.outcome != 'draw')
+        .filter(SteamMove.movement_percent > 0)  # Only drifting (lengthening) odds
+    )
+    if league:
+        base_query = base_query.filter(SteamMove.sport_key == league)
+    if days:
+        cutoff = datetime.utcnow() - timedelta(days=days)
+        base_query = base_query.filter(SteamMove.match_commence_time >= cutoff)
+
+    all_moves = base_query.order_by(desc(SteamMove.match_commence_time)).all()
+
+    # Same dedup logic as steam — keep the biggest (absolute) move per
+    # (team, match) so a single match counts once per team.
+    best_per_match: dict[tuple[str, str], SteamMove] = {}
+    for m in all_moves:
+        key = (m.team_name, m.match_id)
+        if key not in best_per_match or abs(m.movement_percent) > abs(best_per_match[key].movement_percent):
+            best_per_match[key] = m
+    deduped_moves = sorted(best_per_match.values(), key=lambda x: x.match_commence_time, reverse=True)
+
+    def _result(m):
+        if m.won:
+            return 'win'
+        if m.home_score is not None and m.away_score is not None and m.home_score == m.away_score:
+            return 'draw'
+        return 'loss'
+
+    total_wins = sum(1 for m in deduped_moves if _result(m) == 'win')
+    total_draws = sum(1 for m in deduped_moves if _result(m) == 'draw')
+    total_losses = sum(1 for m in deduped_moves if _result(m) == 'loss')
+    total_moves = total_wins + total_draws + total_losses
+    win_rate = (total_wins / total_moves * 100) if total_moves > 0 else None
+
+    avg_movement = (
+        sum(abs(m.movement_percent) for m in deduped_moves) / len(deduped_moves)
+        if deduped_moves else None
+    )
+
+    team_stats: dict[str, dict] = {}
+    for m in deduped_moves:
+        key = m.team_name
+        if key not in team_stats:
+            team_stats[key] = {
+                'team_name': m.team_name,
+                'sport_key': m.sport_key,
+                'total': 0,
+                'wins': 0,
+                'draws': 0,
+                'losses': 0,
+                'movement_sum': 0.0,
+                'profit_loss': 0.0,
+            }
+        team_stats[key]['total'] += 1
+        team_stats[key]['movement_sum'] += abs(m.movement_percent)
+        r = _result(m)
+        if r == 'win':
+            team_stats[key]['wins'] += 1
+            team_stats[key]['profit_loss'] += (m.current_odds - 1)
+        elif r == 'draw':
+            team_stats[key]['draws'] += 1
+            team_stats[key]['profit_loss'] -= 1
+        else:
+            team_stats[key]['losses'] += 1
+            team_stats[key]['profit_loss'] -= 1
+
+    # For drifters, sort by P/L ASCENDING (worst first) — these are the
+    # teams the market is most right to fade. Frontend can re-sort however.
+    ranked_teams = sorted(team_stats.values(), key=lambda x: x['profit_loss'])
+
+    team_rankings = [
+        TeamSteamRanking(
+            team_name=t['team_name'],
+            sport_key=t['sport_key'],
+            total_moves=t['total'],
+            wins=t['wins'],
+            draws=t['draws'],
+            losses=t['losses'],
+            win_rate=round(t['wins'] / t['total'] * 100, 1) if t['total'] > 0 else None,
+            avg_move_size=round(t['movement_sum'] / t['total'], 1) if t['total'] > 0 else None,
+            profit_loss=round(t['profit_loss'], 2),
+        )
+        for t in ranked_teams
+    ]
+
+    limited_moves = deduped_moves[:limit]
+
+    return SteamResultsResponse(
+        total_moves=total_moves,
+        total_wins=total_wins,
+        total_draws=total_draws,
+        total_losses=total_losses,
+        win_rate=round(win_rate, 1) if win_rate else None,
+        avg_movement_percent=round(avg_movement, 1) if avg_movement else None,
+        moves=[
+            SteamMoveResponse(
+                id=m.id,
+                match_id=m.match_id,
+                sport_key=m.sport_key,
+                outcome=m.outcome,
+                team_name=m.team_name,
+                opening_odds=m.opening_odds,
+                previous_odds=m.previous_odds,
+                current_odds=m.current_odds,
+                movement_percent=m.movement_percent,
+                detected_at=m.detected_at,
+                match_commence_time=m.match_commence_time,
+                minutes_before_kickoff=m.minutes_before_kickoff,
+                result_updated=m.result_updated,
+                won=m.won,
+                home_score=m.home_score,
+                away_score=m.away_score,
+            )
+            for m in limited_moves
+        ],
+        team_rankings=team_rankings,
+    )
+
+
 @router.post("/subscribe", response_model=EmailSignupResponse)
 async def subscribe_email(request: EmailSignupRequest, db: Session = Depends(get_db)):
     """

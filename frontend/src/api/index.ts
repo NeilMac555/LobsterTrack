@@ -74,6 +74,21 @@ export async function getSteamResults(params?: {
   return fetchJson<SteamResultsData>(`${API_BASE}/steam-results${query ? `?${query}` : ''}`);
 }
 
+export async function getDrifterResults(params?: {
+  league?: string;
+  limit?: number;
+  days?: number;
+}): Promise<SteamResultsData> {
+  // Same response shape as steam results — just inverted source data.
+  const searchParams = new URLSearchParams();
+  if (params?.league) searchParams.set('league', params.league);
+  if (params?.limit) searchParams.set('limit', String(params.limit));
+  if (params?.days) searchParams.set('days', String(params.days));
+
+  const query = searchParams.toString();
+  return fetchJson<SteamResultsData>(`${API_BASE}/drifter-results${query ? `?${query}` : ''}`);
+}
+
 export async function getClosingLines(params?: {
   league?: string;
   market_type?: string;
