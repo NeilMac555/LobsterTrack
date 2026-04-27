@@ -370,8 +370,8 @@ export default function ClosingLinesPage() {
           <div className="absolute inset-x-0 top-24 sm:top-32 flex items-start justify-center pointer-events-none px-4">
             <div className="pointer-events-auto max-w-md w-full">
               <PaywallOverlay
-                title="Unlock Closing Lines"
-                description="See the closing 1X2, Asian Handicap and Totals price for every tracked match across all five leagues plus UEFA. Browse by matchweek with full historical archive."
+                title="Unlock Pinnacle Closing Lines"
+                description="The Pinnacle closing line is the sharpest price in football — beating it is the gold-standard measure of edge. Get the Pinnacle close on 1X2, Asian Handicap and Totals for every tracked match across all five leagues plus UEFA, with full historical archive by matchweek."
               />
             </div>
           </div>
