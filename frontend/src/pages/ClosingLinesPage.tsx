@@ -131,18 +131,20 @@ export default function ClosingLinesPage() {
         </div>
       </div>
 
-      {/* Pro paywall — full-page gate. Free users see header + paywall only. */}
-      {!isSubscribed && (
-        <div className="mb-6 sm:mb-8">
-          <PaywallOverlay
-            title="Unlock Closing Lines"
-            description="See the closing 1X2, Asian Handicap and Totals price for every tracked match across all five leagues plus UEFA. Browse by matchweek with full historical archive."
-          />
-        </div>
-      )}
-
-      {isSubscribed && (
-        <>
+      {/* Sneak-peek paywall: free users see the entire page rendered with
+          real closing-line data, blurred and non-interactive. The
+          PaywallOverlay sits above the visible portion so the value prop
+          ('there's a ton of data behind here') is immediately obvious.
+          Pro users get the full interactive experience. */}
+      <div className="relative">
+        <div
+          className={
+            !isSubscribed
+              ? 'blur-sm opacity-50 pointer-events-none select-none max-h-[680px] overflow-hidden [mask-image:linear-gradient(180deg,black_60%,transparent_100%)] [-webkit-mask-image:linear-gradient(180deg,black_60%,transparent_100%)]'
+              : ''
+          }
+          aria-hidden={!isSubscribed}
+        >
           {/* League filter */}
           <div className="flex flex-wrap gap-1.5 mb-4 sm:mb-6">
             <button
@@ -359,8 +361,22 @@ export default function ClosingLinesPage() {
               Showing {matches.length} of {total.toLocaleString()} matches · filter by league to drill in
             </p>
           )}
-        </>
-      )}
+        </div>
+
+        {/* Paywall overlay sits on top of the blurred content for free users.
+            Pointer-events: none on the wrapper so it doesn't grab the empty
+            space; the inner card re-enables pointer-events for the CTA. */}
+        {!isSubscribed && (
+          <div className="absolute inset-x-0 top-24 sm:top-32 flex items-start justify-center pointer-events-none px-4">
+            <div className="pointer-events-auto max-w-md w-full">
+              <PaywallOverlay
+                title="Unlock Closing Lines"
+                description="See the closing 1X2, Asian Handicap and Totals price for every tracked match across all five leagues plus UEFA. Browse by matchweek with full historical archive."
+              />
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
