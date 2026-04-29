@@ -1486,7 +1486,16 @@ async def get_totals_test(
 async def get_match_totals(match_id: str, db: Session = Depends(get_db)):
     """
     Get totals (over/under) history for a match.
-    Only available for Ligue 1 matches.
+
+    We pick a single 'main' line to chart by counting snapshots per line and
+    taking the most-frequent. That's robust to:
+      - early junk readings where Pinnacle posted only an outer alt line
+        before the real main line went up,
+      - mid-cycle line moves (2.5 → 2.75) where Pinnacle eventually drops
+        the original line and would otherwise leave us with a dead chart.
+    Previously we locked to the very first stored line, which silently
+    blanked out matches whose first reading wasn't the line Pinnacle
+    actually settled on.
     """
     match = db.query(Match).filter(Match.id == match_id).first()
 
@@ -1494,9 +1503,6 @@ async def get_match_totals(match_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Match not found")
 
     # Get only pre-kickoff totals snapshots (exclude in-play odds).
-    # Secondary sort by id so that — on the first fetch, which now stores
-    # many alternate lines at the same fetched_at — the main line (inserted
-    # first, lowest id) is picked as the opening line below.
     snapshots = (
         db.query(TotalsSnapshot)
         .filter(TotalsSnapshot.match_id == match_id)
@@ -1505,9 +1511,14 @@ async def get_match_totals(match_id: str, db: Session = Depends(get_db)):
         .all()
     )
 
-    # Lock onto the opening totals line — ignore snapshots where
-    # the bookmaker has shifted to a different line (e.g. 2.5 → 3.0)
-    opening_line = snapshots[0].line if snapshots else None
+    # Pick the line with the most snapshots = the one Pinnacle has spent
+    # the most time at = the actual headline goals line.
+    main_line: Optional[float] = None
+    if snapshots:
+        counts: dict[float, int] = {}
+        for s in snapshots:
+            counts[s.line] = counts.get(s.line, 0) + 1
+        main_line = max(counts.items(), key=lambda kv: kv[1])[0]
 
     totals_history = [
         TotalsPoint(
@@ -1517,7 +1528,7 @@ async def get_match_totals(match_id: str, db: Session = Depends(get_db)):
             under_odds=s.under_odds
         )
         for s in snapshots
-        if s.line == opening_line
+        if s.line == main_line
     ]
 
     return MatchTotalsResponse(
@@ -1530,6 +1541,10 @@ async def get_match_totals(match_id: str, db: Session = Depends(get_db)):
 async def get_match_spreads(match_id: str, db: Session = Depends(get_db)):
     """
     Get spreads (Asian Handicap) history for a match.
+
+    Picks the most-frequent line as the 'main' AH line for the same reason
+    we do this for totals — robust against weird first readings and
+    mid-cycle line shifts that would otherwise leave the chart empty.
     """
     match = db.query(Match).filter(Match.id == match_id).first()
 
@@ -1541,13 +1556,17 @@ async def get_match_spreads(match_id: str, db: Session = Depends(get_db)):
         db.query(SpreadsSnapshot)
         .filter(SpreadsSnapshot.match_id == match_id)
         .filter(SpreadsSnapshot.fetched_at < match.commence_time)
-        .order_by(SpreadsSnapshot.fetched_at.asc())
+        .order_by(SpreadsSnapshot.fetched_at.asc(), SpreadsSnapshot.id.asc())
         .all()
     )
 
-    # Lock onto the opening handicap line — ignore snapshots where
-    # the bookmaker has shifted to a different line (e.g. 0.5 → 0.75)
-    opening_line = snapshots[0].line if snapshots else None
+    # Most-frequent line wins — see totals endpoint for full rationale.
+    main_line: Optional[float] = None
+    if snapshots:
+        counts: dict[float, int] = {}
+        for s in snapshots:
+            counts[s.line] = counts.get(s.line, 0) + 1
+        main_line = max(counts.items(), key=lambda kv: kv[1])[0]
 
     spreads_history = [
         SpreadsPoint(
@@ -1557,7 +1576,7 @@ async def get_match_spreads(match_id: str, db: Session = Depends(get_db)):
             away_odds=s.away_odds
         )
         for s in snapshots
-        if s.line == opening_line
+        if s.line == main_line
     ]
 
     return MatchSpreadsResponse(
