@@ -23,6 +23,7 @@ const AXIS_TICK = {
 };
 const COLOR_OVER = '#34d399';  // emerald-400
 const COLOR_UNDER = '#fb923c'; // orange-400
+const COLOR_LINE_SHIFT = '#fbbf24'; // amber-400 — high-contrast against the green/orange odds lines
 
 interface TotalsChartProps {
   data: TotalsPoint[];
@@ -41,6 +42,23 @@ export default function TotalsChart({ data, timeFrame = 'all' }: TotalsChartProp
     fullTime: format(new Date(point.timestamp), 'MMM d, yyyy HH:mm'),
     timestamp: new Date(point.timestamp).getTime(),
   }));
+
+  // Find every point where Pinnacle moved the goals line. We render a
+  // dashed amber vertical at each transition so the user can't miss it
+  // — without context, a jump in Over/Under odds at the moment the line
+  // shifts looks like a steam move when it's really just a different bet.
+  const lineShifts: Array<{ shortTime: string; from: number; to: number }> = [];
+  for (let i = 1; i < chartData.length; i++) {
+    const prev = chartData[i - 1].line;
+    const curr = chartData[i].line;
+    if (prev != null && curr != null && Math.abs(prev - curr) > 0.001) {
+      lineShifts.push({
+        shortTime: chartData[i].shortTime,
+        from: prev,
+        to: curr,
+      });
+    }
+  }
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -165,6 +183,29 @@ export default function TotalsChart({ data, timeFrame = 'all' }: TotalsChartProp
           {openingTotals?.under_odds && (
             <ReferenceLine y={openingTotals.under_odds} stroke={COLOR_UNDER} strokeDasharray="2 4" strokeOpacity={0.25} />
           )}
+
+          {/* Line-shift markers — vertical amber dashes labelled with the new
+              line so the user immediately understands "the odds jumped here
+              because the bookmaker moved from O/U 2.5 to O/U 2.75". */}
+          {lineShifts.map((s, i) => (
+            <ReferenceLine
+              key={`shift-${i}`}
+              x={s.shortTime}
+              stroke={COLOR_LINE_SHIFT}
+              strokeDasharray="4 3"
+              strokeWidth={1.6}
+              strokeOpacity={0.85}
+              ifOverflow="extendDomain"
+              label={{
+                value: `→ ${s.to.toFixed(2)}`,
+                position: 'top',
+                fill: COLOR_LINE_SHIFT,
+                fontSize: 11,
+                fontWeight: 700,
+                fontFamily: MONO_STACK,
+              }}
+            />
+          ))}
 
           {/* Area fills underneath */}
           <Area type="monotone" dataKey="over_odds" stroke="none" fill="url(#totalsArea-over)" isAnimationActive={false} activeDot={false} />

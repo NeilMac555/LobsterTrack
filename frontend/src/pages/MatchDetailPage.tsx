@@ -27,6 +27,58 @@ function formatCountdown(ms: number): string {
   return `${sign}${m}m`;
 }
 
+// Walk a totals/spreads history and compress consecutive same-line snapshots
+// into segments. Used to surface line shifts (e.g. 2.5 → 2.75 → 3.0) above
+// the chart so users immediately see a non-stationary line.
+interface LineSegment {
+  line: number;
+  startTimestamp: string;  // ISO string of first snapshot at this line
+  count: number;           // number of snapshots in this run
+}
+function computeLineSegments(history: Array<{ line: number; timestamp: string }>): LineSegment[] {
+  const segs: LineSegment[] = [];
+  for (const p of history) {
+    const last = segs[segs.length - 1];
+    if (last && Math.abs(last.line - p.line) < 0.001) {
+      last.count += 1;
+    } else {
+      segs.push({ line: p.line, startTimestamp: p.timestamp, count: 1 });
+    }
+  }
+  return segs;
+}
+
+interface LineHistoryStripProps {
+  segments: LineSegment[];
+  formatLine: (n: number) => string;
+}
+// Small amber banner shown above totals / AH charts whenever Pinnacle moved
+// the line at least once. Quietly absent when there's only ever been one
+// line, to avoid clutter on most matches.
+function LineHistoryStrip({ segments, formatLine }: LineHistoryStripProps) {
+  if (segments.length < 2) return null;
+  return (
+    <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2 mb-4">
+      <div className="flex items-start gap-2 flex-wrap">
+        <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-amber-400 font-bold whitespace-nowrap">
+          Line moved
+        </span>
+        <div className="flex items-center gap-1.5 flex-wrap font-mono text-xs text-white">
+          {segments.map((seg, i) => (
+            <span key={i} className="flex items-center gap-1.5">
+              {i > 0 && <span className="text-amber-400/70">→</span>}
+              <span className="font-bold tabular-nums">{formatLine(seg.line)}</span>
+              <span className="text-slate-500 text-[10px]">
+                ({format(new Date(seg.startTimestamp), 'd/M HH:mm')})
+              </span>
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function MatchDetailPage() {
   const { matchId } = useParams<{ matchId: string }>();
   const [match, setMatch] = useState<MatchDetail | null>(null);
@@ -506,6 +558,8 @@ function TotalsSection({ totals, timeFrame }: TotalsSectionProps) {
     ? ((latestTotals.under_odds - openingTotals.under_odds) / openingTotals.under_odds) * 100
     : null;
 
+  const totalsSegments = computeLineSegments(totals.totals_history);
+
   return (
     <div className="bg-slate-800/80 rounded-xl sm:rounded-2xl border border-slate-700/50 overflow-hidden mb-6 sm:mb-8 card-shadow">
       {/* Header */}
@@ -568,6 +622,13 @@ function TotalsSection({ totals, timeFrame }: TotalsSectionProps) {
           </div>
         </div>
 
+        {/* Line-shift banner — only renders when Pinnacle has moved the
+            totals line at least once during the tracking window. */}
+        <LineHistoryStrip
+          segments={totalsSegments}
+          formatLine={(n) => n.toFixed(2)}
+        />
+
         {/* Chart */}
         {totals.totals_history.length > 1 && (
           <div className="h-48 sm:h-64">
@@ -609,6 +670,8 @@ function SpreadsSection({ spreads, homeTeam, awayTeam, timeFrame }: SpreadsSecti
     if (line > 0) return `+${line}`;
     return line.toString();
   };
+
+  const spreadsSegments = computeLineSegments(spreads.spreads_history);
 
   return (
     <div className="bg-slate-800/80 rounded-xl sm:rounded-2xl border border-slate-700/50 overflow-hidden mb-6 sm:mb-8 card-shadow">
@@ -675,6 +738,12 @@ function SpreadsSection({ spreads, homeTeam, awayTeam, timeFrame }: SpreadsSecti
             </div>
           </div>
         </div>
+
+        {/* Line-shift banner for AH — same pattern as totals. */}
+        <LineHistoryStrip
+          segments={spreadsSegments}
+          formatLine={formatLine}
+        />
 
         {/* Chart */}
         {spreads.spreads_history.length > 1 && (

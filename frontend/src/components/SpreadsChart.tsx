@@ -23,6 +23,14 @@ const AXIS_TICK = {
 };
 const COLOR_HOME = '#34d399';  // emerald-400
 const COLOR_AWAY = '#fb923c';  // orange-400
+const COLOR_LINE_SHIFT = '#fbbf24'; // amber-400 — high contrast on the green/orange odds lines
+
+// Render an AH line cleanly: +0 with sign, otherwise show the value.
+function fmtSpreadLine(v: number | null | undefined): string {
+  if (v === null || v === undefined) return '-';
+  if (v === 0) return '0';
+  return v > 0 ? `+${v}` : `${v}`;
+}
 
 interface SpreadsChartProps {
   data: SpreadsPoint[];
@@ -41,6 +49,22 @@ export default function SpreadsChart({ data, timeFrame = 'all' }: SpreadsChartPr
     fullTime: format(new Date(point.timestamp), 'MMM d, yyyy HH:mm'),
     timestamp: new Date(point.timestamp).getTime(),
   }));
+
+  // Detect AH line shifts (e.g. -0.5 → -0.75) so we can mark them on the chart.
+  // Without this, a sudden home/away odds jump at the moment of the line move
+  // looks like a steam move when it's really just a different bet.
+  const lineShifts: Array<{ shortTime: string; from: number; to: number }> = [];
+  for (let i = 1; i < chartData.length; i++) {
+    const prev = chartData[i - 1].line;
+    const curr = chartData[i].line;
+    if (prev != null && curr != null && Math.abs(prev - curr) > 0.001) {
+      lineShifts.push({
+        shortTime: chartData[i].shortTime,
+        from: prev,
+        to: curr,
+      });
+    }
+  }
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -165,6 +189,27 @@ export default function SpreadsChart({ data, timeFrame = 'all' }: SpreadsChartPr
           {openingSpreads?.away_odds && (
             <ReferenceLine y={openingSpreads.away_odds} stroke={COLOR_AWAY} strokeDasharray="2 4" strokeOpacity={0.25} />
           )}
+
+          {/* AH line-shift markers — see TotalsChart for full rationale. */}
+          {lineShifts.map((s, i) => (
+            <ReferenceLine
+              key={`shift-${i}`}
+              x={s.shortTime}
+              stroke={COLOR_LINE_SHIFT}
+              strokeDasharray="4 3"
+              strokeWidth={1.6}
+              strokeOpacity={0.85}
+              ifOverflow="extendDomain"
+              label={{
+                value: `→ ${fmtSpreadLine(s.to)}`,
+                position: 'top',
+                fill: COLOR_LINE_SHIFT,
+                fontSize: 11,
+                fontWeight: 700,
+                fontFamily: MONO_STACK,
+              }}
+            />
+          ))}
 
           {/* Area fills underneath */}
           <Area type="monotone" dataKey="home_odds" stroke="none" fill="url(#spreadsArea-home)" isAnimationActive={false} activeDot={false} />

@@ -1487,22 +1487,16 @@ async def get_match_totals(match_id: str, db: Session = Depends(get_db)):
     """
     Get totals (over/under) history for a match.
 
-    We pick a single 'main' line to chart by counting snapshots per line and
-    taking the most-frequent. That's robust to:
-      - early junk readings where Pinnacle posted only an outer alt line
-        before the real main line went up,
-      - mid-cycle line moves (2.5 → 2.75) where Pinnacle eventually drops
-        the original line and would otherwise leave us with a dead chart.
-    Previously we locked to the very first stored line, which silently
-    blanked out matches whose first reading wasn't the line Pinnacle
-    actually settled on.
+    Returns ALL pre-kickoff snapshots in time order. The fetcher only stores
+    Pinnacle's current main line (one row per fetch), so when the line
+    shifts (e.g. 2.5 → 2.75) consecutive points carry different `line`
+    values. The chart uses that to render a clear visual transition.
     """
     match = db.query(Match).filter(Match.id == match_id).first()
 
     if not match:
         raise HTTPException(status_code=404, detail="Match not found")
 
-    # Get only pre-kickoff totals snapshots (exclude in-play odds).
     snapshots = (
         db.query(TotalsSnapshot)
         .filter(TotalsSnapshot.match_id == match_id)
@@ -1511,24 +1505,14 @@ async def get_match_totals(match_id: str, db: Session = Depends(get_db)):
         .all()
     )
 
-    # Pick the line with the most snapshots = the one Pinnacle has spent
-    # the most time at = the actual headline goals line.
-    main_line: Optional[float] = None
-    if snapshots:
-        counts: dict[float, int] = {}
-        for s in snapshots:
-            counts[s.line] = counts.get(s.line, 0) + 1
-        main_line = max(counts.items(), key=lambda kv: kv[1])[0]
-
     totals_history = [
         TotalsPoint(
             timestamp=s.fetched_at,
             line=s.line,
             over_odds=s.over_odds,
-            under_odds=s.under_odds
+            under_odds=s.under_odds,
         )
         for s in snapshots
-        if s.line == main_line
     ]
 
     return MatchTotalsResponse(
@@ -1542,16 +1526,14 @@ async def get_match_spreads(match_id: str, db: Session = Depends(get_db)):
     """
     Get spreads (Asian Handicap) history for a match.
 
-    Picks the most-frequent line as the 'main' AH line for the same reason
-    we do this for totals — robust against weird first readings and
-    mid-cycle line shifts that would otherwise leave the chart empty.
+    Returns ALL pre-kickoff snapshots in time order so the chart can show
+    line shifts (e.g. -0.5 → -0.75) as visible transitions.
     """
     match = db.query(Match).filter(Match.id == match_id).first()
 
     if not match:
         raise HTTPException(status_code=404, detail="Match not found")
 
-    # Get only pre-kickoff spreads snapshots (exclude in-play odds)
     snapshots = (
         db.query(SpreadsSnapshot)
         .filter(SpreadsSnapshot.match_id == match_id)
@@ -1560,23 +1542,14 @@ async def get_match_spreads(match_id: str, db: Session = Depends(get_db)):
         .all()
     )
 
-    # Most-frequent line wins — see totals endpoint for full rationale.
-    main_line: Optional[float] = None
-    if snapshots:
-        counts: dict[float, int] = {}
-        for s in snapshots:
-            counts[s.line] = counts.get(s.line, 0) + 1
-        main_line = max(counts.items(), key=lambda kv: kv[1])[0]
-
     spreads_history = [
         SpreadsPoint(
             timestamp=s.fetched_at,
             line=s.line,
             home_odds=s.home_odds,
-            away_odds=s.away_odds
+            away_odds=s.away_odds,
         )
         for s in snapshots
-        if s.line == main_line
     ]
 
     return MatchSpreadsResponse(
