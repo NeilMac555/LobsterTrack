@@ -381,18 +381,20 @@ class OddsFetcher:
         """
         Fetch totals (over/under) odds for a league from The Odds API.
 
-        Requests BOTH `totals` (current main line) and `alternate_totals`
-        (every line Pinnacle offers). This lets us:
-          1. Keep tracking the opening line all the way to kickoff even
-             when the market shifts to a different main line.
-          2. Deterministically identify which line was the "main" line
-             at opening — we insert it first so it has the lowest id.
+        Uses just `totals` (the current main line). We previously also
+        requested `alternate_totals` to follow the opening line all the
+        way to kickoff, but that combination silently failed on every
+        request when paired with `bookmakers=pinnacle` — 14 days of zero
+        totals stored — and the symptom was hidden behind the
+        try/except in fetch_all_leagues. The /matches/{id}/totals
+        endpoint now picks the most-frequent line as the main one so
+        line shifts mid-cycle don't blank the chart anyway.
         """
         url = f"{self.base_url}/sports/{sport_key}/odds"
         params = {
             "apiKey": self.api_key,
             "regions": "eu",
-            "markets": "totals,alternate_totals",
+            "markets": "totals",
             "bookmakers": "pinnacle",
             "oddsFormat": "decimal"
         }
