@@ -340,7 +340,13 @@ export default function TeamPLPage() {
                 <tr>
                   <SortHeader label="Team" field="team" active={sortField} direction={sortDir} onClick={handleSort} align="left" />
                   <SortHeader label="Matches" field="matches" active={sortField} direction={sortDir} onClick={handleSort} />
-                  <SortHeader label="Wins" field="wins" active={sortField} direction={sortDir} onClick={handleSort} />
+                  <SortHeader
+                    label={sideParam === 'fade' ? 'Draws + L' : 'Wins'}
+                    field="wins"
+                    active={sortField}
+                    direction={sortDir}
+                    onClick={handleSort}
+                  />
                   <SortHeader label="P/L" field="pl" active={sortField} direction={sortDir} onClick={handleSort} />
                   <SortHeader label="ROI" field="roi" active={sortField} direction={sortDir} onClick={handleSort} />
                 </tr>
@@ -359,7 +365,12 @@ export default function TeamPLPage() {
                       <td className="px-2 sm:px-3 py-2 sm:py-2.5 text-right font-mono tabular-nums text-white">
                         {v.matches}
                       </td>
-                      <td className="px-2 sm:px-3 py-2 sm:py-2.5 text-right font-mono tabular-nums text-slate-300">
+                      <td
+                        className="px-2 sm:px-3 py-2 sm:py-2.5 text-right font-mono tabular-nums text-slate-300"
+                        title={sideParam === 'fade'
+                          ? `${r.team} drew or lost in ${v.wins} of ${v.matches} ${venueParam === 'overall' ? 'matches' : venueParam + ' matches'} — i.e. the fade bet won.`
+                          : `${r.team} won ${v.wins} of ${v.matches} ${venueParam === 'overall' ? 'matches' : venueParam + ' matches'}.`}
+                      >
                         {v.wins}
                       </td>
                       <td className={`px-2 sm:px-3 py-2 sm:py-2.5 text-right font-mono tabular-nums font-semibold ${plColor(v.pl, false)}`}>
