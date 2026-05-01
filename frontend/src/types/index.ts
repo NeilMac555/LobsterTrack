@@ -207,6 +207,34 @@ export interface XGDataResponse {
   data: XGDataPoint[];
 }
 
+export interface TeamPLViewStats {
+  matches: number;
+  wins: number;
+  staked: number;
+  pl: number;
+  roi: number | null;
+}
+
+export interface TeamPLRow {
+  team: string;
+  // 4-digit season code (e.g. '2425' for 2024/25), or 'all' for the
+  // cross-season aggregate row per team.
+  season: string;
+  home: TeamPLViewStats;
+  away: TeamPLViewStats;
+  overall: TeamPLViewStats;
+}
+
+export interface TeamPLResponse {
+  league: string;
+  seasons_loaded: string[];
+  stake: number;
+  rows_close: number;
+  rows_open_fallback: number;
+  rows_missing_price: number;
+  rows: TeamPLRow[];
+}
+
 export const LEAGUE_CONFIG: Record<string, { name: string; shortName: string; color: string }> = {
   soccer_epl: { name: 'Premier League', shortName: 'EPL', color: '#3D195B' },
   soccer_spain_la_liga: { name: 'La Liga', shortName: 'LAL', color: '#EE8707' },

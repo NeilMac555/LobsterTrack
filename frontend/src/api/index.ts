@@ -1,4 +1,4 @@
-import type { MatchSummary, MatchDetail, LeagueSummary, Stats, BiggestMover, MatchTotals, SyndicateMove, MatchSpreads, SteamResultsData, ClosingLinesResponse, MatchClosingLinesResponse, XGDataResponse } from '../types';
+import type { MatchSummary, MatchDetail, LeagueSummary, Stats, BiggestMover, MatchTotals, SyndicateMove, MatchSpreads, SteamResultsData, ClosingLinesResponse, MatchClosingLinesResponse, XGDataResponse, TeamPLResponse } from '../types';
 
 const API_BASE = '/api';
 
@@ -126,4 +126,17 @@ export async function getXGTeams(league: string): Promise<{ teams: string[] }> {
 export async function getXGData(league: string, team: string): Promise<XGDataResponse> {
   const params = new URLSearchParams({ league, team });
   return fetchJson<XGDataResponse>(`${API_BASE}/xg-data?${params}`);
+}
+
+export async function getTeamPnL(params?: {
+  league?: string;
+  seasons?: string;  // comma-separated season codes, e.g. '2425,2526'
+  stake?: number;
+}): Promise<TeamPLResponse> {
+  const searchParams = new URLSearchParams();
+  if (params?.league) searchParams.set('league', params.league);
+  if (params?.seasons) searchParams.set('seasons', params.seasons);
+  if (params?.stake) searchParams.set('stake', String(params.stake));
+  const query = searchParams.toString();
+  return fetchJson<TeamPLResponse>(`${API_BASE}/team-pnl${query ? `?${query}` : ''}`);
 }

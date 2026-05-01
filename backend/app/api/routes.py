@@ -4,7 +4,7 @@ from sqlalchemy import func, desc, text
 from datetime import datetime, timedelta
 from typing import Optional
 
-from app.models import get_db, Match, OddsSnapshot, SteamMove, EmailSubscriber, TotalsSnapshot, SpreadsSnapshot, ClosingLine, SyndicateAlert, XGData
+from app.models import get_db, Match, OddsSnapshot, SteamMove, EmailSubscriber, TotalsSnapshot, SpreadsSnapshot, ClosingLine, SyndicateAlert, XGData, HistoricalMatch
 from app.config import get_settings
 from app.services.scheduler import odds_scheduler
 from .schemas import (
@@ -35,6 +35,9 @@ from .schemas import (
     XGDataPoint,
     XGDataResponse,
     XGTeamsResponse,
+    TeamPLResponse,
+    TeamPLRow,
+    TeamPLViewStats,
 )
 
 # Simple admin password
@@ -1097,6 +1100,184 @@ async def get_drifter_results(
     )
 
 
+@router.get("/team-pnl", response_model=TeamPLResponse)
+async def get_team_pnl(
+    db: Session = Depends(get_db),
+    league: str = Query("soccer_epl", description="League sport_key. Currently only 'soccer_epl' is supported."),
+    seasons: Optional[str] = Query(
+        None,
+        description="Comma-separated season codes (e.g. '2425,2526') to include. "
+                    "Default: every season currently in the historical_matches table.",
+    ),
+    stake: float = Query(50.0, ge=0.01, le=100000.0, description="Flat stake per match in £."),
+):
+    """
+    Per-team 1X2 profit/loss at Pinnacle closing prices, season-by-season
+    plus an 'all seasons' aggregate row per team.
+
+    A 'win' means the team won the match outright (no push possible on
+    1X2). P/L per win = stake × (price - 1). P/L per loss = -stake.
+
+    Rows where `price_source = 'missing'` are dropped from the staked
+    side but still counted in matches/wins so 'matches played' lines up
+    with reality. The frontend can show this discrepancy via the
+    rows_close / rows_open_fallback / rows_missing_price counters.
+    """
+    if league != "soccer_epl":
+        raise HTTPException(
+            status_code=400,
+            detail="Phase 1 only supports soccer_epl. Other leagues will be added.",
+        )
+
+    # ── Filter the historical_matches table down to the requested view.
+    q = db.query(HistoricalMatch).filter(HistoricalMatch.league == league)
+    if seasons:
+        season_list = [s.strip() for s in seasons.split(",") if s.strip()]
+        q = q.filter(HistoricalMatch.season.in_(season_list))
+
+    rows = q.all()
+
+    if not rows:
+        return TeamPLResponse(
+            league=league,
+            seasons_loaded=[],
+            stake=stake,
+            rows_close=0,
+            rows_open_fallback=0,
+            rows_missing_price=0,
+            rows=[],
+        )
+
+    seasons_loaded = sorted({r.season for r in rows})
+    rows_close = sum(1 for r in rows if r.price_source == "close")
+    rows_open_fallback = sum(1 for r in rows if r.price_source == "open_fallback")
+    rows_missing_price = sum(1 for r in rows if r.price_source == "missing")
+
+    # ── Build the per-(team, season, view) accumulators.
+    # Key: (team, season, view) where view ∈ {'home','away'}.
+    # We derive 'overall' by summing home + away at the end.
+    Bucket = dict[str, float]
+    def empty_bucket() -> Bucket:
+        return {"matches": 0, "wins": 0, "staked": 0.0, "pl": 0.0}
+
+    # team -> season -> {'home': bucket, 'away': bucket}
+    accum: dict[str, dict[str, dict[str, Bucket]]] = {}
+
+    def get(team: str, season: str, view: str) -> Bucket:
+        return accum.setdefault(team, {}).setdefault(season, {
+            "home": empty_bucket(),
+            "away": empty_bucket(),
+        })[view]
+
+    for r in rows:
+        # Home side: the home team is backing themselves at PSCH.
+        home_b = get(r.home_team, r.season, "home")
+        home_b["matches"] += 1
+        # Away side: the away team is backing themselves at PSCA.
+        away_b = get(r.away_team, r.season, "away")
+        away_b["matches"] += 1
+
+        if r.ftr == "H":
+            home_b["wins"] += 1
+        elif r.ftr == "A":
+            away_b["wins"] += 1
+        # 'D' counts as no win for either side, no push on 1X2.
+
+        # Only contribute to staked/PL when we actually have a price.
+        # 'missing' rows still bump 'matches' / 'wins' so the count is
+        # accurate, but staked/PL only reflect rows we could actually bet.
+        if r.price_source != "missing":
+            if r.psch is not None:
+                home_b["staked"] += stake
+                if r.ftr == "H":
+                    home_b["pl"] += stake * (r.psch - 1.0)
+                else:
+                    home_b["pl"] -= stake
+            if r.psca is not None:
+                away_b["staked"] += stake
+                if r.ftr == "A":
+                    away_b["pl"] += stake * (r.psca - 1.0)
+                else:
+                    away_b["pl"] -= stake
+
+    # ── Materialise the response rows, including an 'all' aggregate row
+    # per team that sums across every season we loaded.
+    def view_stats(b: Bucket) -> TeamPLViewStats:
+        roi = (b["pl"] / b["staked"] * 100.0) if b["staked"] > 0 else None
+        return TeamPLViewStats(
+            matches=int(b["matches"]),
+            wins=int(b["wins"]),
+            staked=round(b["staked"], 2),
+            pl=round(b["pl"], 2),
+            roi=round(roi, 2) if roi is not None else None,
+        )
+
+    def sum_buckets(*buckets: Bucket) -> Bucket:
+        out = empty_bucket()
+        for b in buckets:
+            out["matches"] += b["matches"]
+            out["wins"] += b["wins"]
+            out["staked"] += b["staked"]
+            out["pl"] += b["pl"]
+        return out
+
+    response_rows: list[TeamPLRow] = []
+    for team, by_season in accum.items():
+        # Per-season rows.
+        all_home = empty_bucket()
+        all_away = empty_bucket()
+        for season, views in by_season.items():
+            home_b = views["home"]
+            away_b = views["away"]
+            overall_b = sum_buckets(home_b, away_b)
+            response_rows.append(TeamPLRow(
+                team=team,
+                season=season,
+                home=view_stats(home_b),
+                away=view_stats(away_b),
+                overall=view_stats(overall_b),
+            ))
+            all_home = sum_buckets(all_home, home_b)
+            all_away = sum_buckets(all_away, away_b)
+
+        # 'All' aggregate row across loaded seasons.
+        if len(by_season) > 1:
+            response_rows.append(TeamPLRow(
+                team=team,
+                season="all",
+                home=view_stats(all_home),
+                away=view_stats(all_away),
+                overall=view_stats(sum_buckets(all_home, all_away)),
+            ))
+        elif len(by_season) == 1:
+            # Single-season teams (e.g. one season in the EPL across the
+            # window) still get an 'all' row so the UI's default 'all'
+            # filter doesn't hide them.
+            (only_season,) = by_season.keys()
+            home_b = by_season[only_season]["home"]
+            away_b = by_season[only_season]["away"]
+            response_rows.append(TeamPLRow(
+                team=team,
+                season="all",
+                home=view_stats(home_b),
+                away=view_stats(away_b),
+                overall=view_stats(sum_buckets(home_b, away_b)),
+            ))
+
+    # Stable order: team name asc, then 'all' first, then seasons asc.
+    response_rows.sort(key=lambda r: (r.team, "" if r.season == "all" else r.season))
+
+    return TeamPLResponse(
+        league=league,
+        seasons_loaded=seasons_loaded,
+        stake=stake,
+        rows_close=rows_close,
+        rows_open_fallback=rows_open_fallback,
+        rows_missing_price=rows_missing_price,
+        rows=response_rows,
+    )
+
+
 @router.post("/subscribe", response_model=EmailSignupResponse)
 async def subscribe_email(request: EmailSignupRequest, db: Session = Depends(get_db)):
     """
@@ -1440,6 +1621,32 @@ async def admin_reconcile_stripe(password: str = Query(..., description="Admin p
         raise HTTPException(status_code=403, detail="Invalid admin password")
 
     summary = await stripe_reconciler.reconcile()
+    return summary
+
+
+@router.post("/admin/import-football-data")
+async def admin_import_football_data(
+    password: str = Query(..., description="Admin password"),
+    seasons: Optional[str] = Query(
+        None,
+        description="Comma-separated football-data.co.uk season codes (e.g. '2425,2526'). Default: last 5 seasons + current.",
+    ),
+):
+    """
+    Pull EPL match results + Pinnacle closing prices from football-data.co.uk
+    and upsert into historical_matches. Re-run this any time during the
+    current season to refresh; older seasons are static.
+    """
+    from app.services.football_data_importer import import_seasons
+
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=403, detail="Invalid admin password")
+
+    season_list = None
+    if seasons:
+        season_list = [s.strip() for s in seasons.split(",") if s.strip()]
+
+    summary = await import_seasons(season_list)
     return summary
 
 

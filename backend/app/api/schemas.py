@@ -305,3 +305,44 @@ class XGTeamsResponse(BaseModel):
     teams: list[str]
 
 
+class TeamPLViewStats(BaseModel):
+    """
+    P/L numbers for one of the three views (home / away / overall) of a
+    team in a given season. Stake is implicit — caller knows the unit.
+    """
+    matches: int
+    wins: int
+    staked: float       # total £ staked in this view
+    pl: float           # total £ profit (negative = loss)
+    roi: Optional[float] = None  # P/L / staked × 100. None if no stake.
+
+
+class TeamPLRow(BaseModel):
+    """
+    One row of the Team P/L table: a single team for a single season (or
+    'all' for the aggregate). Each view (home/away/overall) is its own
+    sub-object so the frontend can colour-code and sort independently.
+    """
+    team: str
+    season: str           # 'all' = aggregate across loaded seasons, else 4-digit code
+    home: TeamPLViewStats
+    away: TeamPLViewStats
+    overall: TeamPLViewStats
+
+
+class TeamPLResponse(BaseModel):
+    """
+    Response for /team-pnl. Includes the rows plus a small bit of metadata
+    so the frontend can render the methodology note accurately (which
+    seasons were loaded, what the assumed stake was, how many rows used
+    open-fallback prices instead of the close).
+    """
+    league: str           # 'soccer_epl' for now
+    seasons_loaded: list[str]
+    stake: float          # £ per match
+    rows_close: int
+    rows_open_fallback: int
+    rows_missing_price: int
+    rows: list[TeamPLRow]
+
+

@@ -16,6 +16,7 @@ import AboutPage from './pages/AboutPage';
 import BlogIndexPage from './pages/BlogIndexPage';
 import BlogPostPage from './pages/BlogPostPage';
 import RollingXGPage from './pages/RollingXGPage';
+import TeamPLPage from './pages/TeamPLPage';
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
               <Route path="drifters" element={<DriftersPage />} />
               <Route path="closing-lines" element={<ClosingLinesPage />} />
               <Route path="cl-closing-lines" element={<CLClosingLinesPage />} />
+              <Route path="team-pnl" element={<TeamPLPage />} />
               <Route path="tools/hedge-calculator" element={<HedgeCalculatorPage />} />
               <Route path="tools/match-predictor" element={<MatchPredictorPage />} />
               <Route path="tools/rolling-xg" element={<RollingXGPage />} />
