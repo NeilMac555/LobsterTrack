@@ -1125,7 +1125,13 @@ async def get_team_pnl(
     """
     # Whitelist of supported leagues — add new ones here as we extend
     # both the importer and the team_name_normalizer maps.
-    SUPPORTED_LEAGUES = {"soccer_epl", "soccer_italy_serie_a", "soccer_spain_la_liga"}
+    SUPPORTED_LEAGUES = {
+        "soccer_epl",
+        "soccer_italy_serie_a",
+        "soccer_spain_la_liga",
+        "soccer_germany_bundesliga",
+        "soccer_france_ligue_one",
+    }
     if league not in SUPPORTED_LEAGUES:
         raise HTTPException(
             status_code=400,

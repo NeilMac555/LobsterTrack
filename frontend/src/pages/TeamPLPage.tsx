@@ -11,8 +11,8 @@ const LEAGUE_OPTIONS = [
   { value: 'soccer_epl', label: 'Premier League', disabled: false },
   { value: 'soccer_italy_serie_a', label: 'Serie A', disabled: false },
   { value: 'soccer_spain_la_liga', label: 'La Liga', disabled: false },
-  { value: 'soccer_germany_bundesliga', label: 'Bundesliga (coming soon)', disabled: true },
-  { value: 'soccer_france_ligue_one', label: 'Ligue 1 (coming soon)', disabled: true },
+  { value: 'soccer_germany_bundesliga', label: 'Bundesliga', disabled: false },
+  { value: 'soccer_france_ligue_one', label: 'Ligue 1', disabled: false },
 ];
 
 // Hard-locked to 2025/26 per Neil's request — historical seasons sit in

@@ -41,11 +41,11 @@ logger = structlog.get_logger()
 # league, add the mapping here AND add a normalizer dict in
 # team_name_normalizer.NAME_MAP_BY_LEAGUE.
 LEAGUE_FILE_CODES: dict[str, str] = {
-    "soccer_epl":              "E0",
-    "soccer_italy_serie_a":    "I1",
-    "soccer_spain_la_liga":    "SP1",
-    # "soccer_germany_bundesliga": "D1",
-    # "soccer_france_ligue_one":   "F1",
+    "soccer_epl":                "E0",
+    "soccer_italy_serie_a":      "I1",
+    "soccer_spain_la_liga":      "SP1",
+    "soccer_germany_bundesliga": "D1",
+    "soccer_france_ligue_one":   "F1",
 }
 
 FOOTBALL_DATA_URL = "https://www.football-data.co.uk/mmz4281/{season}/{code}.csv"

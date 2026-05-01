@@ -132,12 +132,80 @@ _LA_LIGA_MAP: dict[str, str] = {
 }
 
 
-# Lookup table keyed by The Odds API sport_key. Bundesliga / Ligue 1
-# will land here as we extend coverage.
+# Bundesliga — verified against D1.csv (25/26) and the
+# /matches endpoint for soccer_germany_bundesliga. Canonical names
+# keep the proper "1. FC Köln" formatting (with umlaut on Köln, none on
+# Monchengladbach — TheOddsAPI is inconsistent and we mirror it).
+_BUNDESLIGA_MAP: dict[str, str] = {
+    # Active 25/26 sides
+    "Augsburg":       "Augsburg",
+    "Bayern Munich":  "Bayern Munich",
+    "Dortmund":       "Borussia Dortmund",
+    "Ein Frankfurt":  "Eintracht Frankfurt",
+    "FC Koln":        "1. FC Köln",
+    "Freiburg":       "SC Freiburg",
+    "Hamburg":        "Hamburger SV",
+    "Heidenheim":     "1. FC Heidenheim",
+    "Hoffenheim":     "TSG Hoffenheim",
+    "Leverkusen":     "Bayer Leverkusen",
+    "Mainz":          "FSV Mainz 05",
+    "M'gladbach":     "Borussia Monchengladbach",
+    "RB Leipzig":     "RB Leipzig",
+    "St Pauli":       "FC St. Pauli",
+    "Stuttgart":      "VfB Stuttgart",
+    "Union Berlin":   "Union Berlin",
+    "Werder Bremen":  "Werder Bremen",
+    "Wolfsburg":      "VfL Wolfsburg",
+
+    # Recent visitors
+    "Bochum":         "VfL Bochum",
+    "Darmstadt":      "SV Darmstadt 98",
+    "Hertha":         "Hertha Berlin",
+    "Schalke 04":     "Schalke 04",
+}
+
+
+# Ligue 1 — verified against F1.csv (25/26) and /matches for
+# soccer_france_ligue_one. Only 3 names need rewriting; the rest of the
+# division is clean.
+_LIGUE_1_MAP: dict[str, str] = {
+    # Active 25/26 sides
+    "Angers":       "Angers",
+    "Auxerre":      "Auxerre",
+    "Brest":        "Brest",
+    "Le Havre":     "Le Havre",
+    "Lens":         "RC Lens",
+    "Lille":        "Lille",
+    "Lorient":      "Lorient",
+    "Lyon":         "Lyon",
+    "Marseille":    "Marseille",
+    "Metz":         "Metz",
+    "Monaco":       "AS Monaco",
+    "Nantes":       "Nantes",
+    "Nice":         "Nice",
+    "Paris FC":     "Paris FC",
+    "Paris SG":     "Paris Saint Germain",
+    "Rennes":       "Rennes",
+    "Strasbourg":   "Strasbourg",
+    "Toulouse":     "Toulouse",
+
+    # Recent visitors
+    "Bordeaux":     "Bordeaux",
+    "Clermont":     "Clermont Foot",
+    "Montpellier":  "Montpellier",
+    "Reims":        "Reims",
+    "St Etienne":   "Saint Etienne",
+    "Troyes":       "Troyes",
+}
+
+
+# Lookup table keyed by The Odds API sport_key.
 NAME_MAP_BY_LEAGUE: dict[str, dict[str, str]] = {
-    "soccer_epl":              _EPL_MAP,
-    "soccer_italy_serie_a":    _SERIE_A_MAP,
-    "soccer_spain_la_liga":    _LA_LIGA_MAP,
+    "soccer_epl":                _EPL_MAP,
+    "soccer_italy_serie_a":      _SERIE_A_MAP,
+    "soccer_spain_la_liga":      _LA_LIGA_MAP,
+    "soccer_germany_bundesliga": _BUNDESLIGA_MAP,
+    "soccer_france_ligue_one":   _LIGUE_1_MAP,
 }
 
 
