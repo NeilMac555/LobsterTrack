@@ -4,14 +4,15 @@ import { useSearchParams } from 'react-router-dom';
 import { getTeamPnL } from '../api';
 import type { TeamPLResponse, TeamPLRow, TeamPLViewStats } from '../types';
 
-// Phase 1: EPL only. The selector is disabled but visible so the
-// 'multi-league later' intent is obvious in the UI.
+// Leagues we currently have data for. The disabled entries below are
+// architectural placeholders — switch them on once the importer +
+// team_name_normalizer cover that league.
 const LEAGUE_OPTIONS = [
   { value: 'soccer_epl', label: 'Premier League', disabled: false },
+  { value: 'soccer_italy_serie_a', label: 'Serie A', disabled: false },
   { value: 'soccer_spain_la_liga', label: 'La Liga (coming soon)', disabled: true },
   { value: 'soccer_germany_bundesliga', label: 'Bundesliga (coming soon)', disabled: true },
   { value: 'soccer_france_ligue_one', label: 'Ligue 1 (coming soon)', disabled: true },
-  { value: 'soccer_italy_serie_a', label: 'Serie A (coming soon)', disabled: true },
 ];
 
 // Hard-locked to 2025/26 per Neil's request — historical seasons sit in
@@ -96,7 +97,7 @@ export default function TeamPLPage() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // ── Filter state. Persisted to URL so links are shareable.
-  const [league] = useState<string>('soccer_epl');
+  const league = searchParams.get('league') || 'soccer_epl';
   const venueParam = (searchParams.get('venue') as Venue) || 'overall';
   // Default min-matches threshold dropped to 5 because a single PL season
   // gives us at most ~19 home / ~19 away matches per team, so 30 would
@@ -115,12 +116,13 @@ export default function TeamPLPage() {
     let alive = true;
     setLoading(true);
     setError(null);
+    setData(null);  // clear stale data immediately when switching leagues
     getTeamPnL({ league })
       .then((res) => {
         if (!alive) return;
         setData(res);
       })
-      .catch(() => alive && setError('Failed to load team P/L. The data import may not have run yet — try again in a minute.'))
+      .catch(() => alive && setError('Failed to load team P/L. The data import may not have run yet for this league — try again in a minute.'))
       .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
@@ -183,6 +185,7 @@ export default function TeamPLPage() {
   // dropped the dropdown but still want users to see which season the
   // numbers cover.
   const currentSeasonLabel = formatSeason(CURRENT_SEASON);
+  const leagueLabel = LEAGUE_OPTIONS.find((o) => o.value === league)?.label ?? 'Premier League';
 
   return (
     <div>
@@ -207,7 +210,7 @@ export default function TeamPLPage() {
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Team P/L</h1>
             <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em]">
-              {currentSeasonLabel} EPL &middot; Pinnacle closing 1X2 &middot; flat £{data?.stake?.toFixed(0) ?? '50'} stake
+              {currentSeasonLabel} {leagueLabel} &middot; Pinnacle closing 1X2 &middot; flat £{data?.stake?.toFixed(0) ?? '50'} stake
             </p>
           </div>
         </div>
@@ -236,7 +239,7 @@ export default function TeamPLPage() {
         {methodologyOpen && (
           <div className="border-t border-slate-700/50 px-4 sm:px-5 py-3 sm:py-4 text-[12px] sm:text-sm text-slate-300 leading-relaxed space-y-2">
             <p>
-              Profit/loss assumes a flat £{data?.stake?.toFixed(0) ?? '50'} stake at Pinnacle closing 1X2 prices on every {currentSeasonLabel} EPL match for the team.
+              Profit/loss assumes a flat £{data?.stake?.toFixed(0) ?? '50'} stake at Pinnacle closing 1X2 prices on every {currentSeasonLabel} {leagueLabel} match for the team.
               Pinnacle closing lines are the sharpest publicly available reference; ROI relative to close indicates structural mispricing or sustained edge.
             </p>
             <p>
@@ -255,8 +258,8 @@ export default function TeamPLPage() {
           </label>
           <select
             value={league}
-            disabled
-            className="w-full bg-slate-800/60 border border-slate-700/60 rounded-md px-2.5 py-1.5 text-xs sm:text-sm text-slate-300 font-mono cursor-not-allowed opacity-80"
+            onChange={(e) => setParam('league', e.target.value === 'soccer_epl' ? null : e.target.value)}
+            className="w-full bg-slate-800/60 border border-slate-700/60 rounded-md px-2.5 py-1.5 text-xs sm:text-sm text-white font-mono"
           >
             {LEAGUE_OPTIONS.map((o) => (
               <option key={o.value} value={o.value} disabled={o.disabled}>{o.label}</option>

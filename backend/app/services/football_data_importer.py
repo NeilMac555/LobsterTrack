@@ -2,11 +2,13 @@
 Pull historical match results + Pinnacle closing prices from
 football-data.co.uk and upsert into the historical_matches table.
 
-Phase 1 covers the EPL only ('soccer_epl' league key). The CSV format
-hasn't changed in years; the columns we care about are:
+Multi-league: each supported league maps to a football-data.co.uk
+file code (E0 for EPL, I1 for Serie A, etc.). The CSV format is
+identical across leagues; only the team-name canonical map differs.
 
+Columns we care about:
   Date       — DD/MM/YYYY (older) or DD/MM/YY (newer); we parse both.
-  HomeTeam   — football-data.co.uk's spelling (we normalize to canonical)
+  HomeTeam   — football-data.co.uk's spelling (normalized per league)
   AwayTeam   — same
   FTHG, FTAG — full-time goals
   FTR        — H | D | A
@@ -35,11 +37,18 @@ from app.services.team_name_normalizer import normalize_team_name
 
 logger = structlog.get_logger()
 
-# football-data.co.uk season codes are two-digit-start + two-digit-end,
-# concatenated (e.g. '2122' = 2021/22). The current season ('2526') is
-# updated weekly through the year — others are static.
-EPL_LEAGUE_KEY = "soccer_epl"
-FOOTBALL_DATA_URL = "https://www.football-data.co.uk/mmz4281/{season}/E0.csv"
+# The Odds API sport_key → football-data.co.uk file code. To add a new
+# league, add the mapping here AND add a normalizer dict in
+# team_name_normalizer.NAME_MAP_BY_LEAGUE.
+LEAGUE_FILE_CODES: dict[str, str] = {
+    "soccer_epl":              "E0",
+    "soccer_italy_serie_a":    "I1",
+    # "soccer_spain_la_liga":     "SP1",
+    # "soccer_germany_bundesliga": "D1",
+    # "soccer_france_ligue_one":   "F1",
+}
+
+FOOTBALL_DATA_URL = "https://www.football-data.co.uk/mmz4281/{season}/{code}.csv"
 
 # Default seasons to pull on a fresh install: last 5 completed + current.
 DEFAULT_SEASONS: list[str] = ["2122", "2223", "2324", "2425", "2526"]
@@ -82,27 +91,28 @@ def _parse_int(raw: str) -> Optional[int]:
         return None
 
 
-async def _fetch_csv(season: str) -> str:
+async def _fetch_csv(league_key: str, season: str) -> str:
     """Download the season CSV from football-data.co.uk, return as text."""
-    url = FOOTBALL_DATA_URL.format(season=season)
+    code = LEAGUE_FILE_CODES[league_key]
+    url = FOOTBALL_DATA_URL.format(season=season, code=code)
     async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
         resp = await client.get(url)
         resp.raise_for_status()
         # The site serves these as windows-1252 in some seasons. Try utf-8
-        # first, fall back to cp1252 for the older files where Tottenham
-        # appears with a non-ASCII glyph in headers etc.
+        # first, fall back to cp1252 for the older files where non-ASCII
+        # glyphs appear in team names etc.
         try:
             return resp.content.decode("utf-8")
         except UnicodeDecodeError:
             return resp.content.decode("cp1252")
 
 
-def _import_season_rows(season: str, csv_text: str) -> dict:
+def _import_season_rows(league_key: str, season: str, csv_text: str) -> dict:
     """
     Parse a season CSV and upsert rows into historical_matches.
 
     Returns a summary dict for logging / admin response:
-      {season, rows_seen, rows_written, rows_skipped, unmapped_teams[], errors[]}
+      {league, season, rows_seen, rows_written, rows_skipped, unmapped_teams[], errors[]}
     """
     db = SessionLocal()
     try:
@@ -129,8 +139,8 @@ def _import_season_rows(season: str, csv_text: str) -> dict:
             home_raw = (row.get("HomeTeam") or "").strip()
             away_raw = (row.get("AwayTeam") or "").strip()
 
-            home_team = normalize_team_name(home_raw)
-            away_team = normalize_team_name(away_raw)
+            home_team = normalize_team_name(home_raw, league_key)
+            away_team = normalize_team_name(away_raw, league_key)
 
             if not match_date or not home_team or not away_team:
                 rows_skipped += 1
@@ -162,6 +172,10 @@ def _import_season_rows(season: str, csv_text: str) -> dict:
                 rows_close += 1
 
             # Upsert by natural key (season, match_date, home, away).
+            # Note: we don't include league in the key because the
+            # (date, home, away) tuple is already unique across leagues
+            # (no team plays in two top-flights at once) — but we DO
+            # write the league column so queries can filter cleanly.
             existing = (
                 db.query(HistoricalMatch)
                 .filter(
@@ -174,6 +188,7 @@ def _import_season_rows(season: str, csv_text: str) -> dict:
             )
 
             if existing:
+                existing.league = league_key
                 existing.fthg = _parse_int(row.get("FTHG", ""))
                 existing.ftag = _parse_int(row.get("FTAG", ""))
                 existing.ftr = (row.get("FTR") or "").strip() or None
@@ -185,7 +200,7 @@ def _import_season_rows(season: str, csv_text: str) -> dict:
                 db.add(
                     HistoricalMatch(
                         season=season,
-                        league=EPL_LEAGUE_KEY,
+                        league=league_key,
                         match_date=match_date,
                         home_team=home_team,
                         away_team=away_team,
@@ -206,9 +221,11 @@ def _import_season_rows(season: str, csv_text: str) -> dict:
         except IntegrityError as e:
             db.rollback()
             errors.append(f"IntegrityError on commit: {e!s}")
-            logger.error("football_data_importer commit failed", season=season, error=str(e))
+            logger.error("football_data_importer commit failed",
+                         league=league_key, season=season, error=str(e))
 
         summary = {
+            "league": league_key,
             "season": season,
             "rows_seen": rows_seen,
             "rows_written": rows_written,
@@ -225,7 +242,8 @@ def _import_season_rows(season: str, csv_text: str) -> dict:
             # to prevent.
             logger.warning(
                 "football_data_importer: unmapped team names — add to "
-                "team_name_normalizer.FOOTBALL_DATA_TO_CANONICAL",
+                "team_name_normalizer.NAME_MAP_BY_LEAGUE",
+                league=league_key,
                 season=season,
                 unmapped=sorted(unmapped_teams),
             )
@@ -238,29 +256,43 @@ def _import_season_rows(season: str, csv_text: str) -> dict:
         db.close()
 
 
-async def import_seasons(seasons: Optional[list[str]] = None) -> dict:
+async def import_seasons(
+    league_key: str = "soccer_epl",
+    seasons: Optional[list[str]] = None,
+) -> dict:
     """
-    Public entry point. Pull the requested seasons (default: 5 historical +
-    current) and upsert into historical_matches.
+    Public entry point. Pull the requested seasons for a given league
+    (default: EPL, last 5 historical + current) and upsert into
+    historical_matches.
     """
+    if league_key not in LEAGUE_FILE_CODES:
+        return {
+            "errors": [f"League '{league_key}' not configured. Add it to LEAGUE_FILE_CODES."],
+            "seasons": [],
+            "total_rows_written": 0,
+            "total_unmapped_teams": [],
+        }
+
     target = seasons or DEFAULT_SEASONS
-    overall: dict = {"seasons": [], "errors": []}
+    overall: dict = {"league": league_key, "seasons": [], "errors": []}
     for season in target:
         try:
-            csv_text = await _fetch_csv(season)
+            csv_text = await _fetch_csv(league_key, season)
         except Exception as e:
-            err = f"{season}: fetch failed — {e!s}"
+            err = f"{league_key} {season}: fetch failed — {e!s}"
             overall["errors"].append(err)
-            logger.error("football_data_importer fetch failed", season=season, error=str(e))
+            logger.error("football_data_importer fetch failed",
+                         league=league_key, season=season, error=str(e))
             continue
 
         try:
-            summary = _import_season_rows(season, csv_text)
+            summary = _import_season_rows(league_key, season, csv_text)
             overall["seasons"].append(summary)
         except Exception as e:
-            err = f"{season}: parse failed — {e!s}"
+            err = f"{league_key} {season}: parse failed — {e!s}"
             overall["errors"].append(err)
-            logger.error("football_data_importer parse failed", season=season, error=str(e))
+            logger.error("football_data_importer parse failed",
+                         league=league_key, season=season, error=str(e))
 
     overall["total_rows_written"] = sum(s["rows_written"] for s in overall["seasons"])
     overall["total_unmapped_teams"] = sorted(

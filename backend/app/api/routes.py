@@ -1123,10 +1123,13 @@ async def get_team_pnl(
     with reality. The frontend can show this discrepancy via the
     rows_close / rows_open_fallback / rows_missing_price counters.
     """
-    if league != "soccer_epl":
+    # Whitelist of supported leagues — add new ones here as we extend
+    # both the importer and the team_name_normalizer maps.
+    SUPPORTED_LEAGUES = {"soccer_epl", "soccer_italy_serie_a"}
+    if league not in SUPPORTED_LEAGUES:
         raise HTTPException(
             status_code=400,
-            detail="Phase 1 only supports soccer_epl. Other leagues will be added.",
+            detail=f"League '{league}' not yet supported. Supported: {sorted(SUPPORTED_LEAGUES)}",
         )
 
     # ── Filter the historical_matches table down to the requested view.
@@ -1627,15 +1630,21 @@ async def admin_reconcile_stripe(password: str = Query(..., description="Admin p
 @router.post("/admin/import-football-data")
 async def admin_import_football_data(
     password: str = Query(..., description="Admin password"),
+    league: str = Query(
+        "soccer_epl",
+        description="Sport key — e.g. 'soccer_epl' or 'soccer_italy_serie_a'.",
+    ),
     seasons: Optional[str] = Query(
         None,
         description="Comma-separated football-data.co.uk season codes (e.g. '2425,2526'). Default: last 5 seasons + current.",
     ),
 ):
     """
-    Pull EPL match results + Pinnacle closing prices from football-data.co.uk
-    and upsert into historical_matches. Re-run this any time during the
-    current season to refresh; older seasons are static.
+    Pull match results + Pinnacle closing prices from football-data.co.uk
+    for the requested league and upsert into historical_matches. Re-run
+    any time during the current season to refresh; older seasons are
+    static. Supported leagues are listed in
+    football_data_importer.LEAGUE_FILE_CODES.
     """
     from app.services.football_data_importer import import_seasons
 
@@ -1646,7 +1655,7 @@ async def admin_import_football_data(
     if seasons:
         season_list = [s.strip() for s in seasons.split(",") if s.strip()]
 
-    summary = await import_seasons(season_list)
+    summary = await import_seasons(league_key=league, seasons=season_list)
     return summary
 
 
