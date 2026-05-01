@@ -14,6 +14,12 @@ const LEAGUE_OPTIONS = [
   { value: 'soccer_italy_serie_a', label: 'Serie A (coming soon)', disabled: true },
 ];
 
+// Hard-locked to 2025/26 per Neil's request — historical seasons sit in
+// the historical_matches table but are hidden from the UI for now. If we
+// want to bring them back later, swap this for a season selector and
+// stop filtering on the row predicate below.
+const CURRENT_SEASON = '2526';
+
 type Venue = 'overall' | 'home' | 'away';
 type SortField = 'team' | 'matches' | 'wins' | 'pl' | 'roi';
 type SortDir = 'asc' | 'desc';
@@ -91,9 +97,11 @@ export default function TeamPLPage() {
 
   // ── Filter state. Persisted to URL so links are shareable.
   const [league] = useState<string>('soccer_epl');
-  const seasonParam = searchParams.get('season') || 'all';
   const venueParam = (searchParams.get('venue') as Venue) || 'overall';
-  const minMatchesParam = parseInt(searchParams.get('min') || '30', 10);
+  // Default min-matches threshold dropped to 5 because a single PL season
+  // gives us at most ~19 home / ~19 away matches per team, so 30 would
+  // grey out everyone for the home/away splits.
+  const minMatchesParam = parseInt(searchParams.get('min') || '5', 10);
 
   const [data, setData] = useState<TeamPLResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -139,11 +147,13 @@ export default function TeamPLPage() {
   // Pull the right view (home/away/overall) off each row.
   const view = (r: TeamPLRow): TeamPLViewStats => r[venueParam];
 
-  // Filter rows down to the selected season.
+  // Show only the current season per Neil's request. The aggregator
+  // also emits an 'all' aggregate row per team — we drop that since
+  // it's redundant when only one season is visible.
   const filteredRows = useMemo(() => {
     if (!data) return [];
-    return data.rows.filter((r) => r.season === seasonParam);
-  }, [data, seasonParam]);
+    return data.rows.filter((r) => r.season === CURRENT_SEASON);
+  }, [data]);
 
   // Sort + sample-size flagging.
   const sortedRows = useMemo(() => {
@@ -169,13 +179,10 @@ export default function TeamPLPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredRows, sortField, sortDir, venueParam]);
 
-  // Build the season selector options dynamically from what the API loaded.
-  const seasonOptions = useMemo(() => {
-    const seasons = data?.seasons_loaded ?? [];
-    // Most recent first (descending sort works on these 4-digit codes).
-    const sorted = [...seasons].sort().reverse();
-    return [{ value: 'all', label: 'All seasons' }, ...sorted.map((s) => ({ value: s, label: formatSeason(s) }))];
-  }, [data]);
+  // Show the current-season label in place of a season selector. We
+  // dropped the dropdown but still want users to see which season the
+  // numbers cover.
+  const currentSeasonLabel = formatSeason(CURRENT_SEASON);
 
   return (
     <div>
@@ -200,7 +207,7 @@ export default function TeamPLPage() {
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Team P/L</h1>
             <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em]">
-              Pinnacle closing 1X2 &middot; flat £{data?.stake?.toFixed(0) ?? '50'} stake &middot; ROI vs the close
+              {currentSeasonLabel} EPL &middot; Pinnacle closing 1X2 &middot; flat £{data?.stake?.toFixed(0) ?? '50'} stake
             </p>
           </div>
         </div>
@@ -229,26 +236,19 @@ export default function TeamPLPage() {
         {methodologyOpen && (
           <div className="border-t border-slate-700/50 px-4 sm:px-5 py-3 sm:py-4 text-[12px] sm:text-sm text-slate-300 leading-relaxed space-y-2">
             <p>
-              Profit/loss assumes a flat £{data?.stake?.toFixed(0) ?? '50'} stake at Pinnacle closing 1X2 prices on every match for the selected team.
+              Profit/loss assumes a flat £{data?.stake?.toFixed(0) ?? '50'} stake at Pinnacle closing 1X2 prices on every {currentSeasonLabel} EPL match for the team.
               Pinnacle closing lines are the sharpest publicly available reference; ROI relative to close indicates structural mispricing or sustained edge.
             </p>
             <p>
-              This is backward-looking. Past ROI does not predict future ROI. Promotion, relegation, manager changes, and squad turnover all break the signal.
+              This is backward-looking and limited to a single season — sample sizes are small. Promotion, relegation, manager changes, and squad turnover all break the signal.
               Sample sizes under {minMatchesParam} matches are highlighted as noise. Use this view as one input among several, not as a standalone betting system.
             </p>
-            {data && (data.rows_open_fallback > 0 || data.rows_missing_price > 0) && (
-              <p className="text-slate-400 text-[11px]">
-                Data note: {data.rows_close.toLocaleString()} matches priced at the close,
-                {' '}{data.rows_open_fallback.toLocaleString()} fell back to opening prices,
-                {' '}{data.rows_missing_price.toLocaleString()} have no Pinnacle price and are excluded from staked totals.
-              </p>
-            )}
           </div>
         )}
       </div>
 
-      {/* Filters */}
-      <div className="mb-4 sm:mb-6 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+      {/* Filters — current-season-only build, so no season selector. */}
+      <div className="mb-4 sm:mb-6 grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
         <div>
           <label className="block text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold mb-1">
             League
@@ -260,20 +260,6 @@ export default function TeamPLPage() {
           >
             {LEAGUE_OPTIONS.map((o) => (
               <option key={o.value} value={o.value} disabled={o.disabled}>{o.label}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold mb-1">
-            Season
-          </label>
-          <select
-            value={seasonParam}
-            onChange={(e) => setParam('season', e.target.value === 'all' ? null : e.target.value)}
-            className="w-full bg-slate-800/60 border border-slate-700/60 rounded-md px-2.5 py-1.5 text-xs sm:text-sm text-white font-mono"
-          >
-            {seasonOptions.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
         </div>
@@ -298,10 +284,10 @@ export default function TeamPLPage() {
           <input
             type="range"
             min={0}
-            max={100}
-            step={5}
+            max={38}
+            step={1}
             value={minMatchesParam}
-            onChange={(e) => setParam('min', e.target.value === '30' ? null : e.target.value)}
+            onChange={(e) => setParam('min', e.target.value === '5' ? null : e.target.value)}
             className="w-full accent-indigo-500"
           />
         </div>
@@ -333,9 +319,6 @@ export default function TeamPLPage() {
               <thead className="bg-slate-900/60 border-b border-slate-700/60">
                 <tr>
                   <SortHeader label="Team" field="team" active={sortField} direction={sortDir} onClick={handleSort} align="left" />
-                  <th className="px-2 sm:px-3 py-2 sm:py-2.5 text-left text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.1em] font-semibold text-slate-400">
-                    Season
-                  </th>
                   <SortHeader label="Matches" field="matches" active={sortField} direction={sortDir} onClick={handleSort} />
                   <SortHeader label="Wins" field="wins" active={sortField} direction={sortDir} onClick={handleSort} />
                   <SortHeader label="P/L" field="pl" active={sortField} direction={sortDir} onClick={handleSort} />
@@ -356,11 +339,6 @@ export default function TeamPLPage() {
                         {r.team}
                         {muted && <span className="text-amber-400 ml-1" aria-hidden>*</span>}
                       </td>
-                      <td className={`px-2 sm:px-3 py-2 sm:py-2.5 font-mono text-[11px] uppercase tracking-wider ${
-                        r.season === 'all' ? 'text-indigo-300 font-bold' : 'text-slate-400'
-                      }`}>
-                        {formatSeason(r.season)}
-                      </td>
                       <td className={`px-2 sm:px-3 py-2 sm:py-2.5 text-right font-mono tabular-nums ${muted ? 'text-slate-500' : 'text-white'}`}>
                         {v.matches}
                       </td>
@@ -380,7 +358,7 @@ export default function TeamPLPage() {
             </table>
           </div>
           <div className="px-3 sm:px-4 py-2 border-t border-slate-700/40 bg-slate-900/40 text-[10px] font-mono uppercase tracking-wider text-slate-500 flex flex-wrap gap-x-4 gap-y-1 justify-between">
-            <span>{sortedRows.length} rows · venue: {venueParam} · season: {formatSeason(seasonParam)}</span>
+            <span>{sortedRows.length} teams · venue: {venueParam} · season: {currentSeasonLabel}</span>
             <span>* = below sample threshold</span>
           </div>
         </div>
