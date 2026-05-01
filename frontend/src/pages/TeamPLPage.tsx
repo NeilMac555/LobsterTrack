@@ -22,6 +22,7 @@ const LEAGUE_OPTIONS = [
 const CURRENT_SEASON = '2526';
 
 type Venue = 'overall' | 'home' | 'away';
+type Side = 'back' | 'fade';
 type SortField = 'team' | 'matches' | 'wins' | 'pl' | 'roi';
 type SortDir = 'asc' | 'desc';
 
@@ -99,6 +100,7 @@ export default function TeamPLPage() {
   // ── Filter state. Persisted to URL so links are shareable.
   const league = searchParams.get('league') || 'soccer_epl';
   const venueParam = (searchParams.get('venue') as Venue) || 'overall';
+  const sideParam = (searchParams.get('side') as Side) || 'back';
 
   const [data, setData] = useState<TeamPLResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -142,8 +144,9 @@ export default function TeamPLPage() {
     }
   };
 
-  // Pull the right view (home/away/overall) off each row.
-  const view = (r: TeamPLRow): TeamPLViewStats => r[venueParam];
+  // Pull the right side (back/fade) and venue (home/away/overall)
+  // off each row. Two filters compose into one stat block.
+  const view = (r: TeamPLRow): TeamPLViewStats => r[sideParam][venueParam];
 
   // Show only the current season per Neil's request. The aggregator
   // also emits an 'all' aggregate row per team — we drop that since
@@ -175,7 +178,7 @@ export default function TeamPLPage() {
     });
     return rows;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filteredRows, sortField, sortDir, venueParam]);
+  }, [filteredRows, sortField, sortDir, venueParam, sideParam]);
 
   // Show the current-season label in place of a season selector. We
   // dropped the dropdown but still want users to see which season the
@@ -206,7 +209,7 @@ export default function TeamPLPage() {
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Team P/L</h1>
             <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em]">
-              {currentSeasonLabel} {leagueLabel} &middot; Pinnacle closing 1X2 &middot; flat £{data?.stake?.toFixed(0) ?? '50'} stake
+              {currentSeasonLabel} {leagueLabel} &middot; {sideParam === 'back' ? 'Backing each team' : 'Fading each team'} &middot; Pinnacle closing 1X2 &middot; flat £{data?.stake?.toFixed(0) ?? '50'}
             </p>
           </div>
         </div>
@@ -235,8 +238,9 @@ export default function TeamPLPage() {
         {methodologyOpen && (
           <div className="border-t border-slate-700/50 px-4 sm:px-5 py-3 sm:py-4 text-[12px] sm:text-sm text-slate-300 leading-relaxed space-y-2">
             <p>
-              Profit/loss assumes a flat £{data?.stake?.toFixed(0) ?? '50'} stake at Pinnacle closing 1X2 prices on every {currentSeasonLabel} {leagueLabel} match for the team.
-              Pinnacle closing lines are the sharpest publicly available reference; ROI relative to close indicates structural mispricing or sustained edge.
+              <strong className="text-emerald-300">Back</strong>: stake £{data?.stake?.toFixed(0) ?? '50'} on the team to win every {currentSeasonLabel} {leagueLabel} match. ROI tells you whether the market under-prices the team.
+              {' '}<strong className="text-red-300">Fade</strong>: stake £{data?.stake?.toFixed(0) ?? '50'} on the team's <em>opponent</em> in every match they play. ROI tells you whether the market over-prices them.
+              Both views use Pinnacle closing 1X2 — the sharpest publicly available reference.
             </p>
             <p>
               This is backward-looking and limited to a single season — sample sizes are small. Promotion, relegation, manager changes, and squad turnover all break the signal.
@@ -246,10 +250,10 @@ export default function TeamPLPage() {
         )}
       </div>
 
-      {/* Filters — current-season-only build. Min-matches slider was
-          dropped because every team plays the same number of league
-          matches, so it served no purpose. */}
-      <div className="mb-4 sm:mb-6 grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+      {/* Filters — League + Side + Venue. Side toggles between
+          'back the team' and 'fade the team' (= back the opposing team
+          in every match they play). */}
+      <div className="mb-4 sm:mb-6 grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
         <div>
           <label className="block text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold mb-1">
             League
@@ -263,6 +267,35 @@ export default function TeamPLPage() {
               <option key={o.value} value={o.value} disabled={o.disabled}>{o.label}</option>
             ))}
           </select>
+        </div>
+        <div>
+          <label className="block text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold mb-1">
+            Side
+          </label>
+          <div className="flex gap-1">
+            <button
+              onClick={() => setParam('side', null)}
+              className={`flex-1 px-2.5 py-1.5 rounded-md font-mono text-[11px] uppercase tracking-[0.1em] font-semibold transition-colors border ${
+                sideParam === 'back'
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                  : 'bg-slate-800/60 text-slate-400 border-slate-700/60 hover:bg-slate-700/60 hover:text-white'
+              }`}
+              title="Stake on the team to win"
+            >
+              Back
+            </button>
+            <button
+              onClick={() => setParam('side', 'fade')}
+              className={`flex-1 px-2.5 py-1.5 rounded-md font-mono text-[11px] uppercase tracking-[0.1em] font-semibold transition-colors border ${
+                sideParam === 'fade'
+                  ? 'bg-red-500/20 text-red-300 border-red-500/40'
+                  : 'bg-slate-800/60 text-slate-400 border-slate-700/60 hover:bg-slate-700/60 hover:text-white'
+              }`}
+              title="Stake on the opposing team in every match this team plays"
+            >
+              Fade
+            </button>
+          </div>
         </div>
         <div>
           <label className="block text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold mb-1">
@@ -342,7 +375,7 @@ export default function TeamPLPage() {
             </table>
           </div>
           <div className="px-3 sm:px-4 py-2 border-t border-slate-700/40 bg-slate-900/40 text-[10px] font-mono uppercase tracking-wider text-slate-500">
-            {sortedRows.length} teams · venue: {venueParam} · season: {currentSeasonLabel}
+            {sortedRows.length} teams · side: {sideParam} · venue: {venueParam} · season: {currentSeasonLabel}
           </div>
         </div>
       )}

@@ -307,27 +307,38 @@ class XGTeamsResponse(BaseModel):
 
 class TeamPLViewStats(BaseModel):
     """
-    P/L numbers for one of the three views (home / away / overall) of a
-    team in a given season. Stake is implicit — caller knows the unit.
+    P/L numbers for one venue (home / away / overall) of a single
+    side (back / fade) of a team in a given season. Stake is implicit
+    — caller knows the unit.
     """
     matches: int
-    wins: int
+    wins: int           # bet wins — for fade rows this means the opposing team won
     staked: float       # total £ staked in this view
     pl: float           # total £ profit (negative = loss)
     roi: Optional[float] = None  # P/L / staked × 100. None if no stake.
 
 
-class TeamPLRow(BaseModel):
+class TeamPLSide(BaseModel):
     """
-    One row of the Team P/L table: a single team for a single season (or
-    'all' for the aggregate). Each view (home/away/overall) is its own
-    sub-object so the frontend can colour-code and sort independently.
+    The home/away/overall venue split for one side of a bet (back or
+    fade) on a given team-season.
     """
-    team: str
-    season: str           # 'all' = aggregate across loaded seasons, else 4-digit code
     home: TeamPLViewStats
     away: TeamPLViewStats
     overall: TeamPLViewStats
+
+
+class TeamPLRow(BaseModel):
+    """
+    One row of the Team P/L table: a single team for a single season (or
+    'all' for the aggregate). Each row carries both a 'back' side
+    (stake the team to win) and a 'fade' side (stake their opponent to
+    win) so the frontend can flip between perspectives without a refetch.
+    """
+    team: str
+    season: str           # 'all' = aggregate across loaded seasons, else 4-digit code
+    back: TeamPLSide
+    fade: TeamPLSide
 
 
 class TeamPLResponse(BaseModel):

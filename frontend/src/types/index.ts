@@ -215,14 +215,20 @@ export interface TeamPLViewStats {
   roi: number | null;
 }
 
+export interface TeamPLSide {
+  home: TeamPLViewStats;
+  away: TeamPLViewStats;
+  overall: TeamPLViewStats;
+}
+
 export interface TeamPLRow {
   team: string;
   // 4-digit season code (e.g. '2425' for 2024/25), or 'all' for the
   // cross-season aggregate row per team.
   season: string;
-  home: TeamPLViewStats;
-  away: TeamPLViewStats;
-  overall: TeamPLViewStats;
+  // 'back' = stake the team to win. 'fade' = stake the team's opponent.
+  back: TeamPLSide;
+  fade: TeamPLSide;
 }
 
 export interface TeamPLResponse {

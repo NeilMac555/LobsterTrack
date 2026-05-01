@@ -37,6 +37,7 @@ from .schemas import (
     XGTeamsResponse,
     TeamPLResponse,
     TeamPLRow,
+    TeamPLSide,
     TeamPLViewStats,
 )
 
@@ -1162,55 +1163,81 @@ async def get_team_pnl(
     rows_open_fallback = sum(1 for r in rows if r.price_source == "open_fallback")
     rows_missing_price = sum(1 for r in rows if r.price_source == "missing")
 
-    # ── Build the per-(team, season, view) accumulators.
-    # Key: (team, season, view) where view ∈ {'home','away'}.
-    # We derive 'overall' by summing home + away at the end.
+    # ── Build the per-(team, season, side, view) accumulators.
+    # side ∈ {'back', 'fade'}; view ∈ {'home', 'away'}.
+    # 'overall' is derived by summing home + away at the end.
+    #
+    # For each match (H vs A) we contribute to FOUR team-side buckets:
+    #   • H.back.home  — back the home team at PSCH
+    #   • A.back.away  — back the away team at PSCA
+    #   • H.fade.home  — back H's opponent (=A) at PSCA, win when FTR=A
+    #   • A.fade.away  — back A's opponent (=H) at PSCH, win when FTR=H
     Bucket = dict[str, float]
     def empty_bucket() -> Bucket:
         return {"matches": 0, "wins": 0, "staked": 0.0, "pl": 0.0}
 
-    # team -> season -> {'home': bucket, 'away': bucket}
-    accum: dict[str, dict[str, dict[str, Bucket]]] = {}
+    def empty_team_season() -> dict:
+        return {
+            "back": {"home": empty_bucket(), "away": empty_bucket()},
+            "fade": {"home": empty_bucket(), "away": empty_bucket()},
+        }
 
-    def get(team: str, season: str, view: str) -> Bucket:
-        return accum.setdefault(team, {}).setdefault(season, {
-            "home": empty_bucket(),
-            "away": empty_bucket(),
-        })[view]
+    # team -> season -> {back: {home, away}, fade: {home, away}}
+    accum: dict[str, dict[str, dict]] = {}
+
+    def get(team: str, season: str, side: str, view: str) -> Bucket:
+        return accum.setdefault(team, {}).setdefault(season, empty_team_season())[side][view]
 
     for r in rows:
-        # Home side: the home team is backing themselves at PSCH.
-        home_b = get(r.home_team, r.season, "home")
-        home_b["matches"] += 1
-        # Away side: the away team is backing themselves at PSCA.
-        away_b = get(r.away_team, r.season, "away")
-        away_b["matches"] += 1
+        # Match-count bumps. We always tick matches even when the row
+        # has no price, so totals reflect reality.
+        bh = get(r.home_team, r.season, "back", "home")  # H backed at home
+        ba = get(r.away_team, r.season, "back", "away")  # A backed away
+        fh = get(r.home_team, r.season, "fade", "home")  # H's opponent backed
+        fa = get(r.away_team, r.season, "fade", "away")  # A's opponent backed
+
+        bh["matches"] += 1
+        ba["matches"] += 1
+        fh["matches"] += 1
+        fa["matches"] += 1
 
         if r.ftr == "H":
-            home_b["wins"] += 1
+            bh["wins"] += 1   # backing H wins
+            fa["wins"] += 1   # fading A wins (because H, the opponent of A, won)
         elif r.ftr == "A":
-            away_b["wins"] += 1
-        # 'D' counts as no win for either side, no push on 1X2.
+            ba["wins"] += 1   # backing A wins
+            fh["wins"] += 1   # fading H wins (because A, the opponent of H, won)
+        # Draws produce zero wins on either side — no 1X2 push.
 
-        # Only contribute to staked/PL when we actually have a price.
-        # 'missing' rows still bump 'matches' / 'wins' so the count is
-        # accurate, but staked/PL only reflect rows we could actually bet.
-        if r.price_source != "missing":
-            if r.psch is not None:
-                home_b["staked"] += stake
-                if r.ftr == "H":
-                    home_b["pl"] += stake * (r.psch - 1.0)
-                else:
-                    home_b["pl"] -= stake
-            if r.psca is not None:
-                away_b["staked"] += stake
-                if r.ftr == "A":
-                    away_b["pl"] += stake * (r.psca - 1.0)
-                else:
-                    away_b["pl"] -= stake
+        # Stake/PL only on priced rows. Each match has two price points
+        # (PSCH for the home win, PSCA for the away win) and we use them
+        # symmetrically across back/fade.
+        if r.price_source == "missing":
+            continue
 
-    # ── Materialise the response rows, including an 'all' aggregate row
-    # per team that sums across every season we loaded.
+        if r.psch is not None:
+            # Both H.back.home and A.fade.away stake at PSCH and win on FTR=H.
+            bh["staked"] += stake
+            fa["staked"] += stake
+            if r.ftr == "H":
+                bh["pl"] += stake * (r.psch - 1.0)
+                fa["pl"] += stake * (r.psch - 1.0)
+            else:
+                bh["pl"] -= stake
+                fa["pl"] -= stake
+
+        if r.psca is not None:
+            # Both A.back.away and H.fade.home stake at PSCA and win on FTR=A.
+            ba["staked"] += stake
+            fh["staked"] += stake
+            if r.ftr == "A":
+                ba["pl"] += stake * (r.psca - 1.0)
+                fh["pl"] += stake * (r.psca - 1.0)
+            else:
+                ba["pl"] -= stake
+                fh["pl"] -= stake
+
+    # ── Materialise the response rows, with an 'all' aggregate per team.
     def view_stats(b: Bucket) -> TeamPLViewStats:
         roi = (b["pl"] / b["staked"] * 100.0) if b["staked"] > 0 else None
         return TeamPLViewStats(
@@ -1230,48 +1257,39 @@ async def get_team_pnl(
             out["pl"] += b["pl"]
         return out
 
+    def side_from_views(home_b: Bucket, away_b: Bucket) -> TeamPLSide:
+        return TeamPLSide(
+            home=view_stats(home_b),
+            away=view_stats(away_b),
+            overall=view_stats(sum_buckets(home_b, away_b)),
+        )
+
     response_rows: list[TeamPLRow] = []
     for team, by_season in accum.items():
-        # Per-season rows.
-        all_home = empty_bucket()
-        all_away = empty_bucket()
-        for season, views in by_season.items():
-            home_b = views["home"]
-            away_b = views["away"]
-            overall_b = sum_buckets(home_b, away_b)
+        all_back_h = empty_bucket()
+        all_back_a = empty_bucket()
+        all_fade_h = empty_bucket()
+        all_fade_a = empty_bucket()
+        for season, sides in by_season.items():
             response_rows.append(TeamPLRow(
                 team=team,
                 season=season,
-                home=view_stats(home_b),
-                away=view_stats(away_b),
-                overall=view_stats(overall_b),
+                back=side_from_views(sides["back"]["home"], sides["back"]["away"]),
+                fade=side_from_views(sides["fade"]["home"], sides["fade"]["away"]),
             ))
-            all_home = sum_buckets(all_home, home_b)
-            all_away = sum_buckets(all_away, away_b)
+            all_back_h = sum_buckets(all_back_h, sides["back"]["home"])
+            all_back_a = sum_buckets(all_back_a, sides["back"]["away"])
+            all_fade_h = sum_buckets(all_fade_h, sides["fade"]["home"])
+            all_fade_a = sum_buckets(all_fade_a, sides["fade"]["away"])
 
-        # 'All' aggregate row across loaded seasons.
-        if len(by_season) > 1:
-            response_rows.append(TeamPLRow(
-                team=team,
-                season="all",
-                home=view_stats(all_home),
-                away=view_stats(all_away),
-                overall=view_stats(sum_buckets(all_home, all_away)),
-            ))
-        elif len(by_season) == 1:
-            # Single-season teams (e.g. one season in the EPL across the
-            # window) still get an 'all' row so the UI's default 'all'
-            # filter doesn't hide them.
-            (only_season,) = by_season.keys()
-            home_b = by_season[only_season]["home"]
-            away_b = by_season[only_season]["away"]
-            response_rows.append(TeamPLRow(
-                team=team,
-                season="all",
-                home=view_stats(home_b),
-                away=view_stats(away_b),
-                overall=view_stats(sum_buckets(home_b, away_b)),
-            ))
+        # 'all' aggregate — always emitted (even for single-season teams)
+        # so the UI's default filter never hides anyone.
+        response_rows.append(TeamPLRow(
+            team=team,
+            season="all",
+            back=side_from_views(all_back_h, all_back_a),
+            fade=side_from_views(all_fade_h, all_fade_a),
+        ))
 
     # Stable order: team name asc, then 'all' first, then seasons asc.
     response_rows.sort(key=lambda r: (r.team, "" if r.season == "all" else r.season))
