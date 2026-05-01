@@ -93,11 +93,51 @@ _SERIE_A_MAP: dict[str, str] = {
 }
 
 
-# Lookup table keyed by The Odds API sport_key. La Liga / Bundesliga /
-# Ligue 1 will land here as we extend coverage.
+# La Liga — verified against SP1.csv (25/26) and the
+# /matches endpoint for soccer_spain_la_liga. football-data.co.uk uses
+# heavy abbreviations ("Ath Madrid", "Vallecano", "Sociedad"); the
+# canonical names use proper Spanish/Basque/Catalan spellings with
+# diacritics ("Atlético Madrid", "Rayo Vallecano", "Real Sociedad").
+_LA_LIGA_MAP: dict[str, str] = {
+    # Active 25/26 sides
+    "Alaves":       "Alavés",
+    "Ath Bilbao":   "Athletic Bilbao",
+    "Ath Madrid":   "Atlético Madrid",
+    "Barcelona":    "Barcelona",
+    "Betis":        "Real Betis",
+    "Celta":        "Celta Vigo",
+    "Elche":        "Elche CF",
+    "Espanol":      "Espanyol",
+    "Getafe":       "Getafe",
+    "Girona":       "Girona",
+    "Levante":      "Levante",
+    "Mallorca":     "Mallorca",
+    "Osasuna":      "CA Osasuna",
+    "Oviedo":       "Oviedo",
+    "Real Madrid":  "Real Madrid",
+    "Sevilla":      "Sevilla",
+    "Sociedad":     "Real Sociedad",
+    "Valencia":     "Valencia",
+    "Vallecano":    "Rayo Vallecano",
+    "Villarreal":   "Villarreal",
+
+    # Recent visitors — added so a multi-season backfill won't drop them.
+    # Best-effort canonical guesses; verify via /api/matches before relying.
+    "Almeria":      "Almería",
+    "Cadiz":        "Cádiz CF",
+    "Granada":      "Granada CF",
+    "Las Palmas":   "Las Palmas",
+    "Leganes":      "Leganés",
+    "Valladolid":   "Real Valladolid",
+}
+
+
+# Lookup table keyed by The Odds API sport_key. Bundesliga / Ligue 1
+# will land here as we extend coverage.
 NAME_MAP_BY_LEAGUE: dict[str, dict[str, str]] = {
-    "soccer_epl":            _EPL_MAP,
-    "soccer_italy_serie_a":  _SERIE_A_MAP,
+    "soccer_epl":              _EPL_MAP,
+    "soccer_italy_serie_a":    _SERIE_A_MAP,
+    "soccer_spain_la_liga":    _LA_LIGA_MAP,
 }
 
 
