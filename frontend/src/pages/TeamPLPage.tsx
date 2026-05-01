@@ -239,8 +239,8 @@ export default function TeamPLPage() {
           <div className="border-t border-slate-700/50 px-4 sm:px-5 py-3 sm:py-4 text-[12px] sm:text-sm text-slate-300 leading-relaxed space-y-2">
             <p>
               <strong className="text-emerald-300">Back</strong>: stake £{data?.stake?.toFixed(0) ?? '50'} on the team to win every {currentSeasonLabel} {leagueLabel} match. ROI tells you whether the market under-prices the team.
-              {' '}<strong className="text-red-300">Fade</strong>: stake £{data?.stake?.toFixed(0) ?? '50'} on the team's <em>opponent</em> in every match they play. ROI tells you whether the market over-prices them.
-              Both views use Pinnacle closing 1X2 — the sharpest publicly available reference.
+              {' '}<strong className="text-red-300">Fade</strong>: stake £{data?.stake?.toFixed(0) ?? '50'} on the Double Chance market <em>against</em> the team — bet wins on either a draw or an opponent victory, loses only when the team itself wins. ROI tells you whether the market over-prices them.
+              Both views use Pinnacle closing prices — the sharpest publicly available reference.
             </p>
             <p>
               This is backward-looking and limited to a single season — sample sizes are small. Promotion, relegation, manager changes, and squad turnover all break the signal.

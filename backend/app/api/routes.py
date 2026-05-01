@@ -1167,11 +1167,16 @@ async def get_team_pnl(
     # side ∈ {'back', 'fade'}; view ∈ {'home', 'away'}.
     # 'overall' is derived by summing home + away at the end.
     #
-    # For each match (H vs A) we contribute to FOUR team-side buckets:
-    #   • H.back.home  — back the home team at PSCH
-    #   • A.back.away  — back the away team at PSCA
-    #   • H.fade.home  — back H's opponent (=A) at PSCA, win when FTR=A
-    #   • A.fade.away  — back A's opponent (=H) at PSCH, win when FTR=H
+    # Each match (H vs A) contributes to FOUR team-side buckets:
+    #   • H.back.home  — back H to win at PSCH; wins on FTR=H
+    #   • A.back.away  — back A to win at PSCA; wins on FTR=A
+    #   • H.fade.home  — Double Chance "Draw or Away"; wins on FTR != H
+    #   • A.fade.away  — Double Chance "Home or Draw"; wins on FTR != A
+    #
+    # The fade price is the no-margin combination of Pinnacle's two
+    # individual prices, which mirrors what a sportsbook would quote
+    # for the matching Double Chance market (and is structurally
+    # equivalent to a +0.5 Asian Handicap on the opposing team).
     Bucket = dict[str, float]
     def empty_bucket() -> Bucket:
         return {"matches": 0, "wins": 0, "staked": 0.0, "pl": 0.0}
@@ -1188,54 +1193,71 @@ async def get_team_pnl(
     def get(team: str, season: str, side: str, view: str) -> Bucket:
         return accum.setdefault(team, {}).setdefault(season, empty_team_season())[side][view]
 
+    def dc_price(p1: Optional[float], p2: Optional[float]) -> Optional[float]:
+        """Combined Pinnacle Double Chance price — bet wins on either p1 or p2 outcome."""
+        if p1 is None or p2 is None or p1 <= 0 or p2 <= 0:
+            return None
+        return 1.0 / (1.0 / p1 + 1.0 / p2)
+
     for r in rows:
         # Match-count bumps. We always tick matches even when the row
         # has no price, so totals reflect reality.
         bh = get(r.home_team, r.season, "back", "home")  # H backed at home
         ba = get(r.away_team, r.season, "back", "away")  # A backed away
-        fh = get(r.home_team, r.season, "fade", "home")  # H's opponent backed
-        fa = get(r.away_team, r.season, "fade", "away")  # A's opponent backed
+        fh = get(r.home_team, r.season, "fade", "home")  # H faded (DC: D or A)
+        fa = get(r.away_team, r.season, "fade", "away")  # A faded (DC: H or D)
 
         bh["matches"] += 1
         ba["matches"] += 1
         fh["matches"] += 1
         fa["matches"] += 1
 
+        # Wins.
         if r.ftr == "H":
             bh["wins"] += 1   # backing H wins
-            fa["wins"] += 1   # fading A wins (because H, the opponent of A, won)
+            fa["wins"] += 1   # fading A: H is part of "H or D"
         elif r.ftr == "A":
             ba["wins"] += 1   # backing A wins
-            fh["wins"] += 1   # fading H wins (because A, the opponent of H, won)
-        # Draws produce zero wins on either side — no 1X2 push.
+            fh["wins"] += 1   # fading H: A is part of "D or A"
+        elif r.ftr == "D":
+            fh["wins"] += 1   # fading H: D is part of "D or A"
+            fa["wins"] += 1   # fading A: D is part of "H or D"
 
-        # Stake/PL only on priced rows. Each match has two price points
-        # (PSCH for the home win, PSCA for the away win) and we use them
-        # symmetrically across back/fade.
+        # Stake/PL only on priced rows.
         if r.price_source == "missing":
             continue
 
+        # Back side — single-outcome 1X2 stakes.
         if r.psch is not None:
-            # Both H.back.home and A.fade.away stake at PSCH and win on FTR=H.
             bh["staked"] += stake
-            fa["staked"] += stake
             if r.ftr == "H":
                 bh["pl"] += stake * (r.psch - 1.0)
-                fa["pl"] += stake * (r.psch - 1.0)
             else:
                 bh["pl"] -= stake
-                fa["pl"] -= stake
 
         if r.psca is not None:
-            # Both A.back.away and H.fade.home stake at PSCA and win on FTR=A.
             ba["staked"] += stake
-            fh["staked"] += stake
             if r.ftr == "A":
                 ba["pl"] += stake * (r.psca - 1.0)
-                fh["pl"] += stake * (r.psca - 1.0)
             else:
                 ba["pl"] -= stake
+
+        # Fade side — Double Chance. Need TWO Pinnacle prices apiece.
+        fh_price = dc_price(r.pscd, r.psca)  # "Draw or Away" — fading the home team
+        if fh_price is not None:
+            fh["staked"] += stake
+            if r.ftr != "H":   # D or A — fade wins
+                fh["pl"] += stake * (fh_price - 1.0)
+            else:
                 fh["pl"] -= stake
+
+        fa_price = dc_price(r.psch, r.pscd)  # "Home or Draw" — fading the away team
+        if fa_price is not None:
+            fa["staked"] += stake
+            if r.ftr != "A":   # H or D — fade wins
+                fa["pl"] += stake * (fa_price - 1.0)
+            else:
+                fa["pl"] -= stake
 
     # ── Materialise the response rows, with an 'all' aggregate per team.
     def view_stats(b: Bucket) -> TeamPLViewStats:
