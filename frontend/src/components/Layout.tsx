@@ -276,6 +276,88 @@ export default function Layout() {
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-slate-700/50 bg-slate-800/95 backdrop-blur-md">
             <div className="px-4 py-4 space-y-4">
+              {/* Account section — placed first so existing Pro users can
+                  sign in immediately and don't bounce off the paywall.
+                  Mirrors the desktop right-nav UX: signed-in shows email
+                  + Pro badge + Manage / Sign out; anonymous shows Sign In
+                  + Go Pro side by side. */}
+              <div>
+                <p className="text-xs text-slate-400 font-medium mb-2 uppercase tracking-wider">Account</p>
+                {user ? (
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-slate-700/50">
+                      <span className="w-7 h-7 rounded-full bg-red-500/20 border border-red-500/30 flex items-center justify-center text-xs text-red-400 font-bold font-mono flex-shrink-0">
+                        {user.email[0].toUpperCase()}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs text-slate-300 truncate font-mono">{user.email}</p>
+                        <p className="text-[10px] font-mono uppercase tracking-wider mt-0.5">
+                          {isSubscribed
+                            ? <span className="text-emerald-400 font-bold">Pro Subscriber</span>
+                            : <span className="text-slate-500">Free Tier</span>}
+                        </p>
+                      </div>
+                    </div>
+                    {!isSubscribed && (
+                      <button
+                        onClick={async () => {
+                          setMobileMenuOpen(false);
+                          setSubscribing(true);
+                          try { await subscribe(); } catch { setSubscribing(false); }
+                        }}
+                        disabled={subscribing}
+                        className="w-full text-center px-4 py-3 rounded-xl text-sm font-bold uppercase tracking-wider bg-gradient-to-br from-cyan-400 to-cyan-500 text-slate-900 hover:brightness-110 transition-all disabled:opacity-70"
+                      >
+                        {subscribing ? 'Redirecting…' : 'Go Pro →'}
+                      </button>
+                    )}
+                    {isSubscribed && (
+                      <button
+                        onClick={() => { setMobileMenuOpen(false); manageSubscription(); }}
+                        className="w-full text-left px-4 py-3 rounded-xl text-sm bg-slate-700/50 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+                      >
+                        Manage Subscription
+                      </button>
+                    )}
+                    <button
+                      onClick={() => { setMobileMenuOpen(false); logout(); }}
+                      className="w-full text-left px-4 py-3 rounded-xl text-sm bg-slate-700/50 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        setLoginMode('signin');
+                        setShowLogin(true);
+                      }}
+                      className="px-4 py-3 rounded-xl text-sm font-semibold uppercase tracking-wider bg-slate-700/50 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+                    >
+                      Sign In
+                    </button>
+                    <button
+                      onClick={async () => {
+                        setMobileMenuOpen(false);
+                        if (!user) {
+                          setLoginMode('subscribe');
+                          setShowLogin(true);
+                        } else {
+                          setSubscribing(true);
+                          try { await subscribe(); } catch { setSubscribing(false); }
+                        }
+                      }}
+                      disabled={subscribing}
+                      className="px-4 py-3 rounded-xl text-sm font-bold uppercase tracking-wider bg-gradient-to-br from-cyan-400 to-cyan-500 text-slate-900 hover:brightness-110 transition-all disabled:opacity-70"
+                    >
+                      {subscribing ? '…' : 'Go Pro →'}
+                    </button>
+                  </div>
+                )}
+              </div>
+
               {/* League Buttons */}
               <div>
                 <p className="text-xs text-slate-400 font-medium mb-2 uppercase tracking-wider">Leagues</p>
