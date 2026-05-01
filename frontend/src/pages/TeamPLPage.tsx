@@ -99,10 +99,6 @@ export default function TeamPLPage() {
   // ── Filter state. Persisted to URL so links are shareable.
   const league = searchParams.get('league') || 'soccer_epl';
   const venueParam = (searchParams.get('venue') as Venue) || 'overall';
-  // Default min-matches threshold dropped to 5 because a single PL season
-  // gives us at most ~19 home / ~19 away matches per team, so 30 would
-  // grey out everyone for the home/away splits.
-  const minMatchesParam = parseInt(searchParams.get('min') || '5', 10);
 
   const [data, setData] = useState<TeamPLResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -244,14 +240,16 @@ export default function TeamPLPage() {
             </p>
             <p>
               This is backward-looking and limited to a single season — sample sizes are small. Promotion, relegation, manager changes, and squad turnover all break the signal.
-              Sample sizes under {minMatchesParam} matches are highlighted as noise. Use this view as one input among several, not as a standalone betting system.
+              Use this view as one input among several, not as a standalone betting system.
             </p>
           </div>
         )}
       </div>
 
-      {/* Filters — current-season-only build, so no season selector. */}
-      <div className="mb-4 sm:mb-6 grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
+      {/* Filters — current-season-only build. Min-matches slider was
+          dropped because every team plays the same number of league
+          matches, so it served no purpose. */}
+      <div className="mb-4 sm:mb-6 grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
         <div>
           <label className="block text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold mb-1">
             League
@@ -279,20 +277,6 @@ export default function TeamPLPage() {
             <option value="home">Home only</option>
             <option value="away">Away only</option>
           </select>
-        </div>
-        <div>
-          <label className="block text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold mb-1">
-            Min matches: <span className="text-indigo-300 tabular-nums">{minMatchesParam}</span>
-          </label>
-          <input
-            type="range"
-            min={0}
-            max={38}
-            step={1}
-            value={minMatchesParam}
-            onChange={(e) => setParam('min', e.target.value === '5' ? null : e.target.value)}
-            className="w-full accent-indigo-500"
-          />
         </div>
       </div>
 
@@ -331,27 +315,24 @@ export default function TeamPLPage() {
               <tbody className="divide-y divide-slate-700/40">
                 {sortedRows.map((r, i) => {
                   const v = view(r);
-                  const muted = v.matches < minMatchesParam;
                   return (
                     <tr
                       key={`${r.team}-${r.season}-${i}`}
-                      className={`hover:bg-slate-700/15 transition-colors ${muted ? 'opacity-60' : ''}`}
-                      title={muted ? `Sample size below ${minMatchesParam} matches. Treat ROI as noisy.` : undefined}
+                      className="hover:bg-slate-700/15 transition-colors"
                     >
-                      <td className={`px-2 sm:px-3 py-2 sm:py-2.5 font-semibold tracking-tight ${muted ? 'text-slate-400' : 'text-white'}`}>
+                      <td className="px-2 sm:px-3 py-2 sm:py-2.5 font-semibold tracking-tight text-white">
                         {r.team}
-                        {muted && <span className="text-amber-400 ml-1" aria-hidden>*</span>}
                       </td>
-                      <td className={`px-2 sm:px-3 py-2 sm:py-2.5 text-right font-mono tabular-nums ${muted ? 'text-slate-500' : 'text-white'}`}>
+                      <td className="px-2 sm:px-3 py-2 sm:py-2.5 text-right font-mono tabular-nums text-white">
                         {v.matches}
                       </td>
-                      <td className={`px-2 sm:px-3 py-2 sm:py-2.5 text-right font-mono tabular-nums ${muted ? 'text-slate-500' : 'text-slate-300'}`}>
+                      <td className="px-2 sm:px-3 py-2 sm:py-2.5 text-right font-mono tabular-nums text-slate-300">
                         {v.wins}
                       </td>
-                      <td className={`px-2 sm:px-3 py-2 sm:py-2.5 text-right font-mono tabular-nums font-semibold ${plColor(v.pl, muted)}`}>
+                      <td className={`px-2 sm:px-3 py-2 sm:py-2.5 text-right font-mono tabular-nums font-semibold ${plColor(v.pl, false)}`}>
                         {formatPL(v.pl)}
                       </td>
-                      <td className={`px-2 sm:px-3 py-2 sm:py-2.5 text-right font-mono tabular-nums font-bold ${roiColor(v.roi, muted)}`}>
+                      <td className={`px-2 sm:px-3 py-2 sm:py-2.5 text-right font-mono tabular-nums font-bold ${roiColor(v.roi, false)}`}>
                         {formatROI(v.roi)}
                       </td>
                     </tr>
@@ -360,9 +341,8 @@ export default function TeamPLPage() {
               </tbody>
             </table>
           </div>
-          <div className="px-3 sm:px-4 py-2 border-t border-slate-700/40 bg-slate-900/40 text-[10px] font-mono uppercase tracking-wider text-slate-500 flex flex-wrap gap-x-4 gap-y-1 justify-between">
-            <span>{sortedRows.length} teams · venue: {venueParam} · season: {currentSeasonLabel}</span>
-            <span>* = below sample threshold</span>
+          <div className="px-3 sm:px-4 py-2 border-t border-slate-700/40 bg-slate-900/40 text-[10px] font-mono uppercase tracking-wider text-slate-500">
+            {sortedRows.length} teams · venue: {venueParam} · season: {currentSeasonLabel}
           </div>
         </div>
       )}
