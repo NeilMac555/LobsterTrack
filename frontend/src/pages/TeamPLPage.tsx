@@ -209,7 +209,7 @@ export default function TeamPLPage() {
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Team P/L</h1>
             <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em]">
-              {currentSeasonLabel} {leagueLabel} &middot; {sideParam === 'back' ? 'Backing each team' : 'Fading each team'} &middot; Pinnacle closing 1X2 &middot; flat £{data?.stake?.toFixed(0) ?? '50'}
+              {currentSeasonLabel} {leagueLabel} &middot; £{data?.stake?.toFixed(0) ?? '50'} per match &middot; {sideParam === 'back' ? 'Bet ON each team to win' : 'Bet AGAINST each team'}
             </p>
           </div>
         </div>
@@ -225,7 +225,7 @@ export default function TeamPLPage() {
           <div className="flex items-center gap-2 min-w-0">
             <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-bold">i</span>
             <span className="text-[11px] font-mono uppercase tracking-[0.12em] text-slate-300 font-semibold">
-              How to read this
+              How to read this table
             </span>
           </div>
           <svg
@@ -236,15 +236,28 @@ export default function TeamPLPage() {
           </svg>
         </button>
         {methodologyOpen && (
-          <div className="border-t border-slate-700/50 px-4 sm:px-5 py-3 sm:py-4 text-[12px] sm:text-sm text-slate-300 leading-relaxed space-y-2">
+          <div className="border-t border-slate-700/50 px-4 sm:px-5 py-3 sm:py-4 text-[12px] sm:text-sm text-slate-300 leading-relaxed space-y-3">
             <p>
-              <strong className="text-emerald-300">Back</strong>: stake £{data?.stake?.toFixed(0) ?? '50'} on the team to win every {currentSeasonLabel} {leagueLabel} match. ROI tells you whether the market under-prices the team.
-              {' '}<strong className="text-red-300">Fade</strong>: stake £{data?.stake?.toFixed(0) ?? '50'} on the Double Chance market <em>against</em> the team — bet wins on either a draw or an opponent victory, loses only when the team itself wins. ROI tells you whether the market over-prices them.
-              Both views use Pinnacle closing prices — the sharpest publicly available reference.
+              Imagine you put a £{data?.stake?.toFixed(0) ?? '50'} bet on the same team every single time they played in the {currentSeasonLabel} {leagueLabel} season — no skipping, no judgement, just the same bet every match. The table tells you what your bank balance would look like at the end.
             </p>
-            <p>
-              This is backward-looking and limited to a single season — sample sizes are small. Promotion, relegation, manager changes, and squad turnover all break the signal.
-              Use this view as one input among several, not as a standalone betting system.
+            <div>
+              <p className="text-emerald-300 font-semibold mb-1">Bet ON team wins</p>
+              <p className="text-slate-400">
+                You stake £{data?.stake?.toFixed(0) ?? '50'} on the team to win the match. If they win, you collect at the bookmaker's price. If they draw or lose, you lose your stake.
+                A positive return means the market consistently under-priced this team — they were better than the odds suggested.
+              </p>
+            </div>
+            <div>
+              <p className="text-red-300 font-semibold mb-1">Bet AGAINST team</p>
+              <p className="text-slate-400">
+                You stake £{data?.stake?.toFixed(0) ?? '50'} on the team <em>not</em> winning — you collect if the match ends in a draw <em>or</em> if the opposing team wins. You only lose your stake when the team you're betting against actually wins.
+                A positive return means the market consistently over-priced this team — people backed them more than they deserved.
+              </p>
+            </div>
+            <p className="text-slate-500 text-[11px]">
+              Prices used are Pinnacle's closing odds — the sharpest publicly available reference, taken in the final seconds before kick-off.
+              ROI = profit/loss ÷ amount staked.
+              This is a backward-looking summary; small samples are noisy and past results are not a forecast.
             </p>
           </div>
         )}
@@ -270,30 +283,40 @@ export default function TeamPLPage() {
         </div>
         <div>
           <label className="block text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold mb-1">
-            Side
+            Bet direction
           </label>
           <div className="flex gap-1">
             <button
               onClick={() => setParam('side', null)}
-              className={`flex-1 px-2.5 py-1.5 rounded-md font-mono text-[11px] uppercase tracking-[0.1em] font-semibold transition-colors border ${
+              className={`flex-1 px-2 py-1 rounded-md transition-colors border ${
                 sideParam === 'back'
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                  : 'bg-slate-800/60 text-slate-400 border-slate-700/60 hover:bg-slate-700/60 hover:text-white'
+                  ? 'bg-emerald-500/20 border-emerald-500/40'
+                  : 'bg-slate-800/60 border-slate-700/60 hover:bg-slate-700/60'
               }`}
-              title="Stake on the team to win"
+              title="If you bet £50 on each team to win every one of their matches, what would your P/L be?"
             >
-              Back
+              <div className={`font-mono text-[11px] uppercase tracking-[0.1em] font-bold ${sideParam === 'back' ? 'text-emerald-300' : 'text-slate-300'}`}>
+                Bet ON
+              </div>
+              <div className={`text-[9px] mt-0.5 ${sideParam === 'back' ? 'text-emerald-400/70' : 'text-slate-500'}`}>
+                team wins
+              </div>
             </button>
             <button
               onClick={() => setParam('side', 'fade')}
-              className={`flex-1 px-2.5 py-1.5 rounded-md font-mono text-[11px] uppercase tracking-[0.1em] font-semibold transition-colors border ${
+              className={`flex-1 px-2 py-1 rounded-md transition-colors border ${
                 sideParam === 'fade'
-                  ? 'bg-red-500/20 text-red-300 border-red-500/40'
-                  : 'bg-slate-800/60 text-slate-400 border-slate-700/60 hover:bg-slate-700/60 hover:text-white'
+                  ? 'bg-red-500/20 border-red-500/40'
+                  : 'bg-slate-800/60 border-slate-700/60 hover:bg-slate-700/60'
               }`}
-              title="Stake on the opposing team in every match this team plays"
+              title="If you bet £50 against each team every match (you collect on draws or when their opponent wins), what would your P/L be?"
             >
-              Fade
+              <div className={`font-mono text-[11px] uppercase tracking-[0.1em] font-bold ${sideParam === 'fade' ? 'text-red-300' : 'text-slate-300'}`}>
+                Bet AGAINST
+              </div>
+              <div className={`text-[9px] mt-0.5 ${sideParam === 'fade' ? 'text-red-400/70' : 'text-slate-500'}`}>
+                team doesn't win
+              </div>
             </button>
           </div>
         </div>
@@ -347,8 +370,8 @@ export default function TeamPLPage() {
                     direction={sortDir}
                     onClick={handleSort}
                   />
-                  <SortHeader label="P/L" field="pl" active={sortField} direction={sortDir} onClick={handleSort} />
-                  <SortHeader label="ROI" field="roi" active={sortField} direction={sortDir} onClick={handleSort} />
+                  <SortHeader label="Profit / Loss" field="pl" active={sortField} direction={sortDir} onClick={handleSort} />
+                  <SortHeader label="Return %" field="roi" active={sortField} direction={sortDir} onClick={handleSort} />
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/40">
