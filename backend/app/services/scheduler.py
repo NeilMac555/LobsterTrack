@@ -49,6 +49,13 @@ class OddsScheduler:
         self._last_fetch_summary: dict | None = None  # last cycle's summary dict
         self._recent_errors: list[dict] = []          # bounded to 10 most recent
 
+        # Football-data weekly refresh diagnostics — populated by the
+        # Monday 09:00 UTC cron job that re-pulls the current season for
+        # every supported league.
+        self._fdata_last_run_at: datetime | None = None
+        self._fdata_last_summary: dict | None = None
+        self._fdata_last_error: str | None = None
+
     def _record_error(self, where: str, message: str):
         """Keep the last 10 errors so the admin health page can display them."""
         self._recent_errors.append({
@@ -259,6 +266,51 @@ class OddsScheduler:
         except Exception as e:
             logger.error("xG refresh failed", error=str(e))
 
+    async def football_data_refresh_job(self):
+        """
+        Weekly refresh of historical_matches (current season only) from
+        football-data.co.uk for every supported league. Older seasons are
+        static so we skip them; only the in-progress season changes.
+
+        Each league fetched independently so a single bad CSV doesn't
+        kill the others. Failures are logged but never raised — worst
+        case the Team P/L tab shows last week's numbers until the next
+        Monday run.
+        """
+        from app.services.football_data_importer import (
+            LEAGUE_FILE_CODES,
+            import_seasons,
+        )
+
+        self._fdata_last_run_at = datetime.utcnow()
+        self._fdata_last_error = None
+        try:
+            logger.info("Starting weekly football-data.co.uk refresh")
+            results: dict[str, dict] = {}
+            for league_key in LEAGUE_FILE_CODES.keys():
+                try:
+                    summary = await import_seasons(
+                        league_key=league_key, seasons=["2526"]
+                    )
+                    results[league_key] = {
+                        "rows_written": summary.get("total_rows_written", 0),
+                        "unmapped_teams": summary.get("total_unmapped_teams", []),
+                        "errors": summary.get("errors", []),
+                    }
+                except Exception as e:
+                    results[league_key] = {"error": str(e)}
+                    logger.error(
+                        "football-data refresh failed for league",
+                        league=league_key, error=str(e),
+                    )
+            self._fdata_last_summary = results
+            logger.info("Weekly football-data refresh complete", **{
+                k: v.get("rows_written", "err") for k, v in results.items()
+            })
+        except Exception as e:
+            self._fdata_last_error = str(e)
+            logger.error("Weekly football-data refresh failed", error=str(e))
+
     async def stripe_reconcile_job(self):
         """
         Safety net for the Stripe webhook — lists every active Stripe
@@ -323,6 +375,22 @@ class OddsScheduler:
             trigger=IntervalTrigger(minutes=10),
             id="stripe_reconcile",
             name="Stripe subscription reconciler",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
+
+        # Weekly Team P/L refresh — Monday 09:00 UTC (10am London summer,
+        # 9am winter). football-data.co.uk publishes weekend results plus
+        # Pinnacle closes overnight Sunday→Monday, so by 09:00 UTC the
+        # file is reliably updated. Mon-night fixtures (Italy / France)
+        # land in the following week's pull. Refreshes the current
+        # season ('2526') only — older seasons are static.
+        self.scheduler.add_job(
+            self.football_data_refresh_job,
+            trigger=CronTrigger(day_of_week="mon", hour=9, minute=0),
+            id="football_data_refresh_weekly",
+            name="Weekly football-data.co.uk refresh (Team P/L)",
             replace_existing=True,
             max_instances=1,
             coalesce=True,
@@ -426,6 +494,14 @@ class OddsScheduler:
                 "last_error": xg_refresher.last_error,
                 "summary": xg_refresher.last_run_summary,
                 "schedule": "Mondays 03:00 UTC",
+            },
+            # Weekly Team P/L refresh — pulls football-data.co.uk per league
+            "football_data_refresh": {
+                "last_run_at": iso(self._fdata_last_run_at),
+                "seconds_since_last_run": seconds_ago(self._fdata_last_run_at),
+                "last_error": self._fdata_last_error,
+                "summary": self._fdata_last_summary,
+                "schedule": "Mondays 09:00 UTC",
             },
         }
 
