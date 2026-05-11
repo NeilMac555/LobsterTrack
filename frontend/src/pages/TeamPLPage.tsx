@@ -372,18 +372,33 @@ export default function TeamPLPage() {
         )}
       </div>
 
-      {/* Qualifying-teams strip — only shown when the Top filter is on,
-          so the user can see at a glance which teams the filter is
-          using and why their numbers just changed. */}
+      {/* Qualifying-teams banner — large, can't-miss callout listing the
+          exact teams that count as 'Top 6' for this view. Indigo
+          gradient + per-team pills so the user immediately sees which
+          teams the filter is applying and can't be confused about why
+          'their' team's numbers just changed. */}
       {effectiveOpponents === 'top' && data?.top_teams && data.top_teams.length > 0 && (
-        <div className="mb-4 sm:mb-6 bg-indigo-500/10 border border-indigo-500/30 rounded-lg px-3 py-2">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-indigo-300 font-bold whitespace-nowrap">
-              {LEAGUES_WITH_TOP[league].label}:
-            </span>
-            <span className="text-xs text-white font-mono">
-              {data.top_teams.join(' · ')}
-            </span>
+        <div className="mb-4 sm:mb-6 bg-gradient-to-br from-indigo-500/15 via-indigo-500/10 to-purple-500/10 border border-indigo-500/40 rounded-xl p-4 sm:p-5 shadow-lg shadow-indigo-500/5">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-1 h-5 sm:h-6 rounded-full bg-gradient-to-b from-indigo-400 to-indigo-600 flex-shrink-0" />
+            <h2 className="text-sm sm:text-base font-bold text-white tracking-tight">
+              Showing matches against the {LEAGUES_WITH_TOP[league].label}
+            </h2>
+          </div>
+          <p className="text-[11px] sm:text-xs text-slate-400 mb-3 leading-relaxed">
+            Every team's record below counts only their fixtures against these six sides.
+            Top 6 teams themselves are measured against the other five (max 10 matches);
+            every other team is measured against all six (max 12 matches).
+          </p>
+          <div className="flex flex-wrap gap-1.5 sm:gap-2">
+            {data.top_teams.map((t) => (
+              <span
+                key={t}
+                className="inline-flex items-center px-2.5 py-1 rounded-md bg-indigo-500/20 border border-indigo-500/40 text-indigo-100 text-xs sm:text-sm font-semibold tracking-tight"
+              >
+                {t}
+              </span>
+            ))}
           </div>
         </div>
       )}
