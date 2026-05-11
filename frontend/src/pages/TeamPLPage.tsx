@@ -382,7 +382,7 @@ export default function TeamPLPage() {
           <div className="flex items-center gap-2 mb-3">
             <div className="w-1 h-5 sm:h-6 rounded-full bg-gradient-to-b from-indigo-400 to-indigo-600 flex-shrink-0" />
             <h2 className="text-sm sm:text-base font-bold text-white tracking-tight">
-              Showing matches against the {LEAGUES_WITH_TOP[league].label}
+              Showing matches against the &ldquo;{LEAGUES_WITH_TOP[league].label}&rdquo;
             </h2>
           </div>
           <p className="text-[11px] sm:text-xs text-slate-400 mb-3 leading-relaxed">
