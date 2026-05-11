@@ -32,6 +32,7 @@ type SortDir = 'asc' | 'desc';
 // offering a control that does nothing.
 const LEAGUES_WITH_TOP: Record<string, { label: string }> = {
   soccer_epl: { label: 'Top 6' },
+  soccer_spain_la_liga: { label: 'Top 3' },
 };
 
 // Format football-data.co.uk season codes ('2122') as the human '2021/22'.

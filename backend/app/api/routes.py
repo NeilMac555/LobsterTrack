@@ -1114,6 +1114,13 @@ TOP_TEAMS_BY_LEAGUE: dict[str, list[str]] = {
         "Manchester United",
         "Aston Villa",
     ],
+    # La Liga is dominated historically by the same three sides every
+    # year — Top 3 reflects that rather than copy-pasting Top 6.
+    "soccer_spain_la_liga": [
+        "Atlético Madrid",
+        "Barcelona",
+        "Real Madrid",
+    ],
 }
 
 
