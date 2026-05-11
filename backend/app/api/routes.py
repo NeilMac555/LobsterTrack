@@ -1121,6 +1121,31 @@ TOP_TEAMS_BY_LEAGUE: dict[str, list[str]] = {
         "Barcelona",
         "Real Madrid",
     ],
+    # Serie A — Top 4 captures the historical Big Four (Inter, Juve,
+    # Milan, Napoli) who've taken the last decade of scudetti between
+    # them. Roma / Atalanta / Lazio sit one tier below.
+    "soccer_italy_serie_a": [
+        "AC Milan",
+        "Inter Milan",
+        "Juventus",
+        "Napoli",
+    ],
+    # Bundesliga — Top 3 includes Leverkusen alongside Bayern + Dortmund.
+    # Leverkusen broke Bayern's grip in 23/24 and have stayed in the
+    # top tier; restricting to Top 2 would lose that signal.
+    "soccer_germany_bundesliga": [
+        "Bayer Leverkusen",
+        "Bayern Munich",
+        "Borussia Dortmund",
+    ],
+    # Ligue 1 — PSG dominate but Top 3 with Marseille + Monaco keeps
+    # the sample size useful. Top 1 (PSG only) would be too narrow
+    # to read anything from.
+    "soccer_france_ligue_one": [
+        "AS Monaco",
+        "Marseille",
+        "Paris Saint Germain",
+    ],
 }
 
 

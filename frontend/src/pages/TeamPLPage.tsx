@@ -33,6 +33,9 @@ type SortDir = 'asc' | 'desc';
 const LEAGUES_WITH_TOP: Record<string, { label: string }> = {
   soccer_epl: { label: 'Top 6' },
   soccer_spain_la_liga: { label: 'Top 3' },
+  soccer_italy_serie_a: { label: 'Top 4' },
+  soccer_germany_bundesliga: { label: 'Top 3' },
+  soccer_france_ligue_one: { label: 'Top 3' },
 };
 
 // Format football-data.co.uk season codes ('2122') as the human '2021/22'.
