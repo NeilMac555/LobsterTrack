@@ -239,6 +239,8 @@ export interface TeamPLResponse {
   rows_open_fallback: number;
   rows_missing_price: number;
   rows: TeamPLRow[];
+  top_teams: string[] | null;       // null when no opponent filter active
+  opponents_filter: string | null;  // 'top' or null
 }
 
 export const LEAGUE_CONFIG: Record<string, { name: string; shortName: string; color: string }> = {

@@ -23,8 +23,16 @@ const CURRENT_SEASON = '2526';
 
 type Venue = 'overall' | 'home' | 'away';
 type Side = 'back' | 'fade';
+type Opponents = 'all' | 'top';
 type SortField = 'team' | 'matches' | 'wins' | 'pl' | 'roi';
 type SortDir = 'asc' | 'desc';
+
+// Which leagues currently have a hardcoded 'Top N' opponent group on
+// the backend. Other leagues hide the Opponents filter to avoid
+// offering a control that does nothing.
+const LEAGUES_WITH_TOP: Record<string, { label: string }> = {
+  soccer_epl: { label: 'Top 6' },
+};
 
 // Format football-data.co.uk season codes ('2122') as the human '2021/22'.
 function formatSeason(code: string): string {
@@ -101,6 +109,12 @@ export default function TeamPLPage() {
   const league = searchParams.get('league') || 'soccer_epl';
   const venueParam = (searchParams.get('venue') as Venue) || 'overall';
   const sideParam = (searchParams.get('side') as Side) || 'back';
+  const opponentsParam = (searchParams.get('opponents') as Opponents) || 'all';
+  const leagueHasTop = league in LEAGUES_WITH_TOP;
+  // If a user switches to a league with no top group while ?opponents=top
+  // is in the URL, treat it as 'all' so we don't send a request that
+  // silently falls back.
+  const effectiveOpponents: Opponents = leagueHasTop ? opponentsParam : 'all';
 
   const [data, setData] = useState<TeamPLResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -115,7 +129,10 @@ export default function TeamPLPage() {
     setLoading(true);
     setError(null);
     setData(null);  // clear stale data immediately when switching leagues
-    getTeamPnL({ league })
+    getTeamPnL({
+      league,
+      opponents: effectiveOpponents === 'top' ? 'top' : undefined,
+    })
       .then((res) => {
         if (!alive) return;
         setData(res);
@@ -125,7 +142,7 @@ export default function TeamPLPage() {
     return () => {
       alive = false;
     };
-  }, [league]);
+  }, [league, effectiveOpponents]);
 
   const setParam = (key: string, value: string | null) => {
     const next = new URLSearchParams(searchParams);
@@ -210,6 +227,9 @@ export default function TeamPLPage() {
             <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Team P/L</h1>
             <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em]">
               {currentSeasonLabel} {leagueLabel} &middot; £{data?.stake?.toFixed(0) ?? '50'} per match &middot; {sideParam === 'back' ? 'Bet ON each team to win' : 'Bet AGAINST each team'}
+              {effectiveOpponents === 'top' && leagueHasTop && (
+                <> &middot; vs {LEAGUES_WITH_TOP[league].label}</>
+              )}
             </p>
           </div>
         </div>
@@ -263,10 +283,11 @@ export default function TeamPLPage() {
         )}
       </div>
 
-      {/* Filters — League + Side + Venue. Side toggles between
-          'back the team' and 'fade the team' (= back the opposing team
-          in every match they play). */}
-      <div className="mb-4 sm:mb-6 grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
+      {/* Filters — League + Side + Venue, plus Opponents on leagues that
+          have a hardcoded top set (EPL only for now). */}
+      <div className={`mb-4 sm:mb-6 grid grid-cols-1 gap-2 sm:gap-3 ${
+        leagueHasTop ? 'sm:grid-cols-4' : 'sm:grid-cols-3'
+      }`}>
         <div>
           <label className="block text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold mb-1">
             League
@@ -334,7 +355,38 @@ export default function TeamPLPage() {
             <option value="away">Away only</option>
           </select>
         </div>
+        {leagueHasTop && (
+          <div>
+            <label className="block text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold mb-1">
+              Opponents
+            </label>
+            <select
+              value={effectiveOpponents}
+              onChange={(e) => setParam('opponents', e.target.value === 'all' ? null : e.target.value)}
+              className="w-full bg-slate-800/60 border border-slate-700/60 rounded-md px-2.5 py-1.5 text-xs sm:text-sm text-white font-mono"
+            >
+              <option value="all">All opponents</option>
+              <option value="top">Vs {LEAGUES_WITH_TOP[league].label}</option>
+            </select>
+          </div>
+        )}
       </div>
+
+      {/* Qualifying-teams strip — only shown when the Top filter is on,
+          so the user can see at a glance which teams the filter is
+          using and why their numbers just changed. */}
+      {effectiveOpponents === 'top' && data?.top_teams && data.top_teams.length > 0 && (
+        <div className="mb-4 sm:mb-6 bg-indigo-500/10 border border-indigo-500/30 rounded-lg px-3 py-2">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-indigo-300 font-bold whitespace-nowrap">
+              {LEAGUES_WITH_TOP[league].label}:
+            </span>
+            <span className="text-xs text-white font-mono">
+              {data.top_teams.join(' · ')}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Loading / error / empty states */}
       {loading && (
@@ -409,7 +461,9 @@ export default function TeamPLPage() {
             </table>
           </div>
           <div className="px-3 sm:px-4 py-2 border-t border-slate-700/40 bg-slate-900/40 text-[10px] font-mono uppercase tracking-wider text-slate-500">
-            {sortedRows.length} teams · side: {sideParam} · venue: {venueParam} · season: {currentSeasonLabel}
+            {sortedRows.length} teams · side: {sideParam} · venue: {venueParam}
+            {effectiveOpponents === 'top' && leagueHasTop && <> · vs {LEAGUES_WITH_TOP[league].label}</>}
+            {' '}· season: {currentSeasonLabel}
           </div>
         </div>
       )}

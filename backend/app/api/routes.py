@@ -1101,6 +1101,22 @@ async def get_drifter_results(
     )
 
 
+# Hard-coded 'top sides' per league. Each list MUST use the canonical
+# team names that the importer stores (i.e. The Odds API spellings —
+# 'Manchester United' not 'Man Utd'). Extend the dict as we define
+# top groups for other leagues.
+TOP_TEAMS_BY_LEAGUE: dict[str, list[str]] = {
+    "soccer_epl": [
+        "Arsenal",
+        "Chelsea",
+        "Liverpool",
+        "Manchester City",
+        "Manchester United",
+        "Aston Villa",
+    ],
+}
+
+
 @router.get("/team-pnl", response_model=TeamPLResponse)
 async def get_team_pnl(
     db: Session = Depends(get_db),
@@ -1111,6 +1127,11 @@ async def get_team_pnl(
                     "Default: every season currently in the historical_matches table.",
     ),
     stake: float = Query(50.0, ge=0.01, le=100000.0, description="Flat stake per match in £."),
+    opponents: Optional[str] = Query(
+        None,
+        description="Restrict to matches against a defined opponent set. "
+                    "Currently supported: 'top' (the league's hardcoded top sides).",
+    ),
 ):
     """
     Per-team 1X2 profit/loss at Pinnacle closing prices, season-by-season
@@ -1156,6 +1177,8 @@ async def get_team_pnl(
             rows_open_fallback=0,
             rows_missing_price=0,
             rows=[],
+            top_teams=None,
+            opponents_filter=None,
         )
 
     seasons_loaded = sorted({r.season for r in rows})
@@ -1199,43 +1222,72 @@ async def get_team_pnl(
             return None
         return 1.0 / (1.0 / p1 + 1.0 / p2)
 
+    # Resolve the opponent-filter set. None = include everyone (current
+    # behaviour). A populated set = only count a team's match if THAT
+    # team's opponent is in the set. Note: this is per-team-perspective
+    # — Liverpool vs Brighton with set={top six} only contributes to
+    # Brighton's "vs Top 6" buckets, not Liverpool's (Brighton isn't top).
+    top_set: Optional[set[str]] = None
+    top_list: Optional[list[str]] = None
+    if opponents == "top":
+        configured = TOP_TEAMS_BY_LEAGUE.get(league)
+        if configured:
+            top_list = list(configured)
+            top_set = set(configured)
+        # If no top set defined for this league, fall through with no
+        # filter — keeps the endpoint forgiving rather than 400-ing
+        # out a perfectly valid query.
+
     for r in rows:
-        # Match-count bumps. We always tick matches even when the row
-        # has no price, so totals reflect reality.
+        # Decide whether to include this match from each team's POV.
+        # If there's no filter, both sides are always included.
+        include_home_side = top_set is None or r.away_team in top_set
+        include_away_side = top_set is None or r.home_team in top_set
+        if not include_home_side and not include_away_side:
+            continue
+
         bh = get(r.home_team, r.season, "back", "home")  # H backed at home
         ba = get(r.away_team, r.season, "back", "away")  # A backed away
         fh = get(r.home_team, r.season, "fade", "home")  # H faded (DC: D or A)
         fa = get(r.away_team, r.season, "fade", "away")  # A faded (DC: H or D)
 
-        bh["matches"] += 1
-        ba["matches"] += 1
-        fh["matches"] += 1
-        fa["matches"] += 1
+        if include_home_side:
+            bh["matches"] += 1
+            fh["matches"] += 1
+        if include_away_side:
+            ba["matches"] += 1
+            fa["matches"] += 1
 
         # Wins.
         if r.ftr == "H":
-            bh["wins"] += 1   # backing H wins
-            fa["wins"] += 1   # fading A: H is part of "H or D"
+            if include_home_side:
+                bh["wins"] += 1   # backing H wins
+            if include_away_side:
+                fa["wins"] += 1   # fading A: H is part of "H or D"
         elif r.ftr == "A":
-            ba["wins"] += 1   # backing A wins
-            fh["wins"] += 1   # fading H: A is part of "D or A"
+            if include_away_side:
+                ba["wins"] += 1   # backing A wins
+            if include_home_side:
+                fh["wins"] += 1   # fading H: A is part of "D or A"
         elif r.ftr == "D":
-            fh["wins"] += 1   # fading H: D is part of "D or A"
-            fa["wins"] += 1   # fading A: D is part of "H or D"
+            if include_home_side:
+                fh["wins"] += 1   # fading H: D is part of "D or A"
+            if include_away_side:
+                fa["wins"] += 1   # fading A: D is part of "H or D"
 
         # Stake/PL only on priced rows.
         if r.price_source == "missing":
             continue
 
         # Back side — single-outcome 1X2 stakes.
-        if r.psch is not None:
+        if include_home_side and r.psch is not None:
             bh["staked"] += stake
             if r.ftr == "H":
                 bh["pl"] += stake * (r.psch - 1.0)
             else:
                 bh["pl"] -= stake
 
-        if r.psca is not None:
+        if include_away_side and r.psca is not None:
             ba["staked"] += stake
             if r.ftr == "A":
                 ba["pl"] += stake * (r.psca - 1.0)
@@ -1243,21 +1295,23 @@ async def get_team_pnl(
                 ba["pl"] -= stake
 
         # Fade side — Double Chance. Need TWO Pinnacle prices apiece.
-        fh_price = dc_price(r.pscd, r.psca)  # "Draw or Away" — fading the home team
-        if fh_price is not None:
-            fh["staked"] += stake
-            if r.ftr != "H":   # D or A — fade wins
-                fh["pl"] += stake * (fh_price - 1.0)
-            else:
-                fh["pl"] -= stake
+        if include_home_side:
+            fh_price = dc_price(r.pscd, r.psca)  # "Draw or Away" — fading the home team
+            if fh_price is not None:
+                fh["staked"] += stake
+                if r.ftr != "H":   # D or A — fade wins
+                    fh["pl"] += stake * (fh_price - 1.0)
+                else:
+                    fh["pl"] -= stake
 
-        fa_price = dc_price(r.psch, r.pscd)  # "Home or Draw" — fading the away team
-        if fa_price is not None:
-            fa["staked"] += stake
-            if r.ftr != "A":   # H or D — fade wins
-                fa["pl"] += stake * (fa_price - 1.0)
-            else:
-                fa["pl"] -= stake
+        if include_away_side:
+            fa_price = dc_price(r.psch, r.pscd)  # "Home or Draw" — fading the away team
+            if fa_price is not None:
+                fa["staked"] += stake
+                if r.ftr != "A":   # H or D — fade wins
+                    fa["pl"] += stake * (fa_price - 1.0)
+                else:
+                    fa["pl"] -= stake
 
     # ── Materialise the response rows, with an 'all' aggregate per team.
     def view_stats(b: Bucket) -> TeamPLViewStats:
@@ -1324,6 +1378,8 @@ async def get_team_pnl(
         rows_open_fallback=rows_open_fallback,
         rows_missing_price=rows_missing_price,
         rows=response_rows,
+        top_teams=top_list,
+        opponents_filter=("top" if top_set is not None else None),
     )
 
 

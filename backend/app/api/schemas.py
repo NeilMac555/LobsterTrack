@@ -355,5 +355,10 @@ class TeamPLResponse(BaseModel):
     rows_open_fallback: int
     rows_missing_price: int
     rows: list[TeamPLRow]
+    # When the caller filters to ?opponents=top, this lists the canonical
+    # team names that qualify in this league. Null if the filter isn't
+    # active or the league has no top set defined yet.
+    top_teams: Optional[list[str]] = None
+    opponents_filter: Optional[str] = None   # echo of the filter applied: None or 'top'
 
 

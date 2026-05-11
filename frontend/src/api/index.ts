@@ -130,13 +130,15 @@ export async function getXGData(league: string, team: string): Promise<XGDataRes
 
 export async function getTeamPnL(params?: {
   league?: string;
-  seasons?: string;  // comma-separated season codes, e.g. '2425,2526'
+  seasons?: string;       // comma-separated season codes, e.g. '2425,2526'
   stake?: number;
+  opponents?: string;     // 'top' to restrict to matches vs the league's hardcoded top sides
 }): Promise<TeamPLResponse> {
   const searchParams = new URLSearchParams();
   if (params?.league) searchParams.set('league', params.league);
   if (params?.seasons) searchParams.set('seasons', params.seasons);
   if (params?.stake) searchParams.set('stake', String(params.stake));
+  if (params?.opponents) searchParams.set('opponents', params.opponents);
   const query = searchParams.toString();
   return fetchJson<TeamPLResponse>(`${API_BASE}/team-pnl${query ? `?${query}` : ''}`);
 }
