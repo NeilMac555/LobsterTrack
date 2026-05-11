@@ -1130,21 +1130,24 @@ TOP_TEAMS_BY_LEAGUE: dict[str, list[str]] = {
         "Juventus",
         "Napoli",
     ],
-    # Bundesliga — Top 3 includes Leverkusen alongside Bayern + Dortmund.
-    # Leverkusen broke Bayern's grip in 23/24 and have stayed in the
-    # top tier; restricting to Top 2 would lose that signal.
+    # Bundesliga — Top 4: Bayern + Dortmund (perennial), Leverkusen
+    # (24's title winners), RB Leipzig (Champions League regular).
     "soccer_germany_bundesliga": [
         "Bayer Leverkusen",
         "Bayern Munich",
         "Borussia Dortmund",
+        "RB Leipzig",
     ],
-    # Ligue 1 — PSG dominate but Top 3 with Marseille + Monaco keeps
-    # the sample size useful. Top 1 (PSG only) would be too narrow
-    # to read anything from.
+    # Ligue 1 — Top 6: PSG plus the established European-spot regulars
+    # (Marseille, Monaco, Lille/LOSC, Lyon, Lens). Wide enough that
+    # non-Top-6 teams get a healthy sample of matches against the elite.
     "soccer_france_ligue_one": [
         "AS Monaco",
+        "Lille",
+        "Lyon",
         "Marseille",
         "Paris Saint Germain",
+        "RC Lens",
     ],
 }
 
