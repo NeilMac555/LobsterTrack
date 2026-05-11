@@ -9,8 +9,17 @@ from app.services.telegram_notifier import telegram_notifier
 logger = structlog.get_logger()
 
 # Alert threshold: minimum implied probability shift (in percentage points)
-# e.g. 3.0 means odds must move enough to shift implied prob by 3+ points
-SYNDICATE_THRESHOLD_PROB_POINTS = 3.0
+# to fire a Telegram alert. Tightened from 3.0 → 5.0 in May 2026 after a
+# cohort analysis showed sub-5pp moves had a -32% ROI vs +4-12% for moves
+# 5pp and above. Recording threshold in odds_fetcher.py stays at 3.0 so
+# we retain the data for future re-tuning.
+SYNDICATE_THRESHOLD_PROB_POINTS = 5.0
+
+# Time-to-kickoff window for alerts. Only fire alerts when the match is
+# within this many minutes of KO. Tightened from 180 → 30 alongside the
+# threshold bump above. Cohort analysis showed alerts fired in the last
+# 30 minutes had +11.6% ROI vs -16% for the 30-60 min bucket.
+SYNDICATE_ALERT_WINDOW_MINUTES = 30
 
 
 def implied_prob(odds: float) -> float:
@@ -49,13 +58,16 @@ class SyndicateAlerter:
         db = SessionLocal()
         try:
             now = datetime.utcnow()
-            three_hours_from_now = now + timedelta(hours=3)
+            alert_window_end = now + timedelta(minutes=SYNDICATE_ALERT_WINDOW_MINUTES)
 
-            # Get matches kicking off within 3 hours
+            # Only consider matches kicking off inside the alert window. We
+            # deliberately ignore moves on matches further out — they were
+            # the source of the historical -4% ROI bleed and arrive too
+            # early in the cycle for the "sharp money" inference to hold.
             matches = (
                 db.query(Match)
                 .filter(Match.commence_time > now)
-                .filter(Match.commence_time <= three_hours_from_now)
+                .filter(Match.commence_time <= alert_window_end)
                 .all()
             )
 
