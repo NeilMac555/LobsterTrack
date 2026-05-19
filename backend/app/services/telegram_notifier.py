@@ -34,6 +34,7 @@ class TelegramNotifier:
         minutes_to_kickoff: int,
         market: str = '1x2',
         best_price: Optional[dict] = None,
+        high_conviction: bool = False,
     ) -> bool:
         """
         Send a Syndicate Move alert to Telegram channel.
@@ -74,8 +75,15 @@ class TelegramNotifier:
             except (TypeError, ValueError):
                 best_line = ""
 
+        # Header tier — 🔥 prefix on the high-conviction band (odds
+        # ≥ SYNDICATE_FIRE_TIER_ODDS at alert time). Caller passes the
+        # flag; we just render it. Cohort analysis showed steam on
+        # heavy dogs carries materially more signal than the
+        # favourite/coinflip range.
+        header = "🔥🚨 LATE SHARP ACTION" if high_conviction else "🚨 LATE SHARP ACTION"
+
         # Build message
-        message = f"""🚨 LATE SHARP ACTION
+        message = f"""{header}
 
 {home_team} vs {away_team}
 → {outcome_name} ({market_label}) @ {current_odds:.2f}

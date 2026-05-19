@@ -9,17 +9,28 @@ from app.services.telegram_notifier import telegram_notifier
 logger = structlog.get_logger()
 
 # Alert threshold: minimum implied probability shift (in percentage points)
-# to fire a Telegram alert. Tightened from 3.0 → 5.0 in May 2026 after a
-# cohort analysis showed sub-5pp moves had a -32% ROI vs +4-12% for moves
-# 5pp and above. Recording threshold in odds_fetcher.py stays at 3.0 so
-# we retain the data for future re-tuning.
-SYNDICATE_THRESHOLD_PROB_POINTS = 5.0
+# to fire a Telegram alert.
+#
+# History:
+#   - Originally 3.0pp (everything). Cohort showed sub-5pp = -32% ROI.
+#   - Tightened to 5.0pp + T-30 in May 2026 (~+15% ROI on 161 alerts).
+#   - Loosened back to 4.0pp + T-90 in May 2026 (Neil's call) to
+#     restore alert volume. Backtest: ~+5.8% ROI on 407 alerts.
+#
+# Recording threshold in odds_fetcher.py stays at 3.0pp / T-2h so we
+# retain a broader archive for future re-tuning.
+SYNDICATE_THRESHOLD_PROB_POINTS = 4.0
 
 # Time-to-kickoff window for alerts. Only fire alerts when the match is
-# within this many minutes of KO. Tightened from 180 → 30 alongside the
-# threshold bump above. Cohort analysis showed alerts fired in the last
-# 30 minutes had +11.6% ROI vs -16% for the 30-60 min bucket.
-SYNDICATE_ALERT_WINDOW_MINUTES = 30
+# within this many minutes of KO.
+SYNDICATE_ALERT_WINDOW_MINUTES = 90
+
+# Odds threshold above which an alert is tagged as 'high conviction' with
+# a 🔥 emoji in the Telegram message. Cohort analysis showed steam moves
+# landing at odds ≥ 4.00 carry meaningfully more signal than moves
+# inside the favourite/coinflip range — sharp money rarely follows a
+# heavy dog without a real informational edge.
+SYNDICATE_FIRE_TIER_ODDS = 4.0
 
 
 def implied_prob(odds: float) -> float:
@@ -307,7 +318,11 @@ class SyndicateAlerter:
         except Exception as e:
             logger.warning("best-price lookup crashed", error=str(e))
 
-        # Send Telegram alert
+        # Send Telegram alert. The 🔥 emoji ('high conviction') is added
+        # to the message header when the move landed at odds at/above
+        # SYNDICATE_FIRE_TIER_ODDS — the cohort where the data shows the
+        # strongest +ROI inside the alert set.
+        high_conviction = current_odds >= SYNDICATE_FIRE_TIER_ODDS
         success = await telegram_notifier.send_syndicate_alert(
             home_team=match.home_team,
             away_team=match.away_team,
@@ -318,6 +333,7 @@ class SyndicateAlerter:
             minutes_to_kickoff=minutes_to_ko,
             market=market,
             best_price=best_price_info,
+            high_conviction=high_conviction,
         )
 
         if success:
