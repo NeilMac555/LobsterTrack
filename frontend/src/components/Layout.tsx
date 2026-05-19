@@ -10,6 +10,7 @@ import LiveTicker from './LiveTicker';
 const leagues = Object.entries(LEAGUE_CONFIG);
 
 const tools = [
+  { name: "World Cup '26", path: '/tools/world-cup', icon: '🏆' },
   { name: 'Hedging Calculator', path: '/tools/hedge-calculator', icon: '🧮' },
   { name: 'Match Model', path: '/tools/match-predictor', icon: '⚽' },
   { name: 'Rolling xG', path: '/tools/rolling-xg', icon: '📊' },

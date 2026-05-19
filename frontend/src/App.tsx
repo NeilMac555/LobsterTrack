@@ -17,6 +17,7 @@ import BlogIndexPage from './pages/BlogIndexPage';
 import BlogPostPage from './pages/BlogPostPage';
 import RollingXGPage from './pages/RollingXGPage';
 import TeamPLPage from './pages/TeamPLPage';
+import WorldCupHubPage from './pages/WorldCupHubPage';
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
               <Route path="tools/hedge-calculator" element={<HedgeCalculatorPage />} />
               <Route path="tools/match-predictor" element={<MatchPredictorPage />} />
               <Route path="tools/rolling-xg" element={<RollingXGPage />} />
+              <Route path="tools/world-cup" element={<WorldCupHubPage />} />
               <Route path="auth/verify" element={<AuthVerifyPage />} />
               <Route path="admin/emails" element={<AdminEmailsPage />} />
               <Route path="about" element={<AboutPage />} />
