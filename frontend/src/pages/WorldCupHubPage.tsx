@@ -1,6 +1,8 @@
 import { Helmet } from 'react-helmet-async';
 import { useSearchParams } from 'react-router-dom';
 import { QualifyingXg } from '../components/wc/QualifyingXg';
+import { useAuth } from '../contexts/AuthContext';
+import PaywallOverlay from '../components/PaywallOverlay';
 
 // Tabs available in the World Cup hub. Adding a new section (bracket,
 // outright odds, top scorer, etc.) is two lines here + a render branch
@@ -33,6 +35,7 @@ const TABS: TabDef[] = [
 ];
 
 export default function WorldCupHubPage() {
+  const { isSubscribed } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = (searchParams.get('tab') as Tab) || TABS[0].id;
   const active = TABS.find((t) => t.id === tab) ?? TABS[0];
@@ -76,6 +79,20 @@ export default function WorldCupHubPage() {
           </div>
         </div>
       </div>
+
+      {/* Pro paywall — full-block pattern (matches Drifters). Header
+          above stays visible so search engines + free users see what
+          the hub is; tabs + data are gated behind Pro. */}
+      {!isSubscribed && (
+        <div className="mb-6 sm:mb-8">
+          <PaywallOverlay
+            title="Unlock the World Cup '26 Hub"
+            description="Wyscout-sourced qualifying xG for every nation, outright odds tracking, and live tournament data through the final. Pro members get full access."
+          />
+        </div>
+      )}
+
+      {isSubscribed && <>
 
       {/* Tab strip — looks like the rest of the site's filter pills,
           gold accent on active state to match the WC visual treatment. */}
@@ -141,6 +158,8 @@ export default function WorldCupHubPage() {
       >
         {tab === 'qualifying-xg' && <QualifyingXg />}
       </div>
+
+      </>}
     </div>
   );
 }
