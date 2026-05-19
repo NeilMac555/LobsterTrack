@@ -243,7 +243,11 @@ export interface TeamPLResponse {
   opponents_filter: string | null;  // 'top' or null
 }
 
+// First entry sorts first across every league picker on the site. World
+// Cup is intentionally on top during the May-July 2026 tournament window
+// because the European leagues are winding down / finished.
 export const LEAGUE_CONFIG: Record<string, { name: string; shortName: string; color: string }> = {
+  soccer_fifa_world_cup: { name: 'FIFA World Cup', shortName: 'WC', color: '#D4AF37' },
   soccer_epl: { name: 'Premier League', shortName: 'EPL', color: '#3D195B' },
   soccer_spain_la_liga: { name: 'La Liga', shortName: 'LAL', color: '#EE8707' },
   soccer_germany_bundesliga: { name: 'Bundesliga', shortName: 'BUN', color: '#D20515' },

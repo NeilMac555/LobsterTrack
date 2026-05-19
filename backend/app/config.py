@@ -39,7 +39,11 @@ class Settings(BaseSettings):
 
     # League mappings for The Odds API
     # Format: sport_key for the API
+    # Order matters — first entry = displayed first in the UI. World Cup
+    # is intentionally first during the tournament window (May-July 2026)
+    # because the European leagues are wound down.
     leagues: dict = {
+        "soccer_fifa_world_cup": "FIFA World Cup",
         "soccer_epl": "English Premier League",
         "soccer_spain_la_liga": "La Liga",
         "soccer_germany_bundesliga": "Bundesliga",
