@@ -826,7 +826,7 @@ async def get_steam_moves(db: Session = Depends(get_db)):
 async def get_steam_results(
     db: Session = Depends(get_db),
     league: Optional[str] = Query(None, description="Filter by sport_key"),
-    limit: int = Query(200, le=500, description="Number of moves to return"),
+    limit: int = Query(200, le=10000, description="Number of moves to return"),
     days: Optional[int] = Query(None, description="Only include moves from the last N days")
 ):
     """
