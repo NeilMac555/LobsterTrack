@@ -653,9 +653,14 @@ function DominanceBar({ diff, maxAbs }: { diff: number; maxAbs: number }) {
           transform: 'translateY(-50%)',
           padding: '0 6px',
           fontSize: 10,
-          fontWeight: 500,
+          fontWeight: 700,
           fontFamily: 'var(--font-mono, monospace)',
-          color: positive ? 'var(--color-green, #5ec88a)' : 'var(--color-red, #dc5050)',
+          // White text instead of the bar's own colour so the number
+          // stays legible against both the coloured fill AND the dark
+          // gutter when the bar is short. Subtle shadow for extra
+          // contrast against light green/red.
+          color: '#ffffff',
+          textShadow: '0 1px 2px rgba(0, 0, 0, 0.65)',
           ...(positive ? { left: '51%' } : { right: '51%' }),
         }}
       >

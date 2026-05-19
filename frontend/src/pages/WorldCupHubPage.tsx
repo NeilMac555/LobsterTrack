@@ -108,10 +108,37 @@ export default function WorldCupHubPage() {
       {/* One-line context for the active tab. */}
       <p className="text-xs sm:text-sm text-slate-400 mb-4 sm:mb-6">{active.description}</p>
 
-      {/* Tab content. The QualifyingXg component uses CSS custom
-          properties with hex fallbacks for theming, so it renders fine
-          on our dark theme without explicit token overrides. */}
-      <div>
+      {/* Tab content. We override the QualifyingXg component's CSS
+          custom properties on this wrapper so its panels pick up
+          SteamWatch's slate palette instead of the warm-black hex
+          fallbacks that ship with the component. Variable list is
+          declared on the component (see qualifying-xg.tsx header
+          comment). */}
+      <div
+        style={{
+          // Backgrounds — slate-900 / slate-800 family to match the
+          // rest of the site.
+          '--color-bg':         '#0f172a',  // slate-900
+          '--color-bg-2':       '#0b1220',  // slightly darker for striped rows
+          '--color-surface':    '#1e293b',  // slate-800 (panel bg)
+          '--color-surface-2':  '#334155',  // slate-700 (selected pill bg)
+          '--color-surface-3':  '#1e293b',  // slate-800 (dominance bar gutter)
+          // Borders
+          '--color-border':     '#334155',  // slate-700
+          '--color-border-2':   '#475569',  // slate-600
+          // Text ramp
+          '--color-text':       '#ffffff',
+          '--color-text-2':     '#cbd5e1',  // slate-300
+          '--color-text-3':     '#94a3b8',  // slate-400
+          '--color-text-4':     '#64748b',  // slate-500
+          // Accents — gold becomes amber to match the WC header,
+          // green/red retuned to SteamWatch's emerald/red tokens.
+          '--color-gold':       '#fbbf24',  // amber-400
+          '--color-gold-2':     '#f59e0b',  // amber-500
+          '--color-green':      '#34d399',  // emerald-400
+          '--color-red':        '#f87171',  // red-400
+        } as React.CSSProperties}
+      >
         {tab === 'qualifying-xg' && <QualifyingXg />}
       </div>
     </div>
