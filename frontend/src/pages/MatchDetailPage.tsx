@@ -11,6 +11,7 @@ import SpreadsChart from '../components/SpreadsChart';
 import TimeFrameFilter, { type TimeFrame } from '../components/TimeFrameFilter';
 import LeagueLogo from '../components/LeagueLogo';
 import Sparkline from '../components/Sparkline';
+import { countryFlagImgUrl } from '../utils/countryFlags';
 
 // Format ms-until-kickoff as a readable T-minus string, or a T-plus if the
 // match has already kicked off. Kept inside this module because match detail
@@ -204,10 +205,22 @@ export default function MatchDetailPage() {
           <div className="flex flex-wrap items-center gap-3 sm:gap-4 min-w-0">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/40 flex-shrink-0"></div>
+              {(() => {
+                const flag = countryFlagImgUrl(match.home_team, 40);
+                return flag && (
+                  <img src={flag} alt="" className="h-6 sm:h-7 w-auto rounded-sm flex-shrink-0" />
+                );
+              })()}
               <h1 className="text-lg sm:text-2xl font-bold text-white tracking-tight truncate">{match.home_team}</h1>
             </div>
             <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-500 flex-shrink-0">vs</span>
             <div className="flex items-center gap-2.5 min-w-0">
+              {(() => {
+                const flag = countryFlagImgUrl(match.away_team, 40);
+                return flag && (
+                  <img src={flag} alt="" className="h-6 sm:h-7 w-auto rounded-sm flex-shrink-0" />
+                );
+              })()}
               <h1 className="text-lg sm:text-2xl font-bold text-white tracking-tight truncate">{match.away_team}</h1>
               <div className="w-2 h-2 rounded-full bg-red-500 shadow-lg shadow-red-500/40 flex-shrink-0"></div>
             </div>

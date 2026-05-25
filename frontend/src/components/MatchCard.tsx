@@ -5,6 +5,7 @@ import { LEAGUE_CONFIG } from '../types';
 import { OddsDisplayWithMovement, calculateMovement, getBiggestMover } from './OddsWithMovement';
 import LeagueLogo from './LeagueLogo';
 import Sparkline from './Sparkline';
+import { countryFlagImgUrl } from '../utils/countryFlags';
 
 interface MatchCardProps {
   match: MatchSummary;
@@ -64,12 +65,29 @@ export default function MatchCard({ match }: MatchCardProps) {
       <div className="p-4 sm:p-6">
         <div className="flex items-center justify-between mb-4 sm:mb-5">
           <div className="flex-1 space-y-2 sm:space-y-2.5 min-w-0 pr-4">
-            <div className="flex items-center">
-              <span className="text-white font-semibold text-sm sm:text-base tracking-tight truncate">{match.home_team}</span>
-            </div>
-            <div className="flex items-center">
-              <span className="text-white font-semibold text-sm sm:text-base tracking-tight truncate">{match.away_team}</span>
-            </div>
+            {/* Flag prepended when the team is a country we recognise
+                (e.g. WC nations). Falls through to plain name for
+                club teams since they're not in the country map. */}
+            {(() => {
+              const homeFlag = countryFlagImgUrl(match.home_team, 20);
+              const awayFlag = countryFlagImgUrl(match.away_team, 20);
+              return (
+                <>
+                  <div className="flex items-center gap-2">
+                    {homeFlag && (
+                      <img src={homeFlag} alt="" className="h-4 w-auto rounded-sm flex-shrink-0" loading="lazy" />
+                    )}
+                    <span className="text-white font-semibold text-sm sm:text-base tracking-tight truncate">{match.home_team}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {awayFlag && (
+                      <img src={awayFlag} alt="" className="h-4 w-auto rounded-sm flex-shrink-0" loading="lazy" />
+                    )}
+                    <span className="text-white font-semibold text-sm sm:text-base tracking-tight truncate">{match.away_team}</span>
+                  </div>
+                </>
+              );
+            })()}
           </div>
 
           {/* Kickoff — mono for the terminal feel */}
