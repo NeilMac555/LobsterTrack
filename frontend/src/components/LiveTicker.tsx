@@ -2,15 +2,23 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getBiggestMovers } from '../api';
 import type { BiggestMover } from '../types';
-import { LEAGUE_CONFIG } from '../types';
+import { countryFlag } from '../utils/countryFlags';
 
 /**
- * Live ticker — a thin, always-scrolling horizontal bar that shows the
- * biggest odds movers across all tracked leagues. Sits just under the
- * main navigation. Pauses on hover so users can read a move before it
- * scrolls off. Completely self-contained — if the API is down or returns
- * nothing, the ticker hides itself rather than rendering an empty bar.
+ * Live ticker — a thin, always-scrolling horizontal bar showing the
+ * biggest odds movers for the FIFA World Cup. Sits just under the
+ * main navigation. Pauses on hover so users can read a move before
+ * it scrolls off. Completely self-contained — if the API is down or
+ * returns nothing (e.g. no WC matches priced yet), the ticker hides
+ * itself rather than rendering an empty bar.
+ *
+ * Locked to WC for the May-July 2026 tournament window. Domestic
+ * leagues either have finished seasons or get their own dedicated
+ * pages. Once the WC ends, this should either swap back to all
+ * leagues or get a configurable sport_key prop.
  */
+const TICKER_SPORT_KEY = 'soccer_fifa_world_cup';
+
 export default function LiveTicker() {
   const [movers, setMovers] = useState<BiggestMover[]>([]);
 
@@ -18,7 +26,7 @@ export default function LiveTicker() {
     let alive = true;
     const load = async () => {
       try {
-        const data = await getBiggestMovers(20);
+        const data = await getBiggestMovers(40, TICKER_SPORT_KEY);
         if (alive) setMovers(data);
       } catch {
         if (alive) setMovers([]);
@@ -43,13 +51,20 @@ export default function LiveTicker() {
   };
 
   const teamAbbr = (name: string): string => {
-    // Smart abbreviation: if multi-word take first letters of 2-3 biggest words,
-    // otherwise first 3 chars. Keeps the ticker compact without being cryptic.
+    // Fallback abbreviator for countries we haven't flag-mapped yet.
+    // Three-letter ISO-style: take first letters of 2-3 biggest words,
+    // otherwise first 3 chars. Keeps the ticker compact.
     const words = name.split(/\s+/).filter(w => w.length > 1);
     if (words.length >= 2) {
       return words.slice(0, 3).map(w => w[0]).join('').toUpperCase();
     }
     return name.slice(0, 3).toUpperCase();
+  };
+
+  // Flag if we have one, three-letter abbreviation otherwise.
+  const teamLabel = (name: string): string => {
+    const flag = countryFlag(name);
+    return flag || teamAbbr(name);
   };
 
   // Duplicate the list so the CSS animation can loop seamlessly.
@@ -58,14 +73,16 @@ export default function LiveTicker() {
   return (
     <div className="w-full bg-slate-900/95 border-b border-slate-700/60 overflow-hidden relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-3">
-        {/* Static "LIVE" pill on the left */}
+        {/* Static "LIVE · WC '26" pill on the left. The WC label
+            anchors the whole bar — every move below is from the
+            World Cup, no need to per-row tag it. */}
         <div className="flex items-center gap-1.5 flex-shrink-0 py-1.5 pr-3 border-r border-slate-700/60">
           <span className="relative flex h-1.5 w-1.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
           </span>
           <span className="text-[10px] font-mono font-bold uppercase tracking-[0.15em] text-slate-400">
-            Live
+            Live · WC '26
           </span>
         </div>
 
@@ -82,7 +99,6 @@ export default function LiveTicker() {
               const isShortening = m.direction === 'down';
               const moveColor = isShortening ? 'text-emerald-400' : 'text-red-400';
               const arrow = isShortening ? '↓' : '↑';
-              const leagueInfo = LEAGUE_CONFIG[m.sport_key];
               return (
                 <Link
                   key={`${m.match_id}-${m.outcome}-${i}`}
@@ -90,11 +106,17 @@ export default function LiveTicker() {
                   className="inline-flex items-center gap-2 hover:bg-slate-800 px-2 py-1 rounded transition-colors"
                   title={`${m.home_team} vs ${m.away_team} — ${m.outcome_name}`}
                 >
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500">
-                    {leagueInfo?.shortName || ''}
+                  {/* Country flags for the two nations. Falls back to
+                      a 3-letter abbreviation if the country isn't in
+                      the flag map (any tournament invitee Understat /
+                      Odds-API has but countryFlags.ts hasn't yet
+                      learned). */}
+                  <span className="text-base leading-none" aria-hidden>
+                    {teamLabel(m.home_team)}
                   </span>
-                  <span className="text-xs font-semibold text-slate-200">
-                    {teamAbbr(m.home_team)}–{teamAbbr(m.away_team)}
+                  <span className="text-slate-500 text-xs">v</span>
+                  <span className="text-base leading-none" aria-hidden>
+                    {teamLabel(m.away_team)}
                   </span>
                   <span className="text-[10px] font-mono font-bold text-slate-400 px-1 rounded bg-slate-800 border border-slate-700">
                     {outcomeLabel(m)}

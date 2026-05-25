@@ -354,7 +354,8 @@ async def get_stats(db: Session = Depends(get_db)):
 @router.get("/biggest-movers", response_model=list[BiggestMover])
 async def get_biggest_movers(
     db: Session = Depends(get_db),
-    limit: int = Query(4, le=20, description="Number of movers to return")
+    limit: int = Query(4, le=50, description="Number of movers to return"),
+    sport_key: Optional[str] = Query(None, description="Optional league filter — e.g. soccer_fifa_world_cup")
 ):
     """
     Get matches with the biggest odds movements across all markets (1X2, Totals, Asian Handicap).
@@ -362,12 +363,11 @@ async def get_biggest_movers(
     """
     now = datetime.utcnow()
 
-    # Get upcoming matches
-    matches = (
-        db.query(Match)
-        .filter(Match.commence_time > now)
-        .all()
-    )
+    # Get upcoming matches, optionally filtered to a single league.
+    matches_q = db.query(Match).filter(Match.commence_time > now)
+    if sport_key:
+        matches_q = matches_q.filter(Match.sport_key == sport_key)
+    matches = matches_q.all()
 
     if not matches:
         return []
