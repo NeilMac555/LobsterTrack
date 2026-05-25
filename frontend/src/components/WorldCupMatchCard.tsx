@@ -40,14 +40,12 @@ export default function WorldCupMatchCard({ match }: Props) {
   const awayFlag = countryFlagImgUrl(match.away_team, 60);
 
   const hoursToKO = (kickoff.getTime() - Date.now()) / (1000 * 60 * 60);
-  // Sparkline only when there's actual movement worth showing — within
-  // 24h of KO. Avoids the "ribbon of flat lines" on the pre-tournament
-  // view where no Pinnacle moves have happened yet.
+  // Sparkline shown whenever we have at least 2 data points. Even
+  // pre-tournament Pinnacle moves the price subtly day-to-day, and
+  // the sparkline anchors the card visually whether the move is
+  // big or flat.
   const showSparkline =
-    hoursToKO < 24 &&
-    hoursToKO > -2 &&
-    !!match.home_prob_spark &&
-    match.home_prob_spark.length >= 2;
+    !!match.home_prob_spark && match.home_prob_spark.length >= 2;
 
   const countdown = formatCountdown(kickoff);
   const isImminent = hoursToKO < 6 && hoursToKO > -2;
