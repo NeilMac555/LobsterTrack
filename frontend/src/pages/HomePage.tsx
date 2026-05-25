@@ -6,6 +6,7 @@ import { getMatches, getStats, getBiggestMovers, getSyndicateMoves } from '../ap
 import type { MatchSummary, BiggestMover, SyndicateMove, Stats } from '../types';
 import { LEAGUE_CONFIG } from '../types';
 import MatchCard from '../components/MatchCard';
+import WorldCupMatchCard from '../components/WorldCupMatchCard';
 import LeagueLogo from '../components/LeagueLogo';
 import { SteamGuideModal, HelpButton } from '../components/SteamGuideModal';
 import { useAuth } from '../contexts/AuthContext';
@@ -871,11 +872,16 @@ export default function HomePage() {
                   </span>
                 </div>
 
-                {/* Matches Grid */}
+                {/* Matches Grid — tournament-shaped card for WC fixtures,
+                    league card for everything else. */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-7">
-                  {group.matches.map((match) => (
-                    <MatchCard key={match.id} match={match} />
-                  ))}
+                  {group.matches.map((match) =>
+                    match.sport_key === 'soccer_fifa_world_cup' ? (
+                      <WorldCupMatchCard key={match.id} match={match} />
+                    ) : (
+                      <MatchCard key={match.id} match={match} />
+                    )
+                  )}
                 </div>
               </section>
             );
