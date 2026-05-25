@@ -234,15 +234,15 @@ export default function Layout() {
           </div>
         </div>
 
-        {/* League sub-bar — hidden on mobile (in the mobile menu) */}
+        {/* League sub-bar — hidden on mobile (in the mobile menu).
+            World Cup gets a dedicated, dominant pill (bigger padding,
+            full 'World Cup' label, gold accent). Everything else is
+            the compact mono-pill default. */}
         <div className="hidden md:block border-t border-slate-700/30 bg-slate-900/60">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-10 flex items-center gap-3">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-1.5 flex items-center gap-3">
             <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold flex-shrink-0">Leagues</span>
-            <div className="flex items-center gap-1 overflow-x-auto hide-scrollbar">
-              {/* 'All' explicitly opts out of the homepage's WC default
-                  via ?league=all — without this, '/' would always
-                  redirect to WC and 'All' would have no way to disable
-                  the filter. */}
+            <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar">
+              {/* 'All' opts out of the WC default via ?league=all. */}
               <Link
                 to="/?league=all"
                 className={`px-2.5 py-1 rounded font-mono text-[11px] uppercase tracking-[0.1em] font-semibold transition-colors border whitespace-nowrap ${
@@ -253,25 +253,53 @@ export default function Layout() {
               >
                 All
               </Link>
-              {leagues.map(([key, config]) => (
-                <Link
-                  key={key}
-                  to={`/?league=${key}`}
-                  className={`flex items-center gap-1.5 px-2 py-1 rounded transition-colors border whitespace-nowrap ${
-                    currentLeague === key
-                      ? 'bg-cyan-500/15 border-cyan-500/30'
-                      : 'bg-transparent border-transparent hover:bg-slate-800/60'
-                  }`}
-                  title={config.name}
-                >
-                  <LeagueLogo sportKey={key} size="sm" />
-                  <span className={`font-mono text-[11px] uppercase tracking-[0.1em] font-semibold ${
-                    currentLeague === key ? 'text-cyan-300' : 'text-slate-400'
-                  }`}>
-                    {config.shortName}
-                  </span>
-                </Link>
-              ))}
+              {leagues.map(([key, config]) => {
+                const isWC = key === 'soccer_fifa_world_cup';
+                const isActive = currentLeague === key;
+                if (isWC) {
+                  // Featured World Cup pill: chunkier, gold accent,
+                  // full 'World Cup' label. Sits inline with the
+                  // others but visually dominates the row.
+                  return (
+                    <Link
+                      key={key}
+                      to={`/?league=${key}`}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-md transition-all border-2 whitespace-nowrap shadow-sm ${
+                        isActive
+                          ? 'bg-gradient-to-r from-amber-500/25 to-yellow-500/15 border-amber-400/60 shadow-amber-500/20'
+                          : 'bg-amber-500/10 border-amber-500/40 hover:bg-amber-500/20 hover:border-amber-400/60'
+                      }`}
+                      title={config.name}
+                    >
+                      <LeagueLogo sportKey={key} size="md" />
+                      <span className={`font-mono text-xs uppercase tracking-[0.14em] font-bold ${
+                        isActive ? 'text-amber-200' : 'text-amber-300'
+                      }`}>
+                        World Cup
+                      </span>
+                    </Link>
+                  );
+                }
+                return (
+                  <Link
+                    key={key}
+                    to={`/?league=${key}`}
+                    className={`flex items-center gap-1.5 px-2 py-1 rounded transition-colors border whitespace-nowrap ${
+                      isActive
+                        ? 'bg-cyan-500/15 border-cyan-500/30'
+                        : 'bg-transparent border-transparent hover:bg-slate-800/60'
+                    }`}
+                    title={config.name}
+                  >
+                    <LeagueLogo sportKey={key} size="sm" />
+                    <span className={`font-mono text-[11px] uppercase tracking-[0.1em] font-semibold ${
+                      isActive ? 'text-cyan-300' : 'text-slate-400'
+                    }`}>
+                      {config.shortName}
+                    </span>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -366,20 +394,39 @@ export default function Layout() {
               <div>
                 <p className="text-xs text-slate-400 font-medium mb-2 uppercase tracking-wider">Leagues</p>
                 <div className="flex flex-wrap gap-2">
-                  {leagues.map(([key, config]) => (
+                  {/* Featured WC card on its own row — full width, gold
+                      accent, larger logo + 'World Cup' label. Renders
+                      first so it's the very top thing in the leagues
+                      block on mobile. */}
+                  {leagues.find(([k]) => k === 'soccer_fifa_world_cup') && (
                     <Link
-                      key={key}
-                      to={`/?league=${key}`}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200 ${
-                        currentLeague === key
-                          ? 'bg-blue-600 ring-2 ring-blue-400/50'
-                          : 'bg-slate-700/80 hover:bg-slate-600'
+                      to="/?league=soccer_fifa_world_cup"
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 w-full border-2 ${
+                        currentLeague === 'soccer_fifa_world_cup'
+                          ? 'bg-gradient-to-r from-amber-500/30 to-yellow-500/15 border-amber-400/60'
+                          : 'bg-amber-500/10 border-amber-500/40'
                       }`}
                     >
-                      <LeagueLogo sportKey={key} size="sm" />
-                      <span className="text-sm text-white font-medium">{config.shortName}</span>
+                      <LeagueLogo sportKey="soccer_fifa_world_cup" size="md" />
+                      <span className="text-base text-amber-200 font-bold tracking-tight">World Cup</span>
                     </Link>
-                  ))}
+                  )}
+                  {leagues
+                    .filter(([k]) => k !== 'soccer_fifa_world_cup')
+                    .map(([key, config]) => (
+                      <Link
+                        key={key}
+                        to={`/?league=${key}`}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200 ${
+                          currentLeague === key
+                            ? 'bg-blue-600 ring-2 ring-blue-400/50'
+                            : 'bg-slate-700/80 hover:bg-slate-600'
+                        }`}
+                      >
+                        <LeagueLogo sportKey={key} size="sm" />
+                        <span className="text-sm text-white font-medium">{config.shortName}</span>
+                      </Link>
+                    ))}
                   <Link
                     to="/?league=all"
                     className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
