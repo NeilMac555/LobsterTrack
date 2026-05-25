@@ -259,7 +259,7 @@ export const LEAGUE_CONFIG: Record<string, { name: string; shortName: string; co
   soccer_spain_la_liga: { name: 'La Liga', shortName: 'LAL', color: '#EE8707', hidden: true },
   soccer_germany_bundesliga: { name: 'Bundesliga', shortName: 'BUN', color: '#D20515' },
   soccer_france_ligue_one: { name: 'Ligue 1', shortName: 'L1', color: '#091C3E' },
-  soccer_italy_serie_a: { name: 'Serie A', shortName: 'SEA', color: '#024494' },
+  soccer_italy_serie_a: { name: 'Serie A', shortName: 'SEA', color: '#024494', hidden: true },
   soccer_uefa_champs_league: { name: 'Champions League', shortName: 'UCL', color: '#071D49' },
   soccer_uefa_europa_league: { name: 'Europa League', shortName: 'UEL', color: '#F47B20', hidden: true },
   soccer_uefa_europa_conference_league: { name: 'Conference League', shortName: 'UECL', color: '#0AC44B' },
