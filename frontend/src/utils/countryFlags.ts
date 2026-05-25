@@ -143,30 +143,47 @@ const NAME_TO_ISO2: Record<string, string> = {
 };
 
 /**
- * Build the flag emoji for a country name. Returns '' when the name
- * isn't mapped so callers can render a sensible fallback (e.g. the
- * existing team abbreviation).
+ * Look up the ISO 3166-1 alpha-2 code for a country name. Returns
+ * lowercase (e.g. 'br', 'us') or null when unknown.
  *
- * Handles the UK home-nations specially — England, Scotland, Wales,
- * Northern Ireland don't have proper ISO-3166-1 codes, but Unicode
- * does ship subdivision flag sequences for them (using tag
- * characters); not all platforms render those, so we fall back to
- * the union-jack-with-letters convention via an inline string.
+ * Use this paired with `countryFlagImgUrl()` to render PNG flags from
+ * flagcdn.com — that approach works on every browser including
+ * Windows Chrome, which can't render Unicode regional-indicator flag
+ * emoji because Windows ships no font with the glyphs.
+ *
+ * UK home nations (England/Scotland/Wales) return their pseudo-codes
+ * `gb-eng`/`gb-sct`/`gb-wls`; flagcdn supports those paths directly.
+ */
+export function countryIso(name: string): string | null {
+  if (!name) return null;
+  return NAME_TO_ISO2[name.trim().toLowerCase()] ?? null;
+}
+
+/**
+ * Build a flagcdn.com PNG URL for a country. Returns null if the
+ * country isn't mapped so callers can fall back to a text label.
+ * Height parameter accepts the values flagcdn supports (20, 24, 40,
+ * 60, 80, 120, 240). Aspect ratio is preserved.
+ */
+export function countryFlagImgUrl(name: string, heightPx: 20 | 24 | 40 | 60 = 20): string | null {
+  const iso = countryIso(name);
+  if (!iso) return null;
+  // flagcdn uses dashed pseudo-codes for UK subdivisions; everything
+  // else is the bare two-letter ISO.
+  return `https://flagcdn.com/h${heightPx}/${iso}.png`;
+}
+
+/**
+ * Legacy emoji-based helper. Kept for compatibility but DO NOT use
+ * for rendering on the web — Windows Chrome renders the regional-
+ * indicator codepoints as letter pairs ("US", "BR") instead of
+ * flags. Use `countryFlagImgUrl()` + an <img> tag instead.
  */
 export function countryFlag(name: string): string {
   if (!name) return '';
   const iso = NAME_TO_ISO2[name.trim().toLowerCase()];
   if (!iso) return '';
-
-  // UK home nations — Unicode tag-character sequences. Not every
-  // platform renders these; if a user sees a tofu box, we'd rather
-  // it be obvious so we can swap in inline PNGs later.
-  if (iso === 'gb-eng') return '🏴󠁧󠁢󠁥󠁮󠁧󠁿';
-  if (iso === 'gb-sct') return '🏴󠁧󠁢󠁳󠁣󠁴󠁿';
-  if (iso === 'gb-wls') return '🏴󠁧󠁢󠁷󠁬󠁳󠁿';
-  if (iso === 'gb-nir') return '🇬🇧';   // no widely-supported subdivision flag — fall back to UK
-
-  // Regular two-letter ISO → regional-indicator pair.
+  if (iso.startsWith('gb-')) return '🇬🇧';
   return iso
     .toUpperCase()
     .split('')

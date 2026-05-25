@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getBiggestMovers } from '../api';
 import type { BiggestMover } from '../types';
-import { countryFlag } from '../utils/countryFlags';
+import { countryFlagImgUrl } from '../utils/countryFlags';
 
 /**
  * Live ticker — a thin, always-scrolling horizontal bar showing the
@@ -61,10 +61,27 @@ export default function LiveTicker() {
     return name.slice(0, 3).toUpperCase();
   };
 
-  // Flag if we have one, three-letter abbreviation otherwise.
-  const teamLabel = (name: string): string => {
-    const flag = countryFlag(name);
-    return flag || teamAbbr(name);
+  // Render a country flag image if we have one mapped, otherwise a
+  // three-letter abbreviation. Images come from flagcdn.com which
+  // renders reliably across every browser including Windows Chrome
+  // (where Unicode flag emoji don't render).
+  const renderTeamLabel = (name: string) => {
+    const url = countryFlagImgUrl(name, 20);
+    if (url) {
+      return (
+        <img
+          src={url}
+          alt={name}
+          className="h-3.5 w-auto rounded-sm inline-block align-middle"
+          loading="lazy"
+        />
+      );
+    }
+    return (
+      <span className="text-xs font-semibold text-slate-200">
+        {teamAbbr(name)}
+      </span>
+    );
   };
 
   // Duplicate the list so the CSS animation can loop seamlessly.
@@ -106,18 +123,13 @@ export default function LiveTicker() {
                   className="inline-flex items-center gap-2 hover:bg-slate-800 px-2 py-1 rounded transition-colors"
                   title={`${m.home_team} vs ${m.away_team} — ${m.outcome_name}`}
                 >
-                  {/* Country flags for the two nations. Falls back to
-                      a 3-letter abbreviation if the country isn't in
-                      the flag map (any tournament invitee Understat /
-                      Odds-API has but countryFlags.ts hasn't yet
-                      learned). */}
-                  <span className="text-base leading-none" aria-hidden>
-                    {teamLabel(m.home_team)}
-                  </span>
+                  {/* Country flags for the two nations (img tags from
+                      flagcdn.com so they render on Windows). Falls
+                      back to 3-letter abbreviation for any country
+                      not yet in the flag map. */}
+                  {renderTeamLabel(m.home_team)}
                   <span className="text-slate-500 text-xs">v</span>
-                  <span className="text-base leading-none" aria-hidden>
-                    {teamLabel(m.away_team)}
-                  </span>
+                  {renderTeamLabel(m.away_team)}
                   <span className="text-[10px] font-mono font-bold text-slate-400 px-1 rounded bg-slate-800 border border-slate-700">
                     {outcomeLabel(m)}
                   </span>
