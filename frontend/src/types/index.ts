@@ -246,14 +246,26 @@ export interface TeamPLResponse {
 // First entry sorts first across every league picker on the site. World
 // Cup is intentionally on top during the May-July 2026 tournament window
 // because the European leagues are winding down / finished.
-export const LEAGUE_CONFIG: Record<string, { name: string; shortName: string; color: string }> = {
+//
+// `hidden: true` removes a league from active filter UIs (nav pills,
+// Closing Lines / Drifters / Steam Results / Rolling xG selectors) but
+// KEEPS it in the lookup table so any historical data that references
+// the league key still renders correctly (logo, name, color). Used to
+// take a league off-air once its season ends. Team P/L deliberately
+// ignores this flag since it's the retrospective view.
+export const LEAGUE_CONFIG: Record<string, { name: string; shortName: string; color: string; hidden?: boolean }> = {
   soccer_fifa_world_cup: { name: 'FIFA World Cup', shortName: 'WC', color: '#D4AF37' },
-  soccer_epl: { name: 'Premier League', shortName: 'EPL', color: '#3D195B' },
-  soccer_spain_la_liga: { name: 'La Liga', shortName: 'LAL', color: '#EE8707' },
+  soccer_epl: { name: 'Premier League', shortName: 'EPL', color: '#3D195B', hidden: true },
+  soccer_spain_la_liga: { name: 'La Liga', shortName: 'LAL', color: '#EE8707', hidden: true },
   soccer_germany_bundesliga: { name: 'Bundesliga', shortName: 'BUN', color: '#D20515' },
   soccer_france_ligue_one: { name: 'Ligue 1', shortName: 'L1', color: '#091C3E' },
   soccer_italy_serie_a: { name: 'Serie A', shortName: 'SEA', color: '#024494' },
   soccer_uefa_champs_league: { name: 'Champions League', shortName: 'UCL', color: '#071D49' },
-  soccer_uefa_europa_league: { name: 'Europa League', shortName: 'UEL', color: '#F47B20' },
+  soccer_uefa_europa_league: { name: 'Europa League', shortName: 'UEL', color: '#F47B20', hidden: true },
   soccer_uefa_europa_conference_league: { name: 'Conference League', shortName: 'UECL', color: '#0AC44B' },
 };
+
+// Filtered helper for filter / picker UIs that should only show active
+// leagues. Use this anywhere you iterate to render selectors; keep
+// LEAGUE_CONFIG[key] for direct lookups so legacy data still renders.
+export const VISIBLE_LEAGUES = Object.entries(LEAGUE_CONFIG).filter(([, v]) => !v.hidden);

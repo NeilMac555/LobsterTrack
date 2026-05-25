@@ -27,11 +27,15 @@ const FREE_TEAMS: Record<string, string> = {
   soccer_france_ligue_one: 'Paris Saint Germain',
 };
 
+// xG is club-only (Understat doesn't cover UEFA comps or internationals),
+// so we drop those keys on top of the global `hidden` flag.
 const XG_LEAGUES = Object.entries(LEAGUE_CONFIG).filter(
-  ([key]) =>
+  ([key, cfg]) =>
+    !cfg.hidden &&
     key !== 'soccer_uefa_champs_league' &&
     key !== 'soccer_uefa_europa_league' &&
-    key !== 'soccer_uefa_europa_conference_league'
+    key !== 'soccer_uefa_europa_conference_league' &&
+    key !== 'soccer_fifa_world_cup'
 );
 
 // Terminal typography matching the rest of the charts on the site

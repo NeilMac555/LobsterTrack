@@ -4,7 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
 import { getClosingLinesGrouped } from '../api';
 import type { MatchClosingLines } from '../types';
-import { LEAGUE_CONFIG } from '../types';
+import { LEAGUE_CONFIG, VISIBLE_LEAGUES } from '../types';
 import LeagueLogo from '../components/LeagueLogo';
 import { useAuth } from '../contexts/AuthContext';
 import PaywallOverlay from '../components/PaywallOverlay';
@@ -101,7 +101,7 @@ export default function ClosingLinesPage() {
     else setSearchParams({});
   };
 
-  const leagues = Object.entries(LEAGUE_CONFIG);
+  const leagues = VISIBLE_LEAGUES;
 
   return (
     <div>

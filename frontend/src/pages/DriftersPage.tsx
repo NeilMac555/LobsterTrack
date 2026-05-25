@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { getDrifterResults } from '../api';
 import type { SteamResultsData } from '../types';
-import { LEAGUE_CONFIG } from '../types';
+import { LEAGUE_CONFIG, VISIBLE_LEAGUES } from '../types';
 import LeagueLogo from '../components/LeagueLogo';
 import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../contexts/AuthContext';
@@ -120,7 +120,7 @@ export default function DriftersPage() {
 
   if (!data) return null;
 
-  const leagues = Object.entries(LEAGUE_CONFIG);
+  const leagues = VISIBLE_LEAGUES;
 
   const sortLabels: Record<SortField, string> = {
     profit_loss: 'P/L',

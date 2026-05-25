@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { LEAGUE_CONFIG } from '../types';
+import { VISIBLE_LEAGUES } from '../types';
 import LeagueLogo from './LeagueLogo';
 import { useAuth } from '../contexts/AuthContext';
 import LoginModal from './LoginModal';
 import CheckoutSuccessBanner from './CheckoutSuccessBanner';
 import LiveTicker from './LiveTicker';
 
-const leagues = Object.entries(LEAGUE_CONFIG);
+const leagues = VISIBLE_LEAGUES;
 
 const tools = [
   { name: "World Cup '26", path: '/tools/world-cup', icon: '🏆' },
