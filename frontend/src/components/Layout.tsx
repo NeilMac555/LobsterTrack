@@ -52,7 +52,6 @@ export default function Layout() {
   const isSteamResultsPage = location.pathname === '/steam-results';
   const isDriftersPage = location.pathname === '/drifters';
   const isClosingLinesPage = location.pathname === '/closing-lines' || location.pathname === '/cl-closing-lines';
-  const isCLClosingPage = location.pathname === '/cl-closing-lines';
   const isTeamPLPage = location.pathname === '/team-pnl';
   const isOverviewPage = !currentLeague && !isToolsPage && !isSteamResultsPage && !isDriftersPage && !isClosingLinesPage && !isTeamPLPage && location.pathname === '/';
 
@@ -240,10 +239,14 @@ export default function Layout() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-10 flex items-center gap-3">
             <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold flex-shrink-0">Leagues</span>
             <div className="flex items-center gap-1 overflow-x-auto hide-scrollbar">
+              {/* 'All' explicitly opts out of the homepage's WC default
+                  via ?league=all — without this, '/' would always
+                  redirect to WC and 'All' would have no way to disable
+                  the filter. */}
               <Link
-                to="/"
+                to="/?league=all"
                 className={`px-2.5 py-1 rounded font-mono text-[11px] uppercase tracking-[0.1em] font-semibold transition-colors border whitespace-nowrap ${
-                  isOverviewPage && !currentLeague
+                  currentLeague === 'all'
                     ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30'
                     : 'bg-transparent text-slate-400 border-transparent hover:text-white hover:bg-slate-800/60'
                 }`}
@@ -378,9 +381,9 @@ export default function Layout() {
                     </Link>
                   ))}
                   <Link
-                    to="/"
+                    to="/?league=all"
                     className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                      !currentLeague && !isToolsPage && !isSteamResultsPage && !isDriftersPage && !isCLClosingPage
+                      currentLeague === 'all'
                         ? 'bg-blue-600 text-white'
                         : 'bg-slate-700/80 text-slate-300 hover:bg-slate-600'
                     }`}
