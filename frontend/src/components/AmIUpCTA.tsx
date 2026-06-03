@@ -32,12 +32,11 @@ export default function AmIUpCTA({ placement, wrap = true }: AmIUpCTAProps) {
       className="aiu-cta"
       target="_blank"
       rel="noopener"
-      aria-label="Try Am I Up — track every bet"
+      aria-label="Try a new advanced AI bet tracker"
     >
-      <span className="aiu-cta-mark" aria-hidden="true"></span>
       <span className="aiu-cta-text">
         <span className="aiu-cta-eyebrow">NEW</span>
-        Try Am I Up — track every bet
+        Try new advanced AI Bet Tracker
       </span>
       <span className="aiu-cta-arrow" aria-hidden="true">→</span>
     </a>
