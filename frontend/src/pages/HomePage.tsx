@@ -9,6 +9,7 @@ import MatchCard from '../components/MatchCard';
 import WorldCupMatchCard from '../components/WorldCupMatchCard';
 import AmIUpCTA from '../components/AmIUpCTA';
 import LeagueLogo from '../components/LeagueLogo';
+import { countryFlagImgUrl } from '../utils/countryFlags';
 import { SteamGuideModal, HelpButton } from '../components/SteamGuideModal';
 import { useAuth } from '../contexts/AuthContext';
 import LoginModal from '../components/LoginModal';
@@ -100,12 +101,14 @@ export default function HomePage() {
       setLoading(true);
       setError(null);
       try {
-        // Fetch all data in parallel for maximum speed
+        // Fetch all data in parallel for maximum speed. Biggest movers
+        // is now scoped to the active league filter so the WC default
+        // view gets its own Biggest Movers section instead of going
+        // dark whenever the filter is anything other than 'All'.
         const [matchesData, statsData, moversData, syndicateData] = await Promise.all([
           getMatches({ league: league || undefined, limit: 200 }),
           getStats(),
-          // Only fetch movers for "All Matches" view (no league filter)
-          league ? Promise.resolve([]) : getBiggestMovers(4),
+          getBiggestMovers(4, league || undefined),
           league ? Promise.resolve([]) : getSyndicateMoves(4)
         ]);
         setMatches(matchesData);
@@ -130,13 +133,14 @@ export default function HomePage() {
   // Every 10s: tick a dummy state to force the "X ago" label to recompute.
   const [, setClockTick] = useState(0);
   useEffect(() => {
-    if (league) return; // stat strip only shows on unfiltered view
-
+    // Periodic refresh now runs for any league filter so the WC default
+    // view (and any other future filter) keeps its movers + stats in
+    // sync without forcing a full reload.
     const refreshStats = async () => {
       try {
         const [statsData, moversData] = await Promise.all([
           getStats(),
-          getBiggestMovers(4),
+          getBiggestMovers(4, league || undefined),
         ]);
         setStats(statsData);
         setBiggestMovers(moversData);
@@ -420,8 +424,14 @@ export default function HomePage() {
               <div className="w-1 h-6 sm:h-7 rounded-full bg-gradient-to-b from-emerald-400 to-emerald-600 flex-shrink-0" />
               <div className="flex items-center gap-2">
                 <div>
-                  <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">Biggest Movers</h2>
-                  <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em] font-semibold">Sharp money signals</p>
+                  <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">
+                    {league && LEAGUE_CONFIG[league]
+                      ? `Biggest ${LEAGUE_CONFIG[league].shortName} Movers`
+                      : 'Biggest Movers'}
+                  </h2>
+                  <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em] font-semibold">
+                    Sharp money signals{league === 'soccer_fifa_world_cup' ? ' · 72 fixtures' : ''}
+                  </p>
                 </div>
                 <HelpButton onClick={() => setShowSteamGuide(true)} />
               </div>
@@ -490,8 +500,20 @@ export default function HomePage() {
                           to={`/match/${mover.match_id}`}
                           className="text-white hover:text-blue-400 transition-colors"
                         >
-                          <div className="font-semibold text-base tracking-tight">
-                            {mover.home_team} vs {mover.away_team}
+                          {/* Flags appear next to nation names on WC moves;
+                              fall through for club matches (no flag map). */}
+                          <div className="flex items-center gap-2 font-semibold text-base tracking-tight">
+                            {(() => {
+                              const f = countryFlagImgUrl(mover.home_team, 20);
+                              return f ? <img src={f} alt="" className="h-3.5 w-auto rounded-sm" loading="lazy" /> : null;
+                            })()}
+                            <span>{mover.home_team}</span>
+                            <span className="text-slate-500 font-normal">vs</span>
+                            {(() => {
+                              const f = countryFlagImgUrl(mover.away_team, 20);
+                              return f ? <img src={f} alt="" className="h-3.5 w-auto rounded-sm" loading="lazy" /> : null;
+                            })()}
+                            <span>{mover.away_team}</span>
                           </div>
                           <div className="text-[11px] text-slate-500 mt-0.5 font-mono">
                             {format(matchDate, 'EEE, MMM d  HH:mm')}
@@ -580,8 +602,18 @@ export default function HomePage() {
                         <span className="text-slate-600">·</span>
                         <span className="text-[10px] font-mono tabular-nums text-slate-500">{format(matchDate, 'EEE HH:mm')}</span>
                       </div>
-                      <div className="text-white font-semibold text-sm truncate tracking-tight">
-                        {mover.home_team} vs {mover.away_team}
+                      <div className="flex items-center gap-1.5 text-white font-semibold text-sm tracking-tight">
+                        {(() => {
+                          const f = countryFlagImgUrl(mover.home_team, 20);
+                          return f ? <img src={f} alt="" className="h-3 w-auto rounded-sm flex-shrink-0" loading="lazy" /> : null;
+                        })()}
+                        <span className="truncate">{mover.home_team}</span>
+                        <span className="text-slate-500 font-normal">v</span>
+                        {(() => {
+                          const f = countryFlagImgUrl(mover.away_team, 20);
+                          return f ? <img src={f} alt="" className="h-3 w-auto rounded-sm flex-shrink-0" loading="lazy" /> : null;
+                        })()}
+                        <span className="truncate">{mover.away_team}</span>
                       </div>
                       <div className="flex items-center gap-2 mt-2">
                         <span className={`px-2 py-0.5 rounded font-mono text-[10px] font-bold tracking-wide ${outcomeColor}`}>
