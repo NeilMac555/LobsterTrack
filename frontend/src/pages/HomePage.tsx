@@ -7,6 +7,7 @@ import type { MatchSummary, BiggestMover, SyndicateMove, Stats } from '../types'
 import { LEAGUE_CONFIG } from '../types';
 import MatchCard from '../components/MatchCard';
 import WorldCupMatchCard from '../components/WorldCupMatchCard';
+import AmIUpCTA from '../components/AmIUpCTA';
 import LeagueLogo from '../components/LeagueLogo';
 import { SteamGuideModal, HelpButton } from '../components/SteamGuideModal';
 import { useAuth } from '../contexts/AuthContext';
@@ -846,6 +847,11 @@ export default function HomePage() {
           </div>
         )}
       </div>
+
+      {/* AmIUp cross-promo — sits between the page header / hero
+          and the first date heading. High-visibility slot for the
+          bet-tracker plug without competing with the matches grid. */}
+      <AmIUpCTA placement="home" />
 
       {/* Matches by Day */}
       {groupedMatches.length === 0 ? (

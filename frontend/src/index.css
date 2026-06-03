@@ -277,3 +277,71 @@ main {
     display: none;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────
+   AmIUp CTA — cross-promo button used on Homepage and MatchDetail.
+   Source-of-truth design as shipped by Neil; the .aiu-* prefix
+   namespaces it so nothing on the AmIUp side bleeds into the rest
+   of the site. The mark.svg is self-hosted in /public/aiu/.
+   ───────────────────────────────────────────────────────────────── */
+.aiu-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: #1A1817;
+  color: #FBF9F3;
+  text-decoration: none;
+  border-radius: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  animation: aiu-pulse 1.8s ease-out infinite;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.aiu-cta:hover {
+  transform: translateY(-1px);
+  animation-play-state: paused;
+  box-shadow: 0 8px 24px rgba(30, 126, 79, 0.35);
+}
+.aiu-cta-mark {
+  width: 18px;
+  height: 18px;
+  background-color: #FBF9F3;
+  -webkit-mask: url("/aiu/mark.svg") center / contain no-repeat;
+  mask: url("/aiu/mark.svg") center / contain no-repeat;
+  flex-shrink: 0;
+}
+.aiu-cta-eyebrow {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 2px 6px;
+  background: #1E7E4F;
+  color: #FBF9F3;
+  border-radius: 3px;
+  font-family: "JetBrains Mono", "SF Mono", monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  vertical-align: middle;
+}
+.aiu-cta-arrow {
+  font-family: "JetBrains Mono", "SF Mono", monospace;
+  font-size: 14px;
+  opacity: 0.7;
+  transition: transform 0.15s;
+}
+.aiu-cta:hover .aiu-cta-arrow {
+  transform: translateX(2px);
+  opacity: 1;
+}
+@keyframes aiu-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(30, 126, 79, 0.5); }
+  70%  { box-shadow: 0 0 0 12px rgba(30, 126, 79, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(30, 126, 79, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .aiu-cta { animation: none; }
+}

@@ -12,6 +12,7 @@ import TimeFrameFilter, { type TimeFrame } from '../components/TimeFrameFilter';
 import LeagueLogo from '../components/LeagueLogo';
 import Sparkline from '../components/Sparkline';
 import { countryFlagImgUrl } from '../utils/countryFlags';
+import AmIUpCTA from '../components/AmIUpCTA';
 
 // Format ms-until-kickoff as a readable T-minus string, or a T-plus if the
 // match has already kicked off. Kept inside this module because match detail
@@ -333,6 +334,12 @@ export default function MatchDetailPage() {
           />
         </div>
       </div>
+
+      {/* AmIUp cross-promo — slots between the main Odds Movement
+          chart and the supporting Totals / AH sections. The user
+          has just seen 'how this match moved'; the natural next
+          action is 'track my bet on it'. */}
+      <AmIUpCTA placement="match" />
 
       {/* Totals (Over/Under) Section */}
       {totals && totals.totals_history.length > 0 && (
