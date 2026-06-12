@@ -32,6 +32,38 @@ SYNDICATE_ALERT_WINDOW_MINUTES = 90
 # heavy dog without a real informational edge.
 SYNDICATE_FIRE_TIER_ODDS = 4.0
 
+# Per-league override layer. When a sport_key has an entry here we use
+# its threshold/window in place of the defaults above. World Cup runs
+# with a lower threshold (3.5pp) and a wider window (180 minutes)
+# because the international markets move more slowly than club
+# fixtures — by the time a domestic-tight 4pp/90min trigger fires on
+# a WC game, the move is usually already public. Tournaments are also
+# the moment we most want to be over-alerting rather than under.
+LEAGUE_OVERRIDES: dict[str, dict[str, float]] = {
+    "soccer_fifa_world_cup": {
+        "threshold_pp": 3.5,
+        "window_minutes": 180.0,
+    },
+}
+
+
+def threshold_for(sport_key: str) -> float:
+    """Per-league prob-shift threshold, falling back to the global default."""
+    return float(
+        LEAGUE_OVERRIDES.get(sport_key, {}).get(
+            "threshold_pp", SYNDICATE_THRESHOLD_PROB_POINTS
+        )
+    )
+
+
+def window_for(sport_key: str) -> int:
+    """Per-league alert-window minutes, falling back to the global default."""
+    return int(
+        LEAGUE_OVERRIDES.get(sport_key, {}).get(
+            "window_minutes", SYNDICATE_ALERT_WINDOW_MINUTES
+        )
+    )
+
 
 def implied_prob(odds: float) -> float:
     """Convert decimal odds to implied probability (0-100 scale)."""
@@ -69,12 +101,16 @@ class SyndicateAlerter:
         db = SessionLocal()
         try:
             now = datetime.utcnow()
-            alert_window_end = now + timedelta(minutes=SYNDICATE_ALERT_WINDOW_MINUTES)
 
-            # Only consider matches kicking off inside the alert window. We
-            # deliberately ignore moves on matches further out — they were
-            # the source of the historical -4% ROI bleed and arrive too
-            # early in the cycle for the "sharp money" inference to hold.
+            # Pull the widest configured window across default + per-league
+            # overrides so the DB query catches every potentially-eligible
+            # match. Per-match window filtering happens in the loop below.
+            max_window = max(
+                SYNDICATE_ALERT_WINDOW_MINUTES,
+                *[int(cfg.get("window_minutes", 0)) for cfg in LEAGUE_OVERRIDES.values()],
+            )
+            alert_window_end = now + timedelta(minutes=max_window)
+
             matches = (
                 db.query(Match)
                 .filter(Match.commence_time > now)
@@ -92,19 +128,31 @@ class SyndicateAlerter:
                 time_to_ko = match.commence_time - now
                 minutes_to_ko = int(time_to_ko.total_seconds() / 60)
 
+                # Per-league overrides: WC fires earlier (T-180) at a
+                # lower 3.5pp threshold; other leagues stick to the
+                # 4pp / T-90 defaults.
+                league_window = window_for(match.sport_key)
+                league_threshold = threshold_for(match.sport_key)
+
+                # Skip this match if it sits outside its own league's
+                # window. The DB query already bounded by the widest
+                # window across all leagues; this is the per-league trim.
+                if minutes_to_ko > league_window:
+                    continue
+
                 # Check 1X2 market
                 alerts_sent += await self._check_1x2_market(
-                    db, match, window_start, minutes_to_ko
+                    db, match, window_start, minutes_to_ko, league_threshold
                 )
 
                 # Check Totals market (only same-line comparisons)
                 alerts_sent += await self._check_totals_market(
-                    db, match, window_start, minutes_to_ko
+                    db, match, window_start, minutes_to_ko, league_threshold
                 )
 
                 # Check Spreads / Asian Handicap market (only same-line comparisons)
                 alerts_sent += await self._check_spreads_market(
-                    db, match, window_start, minutes_to_ko
+                    db, match, window_start, minutes_to_ko, league_threshold
                 )
 
             db.commit()
@@ -118,7 +166,12 @@ class SyndicateAlerter:
             db.close()
 
     async def _check_1x2_market(
-        self, db: Session, match: Match, window_start: datetime, minutes_to_ko: int
+        self,
+        db: Session,
+        match: Match,
+        window_start: datetime,
+        minutes_to_ko: int,
+        threshold: float = SYNDICATE_THRESHOLD_PROB_POINTS,
     ) -> int:
         """Check 1X2 market for syndicate moves."""
         baseline = (
@@ -151,7 +204,7 @@ class SyndicateAlerter:
                 prob_move = prob_movement(baseline_odds, curr_odds)
 
                 # Only shortening odds (positive prob_move = probability increased)
-                if prob_move >= SYNDICATE_THRESHOLD_PROB_POINTS:
+                if prob_move >= threshold:
                     sent = await self._send_alert_if_new(
                         db, match, '1x2', outcome, label, name,
                         curr_odds, prob_move, minutes_to_ko
@@ -162,7 +215,12 @@ class SyndicateAlerter:
         return alerts_sent
 
     async def _check_totals_market(  # noqa: D401
-        self, db: Session, match: Match, window_start: datetime, minutes_to_ko: int
+        self,
+        db: Session,
+        match: Match,
+        window_start: datetime,
+        minutes_to_ko: int,
+        threshold: float = SYNDICATE_THRESHOLD_PROB_POINTS,
     ) -> int:
         """Check Totals market for syndicate moves on the OPENING line.
 
@@ -213,7 +271,7 @@ class SyndicateAlerter:
             if baseline_odds and curr_odds and baseline_odds > 0 and curr_odds > 0:
                 prob_move = prob_movement(baseline_odds, curr_odds)
 
-                if prob_move >= SYNDICATE_THRESHOLD_PROB_POINTS:
+                if prob_move >= threshold:
                     sent = await self._send_alert_if_new(
                         db, match, 'totals', outcome, label, name,
                         curr_odds, prob_move, minutes_to_ko,
@@ -225,7 +283,12 @@ class SyndicateAlerter:
         return alerts_sent
 
     async def _check_spreads_market(
-        self, db: Session, match: Match, window_start: datetime, minutes_to_ko: int
+        self,
+        db: Session,
+        match: Match,
+        window_start: datetime,
+        minutes_to_ko: int,
+        threshold: float = SYNDICATE_THRESHOLD_PROB_POINTS,
     ) -> int:
         """Check Spreads (Asian Handicap) market for syndicate moves. Only compares when line hasn't changed."""
         baseline = (
@@ -263,7 +326,7 @@ class SyndicateAlerter:
             if baseline_odds and curr_odds and baseline_odds > 0 and curr_odds > 0:
                 prob_move = prob_movement(baseline_odds, curr_odds)
 
-                if prob_move >= SYNDICATE_THRESHOLD_PROB_POINTS:
+                if prob_move >= threshold:
                     sent = await self._send_alert_if_new(
                         db, match, 'spreads', outcome, label, name,
                         curr_odds, prob_move, minutes_to_ko,
