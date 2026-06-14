@@ -4,8 +4,6 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import { getInPlayJumps } from '../api';
 import type { InPlayJumpsResponse, InPlayJump } from '../types';
-import { useAuth } from '../contexts/AuthContext';
-import PaywallOverlay from '../components/PaywallOverlay';
 import { countryFlagImgUrl } from '../utils/countryFlags';
 
 type SortField = 'delta' | 'commence_time';
@@ -43,7 +41,6 @@ function fmtOdds(v: number | null): string {
 }
 
 export default function InPlayJumpsPage() {
-  const { isSubscribed } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const days = parseInt(searchParams.get('days') || '7', 10);
@@ -122,18 +119,9 @@ export default function InPlayJumpsPage() {
         </div>
       </div>
 
-      {/* Pro paywall — full-block (matches Drifters, Steam Results) */}
-      {!isSubscribed && (
-        <div className="mb-6 sm:mb-8">
-          <PaywallOverlay
-            title="Unlock In-Play Jumps"
-            description="See which World Cup matches shifted the most in implied probability in the first 5 minutes of in-play — captured at T+5 via Pinnacle. Matches with early goals are filtered out so what you see is sharp money, not goal reaction."
-          />
-        </div>
-      )}
-
-      {isSubscribed && (
-        <>
+      {/* Free feature — no paywall on this one. Neil's call: the
+          in-play jump signal is brand new and needs eyeballs to be
+          discovered, so we want maximum traffic, not gated traffic. */}
           {/* Methodology */}
           <div className="mb-4 sm:mb-6 bg-slate-800/60 rounded-xl border border-slate-700/60 overflow-hidden">
             <button
@@ -398,8 +386,6 @@ export default function InPlayJumpsPage() {
               </div>
             </div>
           )}
-        </>
-      )}
     </div>
   );
 }
