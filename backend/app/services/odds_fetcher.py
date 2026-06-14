@@ -161,10 +161,19 @@ class OddsFetcher:
 
                 if pinnacle_odds:
                     # Compute pre-game vs in-play status for this row.
-                    # Use a timezone-aware comparison — match.commence_time
-                    # is naive UTC, fetch_time is naive UTC, so direct
-                    # comparison is fine (no tz arithmetic required).
-                    is_in_play = fetch_time > match.commence_time
+                    # CAREFUL: match.commence_time can come back from
+                    # Postgres as timezone-AWARE (after the KO one-shot
+                    # upserts it from a tz-aware datetime) while
+                    # fetch_time is tz-naive UTC. Direct comparison
+                    # raises 'can't compare offset-naive and offset-
+                    # aware datetimes' and crashes the whole league
+                    # fetch — silently, since the exception is caught
+                    # in fetch_all_leagues. Normalize both to naive
+                    # UTC before comparing.
+                    commence_naive = match.commence_time
+                    if commence_naive.tzinfo is not None:
+                        commence_naive = commence_naive.astimezone(timezone.utc).replace(tzinfo=None)
+                    is_in_play = fetch_time > commence_naive
 
                     # Late-steam detection is a PRE-GAME concept — it
                     # only walks the 2-hour pre-KO window and bails on
