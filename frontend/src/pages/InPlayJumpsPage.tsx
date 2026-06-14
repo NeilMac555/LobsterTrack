@@ -111,7 +111,19 @@ export default function InPlayJumpsPage() {
             </svg>
           </div>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">In-Play Jumps</h1>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">In-Play Jumps</h1>
+              <span
+                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-amber-400/50 bg-amber-500/15 text-amber-300 font-mono text-[10px] sm:text-[11px] uppercase tracking-[0.16em] font-bold animate-pulse"
+                title="This feature is in beta — signal under evaluation, sample sizes are small."
+              >
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75 animate-ping" />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-300" />
+                </span>
+                Beta
+              </span>
+            </div>
             <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em]">
               World Cup &middot; Closing line vs T+5 in-play &middot; Pinnacle
             </p>
