@@ -18,6 +18,7 @@ import BlogPostPage from './pages/BlogPostPage';
 import RollingXGPage from './pages/RollingXGPage';
 import TeamPLPage from './pages/TeamPLPage';
 import WorldCupHubPage from './pages/WorldCupHubPage';
+import InPlayJumpsPage from './pages/InPlayJumpsPage';
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
               <Route path="closing-lines" element={<ClosingLinesPage />} />
               <Route path="cl-closing-lines" element={<CLClosingLinesPage />} />
               <Route path="team-pnl" element={<TeamPLPage />} />
+              <Route path="in-play-jumps" element={<InPlayJumpsPage />} />
               <Route path="tools/hedge-calculator" element={<HedgeCalculatorPage />} />
               <Route path="tools/match-predictor" element={<MatchPredictorPage />} />
               <Route path="tools/rolling-xg" element={<RollingXGPage />} />

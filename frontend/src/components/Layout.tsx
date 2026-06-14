@@ -9,8 +9,26 @@ import LiveTicker from './LiveTicker';
 
 const leagues = VISIBLE_LEAGUES;
 
-const tools = [
+// `external: true` makes a tool entry open in a new tab and render as
+// a plain <a> instead of a router <Link> — used for cross-promo items
+// that live outside the SteamWatch app (currently just AmIUp).
+// `isNew: true` adds a small red NEW badge to the entry so it visibly
+// stands out from the rest of the list.
+const tools: Array<{
+  name: string;
+  path: string;
+  icon: string;
+  external?: boolean;
+  isNew?: boolean;
+}> = [
   { name: "World Cup '26", path: '/tools/world-cup', icon: '🏆' },
+  {
+    name: 'AI Bet Tracker',
+    path: 'https://amiup.io/?ref=steamwatch-tools',
+    icon: '🤖',
+    external: true,
+    isNew: true,
+  },
   { name: 'Hedging Calculator', path: '/tools/hedge-calculator', icon: '🧮' },
   { name: 'Match Model', path: '/tools/match-predictor', icon: '⚽' },
   { name: 'Rolling xG', path: '/tools/rolling-xg', icon: '📊' },
@@ -53,6 +71,7 @@ export default function Layout() {
   const isDriftersPage = location.pathname === '/drifters';
   const isClosingLinesPage = location.pathname === '/closing-lines' || location.pathname === '/cl-closing-lines';
   const isTeamPLPage = location.pathname === '/team-pnl';
+  const isInPlayJumpsPage = location.pathname === '/in-play-jumps';
   const isOverviewPage = !currentLeague && !isToolsPage && !isSteamResultsPage && !isDriftersPage && !isClosingLinesPage && !isTeamPLPage && location.pathname === '/';
 
   const navItemClass = (active: boolean) =>
@@ -94,6 +113,7 @@ export default function Layout() {
               <Link to="/drifters" className={navItemClass(isDriftersPage)}>Drifters</Link>
               <Link to="/closing-lines" className={navItemClass(isClosingLinesPage)}>Closing Lines</Link>
               <Link to="/team-pnl" className={navItemClass(isTeamPLPage)}>Team P/L</Link>
+              <Link to="/in-play-jumps" className={navItemClass(isInPlayJumpsPage)}>In-Play Jumps</Link>
 
               {/* Tools dropdown */}
               <div className="relative" ref={dropdownRef}>
@@ -110,22 +130,47 @@ export default function Layout() {
                   </svg>
                 </button>
                 {toolsOpen && (
-                  <div className="absolute left-0 mt-3 w-56 bg-slate-800 border border-slate-700 rounded-md shadow-xl shadow-black/30 overflow-hidden z-50">
-                    {tools.map((tool) => (
-                      <Link
-                        key={tool.path}
-                        to={tool.path}
-                        onClick={() => setToolsOpen(false)}
-                        className={`flex items-center gap-2.5 px-3 py-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors ${
-                          location.pathname === tool.path
-                            ? 'bg-cyan-500/10 text-cyan-300'
-                            : 'text-slate-300 hover:bg-slate-700 hover:text-white'
-                        }`}
-                      >
-                        <span className="text-sm grayscale opacity-70">{tool.icon}</span>
-                        <span>{tool.name}</span>
-                      </Link>
-                    ))}
+                  <div className="absolute left-0 mt-3 w-60 bg-slate-800 border border-slate-700 rounded-md shadow-xl shadow-black/30 overflow-hidden z-50">
+                    {tools.map((tool) => {
+                      const isActive = !tool.external && location.pathname === tool.path;
+                      const innerClasses = `flex items-center gap-2.5 px-3 py-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors ${
+                        isActive
+                          ? 'bg-cyan-500/10 text-cyan-300'
+                          : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                      }`;
+                      const innerContent = (
+                        <>
+                          <span className="text-sm grayscale opacity-70">{tool.icon}</span>
+                          <span className="flex-1">{tool.name}</span>
+                          {tool.isNew && (
+                            <span className="px-1.5 py-0.5 rounded bg-red-600 text-white text-[9px] font-extrabold tracking-[0.08em]">
+                              NEW
+                            </span>
+                          )}
+                        </>
+                      );
+                      return tool.external ? (
+                        <a
+                          key={tool.path}
+                          href={tool.path}
+                          target="_blank"
+                          rel="noopener"
+                          onClick={() => setToolsOpen(false)}
+                          className={innerClasses}
+                        >
+                          {innerContent}
+                        </a>
+                      ) : (
+                        <Link
+                          key={tool.path}
+                          to={tool.path}
+                          onClick={() => setToolsOpen(false)}
+                          className={innerClasses}
+                        >
+                          {innerContent}
+                        </Link>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -502,6 +547,17 @@ export default function Layout() {
                     <span className="text-lg">&#163;</span>
                     <span className="font-medium">Team P/L</span>
                   </Link>
+                  <Link
+                    to="/in-play-jumps"
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors ${
+                      isInPlayJumpsPage
+                        ? 'bg-amber-600/20 text-amber-300'
+                        : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700 hover:text-white'
+                    }`}
+                  >
+                    <span className="text-lg">⚡</span>
+                    <span className="font-medium">In-Play Jumps</span>
+                  </Link>
                 </div>
               </div>
 
@@ -509,20 +565,40 @@ export default function Layout() {
               <div>
                 <p className="text-xs text-slate-400 font-medium mb-2 uppercase tracking-wider">Tools</p>
                 <div className="space-y-1">
-                  {tools.map((tool) => (
-                    <Link
-                      key={tool.path}
-                      to={tool.path}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors ${
-                        location.pathname === tool.path
-                          ? 'bg-blue-600/20 text-blue-400'
-                          : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700 hover:text-white'
-                      }`}
-                    >
-                      <span className="text-lg">{tool.icon}</span>
-                      <span className="font-medium">{tool.name}</span>
-                    </Link>
-                  ))}
+                  {tools.map((tool) => {
+                    const isActive = !tool.external && location.pathname === tool.path;
+                    const classes = `flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors ${
+                      isActive
+                        ? 'bg-blue-600/20 text-blue-400'
+                        : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700 hover:text-white'
+                    }`;
+                    const inner = (
+                      <>
+                        <span className="text-lg">{tool.icon}</span>
+                        <span className="font-medium flex-1">{tool.name}</span>
+                        {tool.isNew && (
+                          <span className="px-1.5 py-0.5 rounded bg-red-600 text-white text-[10px] font-extrabold tracking-[0.08em]">
+                            NEW
+                          </span>
+                        )}
+                      </>
+                    );
+                    return tool.external ? (
+                      <a
+                        key={tool.path}
+                        href={tool.path}
+                        target="_blank"
+                        rel="noopener"
+                        className={classes}
+                      >
+                        {inner}
+                      </a>
+                    ) : (
+                      <Link key={tool.path} to={tool.path} className={classes}>
+                        {inner}
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
             </div>

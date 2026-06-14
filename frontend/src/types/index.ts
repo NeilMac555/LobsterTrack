@@ -231,6 +231,34 @@ export interface TeamPLRow {
   fade: TeamPLSide;
 }
 
+export interface InPlayJump {
+  match_id: string;
+  home_team: string;
+  away_team: string;
+  sport_key: string;
+  league_name: string;
+  commence_time: string;
+  snapshot_minutes_in: number;
+  early_goal_minute: number | null;
+  biggest_outcome: 'home' | 'draw' | 'away';
+  biggest_delta_pp: number;
+  closing: { home: number | null; draw: number | null; away: number | null };
+  in_play: { home: number | null; draw: number | null; away: number | null };
+  deltas_pp: { home: number | null; draw: number | null; away: number | null };
+}
+
+export interface InPlayJumpsResponse {
+  league: string | null;
+  days_back: number;
+  minutes_window: number;
+  min_delta_pp: number;
+  matches_seen: number;
+  matches_with_closing: number;
+  matches_with_in_play_snap: number;
+  matches_with_jumps: number;
+  jumps: InPlayJump[];
+}
+
 export interface TeamPLResponse {
   league: string;
   seasons_loaded: string[];
