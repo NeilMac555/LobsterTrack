@@ -41,10 +41,33 @@ function SortIcon({ active, direction }: { active: boolean; direction: SortDir }
   );
 }
 
+// During the WC '26 tournament the European domestic seasons are
+// done, so we default this page to WC matches only. When no
+// ?league= param is set we silently rewrite the URL to the WC
+// sport_key so the highlighted filter pill, the data fetch, and
+// the shareable URL all agree. Removing this once the European
+// seasons restart is a one-line change.
+const DEFAULT_LEAGUE = 'soccer_fifa_world_cup';
+const ALL_LEAGUES_SENTINEL = 'all';
+
 export default function DriftersPage() {
   const { isSubscribed } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const league = searchParams.get('league');
+  const leagueParam = searchParams.get('league');
+
+  useEffect(() => {
+    if (leagueParam === null) {
+      const next = new URLSearchParams(searchParams);
+      next.set('league', DEFAULT_LEAGUE);
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leagueParam]);
+
+  const league =
+    leagueParam === ALL_LEAGUES_SENTINEL
+      ? null
+      : (leagueParam ?? DEFAULT_LEAGUE);
 
   const [data, setData] = useState<SteamResultsData | null>(null);
   const [loading, setLoading] = useState(true);
