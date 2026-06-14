@@ -351,6 +351,155 @@ async def get_stats(db: Session = Depends(get_db)):
     }
 
 
+@router.get("/in-play-jumps")
+async def get_in_play_jumps(
+    db: Session = Depends(get_db),
+    league: Optional[str] = Query(
+        None,
+        description="Optional sport_key filter (e.g. soccer_fifa_world_cup).",
+    ),
+    days: int = Query(7, ge=1, le=60, description="Look back this many days."),
+    minutes_window: int = Query(
+        5,
+        ge=1,
+        le=30,
+        description="Compare closing line vs latest snapshot within this many minutes of in-play.",
+    ),
+    min_delta_pp: float = Query(
+        2.0,
+        ge=0,
+        le=50,
+        description="Minimum implied-prob shift in pp to include the match.",
+    ),
+    limit: int = Query(50, ge=1, le=200),
+):
+    """
+    For each recently-played match, compare the closing 1X2 line against
+    the latest pre-recorded snapshot from the first `minutes_window` of
+    in-play. Returns matches sorted by the biggest absolute implied-prob
+    delta (per outcome). Used to surface "big swing on going in-play"
+    signals — sharp money reacting to lineups, opening exchanges,
+    weather, etc. in the opening minutes of a match.
+    """
+    now = datetime.utcnow()
+    cutoff = now - timedelta(days=days)
+
+    matches_q = (
+        db.query(Match)
+        .filter(Match.commence_time >= cutoff)
+        .filter(Match.commence_time <= now)
+    )
+    if league:
+        matches_q = matches_q.filter(Match.sport_key == league)
+    matches = matches_q.all()
+
+    def implied(o):
+        return (1.0 / o) * 100 if o and o > 0 else None
+
+    matches_seen = 0
+    matches_with_closing = 0
+    matches_with_in_play_snap = 0
+    results = []
+
+    for match in matches:
+        matches_seen += 1
+
+        # Closing 1X2 line — captured at T-1 to T-3 min by
+        # closing_line_capturer.
+        closing = (
+            db.query(ClosingLine)
+            .filter(ClosingLine.match_id == match.id)
+            .filter(ClosingLine.market_type == "1x2")
+            .first()
+        )
+        if not closing or closing.close_home is None:
+            continue
+        matches_with_closing += 1
+
+        # Latest snapshot inside the first `minutes_window` of in-play.
+        window_end = match.commence_time + timedelta(minutes=minutes_window)
+        in_play = (
+            db.query(OddsSnapshot)
+            .filter(OddsSnapshot.match_id == match.id)
+            .filter(OddsSnapshot.fetched_at > match.commence_time)
+            .filter(OddsSnapshot.fetched_at <= window_end)
+            .order_by(OddsSnapshot.fetched_at.desc())
+            .first()
+        )
+        if not in_play or in_play.home_odds is None:
+            continue
+        matches_with_in_play_snap += 1
+
+        # Implied-probability deltas (in_play minus closing).
+        # Positive = the outcome got SHORTER in-play (market shifted
+        # toward it). Negative = drifted.
+        ip_home = implied(in_play.home_odds)
+        ip_draw = implied(in_play.draw_odds)
+        ip_away = implied(in_play.away_odds)
+        cl_home = implied(closing.close_home)
+        cl_draw = implied(closing.close_draw)
+        cl_away = implied(closing.close_away)
+
+        deltas = {
+            "home": (ip_home - cl_home) if ip_home is not None and cl_home is not None else None,
+            "draw": (ip_draw - cl_draw) if ip_draw is not None and cl_draw is not None else None,
+            "away": (ip_away - cl_away) if ip_away is not None and cl_away is not None else None,
+        }
+        non_null = [(k, v) for k, v in deltas.items() if v is not None]
+        if not non_null:
+            continue
+        biggest_outcome, biggest_delta = max(non_null, key=lambda kv: abs(kv[1]))
+
+        if abs(biggest_delta) < min_delta_pp:
+            continue
+
+        snapshot_minutes_in = (
+            in_play.fetched_at - match.commence_time
+        ).total_seconds() / 60
+
+        results.append({
+            "match_id": match.id,
+            "home_team": match.home_team,
+            "away_team": match.away_team,
+            "sport_key": match.sport_key,
+            "league_name": match.league_name,
+            "commence_time": match.commence_time.isoformat() + "Z",
+            "snapshot_minutes_in": round(snapshot_minutes_in, 1),
+            "biggest_outcome": biggest_outcome,
+            "biggest_delta_pp": round(biggest_delta, 2),
+            "closing": {
+                "home": closing.close_home,
+                "draw": closing.close_draw,
+                "away": closing.close_away,
+            },
+            "in_play": {
+                "home": in_play.home_odds,
+                "draw": in_play.draw_odds,
+                "away": in_play.away_odds,
+            },
+            "deltas_pp": {
+                k: (round(v, 2) if v is not None else None) for k, v in deltas.items()
+            },
+        })
+
+    results.sort(key=lambda r: abs(r["biggest_delta_pp"]), reverse=True)
+
+    return {
+        "league": league,
+        "days_back": days,
+        "minutes_window": minutes_window,
+        "min_delta_pp": min_delta_pp,
+        # Coverage diagnostics — useful when the page looks sparse, to
+        # answer "do we have closing lines for these matches?" and "are
+        # we even capturing in-play snapshots?"
+        "matches_seen": matches_seen,
+        "matches_with_closing": matches_with_closing,
+        "matches_with_in_play_snap": matches_with_in_play_snap,
+        "matches_with_jumps": len(results),
+        "jumps": results[:limit],
+    }
+
+
 @router.get("/biggest-movers", response_model=list[BiggestMover])
 async def get_biggest_movers(
     db: Session = Depends(get_db),
