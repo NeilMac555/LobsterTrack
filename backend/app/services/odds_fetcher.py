@@ -160,11 +160,23 @@ class OddsFetcher:
                 pinnacle_odds = self._extract_pinnacle_odds(event)
 
                 if pinnacle_odds:
-                    # Check for late steam before adding new snapshot
-                    steam_count = self._detect_late_steam(
-                        db, match, pinnacle_odds, fetch_time, sport_key
-                    )
-                    steam_moves_recorded += steam_count
+                    # Compute pre-game vs in-play status for this row.
+                    # Use a timezone-aware comparison — match.commence_time
+                    # is naive UTC, fetch_time is naive UTC, so direct
+                    # comparison is fine (no tz arithmetic required).
+                    is_in_play = fetch_time > match.commence_time
+
+                    # Late-steam detection is a PRE-GAME concept — it
+                    # only walks the 2-hour pre-KO window and bails on
+                    # matches that have already started. We pass the
+                    # in_play flag through anyway so the detector can
+                    # additionally skip cleanly when the new snapshot
+                    # is in-play (defensive).
+                    if not is_in_play:
+                        steam_count = self._detect_late_steam(
+                            db, match, pinnacle_odds, fetch_time, sport_key
+                        )
+                        steam_moves_recorded += steam_count
 
                     snapshot = OddsSnapshot(
                         match_id=match.id,
@@ -173,7 +185,8 @@ class OddsFetcher:
                         draw_odds=pinnacle_odds.get("draw"),
                         away_odds=pinnacle_odds.get("away"),
                         fetched_at=fetch_time,
-                        last_update=pinnacle_odds.get("last_update")
+                        last_update=pinnacle_odds.get("last_update"),
+                        in_play=is_in_play,
                     )
                     db.add(snapshot)
                     odds_stored += 1

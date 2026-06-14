@@ -6,6 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, RedirectResponse
 
+from sqlalchemy import text
+
 from app.config import get_settings
 from app.models.database import Base, engine
 from app.api import router
@@ -45,6 +47,41 @@ async def lifespan(app: FastAPI):
     # Create database tables
     logger.info("Creating database tables")
     Base.metadata.create_all(bind=engine)
+
+    # Additive schema migration: ensure the OddsSnapshot.in_play column
+    # exists on the live odds_snapshots table. Base.metadata.create_all
+    # only CREATES missing tables, it doesn't ALTER existing ones, so any
+    # column we add to a model post-launch needs a hand-rolled bit of
+    # ALTER TABLE here. The IF NOT EXISTS makes this idempotent — safe
+    # to run on every cold start.
+    #
+    # After the column is in place we backfill existing rows: any
+    # OddsSnapshot whose fetched_at is later than its match's
+    # commence_time is by definition an in-play snapshot. This catches
+    # the small number of post-KO snapshots we've accidentally been
+    # storing alongside pre-game data, and keeps the pre-game feature
+    # surface (Steam Results / Drifters / sparklines / biggest-movers)
+    # clean once we add the in_play=FALSE filters below.
+    try:
+        with engine.begin() as conn:
+            conn.execute(text(
+                "ALTER TABLE odds_snapshots "
+                "ADD COLUMN IF NOT EXISTS in_play BOOLEAN "
+                "NOT NULL DEFAULT FALSE"
+            ))
+        with engine.begin() as conn:
+            result = conn.execute(text(
+                "UPDATE odds_snapshots SET in_play = TRUE "
+                "FROM matches WHERE odds_snapshots.match_id = matches.id "
+                "AND odds_snapshots.fetched_at > matches.commence_time "
+                "AND odds_snapshots.in_play = FALSE"
+            ))
+            logger.info(
+                "in_play backfill complete",
+                rows_updated=result.rowcount if result.rowcount is not None else "unknown",
+            )
+    except Exception as e:
+        logger.warning("in_play migration step failed (non-fatal)", error=str(e))
 
     # Start the scheduler
     logger.info("Starting odds scheduler")

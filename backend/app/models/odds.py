@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Float, DateTime, ForeignKey, Index, Integer
+from sqlalchemy import Column, String, Float, DateTime, ForeignKey, Index, Integer, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from .database import Base
@@ -30,12 +30,22 @@ class OddsSnapshot(Base):
     # When The Odds API last updated these odds (from API response)
     last_update = Column(DateTime, nullable=True)
 
+    # TRUE when this row was captured AFTER the match started — i.e.
+    # an in-play snapshot. Set at insert time by comparing fetch_time
+    # to match.commence_time. Pre-game features (Steam Results,
+    # Drifters, biggest-movers, home-trend sparklines) filter to
+    # in_play = FALSE so the in-play data we collect for the new
+    # /in-play-jumps view doesn't bleed into anything that's been
+    # working all season on pre-game-only assumptions.
+    in_play = Column(Boolean, nullable=False, default=False, server_default="false", index=True)
+
     # Relationship back to match
     match = relationship("Match", back_populates="odds_snapshots")
 
     __table_args__ = (
         Index("idx_odds_match_fetched", "match_id", "fetched_at"),
         Index("idx_odds_bookmaker", "bookmaker"),
+        Index("idx_odds_match_inplay", "match_id", "in_play"),
     )
 
     def __repr__(self):

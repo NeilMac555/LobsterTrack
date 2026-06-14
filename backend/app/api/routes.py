@@ -127,7 +127,10 @@ async def get_matches(
 
     match_ids = [m.id for m in matches]
 
-    # Batch query: Get latest odds for all matches using window function
+    # Batch query: Get latest odds for all matches using window function.
+    # Filter to pre-game only — current odds shouldn't drift into in-play
+    # territory because Steam Results / Drifters / sparklines / movement
+    # math all assume pre-game-only inputs.
     latest_subq = (
         db.query(
             OddsSnapshot.match_id,
@@ -140,6 +143,7 @@ async def get_matches(
             ).label('rn')
         )
         .filter(OddsSnapshot.match_id.in_(match_ids))
+        .filter(OddsSnapshot.in_play == False)  # noqa: E712
         .subquery()
     )
 
@@ -157,7 +161,8 @@ async def get_matches(
         for row in latest_odds_query
     }
 
-    # Batch query: Get opening odds (first snapshot) for all matches
+    # Batch query: Get opening odds (first snapshot) for all matches.
+    # Pre-game only — opening price by definition.
     opening_subq = (
         db.query(
             OddsSnapshot.match_id,
@@ -170,6 +175,7 @@ async def get_matches(
             ).label('rn')
         )
         .filter(OddsSnapshot.match_id.in_(match_ids))
+        .filter(OddsSnapshot.in_play == False)  # noqa: E712
         .subquery()
     )
 
@@ -187,13 +193,16 @@ async def get_matches(
         for row in opening_odds_query
     }
 
-    # Batch query: Get odds count for all matches
+    # Batch query: Get odds count for all matches. Pre-game only so the
+    # 'N snapshots' badge on each card reflects how rich the pre-match
+    # tracking history is (not contaminated by a handful of in-play rows).
     odds_counts_query = (
         db.query(
             OddsSnapshot.match_id,
             func.count(OddsSnapshot.id).label('count')
         )
         .filter(OddsSnapshot.match_id.in_(match_ids))
+        .filter(OddsSnapshot.in_play == False)  # noqa: E712
         .group_by(OddsSnapshot.match_id)
         .all()
     )
@@ -202,6 +211,8 @@ async def get_matches(
     # Batch query: get the most recent N home_odds for each match to power
     # inline sparklines on match cards. We keep this modest (N=12) to cap
     # payload size — a dozen points is enough to show a trend.
+    # Pre-game only — Home Trend is a pre-match concept; an in-play snapshot
+    # mixed into the line would distort the visual.
     SPARK_POINTS = 12
     spark_subq = (
         db.query(
@@ -216,6 +227,7 @@ async def get_matches(
         .filter(OddsSnapshot.match_id.in_(match_ids))
         .filter(OddsSnapshot.home_odds.isnot(None))
         .filter(OddsSnapshot.home_odds > 0)
+        .filter(OddsSnapshot.in_play == False)  # noqa: E712
         .subquery()
     )
     spark_rows = (
@@ -417,11 +429,15 @@ async def get_in_play_jumps(
         matches_with_closing += 1
 
         # Latest snapshot inside the first `minutes_window` of in-play.
+        # Explicit in_play=True filter (rather than purely time-based) so
+        # we pick up the snapshot the storage layer has stamped as
+        # 'after kickoff' — robust against any clock drift between
+        # match.commence_time and fetched_at.
         window_end = match.commence_time + timedelta(minutes=minutes_window)
         in_play = (
             db.query(OddsSnapshot)
             .filter(OddsSnapshot.match_id == match.id)
-            .filter(OddsSnapshot.fetched_at > match.commence_time)
+            .filter(OddsSnapshot.in_play == True)  # noqa: E712
             .filter(OddsSnapshot.fetched_at <= window_end)
             .order_by(OddsSnapshot.fetched_at.desc())
             .first()
@@ -537,6 +553,7 @@ async def get_biggest_movers(
             ).label('rn')
         )
         .filter(OddsSnapshot.match_id.in_(match_ids))
+        .filter(OddsSnapshot.in_play == False)  # noqa: E712
         .subquery()
     )
     latest_1x2 = {row.match_id: row for row in db.query(latest_1x2_subq).filter(latest_1x2_subq.c.rn == 1).all()}
@@ -553,6 +570,7 @@ async def get_biggest_movers(
             ).label('rn')
         )
         .filter(OddsSnapshot.match_id.in_(match_ids))
+        .filter(OddsSnapshot.in_play == False)  # noqa: E712
         .subquery()
     )
     opening_1x2 = {row.match_id: row for row in db.query(opening_1x2_subq).filter(opening_1x2_subq.c.rn == 1).all()}
