@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, Index
+from sqlalchemy import Column, String, DateTime, Index, Integer
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from .database import Base
@@ -30,6 +30,14 @@ class Match(Base):
     # Tracking timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    # Minute at which an early goal was detected. NULL = no early goal
+    # (either no goal happened, or we haven't checked yet). 5 = a goal
+    # was scored before our T+5 score check. The /in-play-jumps view
+    # filters these matches out by default because price swings driven
+    # by an early goal aren't sharp-money signals — the market is just
+    # reacting to obvious public information.
+    early_goal_minute = Column(Integer, nullable=True, index=True)
 
     # Relationship to odds snapshots
     odds_snapshots = relationship("OddsSnapshot", back_populates="match", cascade="all, delete-orphan")

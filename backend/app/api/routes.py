@@ -383,6 +383,12 @@ async def get_in_play_jumps(
         le=50,
         description="Minimum implied-prob shift in pp to include the match.",
     ),
+    include_early_goals: bool = Query(
+        False,
+        description="When false (default), drops matches where an early goal "
+                    "scored in the first 5 min — those price swings are public-"
+                    "info reactions, not sharp-money signals.",
+    ),
     limit: int = Query(50, ge=1, le=200),
 ):
     """
@@ -403,6 +409,10 @@ async def get_in_play_jumps(
     )
     if league:
         matches_q = matches_q.filter(Match.sport_key == league)
+    if not include_early_goals:
+        # Drop matches where the T+5 score check found a goal already.
+        # Match.early_goal_minute IS NULL means 'no early goal detected'.
+        matches_q = matches_q.filter(Match.early_goal_minute.is_(None))
     matches = matches_q.all()
 
     def implied(o):
@@ -481,6 +491,7 @@ async def get_in_play_jumps(
             "league_name": match.league_name,
             "commence_time": match.commence_time.isoformat() + "Z",
             "snapshot_minutes_in": round(snapshot_minutes_in, 1),
+            "early_goal_minute": match.early_goal_minute,
             "biggest_outcome": biggest_outcome,
             "biggest_delta_pp": round(biggest_delta, 2),
             "closing": {

@@ -83,6 +83,21 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning("in_play migration step failed (non-fatal)", error=str(e))
 
+    # Additive migration for Match.early_goal_minute — same idempotent
+    # ADD COLUMN IF NOT EXISTS pattern. Populated at T+5 by the
+    # scheduler's in-play one-shot when the scores endpoint shows a
+    # goal has been scored. /in-play-jumps filters on this so the
+    # price swings we surface aren't contaminated by obvious-info
+    # reactions to early goals.
+    try:
+        with engine.begin() as conn:
+            conn.execute(text(
+                "ALTER TABLE matches "
+                "ADD COLUMN IF NOT EXISTS early_goal_minute INTEGER"
+            ))
+    except Exception as e:
+        logger.warning("early_goal_minute migration failed (non-fatal)", error=str(e))
+
     # Start the scheduler
     logger.info("Starting odds scheduler")
     odds_scheduler.start()

@@ -240,12 +240,44 @@ class OddsScheduler:
                 logger.error(
                     "In-play T+5 fetch failed", match_id=match_id, error=str(e)
                 )
-            finally:
-                # Discard from the scheduled set ONLY after the
-                # second (later) job has run, so the first job doesn't
-                # release the slot and let the smart_tick re-schedule
-                # while the in-play job is still pending.
-                self._scheduled_ko_jobs.discard(match_id)
+
+            # Score check — separate try/except so a /scores outage
+            # doesn't cost us the odds snapshot we just stored. Marks
+            # the Match with early_goal_minute=5 if anyone has scored
+            # by now; /in-play-jumps then excludes these matches by
+            # default because the price swing is just market reaction
+            # to an obvious goal, not a sharp-money signal.
+            try:
+                from app.services.score_fetcher import fetch_total_score
+                from app.models import Match
+                from app.models.database import SessionLocal
+
+                total = await fetch_total_score(sport_key, match_id)
+                if total is not None and total > 0:
+                    db = SessionLocal()
+                    try:
+                        match = db.query(Match).filter(Match.id == match_id).first()
+                        if match and match.early_goal_minute is None:
+                            match.early_goal_minute = 5
+                            db.commit()
+                            logger.info(
+                                "Early goal detected at T+5",
+                                match_id=match_id,
+                                total_goals=total,
+                            )
+                    finally:
+                        db.close()
+            except Exception as e:
+                logger.warning(
+                    "T+5 score check failed (non-fatal)",
+                    match_id=match_id,
+                    error=str(e),
+                )
+
+            # Discard from the scheduled set ONLY after both the odds
+            # fetch and score check are done, so the smart_tick can't
+            # re-schedule the match while the in-play job is pending.
+            self._scheduled_ko_jobs.discard(match_id)
 
         try:
             self.scheduler.add_job(
