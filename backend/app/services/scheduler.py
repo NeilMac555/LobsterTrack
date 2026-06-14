@@ -193,7 +193,15 @@ class OddsScheduler:
 
     def _schedule_ko_fetch(self, sport_key: str, match_id: str, ko_time: datetime):
         """
-        Schedule a one-shot fetch at exact KO time to capture the true closing line.
+        Schedule one-shot fetches around kickoff:
+          • At KO exactly — captures the true closing line.
+          • At KO + 5 minutes — captures the in-play snapshot AFTER the
+            first 5 min of action, when sharp money has had time to
+            react to confirmed lineups / opening exchanges / weather
+            etc. Feeds the /in-play-jumps analytics endpoint.
+
+        Both jobs are idempotent — scheduling the same match twice is a
+        no-op because we track which match_ids have already been queued.
         """
         if match_id in self._scheduled_ko_jobs:
             return
@@ -204,7 +212,9 @@ class OddsScheduler:
         if ko_time.tzinfo is None:
             ko_time = ko_time.replace(tzinfo=timezone.utc)
 
-        job_id = f"ko_{match_id}"
+        ko_job_id = f"ko_{match_id}"
+        in_play_job_id = f"inplay5_{match_id}"
+        in_play_time = ko_time + timedelta(minutes=5)
 
         async def ko_fetch():
             try:
@@ -217,25 +227,55 @@ class OddsScheduler:
                 logger.info("KO closing line captured", match_id=match_id)
             except Exception as e:
                 logger.error("KO fetch failed", match_id=match_id, error=str(e))
+
+        async def in_play_5_fetch():
+            try:
+                logger.info(
+                    "In-play T+5 fetch", sport_key=sport_key, match_id=match_id
+                )
+                await odds_fetcher.fetch_all_leagues(sport_keys=[sport_key])
+                self._last_fetch_by_league[sport_key] = datetime.utcnow()
+                logger.info("In-play T+5 captured", match_id=match_id)
+            except Exception as e:
+                logger.error(
+                    "In-play T+5 fetch failed", match_id=match_id, error=str(e)
+                )
             finally:
+                # Discard from the scheduled set ONLY after the
+                # second (later) job has run, so the first job doesn't
+                # release the slot and let the smart_tick re-schedule
+                # while the in-play job is still pending.
                 self._scheduled_ko_jobs.discard(match_id)
 
         try:
             self.scheduler.add_job(
                 ko_fetch,
                 trigger=DateTrigger(run_date=ko_time),
-                id=job_id,
+                id=ko_job_id,
                 name=f"KO closing line: {match_id[:20]}",
                 replace_existing=True,
                 max_instances=1,
             )
+            self.scheduler.add_job(
+                in_play_5_fetch,
+                trigger=DateTrigger(run_date=in_play_time),
+                id=in_play_job_id,
+                name=f"In-play T+5: {match_id[:20]}",
+                replace_existing=True,
+                max_instances=1,
+            )
             logger.info(
-                "Scheduled KO fetch",
+                "Scheduled KO + in-play T+5 fetches",
                 match_id=match_id,
-                ko_time=ko_time.isoformat()
+                ko_time=ko_time.isoformat(),
+                in_play_time=in_play_time.isoformat(),
             )
         except Exception as e:
-            logger.error("Failed to schedule KO fetch", match_id=match_id, error=str(e))
+            logger.error(
+                "Failed to schedule KO/in-play fetches",
+                match_id=match_id,
+                error=str(e),
+            )
             self._scheduled_ko_jobs.discard(match_id)
 
     async def results_job(self):
