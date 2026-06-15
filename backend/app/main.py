@@ -1,4 +1,5 @@
 import os
+import asyncio
 import structlog
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
@@ -34,6 +35,15 @@ structlog.configure(
 
 logger = structlog.get_logger()
 settings = get_settings()
+
+
+async def _initial_fetch():
+    """Run the first odds fetch in the background after startup. Exceptions
+    are swallowed so a single API hiccup never poisons app readiness."""
+    try:
+        await odds_scheduler.run_now()
+    except Exception as e:
+        logger.warning("initial odds fetch failed (non-fatal)", error=str(e))
 
 
 @asynccontextmanager
@@ -133,9 +143,14 @@ async def lifespan(app: FastAPI):
     logger.info("Starting odds scheduler")
     odds_scheduler.start()
 
-    # Run initial fetch on startup
-    logger.info("Running initial odds fetch")
-    await odds_scheduler.run_now()
+    # Kick off the initial fetch as a background task so it does NOT block
+    # FastAPI lifespan startup. Previously we `await`ed this, which meant
+    # any slow Odds-API response blocked the server from reporting ready
+    # to Railway's healthcheck — leading to deploy failures when the
+    # initial fetch took >5 minutes. The scheduler will run on its own
+    # interval anyway, so this is just to warm the cache faster.
+    logger.info("Scheduling initial odds fetch (non-blocking)")
+    asyncio.create_task(_initial_fetch())
 
     yield
 
