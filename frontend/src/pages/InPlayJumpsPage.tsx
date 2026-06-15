@@ -512,24 +512,65 @@ function MatchHeading({ m }: { m: LateSteamMove }) {
   );
 }
 
+function SharpsBadge({ label }: { label: string }) {
+  return (
+    <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[9px] font-mono font-bold uppercase tracking-wider whitespace-nowrap">
+      Sharps: {label}
+    </span>
+  );
+}
+
 function AHCell({ m }: { m: LateSteamMove }) {
   const ah = m.asian_handicap;
   if (!ah) return <span className="text-slate-600 text-xs">—</span>;
+  const lineShifted = ah.line_move != null && Math.abs(ah.line_move) >= LINE_THRESHOLD;
+  // sharp side when line shifts: line_move < 0 = sharps on home
+  const sharpSide: 'home' | 'away' | null = lineShifted
+    ? (ah.line_move! < 0 ? 'home' : 'away')
+    : null;
+  const sharpTeam = sharpSide === 'home' ? m.home_team : sharpSide === 'away' ? m.away_team : null;
+
+  // Per-row text colour. When line shifted, override red/green pp colours
+  // because they reflect the mechanical reprice across two different bets,
+  // not which side took the money. Instead colour the sharp side green
+  // and dim the other side.
+  const homeTextClass = lineShifted
+    ? (sharpSide === 'home' ? 'text-emerald-300' : 'text-slate-500')
+    : 'text-slate-400';
+  const awayTextClass = lineShifted
+    ? (sharpSide === 'away' ? 'text-emerald-300' : 'text-slate-500')
+    : 'text-slate-400';
+
   return (
     <div className="font-mono text-[11px] leading-tight">
-      <div className="text-slate-300">
-        Home {fmtLine(ah.close_line)}<span className="text-slate-500">{fmtLineMove(ah.line_move)}</span>
-      </div>
-      <div className="flex gap-2 mt-0.5">
-        <span className="text-slate-400">
+      {lineShifted ? (
+        <div className="flex items-center gap-1.5 flex-wrap mb-1">
+          <span className="text-slate-300">
+            Home {fmtLine(ah.early_line)} <span className="text-emerald-400">→</span> <span className="text-emerald-300 font-semibold">{fmtLine(ah.close_line)}</span>
+          </span>
+          {sharpTeam && <SharpsBadge label={sharpTeam} />}
+        </div>
+      ) : (
+        <div className="text-slate-300">
+          Home {fmtLine(ah.close_line)}<span className="text-slate-500">{fmtLineMove(ah.line_move)}</span>
+        </div>
+      )}
+      <div className={`flex gap-2 ${lineShifted ? '' : 'mt-0.5'} ${homeTextClass}`}>
+        <span>
+          {sharpSide === 'home' && <span className="text-emerald-400 mr-0.5">▶</span>}
           H {fmtOdds(ah.early_home_odds)} <span className="text-slate-600">→</span> {fmtOdds(ah.close_home_odds)}
-          <span className={`ml-1 ${ppColor(ah.home_pp)}`}>{fmtPP(ah.home_pp)}</span>
+          {!lineShifted && (
+            <span className={`ml-1 ${ppColor(ah.home_pp)}`}>{fmtPP(ah.home_pp)}</span>
+          )}
         </span>
       </div>
-      <div className="flex gap-2">
-        <span className="text-slate-400">
+      <div className={`flex gap-2 ${awayTextClass}`}>
+        <span>
+          {sharpSide === 'away' && <span className="text-emerald-400 mr-0.5">▶</span>}
           A {fmtOdds(ah.early_away_odds)} <span className="text-slate-600">→</span> {fmtOdds(ah.close_away_odds)}
-          <span className={`ml-1 ${ppColor(ah.away_pp)}`}>{fmtPP(ah.away_pp)}</span>
+          {!lineShifted && (
+            <span className={`ml-1 ${ppColor(ah.away_pp)}`}>{fmtPP(ah.away_pp)}</span>
+          )}
         </span>
       </div>
     </div>
@@ -539,21 +580,48 @@ function AHCell({ m }: { m: LateSteamMove }) {
 function TotalsCell({ m }: { m: LateSteamMove }) {
   const to = m.totals;
   if (!to) return <span className="text-slate-600 text-xs">—</span>;
+  const lineShifted = to.line_move != null && Math.abs(to.line_move) >= LINE_THRESHOLD;
+  const sharpSide: 'over' | 'under' | null = lineShifted
+    ? (to.line_move! > 0 ? 'over' : 'under')
+    : null;
+
+  const overTextClass = lineShifted
+    ? (sharpSide === 'over' ? 'text-emerald-300' : 'text-slate-500')
+    : 'text-slate-400';
+  const underTextClass = lineShifted
+    ? (sharpSide === 'under' ? 'text-emerald-300' : 'text-slate-500')
+    : 'text-slate-400';
+
   return (
     <div className="font-mono text-[11px] leading-tight">
-      <div className="text-slate-300">
-        Total {to.close_line}<span className="text-slate-500">{fmtLineMove(to.line_move)}</span>
-      </div>
-      <div className="flex gap-2 mt-0.5">
-        <span className="text-slate-400">
+      {lineShifted ? (
+        <div className="flex items-center gap-1.5 flex-wrap mb-1">
+          <span className="text-slate-300">
+            Total {to.early_line} <span className="text-emerald-400">→</span> <span className="text-emerald-300 font-semibold">{to.close_line}</span>
+          </span>
+          <SharpsBadge label={sharpSide === 'over' ? 'Over' : 'Under'} />
+        </div>
+      ) : (
+        <div className="text-slate-300">
+          Total {to.close_line}<span className="text-slate-500">{fmtLineMove(to.line_move)}</span>
+        </div>
+      )}
+      <div className={`flex gap-2 ${lineShifted ? '' : 'mt-0.5'} ${overTextClass}`}>
+        <span>
+          {sharpSide === 'over' && <span className="text-emerald-400 mr-0.5">▶</span>}
           O {fmtOdds(to.early_over_odds)} <span className="text-slate-600">→</span> {fmtOdds(to.close_over_odds)}
-          <span className={`ml-1 ${ppColor(to.over_pp)}`}>{fmtPP(to.over_pp)}</span>
+          {!lineShifted && (
+            <span className={`ml-1 ${ppColor(to.over_pp)}`}>{fmtPP(to.over_pp)}</span>
+          )}
         </span>
       </div>
-      <div className="flex gap-2">
-        <span className="text-slate-400">
+      <div className={`flex gap-2 ${underTextClass}`}>
+        <span>
+          {sharpSide === 'under' && <span className="text-emerald-400 mr-0.5">▶</span>}
           U {fmtOdds(to.early_under_odds)} <span className="text-slate-600">→</span> {fmtOdds(to.close_under_odds)}
-          <span className={`ml-1 ${ppColor(to.under_pp)}`}>{fmtPP(to.under_pp)}</span>
+          {!lineShifted && (
+            <span className={`ml-1 ${ppColor(to.under_pp)}`}>{fmtPP(to.under_pp)}</span>
+          )}
         </span>
       </div>
     </div>
