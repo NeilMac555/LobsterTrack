@@ -98,6 +98,37 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning("early_goal_minute migration failed (non-fatal)", error=str(e))
 
+    # Polymarket: cache the matched Polymarket event slug on Match so the
+    # fetcher doesn't have to re-run the fuzzy team-name match on every poll.
+    try:
+        with engine.begin() as conn:
+            conn.execute(text(
+                "ALTER TABLE matches "
+                "ADD COLUMN IF NOT EXISTS polymarket_event_slug VARCHAR(128)"
+            ))
+            conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_matches_pm_slug "
+                "ON matches (polymarket_event_slug)"
+            ))
+    except Exception as e:
+        logger.warning("polymarket_event_slug migration failed (non-fatal)", error=str(e))
+
+    # Polymarket snapshots table — created in full via SQLAlchemy
+    # metadata.create_all at startup, but we add the indexes idempotently
+    # here in case the table existed from an earlier schema iteration.
+    try:
+        with engine.begin() as conn:
+            conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_pm_match_time "
+                "ON polymarket_snapshots (match_id, fetched_at)"
+            ))
+            conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_pm_match_inplay "
+                "ON polymarket_snapshots (match_id, in_play)"
+            ))
+    except Exception as e:
+        logger.warning("polymarket index migration failed (non-fatal)", error=str(e))
+
     # Start the scheduler
     logger.info("Starting odds scheduler")
     odds_scheduler.start()

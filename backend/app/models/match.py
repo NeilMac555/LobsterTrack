@@ -39,6 +39,12 @@ class Match(Base):
     # reacting to obvious public information.
     early_goal_minute = Column(Integer, nullable=True, index=True)
 
+    # Polymarket event slug once we've successfully associated this
+    # match with its Polymarket counterpart (e.g. fifwc-bel-egy-2026-06-15).
+    # NULL = either not yet matched, or no Polymarket market exists for it.
+    # Lets the fetcher skip the fuzzy team-name match on subsequent polls.
+    polymarket_event_slug = Column(String(128), nullable=True, index=True)
+
     # Relationship to odds snapshots
     odds_snapshots = relationship("OddsSnapshot", back_populates="match", cascade="all, delete-orphan")
 

@@ -1917,6 +1917,83 @@ async def get_admin_users(
     }
 
 
+@router.get("/admin/polymarket-health")
+async def get_polymarket_health(
+    password: str = Query(..., description="Admin password"),
+    db: Session = Depends(get_db),
+):
+    """
+    Polymarket fetcher health: last run, what got matched, recent
+    unmatched events (so we can grow the team-alias map), latest snapshot
+    per WC match, and current row count.
+    """
+    from app.services.polymarket_fetcher import polymarket_fetcher
+    from app.models import PolymarketSnapshot
+
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid password")
+
+    # Latest snapshot per match — small subquery so we get the freshest row.
+    latest_rows = (
+        db.query(
+            PolymarketSnapshot.match_id,
+            func.max(PolymarketSnapshot.fetched_at).label("latest_at"),
+            func.count(PolymarketSnapshot.id).label("snap_count"),
+        )
+        .group_by(PolymarketSnapshot.match_id)
+        .all()
+    )
+    matches_by_id = {
+        m.id: m for m in db.query(Match).filter(
+            Match.id.in_([r.match_id for r in latest_rows])
+        ).all()
+    } if latest_rows else {}
+
+    per_match = []
+    for r in latest_rows:
+        m = matches_by_id.get(r.match_id)
+        latest_snap = (
+            db.query(PolymarketSnapshot)
+            .filter(PolymarketSnapshot.match_id == r.match_id)
+            .order_by(PolymarketSnapshot.fetched_at.desc())
+            .first()
+        )
+        per_match.append({
+            "match_id": r.match_id,
+            "home_team": m.home_team if m else None,
+            "away_team": m.away_team if m else None,
+            "commence_time": m.commence_time.isoformat() + "Z" if m else None,
+            "latest_snapshot_at": r.latest_at.isoformat() + "Z",
+            "snapshots_stored": r.snap_count,
+            "latest": latest_snap and {
+                "home_win_yes": latest_snap.home_win_yes,
+                "draw_yes": latest_snap.draw_yes,
+                "away_win_yes": latest_snap.away_win_yes,
+                "over_2_5_yes": latest_snap.over_2_5_yes,
+                "under_2_5_yes": latest_snap.under_2_5_yes,
+                "event_volume_24h": latest_snap.event_volume_24h,
+                "in_play": latest_snap.in_play,
+            },
+        })
+    # Sort: in-play first, then by KO time
+    per_match.sort(key=lambda x: (
+        not (x["latest"] and x["latest"].get("in_play")),
+        x["commence_time"] or "",
+    ))
+
+    return {
+        "last_run_at": polymarket_fetcher.last_run_at.isoformat() + "Z" if polymarket_fetcher.last_run_at else None,
+        "last_events_seen": polymarket_fetcher.last_events_seen,
+        "last_matches_matched": polymarket_fetcher.last_matches_matched,
+        "last_snapshots_stored": polymarket_fetcher.last_snapshots_stored,
+        "last_unmatched_events": polymarket_fetcher.last_unmatched_events,
+        "last_error": polymarket_fetcher.last_error,
+        "total_snapshots": db.query(func.count(PolymarketSnapshot.id)).scalar(),
+        "matches_tracked": len(per_match),
+        "per_match": per_match,
+    }
+
+
 @router.get("/admin/fetcher-health")
 async def get_fetcher_health(
     password: str = Query(..., description="Admin password"),

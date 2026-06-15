@@ -396,6 +396,15 @@ class OddsScheduler:
         except Exception as e:
             logger.error("stripe reconcile failed", error=str(e))
 
+    async def polymarket_fetch_job(self):
+        """Polymarket WC snapshot fetch — wraps the fetcher's main entry
+        so the scheduler can swallow exceptions without killing the loop."""
+        try:
+            from app.services.polymarket_fetcher import polymarket_fetcher
+            await polymarket_fetcher.fetch_and_store()
+        except Exception as e:
+            logger.error("polymarket fetch failed", error=str(e))
+
     def start(self):
         """
         Start the scheduler with smart dynamic intervals.
@@ -463,6 +472,21 @@ class OddsScheduler:
             trigger=CronTrigger(day_of_week="mon", hour=9, minute=0),
             id="football_data_refresh_weekly",
             name="Weekly football-data.co.uk refresh (Team P/L)",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
+
+        # Polymarket WC fetcher — every minute during the WC. Polymarket
+        # is free to poll (no auth, no usage cap) and live in-play prices
+        # move fast, so 1m gives us a usable per-match time series without
+        # being wasteful. Pinnacle dropped in-play matches from The Odds
+        # API feed at T+0; this fetcher is the in-play replacement.
+        self.scheduler.add_job(
+            self.polymarket_fetch_job,
+            trigger=IntervalTrigger(minutes=1),
+            id="polymarket_fetch",
+            name="Polymarket WC snapshot fetch",
             replace_existing=True,
             max_instances=1,
             coalesce=True,
