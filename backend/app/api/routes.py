@@ -2379,6 +2379,212 @@ async def get_match_spreads(match_id: str, db: Session = Depends(get_db)):
     )
 
 
+@router.get("/matches/{match_id}/polymarket")
+async def get_match_polymarket(match_id: str, db: Session = Depends(get_db)):
+    """
+    Get Polymarket snapshot history for a match — both pre-KO and in-play.
+
+    Returns the full per-fetch time series of 1X2 YES prices, O/U 2.5
+    YES prices, and 24h volume. The in_play flag on each snapshot
+    distinguishes pre-game from live points. Powers the per-match
+    Polymarket chart on the match detail page.
+    """
+    from app.models import PolymarketSnapshot
+
+    match = db.query(Match).filter(Match.id == match_id).first()
+    if not match:
+        raise HTTPException(status_code=404, detail="Match not found")
+
+    snapshots = (
+        db.query(PolymarketSnapshot)
+        .filter(PolymarketSnapshot.match_id == match_id)
+        .order_by(PolymarketSnapshot.fetched_at.asc(), PolymarketSnapshot.id.asc())
+        .all()
+    )
+
+    return {
+        "match_id": match_id,
+        "home_team": match.home_team,
+        "away_team": match.away_team,
+        "commence_time": match.commence_time.isoformat() + "Z",
+        "polymarket_event_slug": match.polymarket_event_slug,
+        "snapshots": [
+            {
+                "timestamp": s.fetched_at.isoformat() + "Z",
+                "in_play": s.in_play,
+                "home_win_yes": s.home_win_yes,
+                "draw_yes": s.draw_yes,
+                "away_win_yes": s.away_win_yes,
+                "home_win_bid": s.home_win_bid,
+                "home_win_ask": s.home_win_ask,
+                "draw_bid": s.draw_bid,
+                "draw_ask": s.draw_ask,
+                "away_win_bid": s.away_win_bid,
+                "away_win_ask": s.away_win_ask,
+                "over_2_5_yes": s.over_2_5_yes,
+                "under_2_5_yes": s.under_2_5_yes,
+                "event_volume_24h": s.event_volume_24h,
+            }
+            for s in snapshots
+        ],
+    }
+
+
+@router.get("/polymarket-jumps")
+async def get_polymarket_jumps(
+    db: Session = Depends(get_db),
+    league: Optional[str] = Query(
+        None, description="Optional sport_key filter."
+    ),
+    days: int = Query(7, ge=1, le=60, description="Look back this many days."),
+    min_delta_pp: float = Query(
+        2.0,
+        ge=0,
+        le=50,
+        description="Minimum absolute implied-prob shift in pp on any 1X2 outcome.",
+    ),
+    live: bool = Query(
+        False,
+        description="When true, returns matches currently in-play (commence_time has passed) only.",
+    ),
+    limit: int = Query(50, ge=1, le=200),
+):
+    """
+    In-play Polymarket movement per match. The Polymarket counterpart to
+    /late-steam — but where /late-steam tracks pre-KO Pinnacle Asian
+    moves (the closest we can get to a sharp signal pre-game), this
+    endpoint tracks actual IN-PLAY sharp money movement on Polymarket,
+    the highest-liquidity in-play soccer market we have access to.
+
+    Compares the KO snapshot (the first in_play=True snapshot or the
+    final pre-KO snapshot, whichever comes first) against the latest
+    in-play snapshot. Reports pp deltas on each 1X2 outcome and the O/U
+    2.5 Over price.
+    """
+    from app.models import PolymarketSnapshot
+
+    now = datetime.utcnow()
+    cutoff = now - timedelta(days=days)
+
+    matches_q = db.query(Match).filter(Match.commence_time >= cutoff)
+    if live:
+        matches_q = matches_q.filter(Match.commence_time <= now)
+    if league:
+        matches_q = matches_q.filter(Match.sport_key == league)
+    matches = matches_q.all()
+
+    def implied_delta(latest, anchor):
+        if latest is None or anchor is None:
+            return None
+        # YES prices on Polymarket ARE the implied probability (0..1 scale).
+        # We report in pp on a 0..100 scale to match the rest of the app.
+        return round((latest - anchor) * 100, 2)
+
+    matches_seen = 0
+    matches_with_snaps = 0
+    matches_with_inplay = 0
+    results = []
+
+    for match in matches:
+        matches_seen += 1
+
+        snaps = (
+            db.query(PolymarketSnapshot)
+            .filter(PolymarketSnapshot.match_id == match.id)
+            .order_by(PolymarketSnapshot.fetched_at.asc(), PolymarketSnapshot.id.asc())
+            .all()
+        )
+        if not snaps:
+            continue
+        matches_with_snaps += 1
+
+        # Anchor = first in_play snapshot, or last pre-KO snapshot as a
+        # fallback. This gives us the cleanest "what was the price as the
+        # match was going live" reference point.
+        in_play_snaps = [s for s in snaps if s.in_play]
+        if not in_play_snaps:
+            continue
+        matches_with_inplay += 1
+
+        anchor = in_play_snaps[0]
+        latest = in_play_snaps[-1]
+        # If the anchor IS the latest (only one in-play snapshot), skip —
+        # there's no movement to report yet.
+        if anchor.id == latest.id:
+            continue
+
+        d_home = implied_delta(latest.home_win_yes, anchor.home_win_yes)
+        d_draw = implied_delta(latest.draw_yes, anchor.draw_yes)
+        d_away = implied_delta(latest.away_win_yes, anchor.away_win_yes)
+        d_over = implied_delta(latest.over_2_5_yes, anchor.over_2_5_yes)
+        d_under = implied_delta(latest.under_2_5_yes, anchor.under_2_5_yes)
+
+        candidates = []
+        if d_home is not None: candidates.append(("home", d_home))
+        if d_draw is not None: candidates.append(("draw", d_draw))
+        if d_away is not None: candidates.append(("away", d_away))
+        if not candidates:
+            continue
+        biggest_side, biggest_pp = max(candidates, key=lambda kv: abs(kv[1]))
+        if abs(biggest_pp) < min_delta_pp:
+            continue
+
+        minutes_since_ko = round(
+            (latest.fetched_at - match.commence_time).total_seconds() / 60, 1
+        )
+
+        results.append({
+            "match_id": match.id,
+            "home_team": match.home_team,
+            "away_team": match.away_team,
+            "sport_key": match.sport_key,
+            "league_name": match.league_name,
+            "commence_time": match.commence_time.isoformat() + "Z",
+            "polymarket_event_slug": match.polymarket_event_slug,
+            "minutes_since_ko": minutes_since_ko,
+            "biggest_side": biggest_side,
+            "biggest_pp": biggest_pp,
+            "anchor": {
+                "home_win_yes": anchor.home_win_yes,
+                "draw_yes": anchor.draw_yes,
+                "away_win_yes": anchor.away_win_yes,
+                "over_2_5_yes": anchor.over_2_5_yes,
+                "under_2_5_yes": anchor.under_2_5_yes,
+                "fetched_at": anchor.fetched_at.isoformat() + "Z",
+            },
+            "latest": {
+                "home_win_yes": latest.home_win_yes,
+                "draw_yes": latest.draw_yes,
+                "away_win_yes": latest.away_win_yes,
+                "over_2_5_yes": latest.over_2_5_yes,
+                "under_2_5_yes": latest.under_2_5_yes,
+                "fetched_at": latest.fetched_at.isoformat() + "Z",
+            },
+            "deltas_pp": {
+                "home": d_home,
+                "draw": d_draw,
+                "away": d_away,
+                "over_2_5": d_over,
+                "under_2_5": d_under,
+            },
+            "event_volume_24h": latest.event_volume_24h,
+        })
+
+    results.sort(key=lambda r: abs(r["biggest_pp"]), reverse=True)
+
+    return {
+        "league": league,
+        "days_back": days,
+        "min_delta_pp": min_delta_pp,
+        "live": live,
+        "matches_seen": matches_seen,
+        "matches_with_snaps": matches_with_snaps,
+        "matches_with_inplay": matches_with_inplay,
+        "matches_with_jumps": len(results),
+        "jumps": results[:limit],
+    }
+
+
 @router.get("/closing-lines", response_model=ClosingLinesListResponse)
 async def get_closing_lines(
     db: Session = Depends(get_db),
