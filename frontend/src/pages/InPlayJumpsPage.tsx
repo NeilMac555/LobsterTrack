@@ -8,13 +8,6 @@ import { countryFlagImgUrl } from '../utils/countryFlags';
 
 type SortField = 'pp' | 'commence_time';
 
-const SIDE_LABEL: Record<LateSteamSide, string> = {
-  ah_home: 'AH Home',
-  ah_away: 'AH Away',
-  totals_over: 'Over',
-  totals_under: 'Under',
-};
-
 function ppColor(pp: number | null): string {
   if (pp === null) return 'text-slate-500';
   if (pp >= 1) return 'text-emerald-400';
@@ -43,6 +36,151 @@ function fmtLineMove(v: number | null | undefined): string {
   if (v === null || v === undefined || v === 0) return '';
   const sign = v > 0 ? '+' : '';
   return ` (${sign}${v})`;
+}
+
+/** A market-level read on what the sharps actually did. When the line
+ *  shifted, the direction of the line shift is the true sharp side —
+ *  the price-pp delta becomes a measurement artifact because we're
+ *  comparing two different markets (e.g. Under 2.0 vs Under 2.25 are
+ *  different bets). Pinnacle's convention is to move TOWARD the sharp
+ *  side: line UP on totals = sharps backed Over; AH line moving toward
+ *  home (more negative for home favourite, smaller for home dog) =
+ *  sharps backed home. */
+type SharpRead = {
+  market: 'AH' | 'TOT';
+  side: LateSteamSide;
+  /** Magnitude of the move, in pp. Always positive. */
+  magnitude: number;
+  /** True when the line itself shifted ≥0.25 — the strongest signal. */
+  lineShifted: boolean;
+};
+
+const LINE_THRESHOLD = 0.25;
+
+function sharpReadAH(m: LateSteamMove): SharpRead | null {
+  const ah = m.asian_handicap;
+  if (!ah) return null;
+  const lineMove = ah.line_move ?? 0;
+  if (Math.abs(lineMove) >= LINE_THRESHOLD) {
+    // Negative line move = handicap shifted toward home (e.g. -2 → -2.25
+    // OR +2 → +1.75 both = lineMove of -0.25). Positive = toward away.
+    const side: LateSteamSide = lineMove < 0 ? 'ah_home' : 'ah_away';
+    // Use the bigger absolute price-pp delta as the magnitude proxy so
+    // matches stay sortable.
+    const mag = Math.max(Math.abs(ah.home_pp ?? 0), Math.abs(ah.away_pp ?? 0));
+    return { market: 'AH', side, magnitude: mag, lineShifted: true };
+  }
+  // No line shift — pp delta sign tells the story directly.
+  const home = ah.home_pp ?? 0;
+  const away = ah.away_pp ?? 0;
+  // Positive pp = price shortened = sharps backed that side.
+  const homeStrength = home;
+  const awayStrength = away;
+  if (homeStrength >= awayStrength) {
+    if (homeStrength <= 0) return null;
+    return { market: 'AH', side: 'ah_home', magnitude: homeStrength, lineShifted: false };
+  }
+  if (awayStrength <= 0) return null;
+  return { market: 'AH', side: 'ah_away', magnitude: awayStrength, lineShifted: false };
+}
+
+function sharpReadTotals(m: LateSteamMove): SharpRead | null {
+  const to = m.totals;
+  if (!to) return null;
+  const lineMove = to.line_move ?? 0;
+  if (Math.abs(lineMove) >= LINE_THRESHOLD) {
+    // Line UP = sharps on Over. Line DOWN = sharps on Under.
+    const side: LateSteamSide = lineMove > 0 ? 'totals_over' : 'totals_under';
+    const mag = Math.max(Math.abs(to.over_pp ?? 0), Math.abs(to.under_pp ?? 0));
+    return { market: 'TOT', side, magnitude: mag, lineShifted: true };
+  }
+  const over = to.over_pp ?? 0;
+  const under = to.under_pp ?? 0;
+  if (over >= under) {
+    if (over <= 0) return null;
+    return { market: 'TOT', side: 'totals_over', magnitude: over, lineShifted: false };
+  }
+  if (under <= 0) return null;
+  return { market: 'TOT', side: 'totals_under', magnitude: under, lineShifted: false };
+}
+
+/** The strongest sharp read across both markets, line-shift aware. */
+function biggestSharpRead(m: LateSteamMove): SharpRead | null {
+  const ah = sharpReadAH(m);
+  const to = sharpReadTotals(m);
+  if (!ah && !to) return null;
+  if (!ah) return to;
+  if (!to) return ah;
+  // Line shifts always win over price-only moves regardless of magnitude.
+  if (ah.lineShifted && !to.lineShifted) return ah;
+  if (to.lineShifted && !ah.lineShifted) return to;
+  return ah.magnitude >= to.magnitude ? ah : to;
+}
+
+function sideLabelWithLine(side: LateSteamSide, m: LateSteamMove): string {
+  if (side === 'ah_home') {
+    const line = m.asian_handicap?.close_line;
+    return `${m.home_team} ${line != null ? fmtLine(line) : ''}`.trim();
+  }
+  if (side === 'ah_away') {
+    const line = m.asian_handicap?.close_line;
+    // Away line is the inverse of home's line.
+    const awayLine = line != null ? -line : null;
+    return `${m.away_team} ${awayLine != null ? fmtLine(awayLine) : ''}`.trim();
+  }
+  if (side === 'totals_over') {
+    const line = m.totals?.close_line;
+    return `Over ${line ?? ''}`.trim();
+  }
+  // totals_under
+  const line = m.totals?.close_line;
+  return `Under ${line ?? ''}`.trim();
+}
+
+/** Plain-English explanation of what the market did in the run-up to
+ *  kick-off. Tells the user which side the sharp money was on and
+ *  whether Pinnacle had to move the line to keep up. */
+function narrative(m: LateSteamMove, windowMinutes: number): string {
+  const ahRead = sharpReadAH(m);
+  const toRead = sharpReadTotals(m);
+  const parts: string[] = [];
+
+  if (ahRead) {
+    const ah = m.asian_handicap!;
+    if (ahRead.lineShifted) {
+      const team = ahRead.side === 'ah_home' ? m.home_team : m.away_team;
+      parts.push(
+        `Sharps backed ${team} on the handicap — Pinnacle shifted the line from ${fmtLine(ah.early_line)} to ${fmtLine(ah.close_line)}.`
+      );
+    } else {
+      const team = ahRead.side === 'ah_home' ? m.home_team : m.away_team;
+      const line = ah.close_line;
+      parts.push(
+        `Money came in on ${team} ${line != null ? fmtLine(line) : ''} — price shortened ${ahRead.magnitude.toFixed(1)}pp with no line change.`
+      );
+    }
+  }
+
+  if (toRead) {
+    const to = m.totals!;
+    if (toRead.lineShifted) {
+      const sideWord = toRead.side === 'totals_over' ? 'Over' : 'Under';
+      parts.push(
+        `Sharps hammered ${sideWord} — Pinnacle pushed the totals line from ${to.early_line} to ${to.close_line}.`
+      );
+    } else {
+      const sideWord = toRead.side === 'totals_over' ? 'Over' : 'Under';
+      parts.push(
+        `Money came in on ${sideWord} ${to.close_line} — price shortened ${toRead.magnitude.toFixed(1)}pp with no line change.`
+      );
+    }
+  }
+
+  if (parts.length === 0) {
+    return `Quiet market — no significant sharp action in the final ${windowMinutes} minutes before kick-off.`;
+  }
+
+  return parts.join(' ');
 }
 
 export default function InPlayJumpsPage() {
@@ -93,7 +231,16 @@ export default function InPlayJumpsPage() {
     if (!data) return [];
     const arr = [...data.moves];
     if (sortField === 'pp') {
-      arr.sort((a, b) => Math.abs(b.biggest_pp) - Math.abs(a.biggest_pp));
+      // Sort by line-shift-aware magnitude — matches with line shifts
+      // float to the top above price-only moves of equal size.
+      arr.sort((a, b) => {
+        const ra = biggestSharpRead(a);
+        const rb = biggestSharpRead(b);
+        const aShift = ra?.lineShifted ? 1 : 0;
+        const bShift = rb?.lineShifted ? 1 : 0;
+        if (aShift !== bShift) return bShift - aShift;
+        return (rb?.magnitude ?? 0) - (ra?.magnitude ?? 0);
+      });
     } else {
       arr.sort((a, b) => new Date(b.commence_time).getTime() - new Date(a.commence_time).getTime());
     }
@@ -326,14 +473,14 @@ export default function InPlayJumpsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/40">
-                {sortedMoves.map((m) => <DesktopRow key={m.match_id} m={m} upcoming={upcoming} />)}
+                {sortedMoves.map((m) => <DesktopRow key={m.match_id} m={m} upcoming={upcoming} windowMinutes={windowMinutes} />)}
               </tbody>
             </table>
           </div>
 
           {/* Mobile cards */}
           <div className="md:hidden divide-y divide-slate-700/40">
-            {sortedMoves.map((m) => <MobileCard key={m.match_id} m={m} upcoming={upcoming} />)}
+            {sortedMoves.map((m) => <MobileCard key={m.match_id} m={m} upcoming={upcoming} windowMinutes={windowMinutes} />)}
           </div>
 
           {/* Footer */}
@@ -413,42 +560,61 @@ function TotalsCell({ m }: { m: LateSteamMove }) {
   );
 }
 
-function DesktopRow({ m, upcoming }: { m: LateSteamMove; upcoming: boolean }) {
+function DesktopRow({ m, upcoming, windowMinutes }: { m: LateSteamMove; upcoming: boolean; windowMinutes: number }) {
   const ko = new Date(m.commence_time);
   const koLabel = upcoming
     ? formatKOIn(ko)
     : format(ko, 'EEE d MMM HH:mm');
+  const read = biggestSharpRead(m);
+  const story = narrative(m, windowMinutes);
   return (
-    <tr className="hover:bg-slate-700/15 transition-colors align-top">
-      <td className="px-3 py-2.5"><MatchHeading m={m} /></td>
-      <td className="px-3 py-2.5 font-mono text-[11px] text-slate-400 tabular-nums">{koLabel}</td>
-      <td className="px-3 py-2.5"><AHCell m={m} /></td>
-      <td className="px-3 py-2.5"><TotalsCell m={m} /></td>
-      <td className="px-3 py-2.5 text-right whitespace-nowrap">
-        <div className={`font-mono tabular-nums font-bold ${ppColor(m.biggest_pp)}`}>
-          {fmtPP(m.biggest_pp)}
-        </div>
-        <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mt-0.5">
-          {SIDE_LABEL[m.biggest_side]}
-        </div>
-      </td>
-    </tr>
+    <>
+      <tr className="hover:bg-slate-700/15 transition-colors align-top">
+        <td className="px-3 pt-2.5 pb-1"><MatchHeading m={m} /></td>
+        <td className="px-3 pt-2.5 pb-1 font-mono text-[11px] text-slate-400 tabular-nums">{koLabel}</td>
+        <td className="px-3 pt-2.5 pb-1"><AHCell m={m} /></td>
+        <td className="px-3 pt-2.5 pb-1"><TotalsCell m={m} /></td>
+        <td className="px-3 pt-2.5 pb-1 text-right whitespace-nowrap">
+          {read ? (
+            <>
+              <div className="font-mono tabular-nums font-bold text-emerald-400">
+                {read.magnitude.toFixed(1)}pp{read.lineShifted ? ' ⚡' : ''}
+              </div>
+              <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mt-0.5">
+                {sideLabelWithLine(read.side, m)}
+              </div>
+            </>
+          ) : (
+            <div className="text-slate-600 text-xs">—</div>
+          )}
+        </td>
+      </tr>
+      <tr className="hover:bg-slate-700/15 transition-colors">
+        <td colSpan={5} className="px-3 pb-3 pt-1 text-[11px] sm:text-xs text-slate-400 italic leading-relaxed">
+          {story}
+        </td>
+      </tr>
+    </>
   );
 }
 
-function MobileCard({ m, upcoming }: { m: LateSteamMove; upcoming: boolean }) {
+function MobileCard({ m, upcoming, windowMinutes }: { m: LateSteamMove; upcoming: boolean; windowMinutes: number }) {
   const ko = new Date(m.commence_time);
   const koLabel = upcoming ? formatKOIn(ko) : format(ko, 'EEE d MMM HH:mm');
+  const read = biggestSharpRead(m);
+  const story = narrative(m, windowMinutes);
   return (
     <Link to={`/match/${m.match_id}`} className="block p-3 hover:bg-slate-700/15 transition-colors">
       <div className="flex items-center justify-between gap-3 mb-2">
         <MatchHeading m={m} />
-        <div className={`font-mono tabular-nums font-bold text-sm whitespace-nowrap ${ppColor(m.biggest_pp)}`}>
-          {fmtPP(m.biggest_pp)}
-          <div className="text-[9px] font-mono uppercase tracking-wider text-slate-500 text-right">
-            {SIDE_LABEL[m.biggest_side]}
+        {read && (
+          <div className="font-mono tabular-nums font-bold text-sm whitespace-nowrap text-emerald-400">
+            {read.magnitude.toFixed(1)}pp{read.lineShifted ? ' ⚡' : ''}
+            <div className="text-[9px] font-mono uppercase tracking-wider text-slate-500 text-right">
+              {sideLabelWithLine(read.side, m)}
+            </div>
           </div>
-        </div>
+        )}
       </div>
       <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">{koLabel}</div>
       <div className="grid grid-cols-2 gap-3">
@@ -460,6 +626,9 @@ function MobileCard({ m, upcoming }: { m: LateSteamMove; upcoming: boolean }) {
           <div className="text-[9px] font-mono uppercase tracking-wider text-slate-500 mb-1">Totals</div>
           <TotalsCell m={m} />
         </div>
+      </div>
+      <div className="mt-3 pt-2 border-t border-slate-700/40 text-[11px] text-slate-400 italic leading-relaxed">
+        {story}
       </div>
     </Link>
   );
