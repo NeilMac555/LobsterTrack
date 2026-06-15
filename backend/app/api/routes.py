@@ -378,13 +378,11 @@ async def get_in_play_jumps(
         description="Use the first Polymarket in-play snapshot at or after T+N min as the in-play anchor.",
     ),
     max_anchor_min: int = Query(
-        10,
+        60,
         ge=5,
         le=240,
-        description="Skip matches where the Polymarket anchor is later than T+N min. Default 10 "
-                    "gives a strict T+5 to T+10 window — anchors later than that are contaminated "
-                    "by in-game state (goals, red cards, tactics) and stop being the kickoff-"
-                    "correction signal we want.",
+        description="Skip matches where the Polymarket anchor is later than T+N min — signal is "
+                    "contaminated by in-game state, not the kickoff correction we want.",
     ),
     min_delta_pp: float = Query(
         3.0,
