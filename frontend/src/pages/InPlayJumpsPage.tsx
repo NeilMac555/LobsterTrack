@@ -250,7 +250,7 @@ export default function InPlayJumpsPage() {
   return (
     <div>
       <Helmet>
-        <title>Late Pinnacle Steam — SteamWatch</title>
+        <title>In-Play Jumps — SteamWatch</title>
         <meta name="description" content="World Cup Asian Handicap and Totals moves on Pinnacle in the final 30 minutes before kick-off. Sharp money signals that move the closing line." />
         <link rel="canonical" href="https://www.steamwatch.io/in-play-jumps" />
       </Helmet>
@@ -266,7 +266,7 @@ export default function InPlayJumpsPage() {
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Late Pinnacle Steam</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">In-Play Jumps</h1>
               <span
                 className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-amber-400/50 bg-amber-500/15 text-amber-300 font-mono text-[10px] sm:text-[11px] uppercase tracking-[0.16em] font-bold animate-pulse"
                 title="This feature is in beta — signal under evaluation, sample sizes are small."

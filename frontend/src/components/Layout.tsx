@@ -113,7 +113,7 @@ export default function Layout() {
               <Link to="/drifters" className={navItemClass(isDriftersPage)}>Drifters</Link>
               <Link to="/closing-lines" className={navItemClass(isClosingLinesPage)}>Closing Lines</Link>
               <Link to="/team-pnl" className={navItemClass(isTeamPLPage)}>Team P/L</Link>
-              <Link to="/in-play-jumps" className={navItemClass(isInPlayJumpsPage)}>Late Steam</Link>
+              <Link to="/in-play-jumps" className={navItemClass(isInPlayJumpsPage)}>In-Play Jumps</Link>
 
               {/* Tools dropdown */}
               <div className="relative" ref={dropdownRef}>
@@ -556,7 +556,7 @@ export default function Layout() {
                     }`}
                   >
                     <span className="text-lg">⚡</span>
-                    <span className="font-medium">Late Steam</span>
+                    <span className="font-medium">In-Play Jumps</span>
                   </Link>
                 </div>
               </div>
