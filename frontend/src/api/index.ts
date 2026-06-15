@@ -1,4 +1,4 @@
-import type { MatchSummary, MatchDetail, LeagueSummary, Stats, BiggestMover, MatchTotals, SyndicateMove, MatchSpreads, SteamResultsData, ClosingLinesResponse, MatchClosingLinesResponse, XGDataResponse, TeamPLResponse, InPlayJumpsResponse } from '../types';
+import type { MatchSummary, MatchDetail, LeagueSummary, Stats, BiggestMover, MatchTotals, SyndicateMove, MatchSpreads, SteamResultsData, ClosingLinesResponse, MatchClosingLinesResponse, XGDataResponse, TeamPLResponse, InPlayJumpsResponse, LateSteamResponse } from '../types';
 
 const API_BASE = '/api';
 
@@ -151,6 +151,25 @@ export async function getInPlayJumps(params?: {
   if (params?.limit !== undefined) sp.set('limit', String(params.limit));
   const q = sp.toString();
   return fetchJson<InPlayJumpsResponse>(`${API_BASE}/in-play-jumps${q ? `?${q}` : ''}`);
+}
+
+export async function getLateSteam(params?: {
+  league?: string;
+  days?: number;
+  window_minutes?: number;
+  min_delta_pp?: number;
+  upcoming?: boolean;
+  limit?: number;
+}): Promise<LateSteamResponse> {
+  const sp = new URLSearchParams();
+  if (params?.league) sp.set('league', params.league);
+  if (params?.days !== undefined) sp.set('days', String(params.days));
+  if (params?.window_minutes !== undefined) sp.set('window_minutes', String(params.window_minutes));
+  if (params?.min_delta_pp !== undefined) sp.set('min_delta_pp', String(params.min_delta_pp));
+  if (params?.upcoming) sp.set('upcoming', 'true');
+  if (params?.limit !== undefined) sp.set('limit', String(params.limit));
+  const q = sp.toString();
+  return fetchJson<LateSteamResponse>(`${API_BASE}/late-steam${q ? `?${q}` : ''}`);
 }
 
 export async function getTeamPnL(params?: {

@@ -527,6 +527,219 @@ async def get_in_play_jumps(
     }
 
 
+@router.get("/late-steam")
+async def get_late_steam(
+    db: Session = Depends(get_db),
+    league: Optional[str] = Query(
+        None, description="Optional sport_key filter."
+    ),
+    days: int = Query(7, ge=1, le=60, description="Look back this many days."),
+    window_minutes: int = Query(
+        30,
+        ge=5,
+        le=180,
+        description="Late-money window. Compares snapshot at T-window vs last pre-KO snapshot.",
+    ),
+    min_delta_pp: float = Query(
+        1.5,
+        ge=0,
+        le=20,
+        description="Minimum implied-prob shift in pp on either side of either market.",
+    ),
+    upcoming: bool = Query(
+        False,
+        description="When true, returns IN-PROGRESS late moves on matches "
+                    "that haven't kicked off yet (T-window already in the past) "
+                    "instead of finished matches.",
+    ),
+    limit: int = Query(50, ge=1, le=200),
+):
+    """
+    Sharp-money signal: how Pinnacle's Asian Handicap and Totals lines
+    moved in the final `window_minutes` before kick-off. Pinnacle's
+    closing Asian line is the universally-accepted true line in soccer,
+    so anything that moves it in the last half-hour is sharp action.
+
+    For each market we report both the LINE move (e.g. AH -2.5 → -2.75,
+    Totals 3.5 → 3.25) and the PRICE move on each side (implied-prob
+    delta in pp). A line move is a stronger signal than a price-only
+    move — Pinnacle won't shift the line itself without a lot of
+    one-sided sharp money behind it.
+    """
+    now = datetime.utcnow()
+    cutoff = now - timedelta(days=days)
+
+    matches_q = db.query(Match)
+    if upcoming:
+        # Match must not have kicked off yet, AND T-window must already
+        # be in the past so we have a 'window-start' snapshot to compare.
+        matches_q = matches_q.filter(Match.commence_time > now)
+        matches_q = matches_q.filter(
+            Match.commence_time <= now + timedelta(minutes=window_minutes)
+        )
+    else:
+        matches_q = matches_q.filter(Match.commence_time >= cutoff)
+        matches_q = matches_q.filter(Match.commence_time <= now)
+    if league:
+        matches_q = matches_q.filter(Match.sport_key == league)
+    matches = matches_q.all()
+
+    def implied(o):
+        return (1.0 / o) * 100 if o and o > 0 else None
+
+    def pp_delta(closing_odds, early_odds):
+        c = implied(closing_odds)
+        e = implied(early_odds)
+        if c is None or e is None:
+            return None
+        return c - e
+
+    matches_seen = 0
+    matches_with_ah = 0
+    matches_with_totals = 0
+    results = []
+
+    for match in matches:
+        matches_seen += 1
+        window_start = match.commence_time - timedelta(minutes=window_minutes)
+
+        # Asian Handicap window snapshots
+        ah_early = (
+            db.query(SpreadsSnapshot)
+            .filter(SpreadsSnapshot.match_id == match.id)
+            .filter(SpreadsSnapshot.fetched_at >= window_start)
+            .filter(SpreadsSnapshot.fetched_at < match.commence_time)
+            .order_by(SpreadsSnapshot.fetched_at.asc(), SpreadsSnapshot.id.asc())
+            .first()
+        )
+        ah_close = (
+            db.query(SpreadsSnapshot)
+            .filter(SpreadsSnapshot.match_id == match.id)
+            .filter(SpreadsSnapshot.fetched_at < match.commence_time)
+            .order_by(SpreadsSnapshot.fetched_at.desc(), SpreadsSnapshot.id.desc())
+            .first()
+        )
+
+        # Totals window snapshots
+        to_early = (
+            db.query(TotalsSnapshot)
+            .filter(TotalsSnapshot.match_id == match.id)
+            .filter(TotalsSnapshot.fetched_at >= window_start)
+            .filter(TotalsSnapshot.fetched_at < match.commence_time)
+            .order_by(TotalsSnapshot.fetched_at.asc(), TotalsSnapshot.id.asc())
+            .first()
+        )
+        to_close = (
+            db.query(TotalsSnapshot)
+            .filter(TotalsSnapshot.match_id == match.id)
+            .filter(TotalsSnapshot.fetched_at < match.commence_time)
+            .order_by(TotalsSnapshot.fetched_at.desc(), TotalsSnapshot.id.desc())
+            .first()
+        )
+
+        ah_block = None
+        if ah_early and ah_close and ah_early.id != ah_close.id:
+            home_pp = pp_delta(ah_close.home_odds, ah_early.home_odds)
+            away_pp = pp_delta(ah_close.away_odds, ah_early.away_odds)
+            line_move = None
+            if ah_early.line is not None and ah_close.line is not None:
+                line_move = round(ah_close.line - ah_early.line, 2)
+            ah_block = {
+                "early_line": ah_early.line,
+                "early_home_odds": ah_early.home_odds,
+                "early_away_odds": ah_early.away_odds,
+                "close_line": ah_close.line,
+                "close_home_odds": ah_close.home_odds,
+                "close_away_odds": ah_close.away_odds,
+                "line_move": line_move,
+                "home_pp": round(home_pp, 2) if home_pp is not None else None,
+                "away_pp": round(away_pp, 2) if away_pp is not None else None,
+                "minutes_covered": round(
+                    (ah_close.fetched_at - ah_early.fetched_at).total_seconds() / 60, 1
+                ),
+            }
+            matches_with_ah += 1
+
+        to_block = None
+        if to_early and to_close and to_early.id != to_close.id:
+            over_pp = pp_delta(to_close.over_odds, to_early.over_odds)
+            under_pp = pp_delta(to_close.under_odds, to_early.under_odds)
+            line_move = None
+            if to_early.line is not None and to_close.line is not None:
+                line_move = round(to_close.line - to_early.line, 2)
+            to_block = {
+                "early_line": to_early.line,
+                "early_over_odds": to_early.over_odds,
+                "early_under_odds": to_early.under_odds,
+                "close_line": to_close.line,
+                "close_over_odds": to_close.over_odds,
+                "close_under_odds": to_close.under_odds,
+                "line_move": line_move,
+                "over_pp": round(over_pp, 2) if over_pp is not None else None,
+                "under_pp": round(under_pp, 2) if under_pp is not None else None,
+                "minutes_covered": round(
+                    (to_close.fetched_at - to_early.fetched_at).total_seconds() / 60, 1
+                ),
+            }
+            matches_with_totals += 1
+
+        # Biggest single-side price move across both markets — the headline number.
+        candidates = []
+        if ah_block:
+            if ah_block["home_pp"] is not None:
+                candidates.append(("ah_home", ah_block["home_pp"]))
+            if ah_block["away_pp"] is not None:
+                candidates.append(("ah_away", ah_block["away_pp"]))
+        if to_block:
+            if to_block["over_pp"] is not None:
+                candidates.append(("totals_over", to_block["over_pp"]))
+            if to_block["under_pp"] is not None:
+                candidates.append(("totals_under", to_block["under_pp"]))
+        if not candidates:
+            continue
+
+        biggest_side, biggest_pp = max(candidates, key=lambda kv: abs(kv[1]))
+        if abs(biggest_pp) < min_delta_pp:
+            continue
+
+        # Bonus flag: did either LINE itself move? Stronger signal than
+        # a price-only move because Pinnacle reshapes the line only
+        # when one side gets hammered.
+        line_moved = bool(
+            (ah_block and ah_block["line_move"] and abs(ah_block["line_move"]) >= 0.25)
+            or (to_block and to_block["line_move"] and abs(to_block["line_move"]) >= 0.25)
+        )
+
+        results.append({
+            "match_id": match.id,
+            "home_team": match.home_team,
+            "away_team": match.away_team,
+            "sport_key": match.sport_key,
+            "league_name": match.league_name,
+            "commence_time": match.commence_time.isoformat() + "Z",
+            "biggest_side": biggest_side,
+            "biggest_pp": round(biggest_pp, 2),
+            "line_moved": line_moved,
+            "asian_handicap": ah_block,
+            "totals": to_block,
+        })
+
+    results.sort(key=lambda r: abs(r["biggest_pp"]), reverse=True)
+
+    return {
+        "league": league,
+        "days_back": days,
+        "window_minutes": window_minutes,
+        "min_delta_pp": min_delta_pp,
+        "upcoming": upcoming,
+        "matches_seen": matches_seen,
+        "matches_with_ah": matches_with_ah,
+        "matches_with_totals": matches_with_totals,
+        "matches_with_steam": len(results),
+        "moves": results[:limit],
+    }
+
+
 @router.get("/biggest-movers", response_model=list[BiggestMover])
 async def get_biggest_movers(
     db: Session = Depends(get_db),

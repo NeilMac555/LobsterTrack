@@ -259,6 +259,61 @@ export interface InPlayJumpsResponse {
   jumps: InPlayJump[];
 }
 
+export interface LateSteamAHBlock {
+  early_line: number | null;
+  early_home_odds: number | null;
+  early_away_odds: number | null;
+  close_line: number | null;
+  close_home_odds: number | null;
+  close_away_odds: number | null;
+  line_move: number | null;
+  home_pp: number | null;
+  away_pp: number | null;
+  minutes_covered: number;
+}
+
+export interface LateSteamTotalsBlock {
+  early_line: number | null;
+  early_over_odds: number | null;
+  early_under_odds: number | null;
+  close_line: number | null;
+  close_over_odds: number | null;
+  close_under_odds: number | null;
+  line_move: number | null;
+  over_pp: number | null;
+  under_pp: number | null;
+  minutes_covered: number;
+}
+
+export type LateSteamSide = 'ah_home' | 'ah_away' | 'totals_over' | 'totals_under';
+
+export interface LateSteamMove {
+  match_id: string;
+  home_team: string;
+  away_team: string;
+  sport_key: string;
+  league_name: string;
+  commence_time: string;
+  biggest_side: LateSteamSide;
+  biggest_pp: number;
+  line_moved: boolean;
+  asian_handicap: LateSteamAHBlock | null;
+  totals: LateSteamTotalsBlock | null;
+}
+
+export interface LateSteamResponse {
+  league: string | null;
+  days_back: number;
+  window_minutes: number;
+  min_delta_pp: number;
+  upcoming: boolean;
+  matches_seen: number;
+  matches_with_ah: number;
+  matches_with_totals: number;
+  matches_with_steam: number;
+  moves: LateSteamMove[];
+}
+
 export interface TeamPLResponse {
   league: string;
   seasons_loaded: string[];
