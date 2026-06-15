@@ -377,8 +377,15 @@ async def get_in_play_jumps(
         le=15,
         description="Use the first Polymarket in-play snapshot at or after T+N min as the in-play anchor.",
     ),
+    max_anchor_min: int = Query(
+        60,
+        ge=5,
+        le=240,
+        description="Skip matches where the Polymarket anchor is later than T+N min — signal is "
+                    "contaminated by in-game state, not the kickoff correction we want.",
+    ),
     min_delta_pp: float = Query(
-        2.0,
+        3.0,
         ge=0,
         le=50,
         description="Minimum absolute pp gap between Pinnacle close and Polymarket in-play.",
@@ -481,6 +488,12 @@ async def get_in_play_jumps(
         )
         if not pm_anchor or pm_anchor.home_win_yes is None:
             continue
+        anchor_age_min = (pm_anchor.fetched_at - match.commence_time).total_seconds() / 60
+        if anchor_age_min > max_anchor_min:
+            # Polymarket data starts too late after KO — would conflate
+            # in-game state moves (goals, red cards, tactical shifts)
+            # with the kickoff-correction signal we want.
+            continue
         matches_with_inplay += 1
 
         # Pinnacle close implied probs (raw, with margin — same noise floor on both sides).
@@ -566,6 +579,7 @@ async def get_in_play_jumps(
         "league": league,
         "days_back": days,
         "inplay_anchor_min": inplay_anchor_min,
+        "max_anchor_min": max_anchor_min,
         "min_delta_pp": min_delta_pp,
         "live": live,
         "matches_seen": matches_seen,
