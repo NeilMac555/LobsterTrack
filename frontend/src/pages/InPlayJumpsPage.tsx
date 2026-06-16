@@ -47,6 +47,7 @@ function outcomeLabel(outcome: InPlayJumpOutcome, m: InPlayJump): string {
  *  pattern for a given match's biggest gap. */
 function narrative(m: InPlayJump): string {
   const gap = m.biggest_gap_pp;
+  const absGap = Math.abs(gap);
   const outcome = m.biggest_outcome;
   const sideLabel = outcomeLabel(outcome, m);
   const direction = gap > 0 ? 'higher' : 'lower';
@@ -67,11 +68,23 @@ function narrative(m: InPlayJump): string {
 
   const pinStr = pinPct != null ? `${(pinPct * 100).toFixed(1)}%` : '—';
   const pmStr = pmPct != null ? `${(pmPct * 100).toFixed(1)}%` : '—';
+  const baseFact = `Pinnacle closed ${sideLabel} at ${pinStr} implied. Polymarket priced it ${direction} at ${pmStr} once trading opened at T+${m.anchor_minutes_in}min — a ${absGap.toFixed(1)}pp gap.`;
 
-  if (gap > 0) {
-    return `Pinnacle closed ${sideLabel} at ${pinStr} implied. Polymarket priced it ${direction} at ${pmStr} once trading opened at T+${m.anchor_minutes_in}min — a ${Math.abs(gap).toFixed(1)}pp gap. Sharp money was on ${sideLabel}; Pinnacle's close was held off-true.`;
+  // Calibrated tiers — below 3pp the gap is within Pinnacle's margin + Polymarket's
+  // spread (combined ~2-3pp noise floor), so we don't claim a sharp footprint. Above
+  // 6pp the gap is clearly outside noise and the manipulation read is confident.
+  // Middle tier is honest about the slight lean without overclaiming.
+  if (absGap < 3) {
+    return `${baseFact} Within market noise — no clear sharp footprint.`;
   }
-  return `Pinnacle closed ${sideLabel} at ${pinStr} implied. Polymarket priced it ${direction} at ${pmStr} once trading opened at T+${m.anchor_minutes_in}min — a ${Math.abs(gap).toFixed(1)}pp gap. Sharp money was AGAINST ${sideLabel}; Pinnacle's close held it too short.`;
+  if (absGap < 6) {
+    const lean = gap > 0 ? `toward ${sideLabel}` : `against ${sideLabel}`;
+    return `${baseFact} Modest in-play lean ${lean} — not conclusive, but real.`;
+  }
+  if (gap > 0) {
+    return `${baseFact} Sharp money was on ${sideLabel}; Pinnacle's close was held off-true.`;
+  }
+  return `${baseFact} Sharp money was AGAINST ${sideLabel}; Pinnacle's close held it too short.`;
 }
 
 export default function InPlayJumpsPage() {
