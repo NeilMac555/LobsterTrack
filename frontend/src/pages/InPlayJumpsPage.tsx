@@ -78,7 +78,6 @@ export default function InPlayJumpsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const days = parseInt(searchParams.get('days') || '7', 10);
-  const minPP = parseFloat(searchParams.get('min') || '3');
   const includeEarly = searchParams.get('show_eg') === '1';
   const sortField = (searchParams.get('sort') as SortField) || 'gap';
 
@@ -94,7 +93,7 @@ export default function InPlayJumpsPage() {
     getInPlayJumps({
       league: 'soccer_fifa_world_cup',
       days,
-      min_delta_pp: minPP,
+      min_delta_pp: 0,
       include_early_goals: includeEarly,
       limit: 100,
     })
@@ -107,7 +106,7 @@ export default function InPlayJumpsPage() {
     return () => {
       alive = false;
     };
-  }, [days, minPP, includeEarly]);
+  }, [days, includeEarly]);
 
   const setParam = (key: string, value: string | null) => {
     const next = new URLSearchParams(searchParams);
@@ -213,7 +212,7 @@ export default function InPlayJumpsPage() {
       </div>
 
       {/* Filters */}
-      <div className="mb-4 sm:mb-6 grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
+      <div className="mb-4 sm:mb-6 grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
         <div>
           <label className="block text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold mb-1">
             Days back
@@ -229,20 +228,6 @@ export default function InPlayJumpsPage() {
             <option value="14">Last 14 days</option>
             <option value="30">Last 30 days</option>
           </select>
-        </div>
-        <div>
-          <label className="block text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold mb-1">
-            Min gap: <span className="text-amber-300 tabular-nums">{minPP.toFixed(1)}pp</span>
-          </label>
-          <input
-            type="range"
-            min={0}
-            max={20}
-            step={0.5}
-            value={minPP}
-            onChange={(e) => setParam('min', e.target.value === '3' ? null : e.target.value)}
-            className="w-full accent-amber-500"
-          />
         </div>
         <div>
           <label className="block text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold mb-1">
@@ -267,7 +252,7 @@ export default function InPlayJumpsPage() {
           <CoverageBox label="Matches seen" value={data.matches_seen} sub={`in last ${data.days_back}d`} />
           <CoverageBox label="With Pin close" value={data.matches_with_close} sub="closing line captured" />
           <CoverageBox label="With PM T+5" value={data.matches_with_inplay} sub="Polymarket anchor" />
-          <CoverageBox label="Above threshold" value={data.matches_with_jumps} sub={`≥ ${minPP.toFixed(1)}pp gap`} highlight />
+          <CoverageBox label="With a gap" value={data.matches_with_jumps} sub="any movement" highlight />
         </div>
       )}
 
@@ -295,7 +280,7 @@ export default function InPlayJumpsPage() {
           <p className="text-slate-500 text-sm">
             Each match needs both a Pinnacle closing line AND a Polymarket snapshot captured between T+5 and T+10 min after kickoff.
             {data && data.matches_with_inplay > 0
-              ? ` ${data.matches_with_inplay} matches have both — none cleared the ${minPP.toFixed(1)}pp threshold.`
+              ? ` ${data.matches_with_inplay} matches have both — but no gap data to display.`
               : ' First clean signal lands shortly after the next WC kickoff.'}
           </p>
         </div>
