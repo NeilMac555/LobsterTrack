@@ -2,23 +2,30 @@ import { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
-import { getLateSteam } from '../api';
-import type { LateSteamResponse, LateSteamMove, LateSteamSide } from '../types';
+import { getInPlayJumps } from '../api';
+import type { InPlayJump, InPlayJumpsResponse, InPlayJumpOutcome } from '../types';
 import { countryFlagImgUrl } from '../utils/countryFlags';
 
-type SortField = 'pp' | 'commence_time';
+type SortField = 'gap' | 'commence_time';
 
-function ppColor(pp: number | null): string {
+function gapColor(pp: number | null): string {
   if (pp === null) return 'text-slate-500';
-  if (pp >= 1) return 'text-emerald-400';
-  if (pp <= -1) return 'text-red-400';
+  if (pp >= 3) return 'text-emerald-400';
+  if (pp <= -3) return 'text-red-400';
+  if (pp >= 1) return 'text-emerald-300/80';
+  if (pp <= -1) return 'text-red-300/80';
   return 'text-slate-400';
 }
 
-function fmtPP(pp: number | null): string {
+function fmtPP(pp: number | null | undefined): string {
   if (pp === null || pp === undefined) return '—';
   const sign = pp > 0 ? '+' : '';
-  return `${sign}${pp.toFixed(2)}pp`;
+  return `${sign}${pp.toFixed(1)}pp`;
+}
+
+function fmtPct(p: number | null | undefined): string {
+  if (p === null || p === undefined) return '—';
+  return `${(p * 100).toFixed(1)}%`;
 }
 
 function fmtOdds(v: number | null | undefined): string {
@@ -26,173 +33,56 @@ function fmtOdds(v: number | null | undefined): string {
   return v.toFixed(2);
 }
 
-function fmtLine(v: number | null | undefined): string {
-  if (v === null || v === undefined) return '—';
-  const sign = v > 0 ? '+' : '';
-  return `${sign}${v}`;
+function outcomeLabel(outcome: InPlayJumpOutcome, m: InPlayJump): string {
+  switch (outcome) {
+    case 'home': return m.home_team;
+    case 'away': return m.away_team;
+    case 'draw': return 'Draw';
+    case 'over_2_5': return 'Over 2.5';
+    case 'under_2_5': return 'Under 2.5';
+  }
 }
 
-function fmtLineMove(v: number | null | undefined): string {
-  if (v === null || v === undefined || v === 0) return '';
-  const sign = v > 0 ? '+' : '';
-  return ` (${sign}${v})`;
-}
+/** Plain-English narrative explaining the manipulation→correction
+ *  pattern for a given match's biggest gap. */
+function narrative(m: InPlayJump): string {
+  const gap = m.biggest_gap_pp;
+  const outcome = m.biggest_outcome;
+  const sideLabel = outcomeLabel(outcome, m);
+  const direction = gap > 0 ? 'higher' : 'lower';
+  const pinPct = (() => {
+    if (outcome === 'home') return m.pinnacle_close.home_implied;
+    if (outcome === 'draw') return m.pinnacle_close.draw_implied;
+    if (outcome === 'away') return m.pinnacle_close.away_implied;
+    if (outcome === 'over_2_5') return m.pinnacle_close.over_implied;
+    return m.pinnacle_close.under_implied;
+  })();
+  const pmPct = (() => {
+    if (outcome === 'home') return m.polymarket_inplay.home_yes;
+    if (outcome === 'draw') return m.polymarket_inplay.draw_yes;
+    if (outcome === 'away') return m.polymarket_inplay.away_yes;
+    if (outcome === 'over_2_5') return m.polymarket_inplay.over_2_5_yes;
+    return m.polymarket_inplay.under_2_5_yes;
+  })();
 
-/** A market-level read on what the sharps actually did. When the line
- *  shifted, the direction of the line shift is the true sharp side —
- *  the price-pp delta becomes a measurement artifact because we're
- *  comparing two different markets (e.g. Under 2.0 vs Under 2.25 are
- *  different bets). Pinnacle's convention is to move TOWARD the sharp
- *  side: line UP on totals = sharps backed Over; AH line moving toward
- *  home (more negative for home favourite, smaller for home dog) =
- *  sharps backed home. */
-type SharpRead = {
-  market: 'AH' | 'TOT';
-  side: LateSteamSide;
-  /** Magnitude of the move, in pp. Always positive. */
-  magnitude: number;
-  /** True when the line itself shifted ≥0.25 — the strongest signal. */
-  lineShifted: boolean;
-};
+  const pinStr = pinPct != null ? `${(pinPct * 100).toFixed(1)}%` : '—';
+  const pmStr = pmPct != null ? `${(pmPct * 100).toFixed(1)}%` : '—';
 
-const LINE_THRESHOLD = 0.25;
-
-function sharpReadAH(m: LateSteamMove): SharpRead | null {
-  const ah = m.asian_handicap;
-  if (!ah) return null;
-  const lineMove = ah.line_move ?? 0;
-  if (Math.abs(lineMove) >= LINE_THRESHOLD) {
-    // Negative line move = handicap shifted toward home (e.g. -2 → -2.25
-    // OR +2 → +1.75 both = lineMove of -0.25). Positive = toward away.
-    const side: LateSteamSide = lineMove < 0 ? 'ah_home' : 'ah_away';
-    // Use the bigger absolute price-pp delta as the magnitude proxy so
-    // matches stay sortable.
-    const mag = Math.max(Math.abs(ah.home_pp ?? 0), Math.abs(ah.away_pp ?? 0));
-    return { market: 'AH', side, magnitude: mag, lineShifted: true };
+  if (gap > 0) {
+    return `Pinnacle closed ${sideLabel} at ${pinStr} implied. Polymarket priced it ${direction} at ${pmStr} once trading opened at T+${m.anchor_minutes_in}min — a ${Math.abs(gap).toFixed(1)}pp gap. Sharp money was on ${sideLabel}; Pinnacle's close was held off-true.`;
   }
-  // No line shift — pp delta sign tells the story directly.
-  const home = ah.home_pp ?? 0;
-  const away = ah.away_pp ?? 0;
-  // Positive pp = price shortened = sharps backed that side.
-  const homeStrength = home;
-  const awayStrength = away;
-  if (homeStrength >= awayStrength) {
-    if (homeStrength <= 0) return null;
-    return { market: 'AH', side: 'ah_home', magnitude: homeStrength, lineShifted: false };
-  }
-  if (awayStrength <= 0) return null;
-  return { market: 'AH', side: 'ah_away', magnitude: awayStrength, lineShifted: false };
-}
-
-function sharpReadTotals(m: LateSteamMove): SharpRead | null {
-  const to = m.totals;
-  if (!to) return null;
-  const lineMove = to.line_move ?? 0;
-  if (Math.abs(lineMove) >= LINE_THRESHOLD) {
-    // Line UP = sharps on Over. Line DOWN = sharps on Under.
-    const side: LateSteamSide = lineMove > 0 ? 'totals_over' : 'totals_under';
-    const mag = Math.max(Math.abs(to.over_pp ?? 0), Math.abs(to.under_pp ?? 0));
-    return { market: 'TOT', side, magnitude: mag, lineShifted: true };
-  }
-  const over = to.over_pp ?? 0;
-  const under = to.under_pp ?? 0;
-  if (over >= under) {
-    if (over <= 0) return null;
-    return { market: 'TOT', side: 'totals_over', magnitude: over, lineShifted: false };
-  }
-  if (under <= 0) return null;
-  return { market: 'TOT', side: 'totals_under', magnitude: under, lineShifted: false };
-}
-
-/** The strongest sharp read across both markets, line-shift aware. */
-function biggestSharpRead(m: LateSteamMove): SharpRead | null {
-  const ah = sharpReadAH(m);
-  const to = sharpReadTotals(m);
-  if (!ah && !to) return null;
-  if (!ah) return to;
-  if (!to) return ah;
-  // Line shifts always win over price-only moves regardless of magnitude.
-  if (ah.lineShifted && !to.lineShifted) return ah;
-  if (to.lineShifted && !ah.lineShifted) return to;
-  return ah.magnitude >= to.magnitude ? ah : to;
-}
-
-function sideLabelWithLine(side: LateSteamSide, m: LateSteamMove): string {
-  if (side === 'ah_home') {
-    const line = m.asian_handicap?.close_line;
-    return `${m.home_team} ${line != null ? fmtLine(line) : ''}`.trim();
-  }
-  if (side === 'ah_away') {
-    const line = m.asian_handicap?.close_line;
-    // Away line is the inverse of home's line.
-    const awayLine = line != null ? -line : null;
-    return `${m.away_team} ${awayLine != null ? fmtLine(awayLine) : ''}`.trim();
-  }
-  if (side === 'totals_over') {
-    const line = m.totals?.close_line;
-    return `Over ${line ?? ''}`.trim();
-  }
-  // totals_under
-  const line = m.totals?.close_line;
-  return `Under ${line ?? ''}`.trim();
-}
-
-/** Plain-English explanation of what the market did in the run-up to
- *  kick-off. Tells the user which side the sharp money was on and
- *  whether Pinnacle had to move the line to keep up. */
-function narrative(m: LateSteamMove, windowMinutes: number): string {
-  const ahRead = sharpReadAH(m);
-  const toRead = sharpReadTotals(m);
-  const parts: string[] = [];
-
-  if (ahRead) {
-    const ah = m.asian_handicap!;
-    if (ahRead.lineShifted) {
-      const team = ahRead.side === 'ah_home' ? m.home_team : m.away_team;
-      parts.push(
-        `Sharps backed ${team} on the handicap — Pinnacle shifted the line from ${fmtLine(ah.early_line)} to ${fmtLine(ah.close_line)}.`
-      );
-    } else {
-      const team = ahRead.side === 'ah_home' ? m.home_team : m.away_team;
-      const line = ah.close_line;
-      parts.push(
-        `Money came in on ${team} ${line != null ? fmtLine(line) : ''} — price shortened ${ahRead.magnitude.toFixed(1)}pp with no line change.`
-      );
-    }
-  }
-
-  if (toRead) {
-    const to = m.totals!;
-    if (toRead.lineShifted) {
-      const sideWord = toRead.side === 'totals_over' ? 'Over' : 'Under';
-      parts.push(
-        `Sharps hammered ${sideWord} — Pinnacle pushed the totals line from ${to.early_line} to ${to.close_line}.`
-      );
-    } else {
-      const sideWord = toRead.side === 'totals_over' ? 'Over' : 'Under';
-      parts.push(
-        `Money came in on ${sideWord} ${to.close_line} — price shortened ${toRead.magnitude.toFixed(1)}pp with no line change.`
-      );
-    }
-  }
-
-  if (parts.length === 0) {
-    return `Quiet market — no significant sharp action in the final ${windowMinutes} minutes before kick-off.`;
-  }
-
-  return parts.join(' ');
+  return `Pinnacle closed ${sideLabel} at ${pinStr} implied. Polymarket priced it ${direction} at ${pmStr} once trading opened at T+${m.anchor_minutes_in}min — a ${Math.abs(gap).toFixed(1)}pp gap. Sharp money was AGAINST ${sideLabel}; Pinnacle's close held it too short.`;
 }
 
 export default function InPlayJumpsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const days = parseInt(searchParams.get('days') || '7', 10);
-  const windowMinutes = parseInt(searchParams.get('window') || '30', 10);
-  const minPP = parseFloat(searchParams.get('min') || '1.5');
-  const upcoming = searchParams.get('upcoming') === '1';
-  const sortField = (searchParams.get('sort') as SortField) || 'pp';
+  const minPP = parseFloat(searchParams.get('min') || '3');
+  const includeEarly = searchParams.get('show_eg') === '1';
+  const sortField = (searchParams.get('sort') as SortField) || 'gap';
 
-  const [data, setData] = useState<LateSteamResponse | null>(null);
+  const [data, setData] = useState<InPlayJumpsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [methodologyOpen, setMethodologyOpen] = useState(false);
@@ -201,24 +91,23 @@ export default function InPlayJumpsPage() {
     let alive = true;
     setLoading(true);
     setError(null);
-    getLateSteam({
+    getInPlayJumps({
       league: 'soccer_fifa_world_cup',
       days,
-      window_minutes: windowMinutes,
       min_delta_pp: minPP,
-      upcoming,
+      include_early_goals: includeEarly,
       limit: 100,
     })
       .then((res) => {
         if (!alive) return;
         setData(res);
       })
-      .catch(() => alive && setError('Failed to load late steam moves.'))
+      .catch(() => alive && setError('Failed to load in-play jumps.'))
       .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
     };
-  }, [days, windowMinutes, minPP, upcoming]);
+  }, [days, minPP, includeEarly]);
 
   const setParam = (key: string, value: string | null) => {
     const next = new URLSearchParams(searchParams);
@@ -227,20 +116,11 @@ export default function InPlayJumpsPage() {
     setSearchParams(next);
   };
 
-  const sortedMoves = useMemo(() => {
+  const sortedJumps = useMemo(() => {
     if (!data) return [];
-    const arr = [...data.moves];
-    if (sortField === 'pp') {
-      // Sort by line-shift-aware magnitude — matches with line shifts
-      // float to the top above price-only moves of equal size.
-      arr.sort((a, b) => {
-        const ra = biggestSharpRead(a);
-        const rb = biggestSharpRead(b);
-        const aShift = ra?.lineShifted ? 1 : 0;
-        const bShift = rb?.lineShifted ? 1 : 0;
-        if (aShift !== bShift) return bShift - aShift;
-        return (rb?.magnitude ?? 0) - (ra?.magnitude ?? 0);
-      });
+    const arr = [...data.jumps];
+    if (sortField === 'gap') {
+      arr.sort((a, b) => Math.abs(b.biggest_gap_pp) - Math.abs(a.biggest_gap_pp));
     } else {
       arr.sort((a, b) => new Date(b.commence_time).getTime() - new Date(a.commence_time).getTime());
     }
@@ -251,11 +131,11 @@ export default function InPlayJumpsPage() {
     <div>
       <Helmet>
         <title>In-Play Jumps — SteamWatch</title>
-        <meta name="description" content="World Cup Asian Handicap and Totals moves on Pinnacle in the final 30 minutes before kick-off. Sharp money signals that move the closing line." />
+        <meta name="description" content="The gap between Pinnacle's closing line and Polymarket's first 5 minutes of in-play. Catches sharp-money manipulation of the close." />
         <link rel="canonical" href="https://www.steamwatch.io/in-play-jumps" />
       </Helmet>
 
-      {/* Page header */}
+      {/* Header */}
       <div className="mb-6 sm:mb-8">
         <div className="flex items-center gap-3 mb-2">
           <div className="w-1 h-8 sm:h-10 rounded-full bg-gradient-to-b from-amber-400 to-amber-600 flex-shrink-0" />
@@ -279,7 +159,7 @@ export default function InPlayJumpsPage() {
               </span>
             </div>
             <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em]">
-              World Cup &middot; Final {windowMinutes} min pre-KO &middot; Asian Handicap + Totals &middot; Pinnacle
+              World Cup &middot; Pinnacle close &rarr; Polymarket T+5 in-play
             </p>
           </div>
         </div>
@@ -305,39 +185,35 @@ export default function InPlayJumpsPage() {
         {methodologyOpen && (
           <div className="border-t border-slate-700/50 px-4 sm:px-5 py-3 sm:py-4 text-[12px] sm:text-sm text-slate-300 leading-relaxed space-y-2">
             <p>
-              Pinnacle's <strong className="text-white">Asian Handicap</strong> and <strong className="text-white">Totals</strong> closing lines are universally treated as the true line in soccer. Anything that moves them in the last half-hour before kick-off is sharp money — recreational bettors have long since locked in.
+              Sharps now manipulate Pinnacle's closing line to get better in-play fills. The closing
+              line gets pushed off the true number (retail piles in on the wrong side), then sharps
+              hammer <strong className="text-white">Polymarket</strong> in the first 5–10 minutes
+              of in-play, where the price corrects. The gap between Pinnacle's close and
+              Polymarket's first in-play price IS the signal.
             </p>
             <p>
-              For each World Cup match, we compare Pinnacle's snapshot at T-{windowMinutes} min against the final snapshot just before kick-off. We surface both <strong className="text-amber-300">price moves</strong> (implied-prob shift on either side, in pp) and <strong className="text-amber-300">line moves</strong> (e.g. AH -2.5 → -2.75, Totals 3.5 → 3.25).
+              For each WC match we compare Pinnacle's closing implied probability against
+              Polymarket's first in-play snapshot at <strong className="text-amber-300">T+5 min</strong>.
+              Both expressed in pp on a 0–100 scale. Headline = the outcome with the biggest
+              absolute gap.
             </p>
             <p>
-              A line move is the stronger signal — Pinnacle won't reshape the line itself without one side getting hammered. Matches with a line move are flagged with <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[9px] font-mono font-bold uppercase tracking-wider align-middle">LINE</span>.
+              <strong className="text-amber-300">Matches with early goals are filtered out by default.</strong>
+              The price reaction in those is to a goal, not to the manipulation→correction
+              pattern we want. Anchors later than T+10 are also filtered — by then in-game
+              state contaminates the signal.
             </p>
             <p className="text-slate-500 text-[11px]">
-              Why pre-KO not in-play? The Odds API drops matches from the pre-game feed at T+0, so genuine in-play Asian markets aren't on our current data plan. The final pre-KO window is where the sharp action lives anyway — and it's still actionable on soft books that hold their lines longer.
+              Pinnacle implied prob is raw (1/decimal odds, includes book margin). Polymarket
+              YES is the dollar-cent probability. Both are on the same 0–100 scale so the
+              gap is meaningful even without de-vig — typical noise floor is ~2pp.
             </p>
           </div>
         )}
       </div>
 
       {/* Filters */}
-      <div className="mb-4 sm:mb-6 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-        <div>
-          <label className="block text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold mb-1">
-            Window
-          </label>
-          <select
-            value={windowMinutes}
-            onChange={(e) => setParam('window', e.target.value === '30' ? null : e.target.value)}
-            className="w-full bg-slate-800/60 border border-slate-700/60 rounded-md px-2.5 py-1.5 text-xs sm:text-sm text-white font-mono"
-          >
-            <option value="10">Last 10 min</option>
-            <option value="15">Last 15 min</option>
-            <option value="30">Last 30 min</option>
-            <option value="60">Last 60 min</option>
-            <option value="120">Last 2 h</option>
-          </select>
-        </div>
+      <div className="mb-4 sm:mb-6 grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
         <div>
           <label className="block text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold mb-1">
             Days back
@@ -354,34 +230,33 @@ export default function InPlayJumpsPage() {
             <option value="30">Last 30 days</option>
           </select>
         </div>
-        <div className="col-span-2 sm:col-span-1">
+        <div>
           <label className="block text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold mb-1">
-            Min move: <span className="text-amber-300 tabular-nums">{minPP.toFixed(1)}pp</span>
+            Min gap: <span className="text-amber-300 tabular-nums">{minPP.toFixed(1)}pp</span>
           </label>
           <input
             type="range"
             min={0}
-            max={10}
-            step={0.25}
+            max={20}
+            step={0.5}
             value={minPP}
-            onChange={(e) => setParam('min', e.target.value === '1.5' ? null : e.target.value)}
+            onChange={(e) => setParam('min', e.target.value === '3' ? null : e.target.value)}
             className="w-full accent-amber-500"
           />
         </div>
         <div>
           <label className="block text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold mb-1">
-            Mode
+            Early goals
           </label>
           <button
-            onClick={() => setParam('upcoming', upcoming ? null : '1')}
+            onClick={() => setParam('show_eg', includeEarly ? null : '1')}
             className={`w-full px-3 py-1.5 rounded-md font-mono text-[11px] uppercase tracking-[0.1em] font-semibold transition-colors border ${
-              upcoming
-                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+              includeEarly
+                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
                 : 'bg-slate-800/60 text-slate-400 border-slate-700/60 hover:bg-slate-700/60 hover:text-white'
             }`}
-            title={upcoming ? 'Showing in-progress moves on matches about to kick off' : 'Showing finished matches'}
           >
-            {upcoming ? 'Live now' : 'Past'}
+            {includeEarly ? 'Showing' : 'Hidden'}
           </button>
         </div>
       </div>
@@ -389,58 +264,24 @@ export default function InPlayJumpsPage() {
       {/* Coverage strip */}
       {data && (
         <div className="mb-4 sm:mb-6 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-          <div className="bg-slate-800/80 rounded-xl border border-slate-700/60 px-3 sm:px-4 py-2.5 sm:py-3">
-            <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">Matches seen</div>
-            <div className="text-2xl sm:text-3xl font-mono font-bold tabular-nums text-white leading-none mt-1.5">{data.matches_seen}</div>
-            <div className="text-[10px] sm:text-xs text-slate-500 mt-1">{upcoming ? 'about to kick off' : `in last ${data.days_back}d`}</div>
-          </div>
-          <div className="bg-slate-800/80 rounded-xl border border-slate-700/60 px-3 sm:px-4 py-2.5 sm:py-3">
-            <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">With AH data</div>
-            <div className="text-2xl sm:text-3xl font-mono font-bold tabular-nums text-white leading-none mt-1.5">{data.matches_with_ah}</div>
-            <div className="text-[10px] sm:text-xs text-slate-500 mt-1">2+ AH snapshots in window</div>
-          </div>
-          <div className="bg-slate-800/80 rounded-xl border border-slate-700/60 px-3 sm:px-4 py-2.5 sm:py-3">
-            <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">With Totals data</div>
-            <div className="text-2xl sm:text-3xl font-mono font-bold tabular-nums text-white leading-none mt-1.5">{data.matches_with_totals}</div>
-            <div className="text-[10px] sm:text-xs text-slate-500 mt-1">2+ Totals snapshots in window</div>
-          </div>
-          <div className="bg-slate-800/80 rounded-xl border border-amber-500/30 px-3 sm:px-4 py-2.5 sm:py-3">
-            <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-amber-400/80 font-semibold">Above threshold</div>
-            <div className="text-2xl sm:text-3xl font-mono font-bold tabular-nums text-amber-300 leading-none mt-1.5">{data.matches_with_steam}</div>
-            <div className="text-[10px] sm:text-xs text-slate-500 mt-1">≥ {minPP.toFixed(1)}pp move</div>
-          </div>
+          <CoverageBox label="Matches seen" value={data.matches_seen} sub={`in last ${data.days_back}d`} />
+          <CoverageBox label="With Pin close" value={data.matches_with_close} sub="closing line captured" />
+          <CoverageBox label="With PM T+5" value={data.matches_with_inplay} sub="Polymarket anchor" />
+          <CoverageBox label="Above threshold" value={data.matches_with_jumps} sub={`≥ ${minPP.toFixed(1)}pp gap`} highlight />
         </div>
       )}
 
       {/* Sort toggle */}
       <div className="mb-3 flex items-center gap-2">
         <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">Sort:</span>
-        <button
-          onClick={() => setParam('sort', null)}
-          className={`px-2.5 py-1 rounded font-mono text-[11px] uppercase tracking-[0.1em] font-semibold transition-colors border ${
-            sortField === 'pp'
-              ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-              : 'bg-transparent text-slate-400 border-transparent hover:bg-slate-800/60'
-          }`}
-        >
-          Biggest move
-        </button>
-        <button
-          onClick={() => setParam('sort', 'commence_time')}
-          className={`px-2.5 py-1 rounded font-mono text-[11px] uppercase tracking-[0.1em] font-semibold transition-colors border ${
-            sortField === 'commence_time'
-              ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-              : 'bg-transparent text-slate-400 border-transparent hover:bg-slate-800/60'
-          }`}
-        >
-          Most recent
-        </button>
+        <SortButton active={sortField === 'gap'} onClick={() => setParam('sort', null)}>Biggest gap</SortButton>
+        <SortButton active={sortField === 'commence_time'} onClick={() => setParam('sort', 'commence_time')}>Most recent</SortButton>
       </div>
 
       {/* Body */}
       {loading && (
         <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-8 text-center">
-          <p className="text-slate-400">Loading late steam…</p>
+          <p className="text-slate-400">Loading in-play jumps…</p>
         </div>
       )}
       {error && (
@@ -448,44 +289,46 @@ export default function InPlayJumpsPage() {
           <p className="text-red-400">{error}</p>
         </div>
       )}
-      {!loading && !error && sortedMoves.length === 0 && (
+      {!loading && !error && sortedJumps.length === 0 && (
         <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-8 text-center space-y-2">
-          <p className="text-slate-300 font-semibold">No late steam yet.</p>
+          <p className="text-slate-300 font-semibold">No jumps yet.</p>
           <p className="text-slate-500 text-sm">
-            {upcoming
-              ? 'No matches kicking off within the next window. Switch to Past to see finished matches.'
-              : `Need at least 2 snapshots in the final ${windowMinutes} min for a match to qualify, and a move of ≥${minPP.toFixed(1)}pp on either side of AH or Totals. Try widening the window or lowering the threshold.`}
+            Each match needs both a Pinnacle closing line AND a Polymarket snapshot captured between T+5 and T+10 min after kickoff.
+            {data && data.matches_with_inplay > 0
+              ? ` ${data.matches_with_inplay} matches have both — none cleared the ${minPP.toFixed(1)}pp threshold.`
+              : ' First clean signal lands shortly after the next WC kickoff.'}
           </p>
         </div>
       )}
-      {!loading && !error && sortedMoves.length > 0 && (
+      {!loading && !error && sortedJumps.length > 0 && (
         <div className="bg-slate-800/80 rounded-xl border border-slate-700/60 overflow-hidden">
           {/* Desktop table */}
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-xs sm:text-sm">
               <thead className="bg-slate-900/60 border-b border-slate-700/60">
                 <tr>
-                  <th className="px-3 py-2.5 text-left text-[10px] font-mono uppercase tracking-[0.1em] font-semibold text-slate-400">Match</th>
-                  <th className="px-3 py-2.5 text-left text-[10px] font-mono uppercase tracking-[0.1em] font-semibold text-slate-400">{upcoming ? 'KO in' : 'Kicked off'}</th>
-                  <th className="px-3 py-2.5 text-left text-[10px] font-mono uppercase tracking-[0.1em] font-semibold text-slate-400">Asian Handicap</th>
-                  <th className="px-3 py-2.5 text-left text-[10px] font-mono uppercase tracking-[0.1em] font-semibold text-slate-400">Totals</th>
-                  <th className="px-3 py-2.5 text-right text-[10px] font-mono uppercase tracking-[0.1em] font-semibold text-slate-400">Biggest</th>
+                  <Th>Match</Th>
+                  <Th>Kicked off</Th>
+                  <Th align="right">Pinnacle close</Th>
+                  <Th align="right">Polymarket T+5</Th>
+                  <Th align="right">Gap</Th>
+                  <Th align="right">Biggest</Th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/40">
-                {sortedMoves.map((m) => <DesktopRow key={m.match_id} m={m} upcoming={upcoming} windowMinutes={windowMinutes} />)}
+                {sortedJumps.map((j) => <DesktopRow key={j.match_id} m={j} />)}
               </tbody>
             </table>
           </div>
 
           {/* Mobile cards */}
           <div className="md:hidden divide-y divide-slate-700/40">
-            {sortedMoves.map((m) => <MobileCard key={m.match_id} m={m} upcoming={upcoming} windowMinutes={windowMinutes} />)}
+            {sortedJumps.map((j) => <MobileCard key={j.match_id} m={j} />)}
           </div>
 
           {/* Footer */}
           <div className="px-3 sm:px-4 py-2 border-t border-slate-700/40 bg-slate-900/40 text-[10px] font-mono uppercase tracking-wider text-slate-500">
-            {sortedMoves.length} match{sortedMoves.length === 1 ? '' : 'es'} · window: final {data?.window_minutes} min pre-KO · Pinnacle
+            {sortedJumps.length} match{sortedJumps.length === 1 ? '' : 'es'} · anchor: first PM snap at T+{data?.inplay_anchor_min}…T+{data?.max_anchor_min} min · {includeEarly ? 'including' : 'excluding'} early goals
           </div>
         </div>
       )}
@@ -493,7 +336,38 @@ export default function InPlayJumpsPage() {
   );
 }
 
-function MatchHeading({ m }: { m: LateSteamMove }) {
+function CoverageBox({ label, value, sub, highlight }: { label: string; value: number; sub: string; highlight?: boolean }) {
+  return (
+    <div className={`bg-slate-800/80 rounded-xl border px-3 sm:px-4 py-2.5 sm:py-3 ${highlight ? 'border-amber-500/30' : 'border-slate-700/60'}`}>
+      <div className={`text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] font-semibold ${highlight ? 'text-amber-400/80' : 'text-slate-500'}`}>{label}</div>
+      <div className={`text-2xl sm:text-3xl font-mono font-bold tabular-nums leading-none mt-1.5 ${highlight ? 'text-amber-300' : 'text-white'}`}>{value}</div>
+      <div className="text-[10px] sm:text-xs text-slate-500 mt-1">{sub}</div>
+    </div>
+  );
+}
+
+function SortButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-2.5 py-1 rounded font-mono text-[11px] uppercase tracking-[0.1em] font-semibold transition-colors border ${
+        active
+          ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+          : 'bg-transparent text-slate-400 border-transparent hover:bg-slate-800/60'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Th({ children, align = 'left' }: { children: React.ReactNode; align?: 'left' | 'right' }) {
+  return (
+    <th className={`px-3 py-2.5 text-${align} text-[10px] font-mono uppercase tracking-[0.1em] font-semibold text-slate-400`}>{children}</th>
+  );
+}
+
+function MatchHeading({ m }: { m: InPlayJump }) {
   const hf = countryFlagImgUrl(m.home_team, 20);
   const af = countryFlagImgUrl(m.away_team, 20);
   return (
@@ -503,210 +377,116 @@ function MatchHeading({ m }: { m: LateSteamMove }) {
       <span className="text-slate-500 font-normal text-[11px]">v</span>
       {af && <img src={af} alt="" className="h-3.5 w-auto rounded-sm" loading="lazy" />}
       <span>{m.away_team}</span>
-      {m.line_moved && (
-        <span className="ml-2 px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[9px] font-mono font-bold uppercase tracking-wider">
-          line
+      {m.early_goal_minute !== null && (
+        <span className="ml-2 px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[9px] font-mono font-bold uppercase tracking-wider">
+          ⚠ early goal
         </span>
       )}
     </Link>
   );
 }
 
-function SharpsBadge({ label }: { label: string }) {
+function PinnacleColumn({ m }: { m: InPlayJump }) {
+  const c = m.pinnacle_close;
   return (
-    <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[9px] font-mono font-bold uppercase tracking-wider whitespace-nowrap">
-      Sharps: {label}
-    </span>
-  );
-}
-
-function AHCell({ m }: { m: LateSteamMove }) {
-  const ah = m.asian_handicap;
-  if (!ah) return <span className="text-slate-600 text-xs">—</span>;
-  const lineShifted = ah.line_move != null && Math.abs(ah.line_move) >= LINE_THRESHOLD;
-  // sharp side when line shifts: line_move < 0 = sharps on home
-  const sharpSide: 'home' | 'away' | null = lineShifted
-    ? (ah.line_move! < 0 ? 'home' : 'away')
-    : null;
-  const sharpTeam = sharpSide === 'home' ? m.home_team : sharpSide === 'away' ? m.away_team : null;
-
-  // Per-row text colour. When line shifted, override red/green pp colours
-  // because they reflect the mechanical reprice across two different bets,
-  // not which side took the money. Instead colour the sharp side green
-  // and dim the other side.
-  const homeTextClass = lineShifted
-    ? (sharpSide === 'home' ? 'text-emerald-300' : 'text-slate-500')
-    : 'text-slate-400';
-  const awayTextClass = lineShifted
-    ? (sharpSide === 'away' ? 'text-emerald-300' : 'text-slate-500')
-    : 'text-slate-400';
-
-  return (
-    <div className="font-mono text-[11px] leading-tight">
-      {lineShifted ? (
-        <div className="flex items-center gap-1.5 flex-wrap mb-1">
-          <span className="text-slate-300">
-            Home {fmtLine(ah.early_line)} <span className="text-emerald-400">→</span> <span className="text-emerald-300 font-semibold">{fmtLine(ah.close_line)}</span>
-          </span>
-          {sharpTeam && <SharpsBadge label={sharpTeam} />}
-        </div>
-      ) : (
-        <div className="text-slate-300">
-          Home {fmtLine(ah.close_line)}<span className="text-slate-500">{fmtLineMove(ah.line_move)}</span>
-        </div>
+    <div className="font-mono text-[11px] leading-tight text-slate-400 text-right tabular-nums">
+      <div>H {fmtPct(c.home_implied)} <span className="text-slate-600">({fmtOdds(c.home_odds)})</span></div>
+      <div>D {fmtPct(c.draw_implied)} <span className="text-slate-600">({fmtOdds(c.draw_odds)})</span></div>
+      <div>A {fmtPct(c.away_implied)} <span className="text-slate-600">({fmtOdds(c.away_odds)})</span></div>
+      {c.over_implied !== null && (
+        <div className="text-slate-500 mt-1">O2.5 {fmtPct(c.over_implied)} / U {fmtPct(c.under_implied)}</div>
       )}
-      <div className={`flex gap-2 ${lineShifted ? '' : 'mt-0.5'} ${homeTextClass}`}>
-        <span>
-          {sharpSide === 'home' && <span className="text-emerald-400 mr-0.5">▶</span>}
-          H {fmtOdds(ah.early_home_odds)} <span className="text-slate-600">→</span> {fmtOdds(ah.close_home_odds)}
-          {!lineShifted && (
-            <span className={`ml-1 ${ppColor(ah.home_pp)}`}>{fmtPP(ah.home_pp)}</span>
-          )}
-        </span>
-      </div>
-      <div className={`flex gap-2 ${awayTextClass}`}>
-        <span>
-          {sharpSide === 'away' && <span className="text-emerald-400 mr-0.5">▶</span>}
-          A {fmtOdds(ah.early_away_odds)} <span className="text-slate-600">→</span> {fmtOdds(ah.close_away_odds)}
-          {!lineShifted && (
-            <span className={`ml-1 ${ppColor(ah.away_pp)}`}>{fmtPP(ah.away_pp)}</span>
-          )}
-        </span>
-      </div>
     </div>
   );
 }
 
-function TotalsCell({ m }: { m: LateSteamMove }) {
-  const to = m.totals;
-  if (!to) return <span className="text-slate-600 text-xs">—</span>;
-  const lineShifted = to.line_move != null && Math.abs(to.line_move) >= LINE_THRESHOLD;
-  const sharpSide: 'over' | 'under' | null = lineShifted
-    ? (to.line_move! > 0 ? 'over' : 'under')
-    : null;
-
-  const overTextClass = lineShifted
-    ? (sharpSide === 'over' ? 'text-emerald-300' : 'text-slate-500')
-    : 'text-slate-400';
-  const underTextClass = lineShifted
-    ? (sharpSide === 'under' ? 'text-emerald-300' : 'text-slate-500')
-    : 'text-slate-400';
-
+function PolymarketColumn({ m }: { m: InPlayJump }) {
+  const p = m.polymarket_inplay;
   return (
-    <div className="font-mono text-[11px] leading-tight">
-      {lineShifted ? (
-        <div className="flex items-center gap-1.5 flex-wrap mb-1">
-          <span className="text-slate-300">
-            Total {to.early_line} <span className="text-emerald-400">→</span> <span className="text-emerald-300 font-semibold">{to.close_line}</span>
-          </span>
-          <SharpsBadge label={sharpSide === 'over' ? 'Over' : 'Under'} />
-        </div>
-      ) : (
-        <div className="text-slate-300">
-          Total {to.close_line}<span className="text-slate-500">{fmtLineMove(to.line_move)}</span>
-        </div>
+    <div className="font-mono text-[11px] leading-tight text-slate-400 text-right tabular-nums">
+      <div>H {fmtPct(p.home_yes)}</div>
+      <div>D {fmtPct(p.draw_yes)}</div>
+      <div>A {fmtPct(p.away_yes)}</div>
+      {p.over_2_5_yes !== null && (
+        <div className="text-slate-500 mt-1">O2.5 {fmtPct(p.over_2_5_yes)} / U {fmtPct(p.under_2_5_yes)}</div>
       )}
-      <div className={`flex gap-2 ${lineShifted ? '' : 'mt-0.5'} ${overTextClass}`}>
-        <span>
-          {sharpSide === 'over' && <span className="text-emerald-400 mr-0.5">▶</span>}
-          O {fmtOdds(to.early_over_odds)} <span className="text-slate-600">→</span> {fmtOdds(to.close_over_odds)}
-          {!lineShifted && (
-            <span className={`ml-1 ${ppColor(to.over_pp)}`}>{fmtPP(to.over_pp)}</span>
-          )}
-        </span>
-      </div>
-      <div className={`flex gap-2 ${underTextClass}`}>
-        <span>
-          {sharpSide === 'under' && <span className="text-emerald-400 mr-0.5">▶</span>}
-          U {fmtOdds(to.early_under_odds)} <span className="text-slate-600">→</span> {fmtOdds(to.close_under_odds)}
-          {!lineShifted && (
-            <span className={`ml-1 ${ppColor(to.under_pp)}`}>{fmtPP(to.under_pp)}</span>
-          )}
-        </span>
-      </div>
     </div>
   );
 }
 
-function DesktopRow({ m, upcoming, windowMinutes }: { m: LateSteamMove; upcoming: boolean; windowMinutes: number }) {
+function GapColumn({ m }: { m: InPlayJump }) {
+  const g = m.gaps_pp;
+  return (
+    <div className="font-mono text-[11px] leading-tight text-right tabular-nums">
+      <div className={gapColor(g.home)}>{fmtPP(g.home)}</div>
+      <div className={gapColor(g.draw)}>{fmtPP(g.draw)}</div>
+      <div className={gapColor(g.away)}>{fmtPP(g.away)}</div>
+      {g.over_2_5 !== null && (
+        <div className={`${gapColor(g.over_2_5)} mt-1`}>{fmtPP(g.over_2_5)} / <span className={gapColor(g.under_2_5)}>{fmtPP(g.under_2_5)}</span></div>
+      )}
+    </div>
+  );
+}
+
+function DesktopRow({ m }: { m: InPlayJump }) {
   const ko = new Date(m.commence_time);
-  const koLabel = upcoming
-    ? formatKOIn(ko)
-    : format(ko, 'EEE d MMM HH:mm');
-  const read = biggestSharpRead(m);
-  const story = narrative(m, windowMinutes);
   return (
     <>
       <tr className="hover:bg-slate-700/15 transition-colors align-top">
         <td className="px-3 pt-2.5 pb-1"><MatchHeading m={m} /></td>
-        <td className="px-3 pt-2.5 pb-1 font-mono text-[11px] text-slate-400 tabular-nums">{koLabel}</td>
-        <td className="px-3 pt-2.5 pb-1"><AHCell m={m} /></td>
-        <td className="px-3 pt-2.5 pb-1"><TotalsCell m={m} /></td>
+        <td className="px-3 pt-2.5 pb-1 font-mono text-[11px] text-slate-400 tabular-nums">{format(ko, 'EEE d MMM HH:mm')}</td>
+        <td className="px-3 pt-2.5 pb-1"><PinnacleColumn m={m} /></td>
+        <td className="px-3 pt-2.5 pb-1"><PolymarketColumn m={m} /></td>
+        <td className="px-3 pt-2.5 pb-1"><GapColumn m={m} /></td>
         <td className="px-3 pt-2.5 pb-1 text-right whitespace-nowrap">
-          {read ? (
-            <>
-              <div className="font-mono tabular-nums font-bold text-emerald-400">
-                {read.magnitude.toFixed(1)}pp{read.lineShifted ? ' ⚡' : ''}
-              </div>
-              <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mt-0.5">
-                {sideLabelWithLine(read.side, m)}
-              </div>
-            </>
-          ) : (
-            <div className="text-slate-600 text-xs">—</div>
-          )}
+          <div className={`font-mono tabular-nums font-bold ${gapColor(m.biggest_gap_pp)}`}>
+            {fmtPP(m.biggest_gap_pp)}
+          </div>
+          <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mt-0.5">
+            {outcomeLabel(m.biggest_outcome, m)}
+          </div>
         </td>
       </tr>
       <tr className="hover:bg-slate-700/15 transition-colors">
-        <td colSpan={5} className="px-3 pb-3 pt-1 text-[11px] sm:text-xs text-slate-400 italic leading-relaxed">
-          {story}
+        <td colSpan={6} className="px-3 pb-3 pt-1 text-[11px] sm:text-xs text-slate-400 italic leading-relaxed">
+          {narrative(m)}
         </td>
       </tr>
     </>
   );
 }
 
-function MobileCard({ m, upcoming, windowMinutes }: { m: LateSteamMove; upcoming: boolean; windowMinutes: number }) {
+function MobileCard({ m }: { m: InPlayJump }) {
   const ko = new Date(m.commence_time);
-  const koLabel = upcoming ? formatKOIn(ko) : format(ko, 'EEE d MMM HH:mm');
-  const read = biggestSharpRead(m);
-  const story = narrative(m, windowMinutes);
   return (
     <Link to={`/match/${m.match_id}`} className="block p-3 hover:bg-slate-700/15 transition-colors">
       <div className="flex items-center justify-between gap-3 mb-2">
         <MatchHeading m={m} />
-        {read && (
-          <div className="font-mono tabular-nums font-bold text-sm whitespace-nowrap text-emerald-400">
-            {read.magnitude.toFixed(1)}pp{read.lineShifted ? ' ⚡' : ''}
-            <div className="text-[9px] font-mono uppercase tracking-wider text-slate-500 text-right">
-              {sideLabelWithLine(read.side, m)}
-            </div>
+        <div className={`font-mono tabular-nums font-bold text-sm whitespace-nowrap ${gapColor(m.biggest_gap_pp)}`}>
+          {fmtPP(m.biggest_gap_pp)}
+          <div className="text-[9px] font-mono uppercase tracking-wider text-slate-500 text-right">
+            {outcomeLabel(m.biggest_outcome, m)}
           </div>
-        )}
+        </div>
       </div>
-      <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">{koLabel}</div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">{format(ko, 'EEE d MMM HH:mm')}</div>
+      <div className="grid grid-cols-3 gap-2 mb-2">
         <div>
-          <div className="text-[9px] font-mono uppercase tracking-wider text-slate-500 mb-1">AH</div>
-          <AHCell m={m} />
+          <div className="text-[9px] font-mono uppercase tracking-wider text-slate-500 mb-1">Pin close</div>
+          <PinnacleColumn m={m} />
         </div>
         <div>
-          <div className="text-[9px] font-mono uppercase tracking-wider text-slate-500 mb-1">Totals</div>
-          <TotalsCell m={m} />
+          <div className="text-[9px] font-mono uppercase tracking-wider text-slate-500 mb-1">PM T+5</div>
+          <PolymarketColumn m={m} />
+        </div>
+        <div>
+          <div className="text-[9px] font-mono uppercase tracking-wider text-slate-500 mb-1">Gap</div>
+          <GapColumn m={m} />
         </div>
       </div>
       <div className="mt-3 pt-2 border-t border-slate-700/40 text-[11px] text-slate-400 italic leading-relaxed">
-        {story}
+        {narrative(m)}
       </div>
     </Link>
   );
-}
-
-function formatKOIn(ko: Date): string {
-  const mins = Math.round((ko.getTime() - Date.now()) / 60000);
-  if (mins <= 0) return 'now';
-  if (mins < 60) return `in ${mins}m`;
-  const hrs = Math.floor(mins / 60);
-  const rem = mins % 60;
-  return rem === 0 ? `in ${hrs}h` : `in ${hrs}h ${rem}m`;
 }

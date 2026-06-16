@@ -137,7 +137,8 @@ export async function getXGData(league: string, team: string): Promise<XGDataRes
 export async function getInPlayJumps(params?: {
   league?: string;
   days?: number;
-  minutes_window?: number;
+  inplay_anchor_min?: number;
+  max_anchor_min?: number;
   min_delta_pp?: number;
   include_early_goals?: boolean;
   limit?: number;
@@ -145,7 +146,8 @@ export async function getInPlayJumps(params?: {
   const sp = new URLSearchParams();
   if (params?.league) sp.set('league', params.league);
   if (params?.days !== undefined) sp.set('days', String(params.days));
-  if (params?.minutes_window !== undefined) sp.set('minutes_window', String(params.minutes_window));
+  if (params?.inplay_anchor_min !== undefined) sp.set('inplay_anchor_min', String(params.inplay_anchor_min));
+  if (params?.max_anchor_min !== undefined) sp.set('max_anchor_min', String(params.max_anchor_min));
   if (params?.min_delta_pp !== undefined) sp.set('min_delta_pp', String(params.min_delta_pp));
   if (params?.include_early_goals) sp.set('include_early_goals', 'true');
   if (params?.limit !== undefined) sp.set('limit', String(params.limit));

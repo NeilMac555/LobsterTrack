@@ -231,6 +231,40 @@ export interface TeamPLRow {
   fade: TeamPLSide;
 }
 
+export type InPlayJumpOutcome = 'home' | 'draw' | 'away' | 'over_2_5' | 'under_2_5';
+
+export interface InPlayJumpPinnacleClose {
+  home_odds: number | null;
+  draw_odds: number | null;
+  away_odds: number | null;
+  home_implied: number | null;
+  draw_implied: number | null;
+  away_implied: number | null;
+  totals_line: number | null;
+  over_odds: number | null;
+  under_odds: number | null;
+  over_implied: number | null;
+  under_implied: number | null;
+}
+
+export interface InPlayJumpPolymarket {
+  fetched_at: string;
+  home_yes: number | null;
+  draw_yes: number | null;
+  away_yes: number | null;
+  over_2_5_yes: number | null;
+  under_2_5_yes: number | null;
+  event_volume_24h: number | null;
+}
+
+export interface InPlayJumpGaps {
+  home: number | null;
+  draw: number | null;
+  away: number | null;
+  over_2_5: number | null;
+  under_2_5: number | null;
+}
+
 export interface InPlayJump {
   match_id: string;
   home_team: string;
@@ -238,23 +272,25 @@ export interface InPlayJump {
   sport_key: string;
   league_name: string;
   commence_time: string;
-  snapshot_minutes_in: number;
+  polymarket_event_slug: string | null;
+  anchor_minutes_in: number;
   early_goal_minute: number | null;
-  biggest_outcome: 'home' | 'draw' | 'away';
-  biggest_delta_pp: number;
-  closing: { home: number | null; draw: number | null; away: number | null };
-  in_play: { home: number | null; draw: number | null; away: number | null };
-  deltas_pp: { home: number | null; draw: number | null; away: number | null };
+  biggest_outcome: InPlayJumpOutcome;
+  biggest_gap_pp: number;
+  pinnacle_close: InPlayJumpPinnacleClose;
+  polymarket_inplay: InPlayJumpPolymarket;
+  gaps_pp: InPlayJumpGaps;
 }
 
 export interface InPlayJumpsResponse {
   league: string | null;
   days_back: number;
-  minutes_window: number;
+  inplay_anchor_min: number;
+  max_anchor_min: number;
   min_delta_pp: number;
   matches_seen: number;
-  matches_with_closing: number;
-  matches_with_in_play_snap: number;
+  matches_with_close: number;
+  matches_with_inplay: number;
   matches_with_jumps: number;
   jumps: InPlayJump[];
 }
