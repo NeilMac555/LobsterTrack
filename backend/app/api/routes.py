@@ -371,37 +371,58 @@ async def get_in_play_jumps(
         description="Optional sport_key filter (e.g. soccer_fifa_world_cup).",
     ),
     days: int = Query(7, ge=1, le=60, description="Look back this many days."),
-    minutes_window: int = Query(
+    inplay_anchor_min: int = Query(
         5,
         ge=1,
-        le=30,
-        description="Compare closing line vs latest snapshot within this many minutes of in-play.",
+        le=15,
+        description="Use the first Polymarket in-play snapshot at or after T+N min as the in-play anchor.",
+    ),
+    max_anchor_min: int = Query(
+        10,
+        ge=5,
+        le=240,
+        description="Skip matches where the Polymarket anchor is later than T+N min. Default 10 "
+                    "gives a strict T+5 to T+10 capture window — anchors later than that get "
+                    "contaminated by in-game state (goals, red cards) and stop being the "
+                    "kickoff-correction signal we want.",
     ),
     min_delta_pp: float = Query(
-        2.0,
+        3.0,
         ge=0,
         le=50,
-        description="Minimum implied-prob shift in pp to include the match.",
+        description="Minimum absolute pp gap between Pinnacle close and Polymarket in-play.",
     ),
     include_early_goals: bool = Query(
         False,
-        description="When false (default), drops matches where an early goal "
-                    "scored in the first 5 min — those price swings are public-"
-                    "info reactions, not sharp-money signals.",
+        description="When false (default), drops matches with an early goal — the price reaction "
+                    "is to public info, not the manipulation→correction pattern we want.",
     ),
     limit: int = Query(50, ge=1, le=200),
 ):
     """
-    For each recently-played match, compare the closing 1X2 line against
-    the latest pre-recorded snapshot from the first `minutes_window` of
-    in-play. Returns matches sorted by the biggest absolute implied-prob
-    delta (per outcome). Used to surface "big swing on going in-play"
-    signals — sharp money reacting to lineups, opening exchanges,
-    weather, etc. in the opening minutes of a match.
+    THE SteamWatch in-play signal: for each finished WC match, compares
+    Pinnacle's CLOSING line (the price sharps may have manipulated in
+    the final thin-liquidity minutes pre-KO) against Polymarket's first
+    in-play snapshot at T+`inplay_anchor_min` minutes (the corrected
+    price once real money starts flowing post-KO).
+
+    A big gap = sharps pushed Pinnacle's close off-true to set up a
+    soft-book arbitrage, then corrected on Polymarket the moment trading
+    opened. The 1X2 outcome (or Over 2.5) with the biggest absolute gap
+    is the headline.
+
+    Per outcome:
+        gap_pp = (polymarket_yes - pinnacle_implied) * 100
+    Positive = Polymarket priced higher than Pinnacle closed (sharps on
+    that side). Negative = Polymarket lower (sharps against that side).
     """
     now = datetime.utcnow()
     cutoff = now - timedelta(days=days)
 
+    # Narrow query: only matches that have already kicked off in the last N days.
+    # (Don't widen to future-scheduled matches — that piles up unnecessary
+    # per-match queries and was a suspected contributor to last night's
+    # Postgres pressure.)
     matches_q = (
         db.query(Match)
         .filter(Match.commence_time >= cutoff)
@@ -410,78 +431,99 @@ async def get_in_play_jumps(
     if league:
         matches_q = matches_q.filter(Match.sport_key == league)
     if not include_early_goals:
-        # Drop matches where the T+5 score check found a goal already.
-        # Match.early_goal_minute IS NULL means 'no early goal detected'.
         matches_q = matches_q.filter(Match.early_goal_minute.is_(None))
     matches = matches_q.all()
 
-    def implied(o):
-        return (1.0 / o) * 100 if o and o > 0 else None
+    def implied(decimal_odds):
+        return (1.0 / decimal_odds) if decimal_odds and decimal_odds > 0 else None
 
     matches_seen = 0
-    matches_with_closing = 0
-    matches_with_in_play_snap = 0
+    matches_with_close = 0
+    matches_with_inplay = 0
     results = []
 
     for match in matches:
         matches_seen += 1
 
-        # Closing 1X2 line — captured at T-1 to T-3 min by
-        # closing_line_capturer.
-        closing = (
+        close_1x2 = (
             db.query(ClosingLine)
             .filter(ClosingLine.match_id == match.id)
             .filter(ClosingLine.market_type == "1x2")
             .first()
         )
-        if not closing or closing.close_home is None:
+        if not close_1x2 or close_1x2.close_home is None:
             continue
-        matches_with_closing += 1
+        matches_with_close += 1
 
-        # Latest snapshot inside the first `minutes_window` of in-play.
-        # Explicit in_play=True filter (rather than purely time-based) so
-        # we pick up the snapshot the storage layer has stamped as
-        # 'after kickoff' — robust against any clock drift between
-        # match.commence_time and fetched_at.
-        window_end = match.commence_time + timedelta(minutes=minutes_window)
-        in_play = (
-            db.query(OddsSnapshot)
-            .filter(OddsSnapshot.match_id == match.id)
-            .filter(OddsSnapshot.in_play == True)  # noqa: E712
-            .filter(OddsSnapshot.fetched_at <= window_end)
-            .order_by(OddsSnapshot.fetched_at.desc())
+        # Totals close — only comparable to Polymarket's O/U 2.5 line if
+        # Pinnacle's close happened to be at 2.5 too. Skip totals
+        # comparison for matches where Pinnacle closed at 2.0/2.25/2.75
+        # etc. — apples-to-oranges otherwise.
+        close_totals = (
+            db.query(ClosingLine)
+            .filter(ClosingLine.match_id == match.id)
+            .filter(ClosingLine.market_type == "totals")
             .first()
         )
-        if not in_play or in_play.home_odds is None:
+        totals_comparable = bool(
+            close_totals
+            and close_totals.close_line == 2.5
+            and close_totals.close_over_price
+            and close_totals.close_under_price
+        )
+
+        # Polymarket in-play anchor: first in_play=True snapshot at or
+        # after T+inplay_anchor_min. If the first one is later than
+        # max_anchor_min, signal is contaminated (in-game state, not
+        # kickoff correction) — skip.
+        anchor_ts = match.commence_time + timedelta(minutes=inplay_anchor_min)
+        pm_anchor = (
+            db.query(PolymarketSnapshot)
+            .filter(PolymarketSnapshot.match_id == match.id)
+            .filter(PolymarketSnapshot.in_play == True)  # noqa: E712
+            .filter(PolymarketSnapshot.fetched_at >= anchor_ts)
+            .order_by(PolymarketSnapshot.fetched_at.asc(), PolymarketSnapshot.id.asc())
+            .first()
+        )
+        if not pm_anchor or pm_anchor.home_win_yes is None:
             continue
-        matches_with_in_play_snap += 1
+        anchor_age_min = (pm_anchor.fetched_at - match.commence_time).total_seconds() / 60
+        if anchor_age_min > max_anchor_min:
+            continue
+        matches_with_inplay += 1
 
-        # Implied-probability deltas (in_play minus closing).
-        # Positive = the outcome got SHORTER in-play (market shifted
-        # toward it). Negative = drifted.
-        ip_home = implied(in_play.home_odds)
-        ip_draw = implied(in_play.draw_odds)
-        ip_away = implied(in_play.away_odds)
-        cl_home = implied(closing.close_home)
-        cl_draw = implied(closing.close_draw)
-        cl_away = implied(closing.close_away)
+        # Pinnacle close implied probs (raw, with margin — same noise floor on both sides).
+        pin_home = implied(close_1x2.close_home)
+        pin_draw = implied(close_1x2.close_draw)
+        pin_away = implied(close_1x2.close_away)
+        pin_over = implied(close_totals.close_over_price) if totals_comparable else None
+        pin_under = implied(close_totals.close_under_price) if totals_comparable else None
 
-        deltas = {
-            "home": (ip_home - cl_home) if ip_home is not None and cl_home is not None else None,
-            "draw": (ip_draw - cl_draw) if ip_draw is not None and cl_draw is not None else None,
-            "away": (ip_away - cl_away) if ip_away is not None and cl_away is not None else None,
+        # Polymarket YES already IS the implied prob on 0..1 scale.
+        pm_home = pm_anchor.home_win_yes
+        pm_draw = pm_anchor.draw_yes
+        pm_away = pm_anchor.away_win_yes
+        pm_over = pm_anchor.over_2_5_yes
+        pm_under = pm_anchor.under_2_5_yes
+
+        def gap_pp(pm, pin):
+            if pm is None or pin is None:
+                return None
+            return round((pm - pin) * 100, 2)
+
+        gaps = {
+            "home": gap_pp(pm_home, pin_home),
+            "draw": gap_pp(pm_draw, pin_draw),
+            "away": gap_pp(pm_away, pin_away),
+            "over_2_5": gap_pp(pm_over, pin_over),
+            "under_2_5": gap_pp(pm_under, pin_under),
         }
-        non_null = [(k, v) for k, v in deltas.items() if v is not None]
-        if not non_null:
+        candidates = [(k, v) for k, v in gaps.items() if v is not None]
+        if not candidates:
             continue
-        biggest_outcome, biggest_delta = max(non_null, key=lambda kv: abs(kv[1]))
-
-        if abs(biggest_delta) < min_delta_pp:
+        biggest_outcome, biggest_gap = max(candidates, key=lambda kv: abs(kv[1]))
+        if abs(biggest_gap) < min_delta_pp:
             continue
-
-        snapshot_minutes_in = (
-            in_play.fetched_at - match.commence_time
-        ).total_seconds() / 60
 
         results.append({
             "match_id": match.id,
@@ -490,38 +532,47 @@ async def get_in_play_jumps(
             "sport_key": match.sport_key,
             "league_name": match.league_name,
             "commence_time": match.commence_time.isoformat() + "Z",
-            "snapshot_minutes_in": round(snapshot_minutes_in, 1),
+            "polymarket_event_slug": match.polymarket_event_slug,
+            "anchor_minutes_in": round(anchor_age_min, 1),
             "early_goal_minute": match.early_goal_minute,
             "biggest_outcome": biggest_outcome,
-            "biggest_delta_pp": round(biggest_delta, 2),
-            "closing": {
-                "home": closing.close_home,
-                "draw": closing.close_draw,
-                "away": closing.close_away,
+            "biggest_gap_pp": biggest_gap,
+            "pinnacle_close": {
+                "home_odds": close_1x2.close_home,
+                "draw_odds": close_1x2.close_draw,
+                "away_odds": close_1x2.close_away,
+                "home_implied": round(pin_home, 4) if pin_home else None,
+                "draw_implied": round(pin_draw, 4) if pin_draw else None,
+                "away_implied": round(pin_away, 4) if pin_away else None,
+                "totals_line": close_totals.close_line if close_totals else None,
+                "over_odds": close_totals.close_over_price if close_totals else None,
+                "under_odds": close_totals.close_under_price if close_totals else None,
+                "over_implied": round(pin_over, 4) if pin_over else None,
+                "under_implied": round(pin_under, 4) if pin_under else None,
             },
-            "in_play": {
-                "home": in_play.home_odds,
-                "draw": in_play.draw_odds,
-                "away": in_play.away_odds,
+            "polymarket_inplay": {
+                "fetched_at": pm_anchor.fetched_at.isoformat() + "Z",
+                "home_yes": pm_home,
+                "draw_yes": pm_draw,
+                "away_yes": pm_away,
+                "over_2_5_yes": pm_over,
+                "under_2_5_yes": pm_under,
+                "event_volume_24h": pm_anchor.event_volume_24h,
             },
-            "deltas_pp": {
-                k: (round(v, 2) if v is not None else None) for k, v in deltas.items()
-            },
+            "gaps_pp": gaps,
         })
 
-    results.sort(key=lambda r: abs(r["biggest_delta_pp"]), reverse=True)
+    results.sort(key=lambda r: abs(r["biggest_gap_pp"]), reverse=True)
 
     return {
         "league": league,
         "days_back": days,
-        "minutes_window": minutes_window,
+        "inplay_anchor_min": inplay_anchor_min,
+        "max_anchor_min": max_anchor_min,
         "min_delta_pp": min_delta_pp,
-        # Coverage diagnostics — useful when the page looks sparse, to
-        # answer "do we have closing lines for these matches?" and "are
-        # we even capturing in-play snapshots?"
         "matches_seen": matches_seen,
-        "matches_with_closing": matches_with_closing,
-        "matches_with_in_play_snap": matches_with_in_play_snap,
+        "matches_with_close": matches_with_close,
+        "matches_with_inplay": matches_with_inplay,
         "matches_with_jumps": len(results),
         "jumps": results[:limit],
     }
