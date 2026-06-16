@@ -416,6 +416,8 @@ async def get_in_play_jumps(
     Positive = Polymarket priced higher than Pinnacle closed (sharps on
     that side). Negative = Polymarket lower (sharps against that side).
     """
+    from app.models import PolymarketSnapshot
+
     now = datetime.utcnow()
     cutoff = now - timedelta(days=days)
 
