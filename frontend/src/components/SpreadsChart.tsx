@@ -25,13 +25,6 @@ const COLOR_HOME = '#34d399';  // emerald-400
 const COLOR_AWAY = '#fb923c';  // orange-400
 const COLOR_LINE_SHIFT = '#fbbf24'; // amber-400 — high contrast on the green/orange odds lines
 
-// Render an AH line cleanly: +0 with sign, otherwise show the value.
-function fmtSpreadLine(v: number | null | undefined): string {
-  if (v === null || v === undefined) return '-';
-  if (v === 0) return '0';
-  return v > 0 ? `+${v}` : `${v}`;
-}
-
 interface SpreadsChartProps {
   data: SpreadsPoint[];
   timeFrame?: TimeFrame;
