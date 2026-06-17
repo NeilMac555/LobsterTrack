@@ -184,26 +184,22 @@ export default function TotalsChart({ data, timeFrame = 'all' }: TotalsChartProp
             <ReferenceLine y={openingTotals.under_odds} stroke={COLOR_UNDER} strokeDasharray="2 4" strokeOpacity={0.25} />
           )}
 
-          {/* Line-shift markers — vertical amber dashes labelled with the new
-              line so the user immediately understands "the odds jumped here
-              because the bookmaker moved from O/U 2.5 to O/U 2.75". */}
+          {/* Line-shift markers — thin amber verticals at each line change.
+              We deliberately don't label them with the new line value any
+              more (it was overflowing the chart and stacking up when shifts
+              cluster). The LINE MOVED strip rendered above the chart by
+              LineHistoryStrip is the canonical reference for the sequence
+              of line moves; these markers just align the price movement
+              visually with the moments those shifts happened. */}
           {lineShifts.map((s, i) => (
             <ReferenceLine
               key={`shift-${i}`}
               x={s.shortTime}
               stroke={COLOR_LINE_SHIFT}
-              strokeDasharray="4 3"
-              strokeWidth={1.6}
-              strokeOpacity={0.85}
+              strokeDasharray="3 4"
+              strokeWidth={1}
+              strokeOpacity={0.35}
               ifOverflow="extendDomain"
-              label={{
-                value: `→ ${s.to.toFixed(2)}`,
-                position: 'top',
-                fill: COLOR_LINE_SHIFT,
-                fontSize: 11,
-                fontWeight: 700,
-                fontFamily: MONO_STACK,
-              }}
             />
           ))}
 

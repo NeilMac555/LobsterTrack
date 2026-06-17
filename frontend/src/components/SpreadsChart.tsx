@@ -196,18 +196,10 @@ export default function SpreadsChart({ data, timeFrame = 'all' }: SpreadsChartPr
               key={`shift-${i}`}
               x={s.shortTime}
               stroke={COLOR_LINE_SHIFT}
-              strokeDasharray="4 3"
-              strokeWidth={1.6}
-              strokeOpacity={0.85}
+              strokeDasharray="3 4"
+              strokeWidth={1}
+              strokeOpacity={0.35}
               ifOverflow="extendDomain"
-              label={{
-                value: `→ ${fmtSpreadLine(s.to)}`,
-                position: 'top',
-                fill: COLOR_LINE_SHIFT,
-                fontSize: 11,
-                fontWeight: 700,
-                fontFamily: MONO_STACK,
-              }}
             />
           ))}
 
