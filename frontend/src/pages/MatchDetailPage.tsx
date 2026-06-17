@@ -343,12 +343,12 @@ export default function MatchDetailPage() {
 
       {/* Totals (Over/Under) Section */}
       {totals && totals.totals_history.length > 0 && (
-        <TotalsSection totals={totals} timeFrame={timeFrame} />
+        <TotalsSection totals={totals} timeFrame={timeFrame} onTimeFrameChange={setTimeFrame} />
       )}
 
       {/* Asian Handicap (Spreads) Section */}
       {spreads && spreads.spreads_history.length > 0 && (
-        <SpreadsSection spreads={spreads} homeTeam={match.home_team} awayTeam={match.away_team} timeFrame={timeFrame} />
+        <SpreadsSection spreads={spreads} homeTeam={match.home_team} awayTeam={match.away_team} timeFrame={timeFrame} onTimeFrameChange={setTimeFrame} />
       )}
 
       {/* Odds History Table */}
@@ -564,9 +564,10 @@ function OddsHistoryTable({ oddsHistory, showChangesOnly, onToggleShowChanges }:
 interface TotalsSectionProps {
   totals: MatchTotals;
   timeFrame: TimeFrame;
+  onTimeFrameChange: (tf: TimeFrame) => void;
 }
 
-function TotalsSection({ totals, timeFrame }: TotalsSectionProps) {
+function TotalsSection({ totals, timeFrame, onTimeFrameChange }: TotalsSectionProps) {
   const latestTotals = totals.totals_history[totals.totals_history.length - 1];
   const openingTotals = totals.totals_history[0];
 
@@ -583,8 +584,9 @@ function TotalsSection({ totals, timeFrame }: TotalsSectionProps) {
   return (
     <div className="bg-slate-800/80 rounded-xl sm:rounded-2xl border border-slate-700/50 overflow-hidden mb-6 sm:mb-8 card-shadow">
       {/* Header */}
-      <div className="px-4 sm:px-6 py-3 sm:py-4 bg-slate-700/30 border-b border-slate-700/50">
+      <div className="px-4 sm:px-6 py-3 sm:py-4 bg-slate-700/30 border-b border-slate-700/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <h2 className="text-base sm:text-lg font-bold text-white">Total Goals (Over/Under)</h2>
+        <TimeFrameFilter value={timeFrame} onChange={onTimeFrameChange} />
       </div>
 
       <div className="p-4 sm:p-6">
@@ -671,9 +673,10 @@ interface SpreadsSectionProps {
   homeTeam: string;
   awayTeam: string;
   timeFrame: TimeFrame;
+  onTimeFrameChange: (tf: TimeFrame) => void;
 }
 
-function SpreadsSection({ spreads, homeTeam, awayTeam, timeFrame }: SpreadsSectionProps) {
+function SpreadsSection({ spreads, homeTeam, awayTeam, timeFrame, onTimeFrameChange }: SpreadsSectionProps) {
   const latestSpreads = spreads.spreads_history[spreads.spreads_history.length - 1];
   const openingSpreads = spreads.spreads_history[0];
 
@@ -696,8 +699,9 @@ function SpreadsSection({ spreads, homeTeam, awayTeam, timeFrame }: SpreadsSecti
   return (
     <div className="bg-slate-800/80 rounded-xl sm:rounded-2xl border border-slate-700/50 overflow-hidden mb-6 sm:mb-8 card-shadow">
       {/* Header */}
-      <div className="px-4 sm:px-6 py-3 sm:py-4 bg-slate-700/30 border-b border-slate-700/50">
+      <div className="px-4 sm:px-6 py-3 sm:py-4 bg-slate-700/30 border-b border-slate-700/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <h2 className="text-base sm:text-lg font-bold text-white">Asian Handicap</h2>
+        <TimeFrameFilter value={timeFrame} onChange={onTimeFrameChange} />
       </div>
 
       <div className="p-4 sm:p-6">
