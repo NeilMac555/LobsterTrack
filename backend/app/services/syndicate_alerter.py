@@ -41,7 +41,10 @@ SYNDICATE_FIRE_TIER_ODDS = 4.0
 # the moment we most want to be over-alerting rather than under.
 LEAGUE_OVERRIDES: dict[str, dict[str, float]] = {
     "soccer_fifa_world_cup": {
-        "threshold_pp": 3.5,
+        # Lowered 3.5 → 2.5 on 2026-06-20 after Germany v Ivory Coast moved
+        # 1.50 → 1.45 (+2.30pp) gradually across the 180-min window and
+        # silently missed the alert. We want WC over-alerting, not under.
+        "threshold_pp": 2.5,
         "window_minutes": 180.0,
     },
 }
