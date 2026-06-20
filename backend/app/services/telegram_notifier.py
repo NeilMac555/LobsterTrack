@@ -57,7 +57,7 @@ class TelegramNotifier:
             time_str = f"{mins}m"
 
         # Format market indicator
-        if market == '1x2':
+        if market == '1x2' or market == 'drift_1x2':
             market_label = outcome_type  # H, D, or A
         elif market == 'totals':
             market_label = outcome_type  # O or U
@@ -75,19 +75,29 @@ class TelegramNotifier:
             except (TypeError, ValueError):
                 best_line = ""
 
-        # Header tier — 🔥 prefix on the high-conviction band (odds
-        # ≥ SYNDICATE_FIRE_TIER_ODDS at alert time). Caller passes the
-        # flag; we just render it. Cohort analysis showed steam on
-        # heavy dogs carries materially more signal than the
-        # favourite/coinflip range.
-        header = "🔥🚨 LATE SHARP ACTION" if high_conviction else "🚨 LATE SHARP ACTION"
+        # Header + body shape depends on alert kind. Rapid-steam keeps
+        # the original "LATE SHARP ACTION" framing with the down-arrow
+        # (caller only sends positive prob_change). Cumulative-drift
+        # alerts use a distinct header so subscribers can spot them at
+        # a glance, an arrow that follows the actual direction of the
+        # implied-prob move (drift can be bidirectional), and "since
+        # open" instead of "in last 3h".
+        is_drift = market == 'drift_1x2'
+        if is_drift:
+            arrow = "↑" if prob_change >= 0 else "↓"
+            timeframe = "since open"
+            header = "🐢 GRADUAL DRIFT"
+        else:
+            arrow = "↓"
+            timeframe = "in last 3h"
+            header = "🔥🚨 LATE SHARP ACTION" if high_conviction else "🚨 LATE SHARP ACTION"
 
         # Build message
         message = f"""{header}
 
 {home_team} vs {away_team}
 → {outcome_name} ({market_label}) @ {current_odds:.2f}
-↓ {abs(prob_change):.1f}pp implied prob in last 3h{best_line}
+{arrow} {abs(prob_change):.1f}pp implied prob {timeframe}{best_line}
 ⏱ Kickoff: {time_str}
 
 steamwatch.io"""
