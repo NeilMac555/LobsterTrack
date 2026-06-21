@@ -2047,6 +2047,64 @@ async def get_polymarket_health(
     }
 
 
+@router.get("/admin/alert-stats")
+async def admin_alert_stats(
+    password: str = Query(..., description="Admin password"),
+    db: Session = Depends(get_db),
+):
+    """
+    Diagnostic: raw counts of what's in the syndicate_alerts table.
+    Used to confirm we're querying the full history vs a recent slice,
+    and to see the market-mix at a glance.
+    """
+    from app.models import SyndicateAlert, Match
+    from sqlalchemy import func as sa_func, distinct
+
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid password")
+
+    total = db.query(sa_func.count(SyndicateAlert.id)).scalar()
+    earliest = db.query(sa_func.min(SyndicateAlert.alerted_at)).scalar()
+    latest = db.query(sa_func.max(SyndicateAlert.alerted_at)).scalar()
+    distinct_matches = db.query(sa_func.count(distinct(SyndicateAlert.match_id))).scalar()
+
+    by_market = dict(
+        db.query(SyndicateAlert.market, sa_func.count(SyndicateAlert.id))
+        .group_by(SyndicateAlert.market)
+        .all()
+    )
+
+    # Per-month breakdown so we can see if the volume dropped suddenly.
+    by_month_raw = (
+        db.query(
+            sa_func.date_trunc('month', SyndicateAlert.alerted_at).label('month'),
+            sa_func.count(SyndicateAlert.id).label('n'),
+        )
+        .group_by('month')
+        .order_by('month')
+        .all()
+    )
+    by_month = {str(row.month.date()): row.n for row in by_month_raw}
+
+    # Per-league breakdown (joined to matches for sport_key)
+    by_league = dict(
+        db.query(Match.sport_key, sa_func.count(SyndicateAlert.id))
+        .join(SyndicateAlert, SyndicateAlert.match_id == Match.id)
+        .group_by(Match.sport_key)
+        .all()
+    )
+
+    return {
+        "total_alerts": total,
+        "distinct_matches": distinct_matches,
+        "earliest": earliest.isoformat() + "Z" if earliest else None,
+        "latest": latest.isoformat() + "Z" if latest else None,
+        "by_market": by_market,
+        "by_month": by_month,
+        "by_league": by_league,
+    }
+
+
 @router.get("/admin/alert-roi")
 async def admin_alert_roi(
     password: str = Query(..., description="Admin password"),
