@@ -2127,14 +2127,14 @@ async def admin_alert_roi(
       - By movement_percent bucket (the pp shift that fired the alert)
       - By odds-tier bucket (favourite vs coinflip vs dog)
     """
-    from app.models import SyndicateAlert, SteamMove, Match
+    from app.models import SyndicateAlert, SteamMove, Match, TotalsSnapshot, SpreadsSnapshot
     from sqlalchemy import func as sa_func
 
     if password != ADMIN_PASSWORD:
         raise HTTPException(status_code=401, detail="Invalid password")
 
-    # All 1X2 alerts joined to one score row per match (any SteamMove will
-    # do — they all carry the same home/away score per match once settled).
+    # Score subquery — any SteamMove row per match carries the home/away
+    # score once the results job has updated it.
     score_subq = (
         db.query(
             SteamMove.match_id.label("match_id"),
@@ -2146,6 +2146,8 @@ async def admin_alert_roi(
         .subquery()
     )
 
+    # Pull EVERY alert — not just 1x2. We'll settle each according to its
+    # market. drift_1x2 (yesterday's brief experiment) settles like 1x2.
     rows = (
         db.query(
             SyndicateAlert.id,
@@ -2164,7 +2166,6 @@ async def admin_alert_roi(
         )
         .join(Match, SyndicateAlert.match_id == Match.id)
         .outerjoin(score_subq, score_subq.c.match_id == SyndicateAlert.match_id)
-        .filter(SyndicateAlert.market == "1x2")
         .all()
     )
 
@@ -2173,21 +2174,79 @@ async def admin_alert_roi(
     if min_movement > 0:
         rows = [r for r in rows if abs(r.movement_percent or 0) >= min_movement]
 
-    def settle(r):
-        """Return 'won' / 'lost' / 'pending' for one 1X2 alert."""
+    # For totals/spreads alerts we need the LINE at alert time. The alerter
+    # pins comparisons to the OPENING line so the bet is on that line —
+    # look up the earliest snapshot per match for both markets in one pass.
+    match_ids = list({r.match_id for r in rows})
+    totals_opening_line: dict[str, float] = {}
+    if match_ids:
+        seen_t = set()
+        for row in (
+            db.query(TotalsSnapshot.match_id, TotalsSnapshot.line)
+            .filter(TotalsSnapshot.match_id.in_(match_ids))
+            .order_by(TotalsSnapshot.match_id, TotalsSnapshot.fetched_at.asc(), TotalsSnapshot.id.asc())
+            .all()
+        ):
+            if row.match_id not in seen_t:
+                seen_t.add(row.match_id)
+                totals_opening_line[row.match_id] = row.line
+    spreads_opening_line: dict[str, float] = {}
+    if match_ids:
+        seen_s = set()
+        for row in (
+            db.query(SpreadsSnapshot.match_id, SpreadsSnapshot.line)
+            .filter(SpreadsSnapshot.match_id.in_(match_ids))
+            .order_by(SpreadsSnapshot.match_id, SpreadsSnapshot.fetched_at.asc(), SpreadsSnapshot.id.asc())
+            .all()
+        ):
+            if row.match_id not in seen_s:
+                seen_s.add(row.match_id)
+                spreads_opening_line[row.match_id] = row.line
+
+    def settle(r) -> str:
+        """Return 'won' / 'lost' / 'push' / 'pending' for one alert."""
         if r.home_score is None or r.away_score is None:
             return "pending"
-        if r.outcome == "home":
-            return "won" if r.home_score > r.away_score else "lost"
-        if r.outcome == "away":
-            return "won" if r.away_score > r.home_score else "lost"
-        if r.outcome == "draw":
-            return "won" if r.home_score == r.away_score else "lost"
+        total = r.home_score + r.away_score
+        if r.market in ("1x2", "drift_1x2"):
+            if r.outcome == "home":
+                return "won" if r.home_score > r.away_score else "lost"
+            if r.outcome == "away":
+                return "won" if r.away_score > r.home_score else "lost"
+            if r.outcome == "draw":
+                return "won" if r.home_score == r.away_score else "lost"
+        elif r.market == "totals":
+            line = totals_opening_line.get(r.match_id)
+            if line is None:
+                return "pending"
+            if r.outcome == "over":
+                if total > line: return "won"
+                if total < line: return "lost"
+                return "push"
+            if r.outcome == "under":
+                if total < line: return "won"
+                if total > line: return "lost"
+                return "push"
+        elif r.market == "spreads":
+            line = spreads_opening_line.get(r.match_id)
+            if line is None:
+                return "pending"
+            # line stored from home perspective. home covers when
+            # (home_score + line) > away_score.
+            if r.outcome == "home":
+                margin = r.home_score + line - r.away_score
+            elif r.outcome == "away":
+                margin = r.away_score - line - r.home_score
+            else:
+                return "pending"
+            if margin > 0: return "won"
+            if margin < 0: return "lost"
+            return "push"
         return "pending"
 
     def roi_block(records):
-        """Aggregate ROI / hit-rate stats for an arbitrary subset of alerts."""
-        won = lost = pending = 0
+        """Aggregate ROI / hit-rate stats. Pushes return stake (0 P&L)."""
+        won = lost = pushed = pending = 0
         staked = 0.0
         returns = 0.0
         for r in records:
@@ -2199,17 +2258,22 @@ async def admin_alert_roi(
             if res == "won":
                 won += 1
                 returns += r.odds_at_alert
+            elif res == "push":
+                pushed += 1
+                returns += 1.0  # stake returned
             else:
                 lost += 1
-        settled = won + lost
+        decided = won + lost  # exclude pushes from hit-rate denominator
+        settled = won + lost + pushed
         roi_pct = ((returns - staked) / staked * 100) if staked > 0 else None
-        hit_rate_pct = (won / settled * 100) if settled > 0 else None
+        hit_rate_pct = (won / decided * 100) if decided > 0 else None
         return {
             "alerts_total": len(records),
             "settled": settled,
             "pending": pending,
             "won": won,
             "lost": lost,
+            "pushed": pushed,
             "hit_rate_pct": round(hit_rate_pct, 2) if hit_rate_pct is not None else None,
             "staked_units": round(staked, 2),
             "returned_units": round(returns, 2),
@@ -2257,10 +2321,21 @@ async def admin_alert_roi(
         side_groups.setdefault(r.outcome or "(unknown)", []).append(r)
     by_outcome = {k: roi_block(v) for k, v in sorted(side_groups.items())}
 
+    # By market — primary slice now we cover all four.
+    market_groups: dict[str, list] = {}
+    for r in rows:
+        market_groups.setdefault(r.market or "(unknown)", []).append(r)
+    by_market = {k: roi_block(v) for k, v in sorted(market_groups.items())}
+
     return {
         "filter": {"league": league, "min_movement_pp": min_movement},
-        "note": "Flat 1-unit stakes per alert at odds_at_alert. Settlement via SteamMove scores (Odds API /scores). Only 1X2 alerts settled — totals/spreads alerts don't store the line yet.",
+        "note": (
+            "Flat 1-unit stakes per alert at odds_at_alert. Settlement via SteamMove scores. "
+            "Totals + spreads alerts settled against the OPENING line for that match "
+            "(the alerter pins comparisons there). Pushes return the stake (0 P&L) and are excluded from hit-rate denominator."
+        ),
         "overall": overall,
+        "by_market": by_market,
         "by_league": by_league,
         "by_movement_pp": by_movement,
         "by_odds_tier": by_odds,
