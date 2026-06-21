@@ -2232,10 +2232,12 @@ async def admin_alert_roi(
             if line is None:
                 return "pending"
             # line stored from home perspective. home covers when
-            # (home_score + line) > away_score.
-            if r.outcome == "home":
+            # (home_score + line) > away_score. Handle both old format
+            # (home_spread/away_spread from a pre-refactor era) and
+            # current (home/away).
+            if r.outcome in ("home", "home_spread"):
                 margin = r.home_score + line - r.away_score
-            elif r.outcome == "away":
+            elif r.outcome in ("away", "away_spread"):
                 margin = r.away_score - line - r.home_score
             else:
                 return "pending"
