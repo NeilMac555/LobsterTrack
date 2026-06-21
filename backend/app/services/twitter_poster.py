@@ -62,6 +62,27 @@ def _client() -> tuple[Optional[tweepy.Client], list[str]]:
     return client, []
 
 
+def _safe_prefix(val: Optional[str], n: int = 4) -> str:
+    """Show the first n chars of a secret + its length — enough to identify
+    a mix-up (e.g. someone pasted the OAuth 2.0 Client ID into the Consumer
+    Key slot) without leaking the actual value."""
+    if not val:
+        return "(empty)"
+    return f"{val[:n]}…(len={len(val)})"
+
+
+def credentials_fingerprint() -> dict:
+    """Diagnostic: prefix + length of each env var, never the full value.
+    Used to spot which env var has the wrong content when auth fails."""
+    api_key, api_secret, access_token, access_token_secret, _ = _credentials()
+    return {
+        "TWITTER_API_KEY": _safe_prefix(api_key),
+        "TWITTER_API_SECRET": _safe_prefix(api_secret),
+        "TWITTER_ACCESS_TOKEN": _safe_prefix(access_token),
+        "TWITTER_ACCESS_TOKEN_SECRET": _safe_prefix(access_token_secret),
+    }
+
+
 def verify_credentials() -> TwitterStatus:
     """
     Confirm the OAuth 1.0a credentials work by asking the API who the

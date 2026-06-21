@@ -2061,12 +2061,16 @@ async def admin_twitter_verify(
     """
     if password != ADMIN_PASSWORD:
         raise HTTPException(status_code=401, detail="Invalid password")
-    from app.services.twitter_poster import verify_credentials
+    from app.services.twitter_poster import verify_credentials, credentials_fingerprint
     status = verify_credentials()
     return {
         "ok": status.ok,
         "detail": status.detail,
         "handle": status.handle,
+        # On failure, surface the first 4 chars of each env var so Neil can
+        # spot a paste mix-up (e.g. OAuth 2.0 Client ID accidentally pasted
+        # into TWITTER_API_KEY). Never the full secret.
+        "fingerprint": credentials_fingerprint(),
     }
 
 
