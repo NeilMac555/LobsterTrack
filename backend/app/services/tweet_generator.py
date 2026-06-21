@@ -223,53 +223,128 @@ def render_late_steam_tweet(
     )
 
 
+@dataclass
+class TotalsBlock:
+    open_line: Optional[float]
+    open_over: Optional[float]
+    open_under: Optional[float]
+    close_line: Optional[float]
+    close_over: Optional[float]
+    close_under: Optional[float]
+
+
+@dataclass
+class SpreadsBlock:
+    open_line: Optional[float]
+    open_home: Optional[float]
+    open_away: Optional[float]
+    close_line: Optional[float]
+    close_home: Optional[float]
+    close_away: Optional[float]
+
+
+def _fmt_line(v: Optional[float]) -> str:
+    """+0.5 / -2.5 / 3.0 style formatting for a numeric line."""
+    if v is None:
+        return "—"
+    if v > 0:
+        return f"+{v:g}"
+    return f"{v:g}"
+
+
 def render_closing_line_tweet(
     match: Match,
     current_home: float, current_draw: float, current_away: float,
     opening_home: float, opening_draw: float, opening_away: float,
+    totals: Optional[TotalsBlock] = None,
+    spreads: Optional[SpreadsBlock] = None,
 ) -> str:
     """
     🔔 Closing — KO in 15 min
 
-    🇫🇷 France 🆚 🇸🇳 Senegal
+    🇪🇸 Spain 🆚 🇸🇦 Saudi Arabia
 
-    H 1.45  D 5.05  A 7.40
-    Open: 1.50  4.21  5.34
+    1X2: 1.11 / 12 / 24
+    O/U 3.5: O 2.05 / U 1.85 (open line 4.0)
+    AH -2.5: H 1.92 / A 1.97 (open -2)
 
-    Where the money landed.
+    Money on Over and Spain to cover.
     """
     hf = flag(match.home_team)
     af = flag(match.away_team)
-    # Direction signal: who shortened the most from open vs now?
+
+    # 1X2 mover signal — used in the interpretation line at the end.
     def shift(open_o, now_o):
         if not open_o or not now_o:
             return None
         return (100.0 / now_o) - (100.0 / open_o)
-    sh, sd, sa = shift(opening_home, current_home), shift(opening_draw, current_draw), shift(opening_away, current_away)
-    shifts = [
+    sh = shift(opening_home, current_home)
+    sd = shift(opening_draw, current_draw)
+    sa = shift(opening_away, current_away)
+    name_shifts = [
         (match.home_team, sh),
         ("Draw", sd),
         (match.away_team, sa),
     ]
-    shifts = [(n, s) for n, s in shifts if s is not None]
-    movers_line = ""
-    if shifts:
-        winner = max(shifts, key=lambda kv: kv[1])
+    name_shifts = [(n, s) for n, s in name_shifts if s is not None]
+
+    lines: list[str] = [
+        "🔔 Closing — KO in 15 min",
+        "",
+        f"{hf} {match.home_team} 🆚 {af} {match.away_team}",
+        "",
+        f"1X2: {current_home:.2f} / {current_draw:.2f} / {current_away:.2f}",
+    ]
+
+    # Totals (over/under goals) — only render when we have closing data.
+    # We show the line shift inline because that's the spiciest detail
+    # ("market moved from 3.5 to 3" tells you sharps wanted fewer goals).
+    if totals and totals.close_line is not None and totals.close_over and totals.close_under:
+        line_part = ""
+        if totals.open_line is not None and totals.open_line != totals.close_line:
+            line_part = f" (line shifted {totals.open_line:g} → {totals.close_line:g})"
+        lines.append(
+            f"O/U {totals.close_line:g}: O {totals.close_over:.2f} / U {totals.close_under:.2f}{line_part}"
+        )
+
+    # Asian Handicap — home perspective. Same line-shift annotation.
+    if spreads and spreads.close_line is not None and spreads.close_home and spreads.close_away:
+        line_part = ""
+        if spreads.open_line is not None and spreads.open_line != spreads.close_line:
+            line_part = f" (line shifted {_fmt_line(spreads.open_line)} → {_fmt_line(spreads.close_line)})"
+        lines.append(
+            f"AH {_fmt_line(spreads.close_line)}: H {spreads.close_home:.2f} / A {spreads.close_away:.2f}{line_part}"
+        )
+
+    # Interpretation. Lead with the most informative signal across the
+    # three markets. Priority: line shift > 1X2 mover > steady.
+    interp: Optional[str] = None
+    if totals and totals.open_line is not None and totals.close_line is not None:
+        diff = totals.close_line - totals.open_line
+        if diff >= 0.25:
+            interp = "Market moved the goals line UP — sharps want Over."
+        elif diff <= -0.25:
+            interp = "Market moved the goals line DOWN — sharps want Under."
+    if interp is None and spreads and spreads.open_line is not None and spreads.close_line is not None:
+        diff = spreads.close_line - spreads.open_line
+        if diff <= -0.25:
+            interp = f"AH line tightened — sharps want more from {match.home_team}."
+        elif diff >= 0.25:
+            interp = f"AH line widened — sharps backing {match.away_team}."
+    if interp is None and name_shifts:
+        winner = max(name_shifts, key=lambda kv: kv[1])
         if winner[1] >= 1.5:
-            movers_line = f"Money on {winner[0]}."
+            interp = f"Money on {winner[0]}."
         elif winner[1] <= -1.5:
-            movers_line = f"Money fading {winner[0]}."
+            interp = f"Money fading {winner[0]}."
         else:
-            movers_line = "Steady book — minimal late action."
-    return (
-        "🔔 Closing — KO in 15 min\n"
-        "\n"
-        f"{hf} {match.home_team} 🆚 {af} {match.away_team}\n"
-        "\n"
-        f"H {current_home:.2f}  D {current_draw:.2f}  A {current_away:.2f}\n"
-        f"Open: {opening_home:.2f}  {opening_draw:.2f}  {opening_away:.2f}\n"
-        + (f"\n{movers_line}" if movers_line else "")
-    )
+            interp = "Steady book — minimal late action."
+
+    if interp:
+        lines.append("")
+        lines.append(interp)
+
+    return "\n".join(lines)
 
 
 def render_inplay_recap_tweet(
@@ -330,6 +405,61 @@ def post_late_steam_tweet(
     return post_once(db, "late_steam", text, match_id=match.id)
 
 
+def _totals_block(db: Session, match: Match) -> Optional["TotalsBlock"]:
+    """Open + close TotalsSnapshot for the match. Returns None if neither
+    end is captured. Either field can be partial — render handles it."""
+    from app.models import TotalsSnapshot
+    opening = (
+        db.query(TotalsSnapshot)
+        .filter(TotalsSnapshot.match_id == match.id)
+        .order_by(TotalsSnapshot.fetched_at.asc(), TotalsSnapshot.id.asc())
+        .first()
+    )
+    closing = (
+        db.query(TotalsSnapshot)
+        .filter(TotalsSnapshot.match_id == match.id)
+        .order_by(TotalsSnapshot.fetched_at.desc(), TotalsSnapshot.id.desc())
+        .first()
+    )
+    if not opening and not closing:
+        return None
+    return TotalsBlock(
+        open_line=opening.line if opening else None,
+        open_over=opening.over_odds if opening else None,
+        open_under=opening.under_odds if opening else None,
+        close_line=closing.line if closing else None,
+        close_over=closing.over_odds if closing else None,
+        close_under=closing.under_odds if closing else None,
+    )
+
+
+def _spreads_block(db: Session, match: Match) -> Optional["SpreadsBlock"]:
+    """Open + close SpreadsSnapshot for the match (home perspective on the line)."""
+    from app.models import SpreadsSnapshot
+    opening = (
+        db.query(SpreadsSnapshot)
+        .filter(SpreadsSnapshot.match_id == match.id)
+        .order_by(SpreadsSnapshot.fetched_at.asc(), SpreadsSnapshot.id.asc())
+        .first()
+    )
+    closing = (
+        db.query(SpreadsSnapshot)
+        .filter(SpreadsSnapshot.match_id == match.id)
+        .order_by(SpreadsSnapshot.fetched_at.desc(), SpreadsSnapshot.id.desc())
+        .first()
+    )
+    if not opening and not closing:
+        return None
+    return SpreadsBlock(
+        open_line=opening.line if opening else None,
+        open_home=opening.home_odds if opening else None,
+        open_away=opening.away_odds if opening else None,
+        close_line=closing.line if closing else None,
+        close_home=closing.home_odds if closing else None,
+        close_away=closing.away_odds if closing else None,
+    )
+
+
 def try_post_closing_line_tweet(db: Session, match: Match) -> Optional[TwitterStatus]:
     """Generate + post the T-15 closing-line tweet for `match`.
     Returns None if we don't have enough data; status object otherwise."""
@@ -359,6 +489,8 @@ def try_post_closing_line_tweet(db: Session, match: Match) -> Optional[TwitterSt
         match,
         latest.home_odds, latest.draw_odds, latest.away_odds,
         opening.home_odds, opening.draw_odds, opening.away_odds,
+        totals=_totals_block(db, match),
+        spreads=_spreads_block(db, match),
     )
     return post_once(db, "closing_line", text, match_id=match.id)
 
