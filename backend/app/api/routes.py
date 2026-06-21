@@ -2393,6 +2393,36 @@ async def admin_twitter_post(
     }
 
 
+@router.post("/admin/mark-early-goal")
+async def admin_mark_early_goal(
+    password: str = Query(..., description="Admin password"),
+    match_id: str = Query(..., description="Match ID to mark"),
+    minute: int = Query(5, ge=1, le=120, description="Goal minute"),
+    db: Session = Depends(get_db),
+):
+    """
+    Manually set Match.early_goal_minute so /in-play-jumps drops the row.
+    Use when the automatic T+5 score check missed a match (e.g. scheduler
+    was down at KO, or /scores hadn't published yet).
+    """
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid password")
+    match = db.query(Match).filter(Match.id == match_id).first()
+    if not match:
+        raise HTTPException(status_code=404, detail="match not found")
+    previous = match.early_goal_minute
+    match.early_goal_minute = minute
+    db.commit()
+    return {
+        "ok": True,
+        "match_id": match_id,
+        "home_team": match.home_team,
+        "away_team": match.away_team,
+        "previous": previous,
+        "now": minute,
+    }
+
+
 @router.get("/admin/fetcher-health")
 async def get_fetcher_health(
     password: str = Query(..., description="Admin password"),
