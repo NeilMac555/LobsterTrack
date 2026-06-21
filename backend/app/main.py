@@ -139,6 +139,22 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning("polymarket index migration failed (non-fatal)", error=str(e))
 
+    # Posted tweets table — created in full by metadata.create_all (the model
+    # is registered via app.models). We add indexes idempotently here in case
+    # the table existed from a prior schema attempt.
+    try:
+        with engine.begin() as conn:
+            conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_posted_match_type "
+                "ON posted_tweets (match_id, tweet_type)"
+            ))
+            conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS idx_posted_day_type "
+                "ON posted_tweets (day_key, tweet_type)"
+            ))
+    except Exception as e:
+        logger.warning("posted_tweets index migration failed (non-fatal)", error=str(e))
+
     # Start the scheduler
     logger.info("Starting odds scheduler")
     odds_scheduler.start()

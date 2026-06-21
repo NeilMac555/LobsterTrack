@@ -407,6 +407,22 @@ class SyndicateAlerter:
                 outcome=outcome_name,
                 prob_change=f"{prob_change:.1f}pp"
             )
+
+            # ALSO post a tweet — once per match. The post_late_steam_tweet
+            # helper dedups on (match, 'late_steam') so subsequent Telegram
+            # alerts on the same match for different outcomes add no new
+            # tweets. Wrapped so a Twitter failure never poisons the
+            # Telegram alert path.
+            try:
+                from app.services.tweet_generator import post_late_steam_tweet
+                post_late_steam_tweet(
+                    db, match, outcome_name, current_odds, prob_change, minutes_to_ko
+                )
+            except Exception as e:
+                logger.warning(
+                    "Steam tweet failed (Telegram alert still went)",
+                    error=str(e),
+                )
             return True
 
         return False

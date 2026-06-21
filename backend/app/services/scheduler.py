@@ -405,6 +405,67 @@ class OddsScheduler:
         except Exception as e:
             logger.error("polymarket fetch failed", error=str(e))
 
+    async def tweet_check_job(self):
+        """
+        Every minute, sweep upcoming + recently-kicked-off matches for
+        any tweet types we haven't posted yet. Resilient to scheduler
+        restarts (vs DateTrigger one-shots which would be lost) since
+        the dedup state lives in posted_tweets, not in the scheduler.
+
+        Two windows per pass:
+          - Matches with KO in next 10-20 min        → closing-line tweet
+          - Matches with KO 8-15 min ago, no early goal → in-play recap tweet
+
+        Each tweet helper internally checks posted_tweets and is a no-op
+        when already-posted, so this job is safe to fire frequently.
+        """
+        from datetime import datetime, timedelta
+        from app.models import Match
+        from app.models.database import SessionLocal
+        try:
+            from app.services.tweet_generator import (
+                try_post_closing_line_tweet,
+                try_post_inplay_recap_tweet,
+            )
+        except Exception as e:
+            logger.error("tweet_generator import failed", error=str(e))
+            return
+
+        db = SessionLocal()
+        try:
+            now = datetime.utcnow()
+            close_lo = now + timedelta(minutes=10)
+            close_hi = now + timedelta(minutes=20)
+            closing_matches = (
+                db.query(Match)
+                .filter(Match.commence_time >= close_lo)
+                .filter(Match.commence_time <= close_hi)
+                .all()
+            )
+            for m in closing_matches:
+                try:
+                    try_post_closing_line_tweet(db, m)
+                except Exception as e:
+                    logger.warning("closing-line tweet failed", match=m.id, error=str(e))
+
+            recap_lo = now - timedelta(minutes=15)
+            recap_hi = now - timedelta(minutes=8)
+            recap_matches = (
+                db.query(Match)
+                .filter(Match.commence_time >= recap_lo)
+                .filter(Match.commence_time <= recap_hi)
+                .all()
+            )
+            for m in recap_matches:
+                try:
+                    try_post_inplay_recap_tweet(db, m)
+                except Exception as e:
+                    logger.warning("inplay-recap tweet failed", match=m.id, error=str(e))
+        except Exception as e:
+            logger.error("tweet check job failed", error=str(e))
+        finally:
+            db.close()
+
     def start(self):
         """
         Start the scheduler with smart dynamic intervals.
@@ -487,6 +548,21 @@ class OddsScheduler:
             trigger=IntervalTrigger(minutes=1),
             id="polymarket_fetch",
             name="Polymarket WC snapshot fetch",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
+
+        # Tweet check — every minute. Each pass walks through upcoming +
+        # recently-kicked-off matches and posts any tweet types that
+        # haven't gone out yet (closing-line at T-15, in-play recap at
+        # T+10). All dedup state lives in posted_tweets, not in the job,
+        # so this survives restarts cleanly.
+        self.scheduler.add_job(
+            self.tweet_check_job,
+            trigger=IntervalTrigger(minutes=1),
+            id="tweet_check",
+            name="Autonomous tweet check (closing-line + in-play recap)",
             replace_existing=True,
             max_instances=1,
             coalesce=True,

@@ -13,5 +13,6 @@ from .magic_link import MagicLink
 from .xg_data import XGData
 from .historical_match import HistoricalMatch
 from .polymarket_snapshot import PolymarketSnapshot
+from .posted_tweet import PostedTweet
 
-__all__ = ["Base", "get_db", "engine", "Match", "OddsSnapshot", "SteamMove", "EmailSubscriber", "TotalsSnapshot", "SpreadsSnapshot", "SyndicateAlert", "ClosingLine", "MarketType", "User", "Subscription", "MagicLink", "XGData", "HistoricalMatch", "PolymarketSnapshot"]
+__all__ = ["Base", "get_db", "engine", "Match", "OddsSnapshot", "SteamMove", "EmailSubscriber", "TotalsSnapshot", "SpreadsSnapshot", "SyndicateAlert", "ClosingLine", "MarketType", "User", "Subscription", "MagicLink", "XGData", "HistoricalMatch", "PolymarketSnapshot", "PostedTweet"]
