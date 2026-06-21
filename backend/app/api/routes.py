@@ -2047,6 +2047,50 @@ async def get_polymarket_health(
     }
 
 
+@router.get("/admin/twitter-verify")
+async def admin_twitter_verify(
+    password: str = Query(..., description="Admin password"),
+):
+    """
+    Verify the Twitter OAuth 1.0a credentials work — calls the X API's
+    `users/me` endpoint to confirm we can authenticate as
+    @Steamwatchio. Safe to call repeatedly: does NOT post anything.
+
+    Catches the common failure modes (missing env var, wrong key,
+    Read-only app permission) and returns a clear diagnostic message.
+    """
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid password")
+    from app.services.twitter_poster import verify_credentials
+    status = verify_credentials()
+    return {
+        "ok": status.ok,
+        "detail": status.detail,
+        "handle": status.handle,
+    }
+
+
+@router.post("/admin/twitter-post")
+async def admin_twitter_post(
+    password: str = Query(..., description="Admin password"),
+    text: str = Query(..., description="Tweet text — up to 280 chars"),
+):
+    """
+    Post `text` to the authenticated X account (@Steamwatchio).
+    Admin-only. The actual posting code lives in
+    app.services.twitter_poster.
+    """
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid password")
+    from app.services.twitter_poster import post_tweet
+    status = post_tweet(text)
+    return {
+        "ok": status.ok,
+        "detail": status.detail,
+        "tweet_id": status.tweet_id,
+    }
+
+
 @router.get("/admin/fetcher-health")
 async def get_fetcher_health(
     password: str = Query(..., description="Admin password"),
