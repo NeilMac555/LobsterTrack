@@ -14,16 +14,15 @@ logger = structlog.get_logger()
 # History:
 #   - Originally 3.0pp (everything). Cohort showed sub-5pp = -32% ROI.
 #   - Tightened to 5.0pp + T-30 in May 2026 (~+15% ROI on 161 alerts).
-#   - Loosened back to 4.0pp + T-90 in May 2026 (Neil's call) to
-#     restore alert volume. Backtest: ~+5.8% ROI on 407 alerts.
-#
-# Recording threshold in odds_fetcher.py stays at 3.0pp / T-2h so we
-# retain a broader archive for future re-tuning.
-SYNDICATE_THRESHOLD_PROB_POINTS = 4.0
+#   - Loosened to 4.0pp + T-90 in May 2026 to restore alert volume.
+#   - Simplified back to 3.0pp + T-180 in June 2026 (Neil's call):
+#     uniform rule for every league, no per-league overrides, no
+#     separate cumulative-drift detector. One simple model.
+SYNDICATE_THRESHOLD_PROB_POINTS = 3.0
 
 # Time-to-kickoff window for alerts. Only fire alerts when the match is
-# within this many minutes of KO.
-SYNDICATE_ALERT_WINDOW_MINUTES = 90
+# within this many minutes of KO. 180 = three hours before kickoff.
+SYNDICATE_ALERT_WINDOW_MINUTES = 180
 
 # Odds threshold above which an alert is tagged as 'high conviction' with
 # a 🔥 emoji in the Telegram message. Cohort analysis showed steam moves
@@ -32,35 +31,10 @@ SYNDICATE_ALERT_WINDOW_MINUTES = 90
 # heavy dog without a real informational edge.
 SYNDICATE_FIRE_TIER_ODDS = 4.0
 
-# Cumulative-drift alerts catch the OPPOSITE pattern from rapid steam:
-# slow, persistent shifts from opening (over hours/days) that never pop
-# above the rapid-steam threshold inside any single ~3-hour window.
-# Fires when any 1X2 outcome has shifted ≥ this many pp from opening
-# implied prob. Bidirectional — both shortening and drifting count.
-# De-duplicated per match via market='drift_1x2' on SyndicateAlert.
-#
-# Concrete cases: Curacao v Ecuador (KO 2026-06-21 00:00 UTC) home moved
-# 80.6% → 85.5% from open = +4.8pp. Germany v Ivory Coast (KO 20:00)
-# home 64.1% → 69.0% = +4.9pp. Both gradual drifts caught by this rule,
-# not by the rapid-steam rule.
-CUMULATIVE_DRIFT_THRESHOLD_PP = 4.5
-
-# Per-league override layer. When a sport_key has an entry here we use
-# its threshold/window in place of the defaults above. World Cup runs
-# with a lower threshold (3.5pp) and a wider window (180 minutes)
-# because the international markets move more slowly than club
-# fixtures — by the time a domestic-tight 4pp/90min trigger fires on
-# a WC game, the move is usually already public. Tournaments are also
-# the moment we most want to be over-alerting rather than under.
-LEAGUE_OVERRIDES: dict[str, dict[str, float]] = {
-    "soccer_fifa_world_cup": {
-        # Lowered 3.5 → 2.5 on 2026-06-20 after Germany v Ivory Coast moved
-        # 1.50 → 1.45 (+2.30pp) gradually across the 180-min window and
-        # silently missed the alert. We want WC over-alerting, not under.
-        "threshold_pp": 2.5,
-        "window_minutes": 180.0,
-    },
-}
+# Per-league override layer. Empty by default — every league uses the
+# 3.0pp / 180-min defaults above. Kept as a hook in case we ever want
+# to tune a specific competition without touching every callsite.
+LEAGUE_OVERRIDES: dict[str, dict[str, float]] = {}
 
 
 def threshold_for(sport_key: str) -> float:
@@ -171,12 +145,6 @@ class SyndicateAlerter:
                     db, match, window_start, minutes_to_ko, league_threshold
                 )
 
-                # Cumulative-drift check — catches gradual moves from
-                # opening that the rapid-steam check misses by design.
-                alerts_sent += await self._check_cumulative_drift_1x2(
-                    db, match, minutes_to_ko
-                )
-
             db.commit()
             return {"alerts_sent": alerts_sent, "matches_checked": len(matches)}
 
@@ -230,64 +198,6 @@ class SyndicateAlerter:
                     sent = await self._send_alert_if_new(
                         db, match, '1x2', outcome, label, name,
                         curr_odds, prob_move, minutes_to_ko
-                    )
-                    if sent:
-                        alerts_sent += 1
-
-        return alerts_sent
-
-    async def _check_cumulative_drift_1x2(
-        self,
-        db: Session,
-        match: Match,
-        minutes_to_ko: int,
-    ) -> int:
-        """
-        Detect matches where any 1X2 outcome has moved ≥ CUMULATIVE_DRIFT_THRESHOLD_PP
-        from the OPENING price implied probability. Bidirectional — both
-        shortening and drifting count.
-
-        This complements the rapid-steam check (`_check_1x2_market`) which
-        only sees moves inside the last ~3 hours. Some matches drift
-        steadily across days (Curacao v Ecuador home went 80.6% → 85.5%
-        over 30 days), never triggering the point-in-time window check
-        even though the cumulative move is clearly informative.
-
-        Fires ONCE per match (per outcome) via `market='drift_1x2'` on
-        SyndicateAlert — the _send_alert_if_new de-dup key is (match,
-        market, outcome), so this never collides with the regular 1x2
-        rapid-steam alerts.
-        """
-        opening = (
-            db.query(OddsSnapshot)
-            .filter(OddsSnapshot.match_id == match.id)
-            .filter(OddsSnapshot.in_play == False)  # noqa: E712
-            .order_by(OddsSnapshot.fetched_at.asc(), OddsSnapshot.id.asc())
-            .first()
-        )
-        latest = (
-            db.query(OddsSnapshot)
-            .filter(OddsSnapshot.match_id == match.id)
-            .filter(OddsSnapshot.in_play == False)  # noqa: E712
-            .order_by(OddsSnapshot.fetched_at.desc(), OddsSnapshot.id.desc())
-            .first()
-        )
-        if not opening or not latest or opening.id == latest.id:
-            return 0
-
-        alerts_sent = 0
-        outcomes = [
-            ('home', 'H', match.home_team, opening.home_odds, latest.home_odds),
-            ('draw', 'D', 'Draw', opening.draw_odds, latest.draw_odds),
-            ('away', 'A', match.away_team, opening.away_odds, latest.away_odds),
-        ]
-        for outcome, label, name, open_odds, curr_odds in outcomes:
-            if open_odds and curr_odds and open_odds > 0 and curr_odds > 0:
-                drift = prob_movement(open_odds, curr_odds)
-                if abs(drift) >= CUMULATIVE_DRIFT_THRESHOLD_PP:
-                    sent = await self._send_alert_if_new(
-                        db, match, 'drift_1x2', outcome, label, name,
-                        curr_odds, drift, minutes_to_ko
                     )
                     if sent:
                         alerts_sent += 1
