@@ -2047,6 +2047,169 @@ async def get_polymarket_health(
     }
 
 
+@router.get("/admin/alert-roi")
+async def admin_alert_roi(
+    password: str = Query(..., description="Admin password"),
+    league: Optional[str] = Query(None, description="Filter by sport_key"),
+    min_movement: float = Query(0.0, description="Minimum |movement_percent| pp"),
+    db: Session = Depends(get_db),
+):
+    """
+    Flat-stakes ROI on Telegram syndicate alerts.
+
+    Every alert is treated as 1 unit staked at the odds we alerted at.
+    Returns settled if the match has a recorded result (we get scores via
+    the SteamMove result-update job which pulls from The Odds API /scores).
+    For now only 1X2 market alerts are scored — totals + spreads alerts
+    don't store the line so we can't settle them without a second pass.
+
+    Slicing:
+      - Overall
+      - By league
+      - By movement_percent bucket (the pp shift that fired the alert)
+      - By odds-tier bucket (favourite vs coinflip vs dog)
+    """
+    from app.models import SyndicateAlert, SteamMove, Match
+    from sqlalchemy import func as sa_func
+
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid password")
+
+    # All 1X2 alerts joined to one score row per match (any SteamMove will
+    # do — they all carry the same home/away score per match once settled).
+    score_subq = (
+        db.query(
+            SteamMove.match_id.label("match_id"),
+            sa_func.max(SteamMove.home_score).label("home_score"),
+            sa_func.max(SteamMove.away_score).label("away_score"),
+        )
+        .filter(SteamMove.result_updated == True)  # noqa: E712
+        .group_by(SteamMove.match_id)
+        .subquery()
+    )
+
+    rows = (
+        db.query(
+            SyndicateAlert.id,
+            SyndicateAlert.match_id,
+            SyndicateAlert.market,
+            SyndicateAlert.outcome,
+            SyndicateAlert.movement_percent,
+            SyndicateAlert.odds_at_alert,
+            SyndicateAlert.alerted_at,
+            Match.sport_key,
+            Match.home_team,
+            Match.away_team,
+            Match.commence_time,
+            score_subq.c.home_score,
+            score_subq.c.away_score,
+        )
+        .join(Match, SyndicateAlert.match_id == Match.id)
+        .outerjoin(score_subq, score_subq.c.match_id == SyndicateAlert.match_id)
+        .filter(SyndicateAlert.market == "1x2")
+        .all()
+    )
+
+    if league:
+        rows = [r for r in rows if r.sport_key == league]
+    if min_movement > 0:
+        rows = [r for r in rows if abs(r.movement_percent or 0) >= min_movement]
+
+    def settle(r):
+        """Return 'won' / 'lost' / 'pending' for one 1X2 alert."""
+        if r.home_score is None or r.away_score is None:
+            return "pending"
+        if r.outcome == "home":
+            return "won" if r.home_score > r.away_score else "lost"
+        if r.outcome == "away":
+            return "won" if r.away_score > r.home_score else "lost"
+        if r.outcome == "draw":
+            return "won" if r.home_score == r.away_score else "lost"
+        return "pending"
+
+    def roi_block(records):
+        """Aggregate ROI / hit-rate stats for an arbitrary subset of alerts."""
+        won = lost = pending = 0
+        staked = 0.0
+        returns = 0.0
+        for r in records:
+            res = settle(r)
+            if res == "pending":
+                pending += 1
+                continue
+            staked += 1.0
+            if res == "won":
+                won += 1
+                returns += r.odds_at_alert
+            else:
+                lost += 1
+        settled = won + lost
+        roi_pct = ((returns - staked) / staked * 100) if staked > 0 else None
+        hit_rate_pct = (won / settled * 100) if settled > 0 else None
+        return {
+            "alerts_total": len(records),
+            "settled": settled,
+            "pending": pending,
+            "won": won,
+            "lost": lost,
+            "hit_rate_pct": round(hit_rate_pct, 2) if hit_rate_pct is not None else None,
+            "staked_units": round(staked, 2),
+            "returned_units": round(returns, 2),
+            "profit_units": round(returns - staked, 2),
+            "roi_pct": round(roi_pct, 2) if roi_pct is not None else None,
+        }
+
+    overall = roi_block(rows)
+
+    # Per-league
+    leagues: dict[str, list] = {}
+    for r in rows:
+        leagues.setdefault(r.sport_key or "(unknown)", []).append(r)
+    by_league = {k: roi_block(v) for k, v in sorted(leagues.items())}
+
+    # Per movement-percent bucket
+    def mv_bucket(p):
+        a = abs(p or 0)
+        if a < 3: return "0-3pp"
+        if a < 4: return "3-4pp"
+        if a < 5: return "4-5pp"
+        if a < 7: return "5-7pp"
+        return "7+pp"
+    mv_groups: dict[str, list] = {}
+    for r in rows:
+        mv_groups.setdefault(mv_bucket(r.movement_percent), []).append(r)
+    by_movement = {k: roi_block(v) for k, v in sorted(mv_groups.items())}
+
+    # Per odds-tier bucket
+    def odds_bucket(o):
+        if o is None: return "(unknown)"
+        if o < 1.5: return "<1.50 (heavy fav)"
+        if o < 2.0: return "1.50-2.00 (fav)"
+        if o < 2.5: return "2.00-2.50 (coinflip)"
+        if o < 4.0: return "2.50-4.00 (mid dog)"
+        return "4.00+ (long dog)"
+    odds_groups: dict[str, list] = {}
+    for r in rows:
+        odds_groups.setdefault(odds_bucket(r.odds_at_alert), []).append(r)
+    by_odds = {k: roi_block(v) for k, v in sorted(odds_groups.items())}
+
+    # By outcome side (any tilt toward backing home/draw/away?)
+    side_groups: dict[str, list] = {}
+    for r in rows:
+        side_groups.setdefault(r.outcome or "(unknown)", []).append(r)
+    by_outcome = {k: roi_block(v) for k, v in sorted(side_groups.items())}
+
+    return {
+        "filter": {"league": league, "min_movement_pp": min_movement},
+        "note": "Flat 1-unit stakes per alert at odds_at_alert. Settlement via SteamMove scores (Odds API /scores). Only 1X2 alerts settled — totals/spreads alerts don't store the line yet.",
+        "overall": overall,
+        "by_league": by_league,
+        "by_movement_pp": by_movement,
+        "by_odds_tier": by_odds,
+        "by_outcome_side": by_outcome,
+    }
+
+
 @router.get("/admin/twitter-verify")
 async def admin_twitter_verify(
     password: str = Query(..., description="Admin password"),
