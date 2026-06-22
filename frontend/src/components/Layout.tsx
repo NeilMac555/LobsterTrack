@@ -6,7 +6,6 @@ import { useAuth } from '../contexts/AuthContext';
 import LoginModal from './LoginModal';
 import CheckoutSuccessBanner from './CheckoutSuccessBanner';
 import LiveTicker from './LiveTicker';
-import Bet105Button from './Bet105Button';
 
 const leagues = VISIBLE_LEAGUES;
 
@@ -179,7 +178,6 @@ export default function Layout() {
 
             {/* Right side: Live pill + Account / Sign In / Upgrade */}
             <div className="hidden md:flex items-center gap-2.5 flex-shrink-0">
-              <Bet105Button variant="compact" location="nav" />
               <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full border border-slate-700/60 text-[10px] font-mono uppercase tracking-[0.12em] text-slate-400">
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -369,7 +367,6 @@ export default function Layout() {
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-slate-700/50 bg-slate-800/95 backdrop-blur-md">
             <div className="px-4 py-4 space-y-4">
-              <Bet105Button variant="full" location="mobile-nav" />
               {/* Account section — placed first so existing Pro users can
                   sign in immediately and don't bounce off the paywall.
                   Mirrors the desktop right-nav UX: signed-in shows email
