@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { getInPlayJumps } from '../api';
 import type { InPlayJump, InPlayJumpsResponse, InPlayJumpOutcome } from '../types';
 import { countryFlagImgUrl } from '../utils/countryFlags';
+import Bet105Button from '../components/Bet105Button';
 
 type SortField = 'gap' | 'commence_time';
 
@@ -175,6 +176,10 @@ export default function InPlayJumpsPage() {
             </p>
           </div>
         </div>
+      </div>
+
+      <div className="mb-4 sm:mb-6">
+        <Bet105Button variant="full" location="in-play-jumps" />
       </div>
 
       {/* Methodology */}

@@ -13,6 +13,7 @@ import LeagueLogo from '../components/LeagueLogo';
 import Sparkline from '../components/Sparkline';
 import { countryFlagImgUrl } from '../utils/countryFlags';
 import AmIUpCTA from '../components/AmIUpCTA';
+import Bet105Button from '../components/Bet105Button';
 
 // Format ms-until-kickoff as a readable T-minus string, or a T-plus if the
 // match has already kicked off. Kept inside this module because match detail
@@ -340,6 +341,10 @@ export default function MatchDetailPage() {
           has just seen 'how this match moved'; the natural next
           action is 'track my bet on it'. */}
       <AmIUpCTA placement="match" />
+
+      <div className="my-4 flex justify-center">
+        <Bet105Button variant="full" location="match-detail" />
+      </div>
 
       {/* Totals (Over/Under) Section */}
       {totals && totals.totals_history.length > 0 && (
