@@ -406,12 +406,16 @@ def post_late_steam_tweet(
 
 
 def _totals_block(db: Session, match: Match) -> Optional["TotalsBlock"]:
-    """Open + close TotalsSnapshot for the match. Returns None if neither
-    end is captured. Either field can be partial — render handles it."""
+    """Open + close TotalsSnapshot — using the FIRST snapshot in the
+    12-hour pre-KO window as 'open'. Months of pre-match noise hides
+    the actual steam; the last 12 hours is where the action is."""
+    from datetime import timedelta
     from app.models import TotalsSnapshot
+    window_start = match.commence_time - timedelta(hours=12)
     opening = (
         db.query(TotalsSnapshot)
         .filter(TotalsSnapshot.match_id == match.id)
+        .filter(TotalsSnapshot.fetched_at >= window_start)
         .order_by(TotalsSnapshot.fetched_at.asc(), TotalsSnapshot.id.asc())
         .first()
     )
@@ -434,11 +438,15 @@ def _totals_block(db: Session, match: Match) -> Optional["TotalsBlock"]:
 
 
 def _spreads_block(db: Session, match: Match) -> Optional["SpreadsBlock"]:
-    """Open + close SpreadsSnapshot for the match (home perspective on the line)."""
+    """Open + close SpreadsSnapshot — same 12-hour pre-KO window as
+    totals so the tweet shows actual steam, not weeks of retail noise."""
+    from datetime import timedelta
     from app.models import SpreadsSnapshot
+    window_start = match.commence_time - timedelta(hours=12)
     opening = (
         db.query(SpreadsSnapshot)
         .filter(SpreadsSnapshot.match_id == match.id)
+        .filter(SpreadsSnapshot.fetched_at >= window_start)
         .order_by(SpreadsSnapshot.fetched_at.asc(), SpreadsSnapshot.id.asc())
         .first()
     )
@@ -462,9 +470,15 @@ def _spreads_block(db: Session, match: Match) -> Optional["SpreadsBlock"]:
 
 def try_post_closing_line_tweet(db: Session, match: Match) -> Optional[TwitterStatus]:
     """Generate + post the T-15 closing-line tweet for `match`.
-    Returns None if we don't have enough data; status object otherwise."""
+    Returns None if we don't have enough data; status object otherwise.
+
+    'Opening' here is the first pre-KO snapshot inside the 12-hour
+    window before KO — that's where the actual steam lives. Months
+    of pre-match noise drowns out the late sharp action."""
+    from datetime import timedelta
     if _already_posted(db, "closing_line", match_id=match.id):
         return None
+    window_start = match.commence_time - timedelta(hours=12)
     latest = (
         db.query(OddsSnapshot)
         .filter(OddsSnapshot.match_id == match.id)
@@ -476,6 +490,7 @@ def try_post_closing_line_tweet(db: Session, match: Match) -> Optional[TwitterSt
         db.query(OddsSnapshot)
         .filter(OddsSnapshot.match_id == match.id)
         .filter(OddsSnapshot.in_play == False)  # noqa: E712
+        .filter(OddsSnapshot.fetched_at >= window_start)
         .order_by(OddsSnapshot.fetched_at.asc())
         .first()
     )
