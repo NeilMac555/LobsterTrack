@@ -288,53 +288,55 @@ main {
 .aiu-cta {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 18px;
-  background: rgba(30, 41, 59, 0.85);                /* slate-800/85 */
-  color: #f1f5f9;                                    /* slate-100 */
+  gap: 14px;
+  padding: 14px 26px;
+  background: linear-gradient(135deg, rgba(67, 56, 202, 0.45), rgba(99, 102, 241, 0.25));  /* indigo gradient */
+  color: #ffffff;
   text-decoration: none;
-  border-radius: 8px;
+  border-radius: 10px;
   font-family: 'Inter Tight', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 16px;
+  font-weight: 600;
   letter-spacing: -0.005em;
-  border: 1px solid rgba(99, 102, 241, 0.35);        /* indigo-500 @35% */
+  border: 2px solid rgba(99, 102, 241, 0.6);         /* indigo-500 @60% */
   animation: aiu-pulse 1.8s ease-out infinite;
   transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
 }
 .aiu-cta:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   animation-play-state: paused;
-  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);    /* indigo glow */
-  border-color: rgba(99, 102, 241, 0.6);
+  box-shadow: 0 12px 32px rgba(99, 102, 241, 0.5);   /* stronger indigo glow */
+  border-color: rgba(129, 140, 248, 0.9);
 }
 .aiu-cta-eyebrow {
   display: inline-block;
-  margin-right: 8px;
-  padding: 2px 6px;
-  background: rgba(99, 102, 241, 0.25);
-  color: #c7d2fe;                                    /* indigo-200 */
-  border-radius: 3px;
+  margin-right: 10px;
+  padding: 3px 8px;
+  background: #dc2626;                               /* red-600 — solid, pops */
+  color: #ffffff;
+  border-radius: 4px;
   font-family: "JetBrains Mono", "SF Mono", ui-monospace, monospace;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
   vertical-align: middle;
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.45);     /* red halo */
 }
 .aiu-cta-arrow {
   font-family: "JetBrains Mono", "SF Mono", ui-monospace, monospace;
-  font-size: 14px;
-  color: #a5b4fc;                                    /* indigo-300 */
-  opacity: 0.85;
+  font-size: 18px;
+  font-weight: 700;
+  color: #c7d2fe;                                    /* indigo-200 */
+  opacity: 1;
   transition: transform 0.15s, opacity 0.15s;
 }
 .aiu-cta:hover .aiu-cta-arrow {
-  transform: translateX(2px);
-  opacity: 1;
+  transform: translateX(3px);
+  color: #ffffff;
 }
 @keyframes aiu-pulse {
-  0%   { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
-  70%  { box-shadow: 0 0 0 12px rgba(99, 102, 241, 0); }
+  0%   { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.55); }
+  70%  { box-shadow: 0 0 0 18px rgba(99, 102, 241, 0); }
   100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
 }
 @media (prefers-reduced-motion: reduce) {
