@@ -468,13 +468,66 @@ def _spreads_block(db: Session, match: Match) -> Optional["SpreadsBlock"]:
     )
 
 
+SIGNIFICANCE_THRESHOLD_PP = 3.0
+
+
+def _max_1x2_move_pp(opening, latest) -> float:
+    """Biggest absolute implied-prob swing (pp) across home/draw/away
+    between opening and latest. Returns 0.0 if any odds missing."""
+    if not (opening.home_odds and opening.draw_odds and opening.away_odds):
+        return 0.0
+    if not (latest.home_odds and latest.draw_odds and latest.away_odds):
+        return 0.0
+    moves = [
+        abs(_implied_pct(latest.home_odds) - _implied_pct(opening.home_odds)),
+        abs(_implied_pct(latest.draw_odds) - _implied_pct(opening.draw_odds)),
+        abs(_implied_pct(latest.away_odds) - _implied_pct(opening.away_odds)),
+    ]
+    return max(moves)
+
+
+def _totals_significant(block: Optional["TotalsBlock"]) -> bool:
+    """True if the totals line shifted OR over/under implied probs
+    moved by the threshold."""
+    if block is None:
+        return False
+    if block.open_line is not None and block.close_line is not None:
+        if block.open_line != block.close_line:
+            return True
+    if block.open_over and block.close_over:
+        if abs(_implied_pct(block.close_over) - _implied_pct(block.open_over)) >= SIGNIFICANCE_THRESHOLD_PP:
+            return True
+    if block.open_under and block.close_under:
+        if abs(_implied_pct(block.close_under) - _implied_pct(block.open_under)) >= SIGNIFICANCE_THRESHOLD_PP:
+            return True
+    return False
+
+
+def _spreads_significant(block: Optional["SpreadsBlock"]) -> bool:
+    """True if the AH line shifted OR home/away implied probs moved
+    by the threshold."""
+    if block is None:
+        return False
+    if block.open_line is not None and block.close_line is not None:
+        if block.open_line != block.close_line:
+            return True
+    if block.open_home and block.close_home:
+        if abs(_implied_pct(block.close_home) - _implied_pct(block.open_home)) >= SIGNIFICANCE_THRESHOLD_PP:
+            return True
+    if block.open_away and block.close_away:
+        if abs(_implied_pct(block.close_away) - _implied_pct(block.open_away)) >= SIGNIFICANCE_THRESHOLD_PP:
+            return True
+    return False
+
+
 def try_post_closing_line_tweet(db: Session, match: Match) -> Optional[TwitterStatus]:
     """Generate + post the T-15 closing-line tweet for `match`.
     Returns None if we don't have enough data; status object otherwise.
 
-    'Opening' here is the first pre-KO snapshot inside the 12-hour
-    window before KO — that's where the actual steam lives. Months
-    of pre-match noise drowns out the late sharp action."""
+    Only fires if SOMETHING actually moved in the 12-hour pre-KO
+    window — biggest 1X2 implied-prob swing OR totals/AH line/price
+    movement >= SIGNIFICANCE_THRESHOLD_PP. Silent matches stay silent.
+    'Opening' is the first pre-KO snapshot inside that window."""
     from datetime import timedelta
     if _already_posted(db, "closing_line", match_id=match.id):
         return None
@@ -500,12 +553,25 @@ def try_post_closing_line_tweet(db: Session, match: Match) -> Optional[TwitterSt
         return None
     if not (opening.home_odds and opening.draw_odds and opening.away_odds):
         return None
+
+    totals = _totals_block(db, match)
+    spreads = _spreads_block(db, match)
+
+    max_1x2_pp = _max_1x2_move_pp(opening, latest)
+    if (
+        max_1x2_pp < SIGNIFICANCE_THRESHOLD_PP
+        and not _totals_significant(totals)
+        and not _spreads_significant(spreads)
+    ):
+        # Nothing actually moved — stay silent.
+        return None
+
     text = render_closing_line_tweet(
         match,
         latest.home_odds, latest.draw_odds, latest.away_odds,
         opening.home_odds, opening.draw_odds, opening.away_odds,
-        totals=_totals_block(db, match),
-        spreads=_spreads_block(db, match),
+        totals=totals,
+        spreads=spreads,
     )
     return post_once(db, "closing_line", text, match_id=match.id)
 
@@ -552,6 +618,18 @@ def try_post_inplay_recap_tweet(db: Session, match: Match) -> Optional[TwitterSt
     pin_home = _implied_pct(close.close_home) / 100
     pin_draw = _implied_pct(close.close_draw) / 100
     pin_away = _implied_pct(close.close_away) / 100
+
+    # Significance gate: largest |gap_pp| across home/draw/away
+    # between Pinnacle close and Polymarket T+5 must clear the
+    # threshold. Same convention as /api/in-play-jumps leaderboard.
+    gaps_pp = [
+        abs((pm.home_win_yes - pin_home) * 100),
+        abs((pm.draw_yes - pin_draw) * 100),
+        abs((pm.away_win_yes - pin_away) * 100),
+    ]
+    if max(gaps_pp) < SIGNIFICANCE_THRESHOLD_PP:
+        return None
+
     text = render_inplay_recap_tweet(
         match,
         pin_home, pin_draw, pin_away,
