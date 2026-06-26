@@ -31,10 +31,16 @@ SYNDICATE_ALERT_WINDOW_MINUTES = 180
 # heavy dog without a real informational edge.
 SYNDICATE_FIRE_TIER_ODDS = 4.0
 
-# Per-league override layer. Empty by default — every league uses the
-# 3.0pp / 180-min defaults above. Kept as a hook in case we ever want
-# to tune a specific competition without touching every callsite.
-LEAGUE_OVERRIDES: dict[str, dict[str, float]] = {}
+# Per-league override layer. Other leagues use the 3.0pp / 180-min
+# defaults above. WC override per Neil 2026-06-26: 24-hour pre-KO
+# window at 3.5pp so we catch anything material that moves in the
+# day before KO, not just the final 3 hours.
+LEAGUE_OVERRIDES: dict[str, dict[str, float]] = {
+    "soccer_fifa_world_cup": {
+        "threshold_pp": 3.5,
+        "window_minutes": 1440,
+    },
+}
 
 
 def threshold_for(sport_key: str) -> float:
@@ -114,15 +120,17 @@ class SyndicateAlerter:
             alerts_sent = 0
 
             for match in matches:
-                window_start = match.commence_time - timedelta(hours=3)
                 time_to_ko = match.commence_time - now
                 minutes_to_ko = int(time_to_ko.total_seconds() / 60)
 
-                # Per-league overrides: WC fires earlier (T-180) at a
-                # lower 3.5pp threshold; other leagues stick to the
-                # 4pp / T-90 defaults.
+                # Per-league overrides: WC uses a 24-hour window at 3.5pp.
+                # Other leagues stick to the 3.0pp / 180-min defaults.
                 league_window = window_for(match.sport_key)
                 league_threshold = threshold_for(match.sport_key)
+
+                # Baseline = first snapshot inside the per-league pre-KO
+                # window. WC = 24 hours; everything else = 3 hours.
+                window_start = match.commence_time - timedelta(minutes=league_window)
 
                 # Skip this match if it sits outside its own league's
                 # window. The DB query already bounded by the widest
