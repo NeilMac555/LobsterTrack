@@ -2453,7 +2453,11 @@ async def admin_recompute_closing_line(
     for r in rows:
         db.delete(r)
 
-    # Run the capture immediately so the response shows the recomputed row(s)
+    # Must commit the deletes BEFORE running capture — the captor uses its
+    # own SessionLocal() and otherwise still sees the about-to-be-deleted
+    # rows, hits the 'existing' check, and skips recapture.
+    db.commit()
+
     from app.services.closing_line_capturer import closing_line_capturer
     await closing_line_capturer.capture_closing_lines()
     db.expire_all()
