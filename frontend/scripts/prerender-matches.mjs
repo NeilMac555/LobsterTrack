@@ -105,7 +105,7 @@ function buildAnswerFirst(match, probs, lastUpdated) {
     : 'recently';
   return [
     '<section id="answer-first" style="max-width:760px;margin:24px auto;padding:18px 22px;background:rgba(15,23,42,0.6);border:1px solid rgba(51,65,85,0.6);border-radius:10px;color:#e2e8f0;font-family:Inter,system-ui,sans-serif;line-height:1.55;">',
-    `<p style="margin:0;font-size:15px;">SteamWatch's Dixon-Coles model gives <strong>${home}</strong> a ${h} chance to win, ${d} for the draw and ${a} for <strong>${away}</strong>. Probabilities are derived from Pinnacle's closing market consensus, the sharpest book in football. Last updated ${escapeHtml(ts)}.</p>`,
+    `<p style="margin:0;font-size:15px;">Based on Pinnacle's market — the sharpest book in football — <strong>${home}</strong> sits at ${h} to win, ${d} for the draw and ${a} for <strong>${away}</strong>. SteamWatch tracks every line move and sharp-money signal in real time. Last updated ${escapeHtml(ts)}.</p>`,
     '</section>',
   ].join('\n');
 }
@@ -121,18 +121,17 @@ function buildProCta() {
 }
 
 function buildTitle(home, away) {
-  const long = `${home} vs ${away} Prediction: Dixon-Coles Odds & Steam Moves | SteamWatch`;
+  const long = `${home} vs ${away} Odds, Prediction & Steam Moves | SteamWatch`;
   if (long.length <= 60) return long;
-  // Drop "& Steam Moves" first per spec
-  const med = `${home} vs ${away} Prediction: Dixon-Coles Odds | SteamWatch`;
+  // Drop "& Steam Moves" first when team names overrun
+  const med = `${home} vs ${away} Odds & Prediction | SteamWatch`;
   if (med.length <= 60) return med;
-  // Last fallback
   return `${home} vs ${away} Prediction | SteamWatch`;
 }
 
 function buildDescription(home, away, homePct) {
   const h = homePct != null ? `${homePct.toFixed(0)}%` : '–';
-  return `SteamWatch's Dixon-Coles model rates ${home} ${h} to win. Live steam moves, closing line value and projected score for ${home} vs ${away}.`;
+  return `SteamWatch rates ${home} ${h} to win based on Pinnacle's market. Live steam moves, closing line value and odds tracking for ${home} vs ${away}.`;
 }
 
 // ---------------------------------------------------------------------------
