@@ -2478,6 +2478,68 @@ async def admin_recompute_closing_line(
     }
 
 
+@router.get("/admin/probe-alternate-totals")
+async def admin_probe_alternate_totals(
+    password: str = Query(..., description="Admin password"),
+    sport_key: str = Query("soccer_fifa_world_cup"),
+):
+    """
+    One-shot probe: hit The Odds API with markets=alternate_totals and
+    Pinnacle to see whether our plan returns alt lines. If yes we can
+    wire it into the fetcher to keep a 2.5 line tracked even when
+    Pinnacle's main line drifts to 2.25/2.75.
+
+    Read-only. Costs ~1 API unit per call.
+    """
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid password")
+    from app.config import get_settings
+    import httpx
+    s = get_settings()
+    url = f"{s.odds_api_base_url}/sports/{sport_key}/odds"
+    params = {
+        "apiKey": s.odds_api_key,
+        "regions": "eu",
+        "markets": "alternate_totals",
+        "bookmakers": "pinnacle",
+        "oddsFormat": "decimal",
+    }
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        resp = await client.get(url, params=params)
+    sample = None
+    events_count = 0
+    lines_per_event = {}
+    try:
+        data = resp.json() if resp.status_code == 200 else None
+        if isinstance(data, list):
+            events_count = len(data)
+            for ev in data[:3]:
+                title = f"{ev.get('home_team')} v {ev.get('away_team')}"
+                pin = next(
+                    (b for b in (ev.get('bookmakers') or []) if b.get('key') == 'pinnacle'),
+                    None,
+                )
+                if pin:
+                    m = next(
+                        (mk for mk in (pin.get('markets') or []) if mk.get('key') == 'alternate_totals'),
+                        None,
+                    )
+                    outs = (m or {}).get('outcomes') or []
+                    lines = sorted({o.get('point') for o in outs if o.get('point') is not None})
+                    lines_per_event[title] = lines
+            sample = data[0] if data else None
+    except Exception as e:
+        sample = {"error": str(e)}
+    return {
+        "status": resp.status_code,
+        "quota_remaining": resp.headers.get("x-requests-remaining"),
+        "quota_used": resp.headers.get("x-requests-used"),
+        "events_returned": events_count,
+        "lines_per_event_sample": lines_per_event,
+        "response_preview": (resp.text[:600] if resp.status_code != 200 else None),
+    }
+
+
 @router.get("/admin/fetcher-health")
 async def get_fetcher_health(
     password: str = Query(..., description="Admin password"),
