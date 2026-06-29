@@ -2423,6 +2423,57 @@ async def admin_mark_early_goal(
     }
 
 
+@router.post("/admin/recompute-closing-line")
+async def admin_recompute_closing_line(
+    password: str = Query(..., description="Admin password"),
+    match_id: str = Query(..., description="Match ID"),
+    market: str = Query("totals", description="1x2 | asian_handicap | totals | all"),
+    db: Session = Depends(get_db),
+):
+    """
+    Delete the existing ClosingLine row(s) for a match so the scheduler's
+    next capture_closing_lines pass recomputes them from current snapshot
+    history. Used to fix wrong closes captured by an old bug (e.g. the
+    pre-fix totals-pin-to-opening-line that stored 2.5 when actual close
+    was 2.25). Safe — only deletes the cached close, not the snapshot data.
+    """
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid password")
+
+    match = db.query(Match).filter(Match.id == match_id).first()
+    if not match:
+        raise HTTPException(status_code=404, detail="match not found")
+
+    q = db.query(ClosingLine).filter(ClosingLine.match_id == match_id)
+    if market != "all":
+        q = q.filter(ClosingLine.market_type == market)
+
+    rows = q.all()
+    deleted = [{"market": r.market_type, "close_line": r.close_line, "captured_at": r.captured_at.isoformat() if r.captured_at else None} for r in rows]
+    for r in rows:
+        db.delete(r)
+
+    # Run the capture immediately so the response shows the recomputed row(s)
+    from app.services.closing_line_capturer import closing_line_capturer
+    await closing_line_capturer.capture_closing_lines()
+    db.expire_all()
+
+    new_rows = (
+        db.query(ClosingLine)
+        .filter(ClosingLine.match_id == match_id)
+        .all()
+    )
+    recaptured = [{"market": r.market_type, "close_line": r.close_line, "over": r.close_over_price, "under": r.close_under_price, "captured_at": r.captured_at.isoformat() if r.captured_at else None, "minutes_before_ko": r.minutes_before_kickoff} for r in new_rows]
+
+    return {
+        "ok": True,
+        "match_id": match_id,
+        "match": f"{match.home_team} vs {match.away_team}",
+        "deleted": deleted,
+        "recaptured": recaptured,
+    }
+
+
 @router.get("/admin/fetcher-health")
 async def get_fetcher_health(
     password: str = Query(..., description="Admin password"),

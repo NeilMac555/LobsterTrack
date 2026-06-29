@@ -224,9 +224,12 @@ class ClosingLineCapturer:
     def _capture_totals(self, db, match: Match) -> bool:
         """Capture Totals closing line for a match. Returns True if newly captured.
 
-        With alternate_totals we store many lines per fetch, so we pin to the
-        OPENING line (the line of the very first snapshot) and capture that
-        line's last pre-kickoff price.
+        Takes the most recent pre-kickoff snapshot regardless of line — the
+        totals fetcher only stores the current main line per fetch (no
+        alternate_totals), so the most recent snapshot IS the closing
+        line Pinnacle settled on. Pinning to the opening line was a leftover
+        from a previous alternate_totals setup and produced wrong closes
+        when the main line drifted (e.g. opened 2.5 but closed 2.25).
         """
         existing = (
             db.query(ClosingLine)
@@ -241,32 +244,15 @@ class ClosingLineCapturer:
         if existing:
             return False
 
-        # Find the opening line (first snapshot ever). Secondary sort by id
-        # so the main line — inserted first into the DB — wins the tiebreak
-        # when multiple alternate lines share the same fetched_at.
-        opening_snapshot = (
-            db.query(TotalsSnapshot)
-            .filter(TotalsSnapshot.match_id == match.id)
-            .order_by(TotalsSnapshot.fetched_at.asc(), TotalsSnapshot.id.asc())
-            .first()
-        )
-
-        if not opening_snapshot:
-            return False
-
-        opening_line = opening_snapshot.line
-
-        # Last pre-kickoff snapshot AT the opening line
         last_snapshot = (
             db.query(TotalsSnapshot)
             .filter(
                 and_(
                     TotalsSnapshot.match_id == match.id,
                     TotalsSnapshot.fetched_at < match.commence_time,
-                    TotalsSnapshot.line == opening_line,
                 )
             )
-            .order_by(TotalsSnapshot.fetched_at.desc())
+            .order_by(TotalsSnapshot.fetched_at.desc(), TotalsSnapshot.id.desc())
             .first()
         )
 
