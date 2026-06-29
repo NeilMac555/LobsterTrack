@@ -231,7 +231,7 @@ export interface TeamPLRow {
   fade: TeamPLSide;
 }
 
-export type InPlayJumpOutcome = 'home' | 'draw' | 'away' | 'over_2_5' | 'under_2_5';
+export type InPlayJumpOutcome = 'home' | 'draw' | 'away';
 
 export interface InPlayJumpPinnacleClose {
   home_odds: number | null;
@@ -240,11 +240,6 @@ export interface InPlayJumpPinnacleClose {
   home_implied: number | null;
   draw_implied: number | null;
   away_implied: number | null;
-  totals_line: number | null;
-  over_odds: number | null;
-  under_odds: number | null;
-  over_implied: number | null;
-  under_implied: number | null;
 }
 
 export interface InPlayJumpPolymarket {
@@ -252,8 +247,6 @@ export interface InPlayJumpPolymarket {
   home_yes: number | null;
   draw_yes: number | null;
   away_yes: number | null;
-  over_2_5_yes: number | null;
-  under_2_5_yes: number | null;
   event_volume_24h: number | null;
 }
 
@@ -261,8 +254,6 @@ export interface InPlayJumpGaps {
   home: number | null;
   draw: number | null;
   away: number | null;
-  over_2_5: number | null;
-  under_2_5: number | null;
 }
 
 export interface InPlayJump {

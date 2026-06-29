@@ -39,8 +39,7 @@ function outcomeLabel(outcome: InPlayJumpOutcome, m: InPlayJump): string {
     case 'home': return m.home_team;
     case 'away': return m.away_team;
     case 'draw': return 'Draw';
-    case 'over_2_5': return 'Over 2.5';
-    case 'under_2_5': return 'Under 2.5';
+    default: return outcome;
   }
 }
 
@@ -55,16 +54,12 @@ function narrative(m: InPlayJump): string {
   const pinPct = (() => {
     if (outcome === 'home') return m.pinnacle_close.home_implied;
     if (outcome === 'draw') return m.pinnacle_close.draw_implied;
-    if (outcome === 'away') return m.pinnacle_close.away_implied;
-    if (outcome === 'over_2_5') return m.pinnacle_close.over_implied;
-    return m.pinnacle_close.under_implied;
+    return m.pinnacle_close.away_implied;
   })();
   const pmPct = (() => {
     if (outcome === 'home') return m.polymarket_inplay.home_yes;
     if (outcome === 'draw') return m.polymarket_inplay.draw_yes;
-    if (outcome === 'away') return m.polymarket_inplay.away_yes;
-    if (outcome === 'over_2_5') return m.polymarket_inplay.over_2_5_yes;
-    return m.polymarket_inplay.under_2_5_yes;
+    return m.polymarket_inplay.away_yes;
   })();
 
   const pinStr = pinPct != null ? `${(pinPct * 100).toFixed(1)}%` : '—';
@@ -396,9 +391,6 @@ function PinnacleColumn({ m }: { m: InPlayJump }) {
       <div>H {fmtPct(c.home_implied)} <span className="text-slate-600">({fmtOdds(c.home_odds)})</span></div>
       <div>D {fmtPct(c.draw_implied)} <span className="text-slate-600">({fmtOdds(c.draw_odds)})</span></div>
       <div>A {fmtPct(c.away_implied)} <span className="text-slate-600">({fmtOdds(c.away_odds)})</span></div>
-      {c.over_implied !== null && (
-        <div className="text-slate-500 mt-1">O2.5 {fmtPct(c.over_implied)} / U {fmtPct(c.under_implied)}</div>
-      )}
     </div>
   );
 }
@@ -410,9 +402,6 @@ function PolymarketColumn({ m }: { m: InPlayJump }) {
       <div>H {fmtPct(p.home_yes)}</div>
       <div>D {fmtPct(p.draw_yes)}</div>
       <div>A {fmtPct(p.away_yes)}</div>
-      {p.over_2_5_yes !== null && (
-        <div className="text-slate-500 mt-1">O2.5 {fmtPct(p.over_2_5_yes)} / U {fmtPct(p.under_2_5_yes)}</div>
-      )}
     </div>
   );
 }
@@ -424,9 +413,6 @@ function GapColumn({ m }: { m: InPlayJump }) {
       <div className={gapColor(g.home)}>{fmtPP(g.home)}</div>
       <div className={gapColor(g.draw)}>{fmtPP(g.draw)}</div>
       <div className={gapColor(g.away)}>{fmtPP(g.away)}</div>
-      {g.over_2_5 !== null && (
-        <div className={`${gapColor(g.over_2_5)} mt-1`}>{fmtPP(g.over_2_5)} / <span className={gapColor(g.under_2_5)}>{fmtPP(g.under_2_5)}</span></div>
-      )}
     </div>
   );
 }

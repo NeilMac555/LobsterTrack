@@ -457,22 +457,11 @@ async def get_in_play_jumps(
             continue
         matches_with_close += 1
 
-        # Totals close — only comparable to Polymarket's O/U 2.5 line if
-        # Pinnacle's close happened to be at 2.5 too. Skip totals
-        # comparison for matches where Pinnacle closed at 2.0/2.25/2.75
-        # etc. — apples-to-oranges otherwise.
-        close_totals = (
-            db.query(ClosingLine)
-            .filter(ClosingLine.match_id == match.id)
-            .filter(ClosingLine.market_type == "totals")
-            .first()
-        )
-        totals_comparable = bool(
-            close_totals
-            and close_totals.close_line == 2.5
-            and close_totals.close_over_price
-            and close_totals.close_under_price
-        )
+        # In-Play Jumps is 1X2-only: Pinnacle quotes quarter lines for
+        # totals (2.25/2.75) which Polymarket doesn't trade, so the
+        # totals comparison silently misled on a meaningful fraction of
+        # matches. 1X2 is the only market where both books have an
+        # identical outcome structure, so we keep this signal pure.
 
         # Polymarket in-play anchor: first in_play=True snapshot at or
         # after T+inplay_anchor_min. If the first one is later than
@@ -498,15 +487,11 @@ async def get_in_play_jumps(
         pin_home = implied(close_1x2.close_home)
         pin_draw = implied(close_1x2.close_draw)
         pin_away = implied(close_1x2.close_away)
-        pin_over = implied(close_totals.close_over_price) if totals_comparable else None
-        pin_under = implied(close_totals.close_under_price) if totals_comparable else None
 
         # Polymarket YES already IS the implied prob on 0..1 scale.
         pm_home = pm_anchor.home_win_yes
         pm_draw = pm_anchor.draw_yes
         pm_away = pm_anchor.away_win_yes
-        pm_over = pm_anchor.over_2_5_yes
-        pm_under = pm_anchor.under_2_5_yes
 
         def gap_pp(pm, pin):
             if pm is None or pin is None:
@@ -517,8 +502,6 @@ async def get_in_play_jumps(
             "home": gap_pp(pm_home, pin_home),
             "draw": gap_pp(pm_draw, pin_draw),
             "away": gap_pp(pm_away, pin_away),
-            "over_2_5": gap_pp(pm_over, pin_over),
-            "under_2_5": gap_pp(pm_under, pin_under),
         }
         candidates = [(k, v) for k, v in gaps.items() if v is not None]
         if not candidates:
@@ -546,19 +529,12 @@ async def get_in_play_jumps(
                 "home_implied": round(pin_home, 4) if pin_home else None,
                 "draw_implied": round(pin_draw, 4) if pin_draw else None,
                 "away_implied": round(pin_away, 4) if pin_away else None,
-                "totals_line": close_totals.close_line if close_totals else None,
-                "over_odds": close_totals.close_over_price if close_totals else None,
-                "under_odds": close_totals.close_under_price if close_totals else None,
-                "over_implied": round(pin_over, 4) if pin_over else None,
-                "under_implied": round(pin_under, 4) if pin_under else None,
             },
             "polymarket_inplay": {
                 "fetched_at": pm_anchor.fetched_at.isoformat() + "Z",
                 "home_yes": pm_home,
                 "draw_yes": pm_draw,
                 "away_yes": pm_away,
-                "over_2_5_yes": pm_over,
-                "under_2_5_yes": pm_under,
                 "event_volume_24h": pm_anchor.event_volume_24h,
             },
             "gaps_pp": gaps,
