@@ -3428,6 +3428,8 @@ async def get_alert_diagnostics(
     if password != ADMIN_PASSWORD:
         raise HTTPException(status_code=401, detail="Invalid password")
 
+    from app.services.syndicate_alerter import SYNDICATE_THRESHOLD_PROB_POINTS, LEAGUE_OVERRIDES
+
     from datetime import timedelta
     now = datetime.utcnow()
 
@@ -3573,7 +3575,8 @@ async def get_alert_diagnostics(
         ],
         "upcoming_matches_checked": len(upcoming_matches),
         "match_prob_moves": match_moves,
-        "threshold_pp": 3.0,
+        "threshold_pp_default": SYNDICATE_THRESHOLD_PROB_POINTS,
+        "league_overrides": LEAGUE_OVERRIDES,
         "now_utc": now.isoformat()
     }
 
