@@ -7,6 +7,7 @@ import type { MatchDetail, MatchTotals, MatchSpreads } from '../types';
 import { LEAGUE_CONFIG } from '../types';
 import OddsChart from '../components/OddsChart';
 import TotalsChart from '../components/TotalsChart';
+import MarketTrendStrip from '../components/MarketTrendStrip';
 import SpreadsChart from '../components/SpreadsChart';
 import TimeFrameFilter, { type TimeFrame } from '../components/TimeFrameFilter';
 import LeagueLogo from '../components/LeagueLogo';
@@ -655,6 +656,14 @@ function TotalsSection({ totals, timeFrame, onTimeFrameChange }: TotalsSectionPr
           segments={totalsSegments}
           formatLine={(n) => n.toFixed(2)}
         />
+
+        {/* Market-implied expected-goals trend — a single continuous
+            signal that stays comparable across a line shift, unlike the
+            raw price chart below it. Answers 'is the market trending
+            toward Over or Under' at a glance. */}
+        {totals.totals_history.length > 1 && (
+          <MarketTrendStrip data={totals.totals_history} timeFrame={timeFrame} />
+        )}
 
         {/* Chart */}
         {totals.totals_history.length > 1 && (
