@@ -65,6 +65,7 @@ export interface BiggestMover {
   current_odds: number;
   movement_percent: number;
   direction: 'up' | 'down';
+  sparkline: number[] | null;
 }
 
 export interface TotalsPoint {

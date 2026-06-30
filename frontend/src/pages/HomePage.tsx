@@ -6,6 +6,7 @@ import { getMatches, getStats, getBiggestMovers, getSyndicateMoves } from '../ap
 import type { MatchSummary, BiggestMover, SyndicateMove, Stats } from '../types';
 import { LEAGUE_CONFIG } from '../types';
 import MatchCard from '../components/MatchCard';
+import Sparkline from '../components/Sparkline';
 import WorldCupMatchCard from '../components/WorldCupMatchCard';
 import AmIUpCTA from '../components/AmIUpCTA';
 import LeagueLogo from '../components/LeagueLogo';
@@ -468,6 +469,9 @@ export default function HomePage() {
                   <th className="px-4 py-3 text-center text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">
                     Now
                   </th>
+                  <th className="px-4 py-3 text-center text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">
+                    Trend
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/50">
@@ -557,6 +561,11 @@ export default function HomePage() {
                           {mover.current_odds.toFixed(2)}
                         </span>
                       </td>
+                      <td className="px-4 py-4">
+                        <div className="flex justify-center">
+                          <Sparkline values={mover.sparkline} width={88} height={26} color="auto" />
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
@@ -637,6 +646,11 @@ export default function HomePage() {
                         <span className="text-slate-600 mx-1">→</span>
                         <span className="text-white font-bold">{mover.current_odds.toFixed(2)}</span>
                       </div>
+                      {mover.sparkline && (
+                        <div className="mt-1.5">
+                          <Sparkline values={mover.sparkline} width={88} height={22} color="auto" />
+                        </div>
+                      )}
                     </div>
                   </div>
                 </Link>

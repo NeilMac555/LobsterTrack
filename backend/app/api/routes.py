@@ -975,6 +975,47 @@ async def get_biggest_movers(
     movers.sort(key=lambda x: abs(x['movement_percent']), reverse=True)
     top_movers = movers[:limit]
 
+    # Sparkline: implied-probability trend for the specific outcome that
+    # made each match a "biggest mover". top_movers is already capped at
+    # `limit` (default 4), so one small query per mover here is cheap —
+    # far simpler than trying to batch this across mixed 1x2/totals
+    # outcome columns, and the result set is tiny.
+    SPARK_POINTS = 12
+    for m in top_movers:
+        match_id = m['match'].id
+        series: list[float] = []
+        if m['market'] == '1x2':
+            odds_col = {
+                'home': OddsSnapshot.home_odds,
+                'draw': OddsSnapshot.draw_odds,
+                'away': OddsSnapshot.away_odds,
+            }.get(m['outcome'])
+            if odds_col is not None:
+                rows = (
+                    db.query(odds_col)
+                    .filter(OddsSnapshot.match_id == match_id)
+                    .filter(odds_col.isnot(None))
+                    .filter(odds_col > 0)
+                    .filter(OddsSnapshot.in_play == False)  # noqa: E712
+                    .order_by(OddsSnapshot.fetched_at.desc())
+                    .limit(SPARK_POINTS)
+                    .all()
+                )
+                series = [round((1.0 / r[0]) * 100, 2) for r in reversed(rows)]
+        elif m['market'] == 'totals':
+            odds_col = TotalsSnapshot.over_odds if m['outcome'] == 'over' else TotalsSnapshot.under_odds
+            rows = (
+                db.query(odds_col)
+                .filter(TotalsSnapshot.match_id == match_id)
+                .filter(odds_col.isnot(None))
+                .filter(odds_col > 0)
+                .order_by(TotalsSnapshot.fetched_at.desc())
+                .limit(SPARK_POINTS)
+                .all()
+            )
+            series = [round((1.0 / r[0]) * 100, 2) for r in reversed(rows)]
+        m['sparkline'] = series if len(series) >= 2 else None
+
     return [
         BiggestMover(
             match_id=m['match'].id,
@@ -989,7 +1030,8 @@ async def get_biggest_movers(
             opening_odds=m['opening_odds'],
             current_odds=m['current_odds'],
             movement_percent=m['movement_percent'],
-            direction=m['direction']
+            direction=m['direction'],
+            sparkline=m.get('sparkline'),
         )
         for m in top_movers
     ]

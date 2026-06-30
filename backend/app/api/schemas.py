@@ -150,6 +150,7 @@ class BiggestMover(BaseModel):
     current_odds: float
     movement_percent: float
     direction: str  # 'up' or 'down'
+    sparkline: Optional[list[float]] = None  # implied prob (0-100) trend for the mover outcome, oldest first
 
     class Config:
         from_attributes = True
