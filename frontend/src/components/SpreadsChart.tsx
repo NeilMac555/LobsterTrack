@@ -8,6 +8,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
+  ReferenceArea,
 } from 'recharts';
 import { format } from 'date-fns';
 import type { SpreadsPoint } from '../types';
@@ -35,7 +36,7 @@ export default function SpreadsChart({ data, timeFrame = 'all' }: SpreadsChartPr
 
   const openingSpreads = data.length > 0 ? data[0] : null;
 
-  const chartData = filteredData.map((point) => ({
+  const baseData = filteredData.map((point) => ({
     ...point,
     time: format(new Date(point.timestamp), 'MMM d, HH:mm'),
     shortTime: format(new Date(point.timestamp), 'd/M HH:mm'),
@@ -47,16 +48,52 @@ export default function SpreadsChart({ data, timeFrame = 'all' }: SpreadsChartPr
   // Without this, a sudden home/away odds jump at the moment of the line move
   // looks like a steam move when it's really just a different bet.
   const lineShifts: Array<{ shortTime: string; from: number; to: number }> = [];
-  for (let i = 1; i < chartData.length; i++) {
-    const prev = chartData[i - 1].line;
-    const curr = chartData[i].line;
+  for (let i = 1; i < baseData.length; i++) {
+    const prev = baseData[i - 1].line;
+    const curr = baseData[i].line;
     if (prev != null && curr != null && Math.abs(prev - curr) > 0.001) {
       lineShifts.push({
-        shortTime: chartData[i].shortTime,
+        shortTime: baseData[i].shortTime,
         from: prev,
         to: curr,
       });
     }
+  }
+
+  // Group consecutive same-line points into segments so each stretch
+  // of the chart can be shaded and labelled with the AH line that was
+  // active — same rationale as TotalsChart.
+  const segments: Array<{ line: number; startTime: string; endTime: string }> = [];
+  for (const point of baseData) {
+    if (point.line == null) continue;
+    const last = segments[segments.length - 1];
+    if (last && Math.abs(last.line - point.line) < 0.001) {
+      last.endTime = point.shortTime;
+    } else {
+      segments.push({ line: point.line, startTime: point.shortTime, endTime: point.shortTime });
+    }
+  }
+
+  // Home/Away prices at one AH line aren't comparable to prices at a
+  // different line — connecting them draws a misleading diagonal right
+  // at the shift. Insert a null-value gap point at each boundary and
+  // disable connectNulls so the lines visibly break instead of joining
+  // two incomparable price levels.
+  const chartData: typeof baseData = [];
+  for (let i = 0; i < baseData.length; i++) {
+    if (
+      i > 0 &&
+      baseData[i].line != null &&
+      baseData[i - 1].line != null &&
+      Math.abs((baseData[i].line as number) - (baseData[i - 1].line as number)) > 0.001
+    ) {
+      chartData.push({
+        ...baseData[i - 1],
+        home_odds: null as unknown as number,
+        away_odds: null as unknown as number,
+      });
+    }
+    chartData.push(baseData[i]);
   }
 
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -175,6 +212,28 @@ export default function SpreadsChart({ data, timeFrame = 'all' }: SpreadsChartPr
             allowEscapeViewBox={{ x: false, y: true }}
           />
 
+          {/* Alternating background bands, one per distinct AH line,
+              labelled so a reader can tell at a glance which stretch of
+              the chart was -0.5 vs -0.75 vs -1.0 etc without hovering. */}
+          {segments.map((seg, i) => (
+            <ReferenceArea
+              key={`seg-${i}`}
+              x1={seg.startTime}
+              x2={seg.endTime}
+              fill={i % 2 === 0 ? 'rgba(148,163,184,0.05)' : 'rgba(148,163,184,0.11)'}
+              stroke="none"
+              ifOverflow="extendDomain"
+              label={{
+                value: `${seg.line >= 0 ? '+' : ''}${seg.line.toFixed(2)}`,
+                position: 'insideTop',
+                fill: '#fbbf24',
+                fontSize: 10,
+                fontFamily: MONO_STACK,
+                fontWeight: 700,
+              }}
+            />
+          ))}
+
           {/* Opening price reference lines */}
           {openingSpreads?.home_odds && (
             <ReferenceLine y={openingSpreads.home_odds} stroke={COLOR_HOME} strokeDasharray="2 4" strokeOpacity={0.25} />
@@ -196,11 +255,15 @@ export default function SpreadsChart({ data, timeFrame = 'all' }: SpreadsChartPr
             />
           ))}
 
-          {/* Area fills underneath */}
-          <Area type="monotone" dataKey="home_odds" stroke="none" fill="url(#spreadsArea-home)" isAnimationActive={false} activeDot={false} />
-          <Area type="monotone" dataKey="away_odds" stroke="none" fill="url(#spreadsArea-away)" isAnimationActive={false} activeDot={false} />
+          {/* Area fills underneath — connectNulls=false so the fill breaks
+              at each line-shift gap point instead of bridging two
+              incomparable price levels. */}
+          <Area type="monotone" dataKey="home_odds" stroke="none" fill="url(#spreadsArea-home)" connectNulls={false} isAnimationActive={false} activeDot={false} />
+          <Area type="monotone" dataKey="away_odds" stroke="none" fill="url(#spreadsArea-away)" connectNulls={false} isAnimationActive={false} activeDot={false} />
 
-          {/* Lines on top */}
+          {/* Lines on top — connectNulls=false breaks the line at each
+              line-shift gap point instead of drawing a misleading
+              diagonal between two different AH lines' prices. */}
           <Line
             type="monotone"
             dataKey="home_odds"
@@ -208,6 +271,7 @@ export default function SpreadsChart({ data, timeFrame = 'all' }: SpreadsChartPr
             stroke={COLOR_HOME}
             strokeWidth={2.2}
             dot={false}
+            connectNulls={false}
             activeDot={{ r: 5, fill: COLOR_HOME, stroke: '#0f172a', strokeWidth: 2 }}
             animationDuration={300}
           />
@@ -218,6 +282,7 @@ export default function SpreadsChart({ data, timeFrame = 'all' }: SpreadsChartPr
             stroke={COLOR_AWAY}
             strokeWidth={2.2}
             dot={false}
+            connectNulls={false}
             activeDot={{ r: 5, fill: COLOR_AWAY, stroke: '#0f172a', strokeWidth: 2 }}
             animationDuration={300}
           />

@@ -8,6 +8,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
+  ReferenceArea,
 } from 'recharts';
 import { format } from 'date-fns';
 import type { TotalsPoint } from '../types';
@@ -35,7 +36,7 @@ export default function TotalsChart({ data, timeFrame = 'all' }: TotalsChartProp
 
   const openingTotals = data.length > 0 ? data[0] : null;
 
-  const chartData = filteredData.map((point) => ({
+  const baseData = filteredData.map((point) => ({
     ...point,
     time: format(new Date(point.timestamp), 'MMM d, HH:mm'),
     shortTime: format(new Date(point.timestamp), 'd/M HH:mm'),
@@ -48,16 +49,55 @@ export default function TotalsChart({ data, timeFrame = 'all' }: TotalsChartProp
   // — without context, a jump in Over/Under odds at the moment the line
   // shifts looks like a steam move when it's really just a different bet.
   const lineShifts: Array<{ shortTime: string; from: number; to: number }> = [];
-  for (let i = 1; i < chartData.length; i++) {
-    const prev = chartData[i - 1].line;
-    const curr = chartData[i].line;
+  for (let i = 1; i < baseData.length; i++) {
+    const prev = baseData[i - 1].line;
+    const curr = baseData[i].line;
     if (prev != null && curr != null && Math.abs(prev - curr) > 0.001) {
       lineShifts.push({
-        shortTime: chartData[i].shortTime,
+        shortTime: baseData[i].shortTime,
         from: prev,
         to: curr,
       });
     }
+  }
+
+  // Group consecutive same-line points into segments so we can shade
+  // each one a slightly different background and label it with the
+  // line value — the reader can see at a glance which stretch of the
+  // chart was Over/Under 2.75 vs 3.0 vs 3.25 without hovering.
+  const segments: Array<{ line: number; startTime: string; endTime: string }> = [];
+  for (const point of baseData) {
+    if (point.line == null) continue;
+    const last = segments[segments.length - 1];
+    if (last && Math.abs(last.line - point.line) < 0.001) {
+      last.endTime = point.shortTime;
+    } else {
+      segments.push({ line: point.line, startTime: point.shortTime, endTime: point.shortTime });
+    }
+  }
+
+  // Over/Under prices at one line aren't comparable to prices at another
+  // line — Over 2.75 @ 1.95 and Over 3.0 @ 1.95 mean different things.
+  // Connecting them with a straight line draws a misleading diagonal
+  // "wall" right at the moment the line shifts. Instead we insert a
+  // null-value gap point at each shift boundary and disable connectNulls
+  // so the Over/Under lines visibly BREAK there instead of joining two
+  // incomparable price levels.
+  const chartData: typeof baseData = [];
+  for (let i = 0; i < baseData.length; i++) {
+    if (
+      i > 0 &&
+      baseData[i].line != null &&
+      baseData[i - 1].line != null &&
+      Math.abs((baseData[i].line as number) - (baseData[i - 1].line as number)) > 0.001
+    ) {
+      chartData.push({
+        ...baseData[i - 1],
+        over_odds: null as unknown as number,
+        under_odds: null as unknown as number,
+      });
+    }
+    chartData.push(baseData[i]);
   }
 
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -176,6 +216,29 @@ export default function TotalsChart({ data, timeFrame = 'all' }: TotalsChartProp
             allowEscapeViewBox={{ x: false, y: true }}
           />
 
+          {/* Alternating background bands, one per distinct line value, each
+              labelled with the line so a reader can tell at a glance which
+              stretch of the chart was Over/Under 2.75 vs 3.0 vs 3.25 etc
+              without hovering for the tooltip. */}
+          {segments.map((seg, i) => (
+            <ReferenceArea
+              key={`seg-${i}`}
+              x1={seg.startTime}
+              x2={seg.endTime}
+              fill={i % 2 === 0 ? 'rgba(148,163,184,0.05)' : 'rgba(148,163,184,0.11)'}
+              stroke="none"
+              ifOverflow="extendDomain"
+              label={{
+                value: seg.line.toFixed(2),
+                position: 'insideTop',
+                fill: '#fbbf24',
+                fontSize: 10,
+                fontFamily: MONO_STACK,
+                fontWeight: 700,
+              }}
+            />
+          ))}
+
           {/* Opening price reference lines */}
           {openingTotals?.over_odds && (
             <ReferenceLine y={openingTotals.over_odds} stroke={COLOR_OVER} strokeDasharray="2 4" strokeOpacity={0.25} />
@@ -203,11 +266,16 @@ export default function TotalsChart({ data, timeFrame = 'all' }: TotalsChartProp
             />
           ))}
 
-          {/* Area fills underneath */}
-          <Area type="monotone" dataKey="over_odds" stroke="none" fill="url(#totalsArea-over)" isAnimationActive={false} activeDot={false} />
-          <Area type="monotone" dataKey="under_odds" stroke="none" fill="url(#totalsArea-under)" isAnimationActive={false} activeDot={false} />
+          {/* Area fills underneath — connectNulls=false so the fill breaks
+              at each line-shift gap point instead of bridging two
+              incomparable price levels. */}
+          <Area type="monotone" dataKey="over_odds" stroke="none" fill="url(#totalsArea-over)" connectNulls={false} isAnimationActive={false} activeDot={false} />
+          <Area type="monotone" dataKey="under_odds" stroke="none" fill="url(#totalsArea-under)" connectNulls={false} isAnimationActive={false} activeDot={false} />
 
-          {/* Lines on top */}
+          {/* Lines on top — connectNulls=false breaks the line at each
+              line-shift gap point (see chartData construction above)
+              instead of drawing a misleading diagonal between an Over
+              2.75 price and an Over 3.0 price. */}
           <Line
             type="monotone"
             dataKey="over_odds"
@@ -215,6 +283,7 @@ export default function TotalsChart({ data, timeFrame = 'all' }: TotalsChartProp
             stroke={COLOR_OVER}
             strokeWidth={2.2}
             dot={false}
+            connectNulls={false}
             activeDot={{ r: 5, fill: COLOR_OVER, stroke: '#0f172a', strokeWidth: 2 }}
             animationDuration={300}
           />
@@ -225,6 +294,7 @@ export default function TotalsChart({ data, timeFrame = 'all' }: TotalsChartProp
             stroke={COLOR_UNDER}
             strokeWidth={2.2}
             dot={false}
+            connectNulls={false}
             activeDot={{ r: 5, fill: COLOR_UNDER, stroke: '#0f172a', strokeWidth: 2 }}
             animationDuration={300}
           />
