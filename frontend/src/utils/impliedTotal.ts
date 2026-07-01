@@ -10,9 +10,16 @@
  * that line. Total goals in soccer is well approximated by a Poisson
  * distribution — this is the same assumption Dixon-Coles is built on.
  *
- * The result, lambda, is a continuous "market-implied total goals"
- * figure that trends smoothly even as the traded line moves underneath
- * it — exactly the apples-to-apples signal a raw price chart can't give.
+ * IMPORTANT — quarter lines (X.25 / X.75) are NOT a simple binary
+ * threshold. A "2.25" total is really a 50/50 blend of two sub-bets: the
+ * whole-number line below it (which can push) and the half-line above it
+ * (which can't). Treating a 2.25 quote the same as a 2.5 quote — i.e.
+ * just flooring to the nearest integer — produces a systematically wrong
+ * implied lambda and shows up as a false jump exactly when Pinnacle's
+ * quoted line crosses from a half line to a quarter line (or vice versa),
+ * even though nothing about the market's real goal-expectancy changed.
+ * fairOverOdds below models each line type (whole/half/quarter) properly
+ * so the solved lambda stays continuous across those transitions.
  */
 
 function poissonPmf(k: number, lambda: number): number {
@@ -30,10 +37,58 @@ function poissonCdf(k: number, lambda: number): number {
   return sum;
 }
 
-/** P(total goals > line) under Poisson(lambda). Soccer totals lines are
- * always at .25/.5/.75 fractions, so "> line" === "> floor(line)". */
-function probOver(line: number, lambda: number): number {
-  return 1 - poissonCdf(Math.floor(line), lambda);
+/**
+ * Fair (no-vig) decimal odds for the Over side of `line` under
+ * Poisson(lambda), correctly modelling the payout structure for each
+ * line type:
+ *
+ *  - Half line (X.5): plain single bet, no push. Over wins iff
+ *    goals > floor(line). Fair odds = 1 / P(win).
+ *  - Whole line (X.0): single bet WITH a push at exactly `line` goals.
+ *    Fair odds = (1 - P(push)) / P(win) — a push refunds the stake, so
+ *    it doesn't count as a loss in the fair-odds equation.
+ *  - Quarter line (X.25): half the stake on the whole line below
+ *    (floor(line), pushable) + half on the half line above
+ *    (floor(line)+0.5, not pushable). Both sub-bets win together once
+ *    goals clear the half line; at exactly floor(line) goals the whole
+ *    leg pushes while the half leg loses, so that outcome only refunds
+ *    half the stake. Fair odds = (1 - 0.5*P(push)) / P(win).
+ *  - Three-quarter line (X.75): half the stake on the half line below
+ *    (floor(line)+0.5, not pushable) + half on the whole line above
+ *    (floor(line)+1, pushable). At exactly floor(line)+1 goals the half
+ *    leg already won while the whole leg pushes, so that outcome pays
+ *    out the win on half the stake plus a refund on the other half.
+ *    Fair odds = (1 - 0.5*P(push)) / (P(strict win) + 0.5*P(push)).
+ */
+function fairOverOdds(line: number, lambda: number): number {
+  const floor = Math.floor(line);
+  const frac = Number((line - floor).toFixed(2));
+
+  if (frac === 0.5) {
+    const pWin = 1 - poissonCdf(floor, lambda);
+    return pWin > 0 ? 1 / pWin : Infinity;
+  }
+  if (frac === 0) {
+    const pWin = 1 - poissonCdf(floor, lambda);
+    const pPush = poissonPmf(floor, lambda);
+    return pWin > 0 ? (1 - pPush) / pWin : Infinity;
+  }
+  if (frac === 0.25) {
+    const pWin = 1 - poissonCdf(floor, lambda);
+    const pPush = poissonPmf(floor, lambda);
+    return pWin > 0 ? (1 - 0.5 * pPush) / pWin : Infinity;
+  }
+  if (frac === 0.75) {
+    const intLine = floor + 1;
+    const pWinStrict = 1 - poissonCdf(intLine, lambda);
+    const pPush = poissonPmf(intLine, lambda);
+    const denom = pWinStrict + 0.5 * pPush;
+    return denom > 0 ? (1 - 0.5 * pPush) / denom : Infinity;
+  }
+  // Unexpected fraction — fall back to the simple half-line treatment
+  // rather than throw; soccer totals should never hit this branch.
+  const pWin = 1 - poissonCdf(floor, lambda);
+  return pWin > 0 ? 1 / pWin : Infinity;
 }
 
 /** Multiplicative devig: strip the bookmaker's margin proportionally
@@ -48,9 +103,12 @@ function devig(overOdds: number, underOdds: number): { pOver: number; pUnder: nu
 }
 
 /**
- * Solve for the Poisson lambda whose Over probability at `line` matches
- * the devigged market probability. Binary search over a sane goals range
- * — soccer totals essentially never imply a fair lambda outside ~0.3–8.
+ * Solve for the Poisson lambda whose fair Over odds at `line` match the
+ * devigged market odds. Binary search over a sane goals range — soccer
+ * totals essentially never imply a fair lambda outside ~0.05–9. Fair
+ * odds are a decreasing function of lambda (more expected goals -> Over
+ * more likely -> shorter odds), so the search direction is inverted
+ * relative to searching on probability directly.
  */
 export function impliedExpectedGoals(
   line: number | null,
@@ -59,16 +117,15 @@ export function impliedExpectedGoals(
 ): number | null {
   if (line == null || overOdds == null || underOdds == null) return null;
   const probs = devig(overOdds, underOdds);
-  if (!probs) return null;
-  const target = probs.pOver;
+  if (!probs || probs.pOver <= 0) return null;
+  const targetOdds = 1 / probs.pOver;
 
   let lo = 0.05;
   let hi = 9;
-  // probOver is monotonically increasing in lambda, so binary search works.
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 50; i++) {
     const mid = (lo + hi) / 2;
-    const p = probOver(line, mid);
-    if (p < target) {
+    const modelOdds = fairOverOdds(line, mid);
+    if (modelOdds > targetOdds) {
       lo = mid;
     } else {
       hi = mid;
