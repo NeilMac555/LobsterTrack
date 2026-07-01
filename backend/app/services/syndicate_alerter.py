@@ -220,28 +220,28 @@ class SyndicateAlerter:
         minutes_to_ko: int,
         threshold: float = SYNDICATE_THRESHOLD_PROB_POINTS,
     ) -> int:
-        """Check Totals market for syndicate moves on the OPENING line.
+        """Check Totals market for syndicate moves.
 
-        With alternate_totals we store many lines per fetch, so we pin the
-        comparison to the opening line — that way the market's main line
-        drifting (e.g. 2.5 -> 3.0) doesn't silence alerts, and we still
-        compare like-for-like odds.
+        Baseline = first snapshot in the alert window; latest = most
+        recent snapshot overall, regardless of line — same pattern as
+        _check_1x2_market. This used to pin to the opening line, on the
+        assumption that alternate_totals kept that line's shadow price
+        updating even as the headline line moved. We confirmed
+        alternate_totals returns 422 on our Odds API plan — we only ever
+        store the CURRENT main line per fetch, so once Pinnacle moved
+        the line off the opening value, no new snapshots at that line
+        ever arrived again and the comparison silently went stale
+        forever (baseline == latest-at-opening-line, zero movement,
+        no alert — even when a large real move happened on the new
+        line). Comparing raw odds across a line change is an
+        approximation (Over @ 2.75 and Over @ 2.5 aren't identical
+        bets), but it's a far better approximation than never detecting
+        the move at all, and matches how a bettor actually experiences
+        the price shifting.
         """
-        opening = (
-            db.query(TotalsSnapshot)
-            .filter(TotalsSnapshot.match_id == match.id)
-            .order_by(TotalsSnapshot.fetched_at.asc(), TotalsSnapshot.id.asc())
-            .first()
-        )
-        if not opening:
-            return 0
-
-        opening_line = opening.line
-
         baseline = (
             db.query(TotalsSnapshot)
             .filter(TotalsSnapshot.match_id == match.id)
-            .filter(TotalsSnapshot.line == opening_line)
             .filter(TotalsSnapshot.fetched_at >= window_start)
             .order_by(TotalsSnapshot.fetched_at.asc())
             .first()
@@ -250,7 +250,6 @@ class SyndicateAlerter:
         latest = (
             db.query(TotalsSnapshot)
             .filter(TotalsSnapshot.match_id == match.id)
-            .filter(TotalsSnapshot.line == opening_line)
             .order_by(TotalsSnapshot.fetched_at.desc())
             .first()
         )
@@ -259,7 +258,7 @@ class SyndicateAlerter:
             return 0
 
         alerts_sent = 0
-        line = baseline.line
+        line = latest.line
         outcomes = [
             ('over', 'O', f'O {line}', baseline.over_odds, latest.over_odds),
             ('under', 'U', f'U {line}', baseline.under_odds, latest.under_odds),
@@ -288,7 +287,18 @@ class SyndicateAlerter:
         minutes_to_ko: int,
         threshold: float = SYNDICATE_THRESHOLD_PROB_POINTS,
     ) -> int:
-        """Check Spreads (Asian Handicap) market for syndicate moves. Only compares when line hasn't changed."""
+        """Check Spreads (Asian Handicap) market for syndicate moves.
+
+        Baseline = first snapshot in the alert window; latest = most
+        recent snapshot overall, regardless of line. Used to skip the
+        match entirely if the handicap line had moved at all within the
+        window — but AH lines shift often (we've seen a single WC match
+        move 10+ times in 3 days), so that guard meant the alerter went
+        blind on most matches the moment the line first moved, the same
+        bug _check_totals_market had. Comparing raw odds across a line
+        change is an approximation, but it's a far better one than never
+        detecting the move at all.
+        """
         baseline = (
             db.query(SpreadsSnapshot)
             .filter(SpreadsSnapshot.match_id == match.id)
@@ -307,12 +317,8 @@ class SyndicateAlerter:
         if not baseline or not latest or baseline.id == latest.id:
             return 0
 
-        # Skip if the handicap line has moved (e.g. -1.25 -> -1.75) — only compare same-line odds
-        if baseline.line != latest.line:
-            return 0
-
         alerts_sent = 0
-        line = baseline.line
+        line = latest.line
         line_str = f"+{line}" if line > 0 else str(line)
 
         outcomes = [
