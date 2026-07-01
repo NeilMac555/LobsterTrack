@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import LoginModal from './LoginModal';
 import CheckoutSuccessBanner from './CheckoutSuccessBanner';
 import LiveTicker from './LiveTicker';
+import AmIUpCTA from './AmIUpCTA';
 
 const leagues = VISIBLE_LEAGUES;
 
@@ -617,7 +618,8 @@ export default function Layout() {
 
       {/* Footer */}
       <footer className="bg-slate-800/50 border-t border-slate-700/50 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-4">
+          <AmIUpCTA placement="footer" />
           <p className="text-center text-slate-500 text-xs sm:text-sm font-medium">
             Pinnacle odds via The Odds API • Updates every 15 minutes
           </p>
