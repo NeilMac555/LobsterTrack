@@ -3417,6 +3417,111 @@ async def test_telegram(
     return result
 
 
+@router.get("/admin/tweet-diagnostics")
+async def get_tweet_diagnostics(
+    password: str = Query(..., description="Admin password"),
+    db: Session = Depends(get_db),
+):
+    """
+    Diagnostic endpoint: recent posted_tweets rows, plus a per-match gate
+    check for the closing_line / inplay_recap significance thresholds so
+    we can tell 'nothing fired because nothing moved' apart from 'nothing
+    fired because something is broken' without guessing.
+    """
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid password")
+
+    from datetime import timedelta
+    from app.models import PostedTweet
+    from app.services.tweet_generator import (
+        _max_1x2_move_pp, _totals_block, _totals_significant,
+        _spreads_block, _spreads_significant, SIGNIFICANCE_THRESHOLD_PP,
+    )
+
+    now = datetime.utcnow()
+    seven_days_ago = now - timedelta(days=7)
+
+    recent_tweets = (
+        db.query(PostedTweet)
+        .filter(PostedTweet.posted_at >= seven_days_ago)
+        .order_by(desc(PostedTweet.posted_at))
+        .limit(30)
+        .all()
+    )
+
+    # Matches whose closing-line tweet window (KO-20 to KO-10) or in-play
+    # recap window (KO+8 to KO+15) is currently active, or was active in
+    # the last 24h — same windows tweet_check_job uses.
+    lookback = now - timedelta(hours=24)
+    lookahead = now + timedelta(hours=24)
+    candidates = (
+        db.query(Match)
+        .filter(Match.commence_time >= lookback)
+        .filter(Match.commence_time <= lookahead)
+        .all()
+    )
+
+    gate_checks = []
+    for m in candidates:
+        window_start = m.commence_time - timedelta(hours=12)
+        latest = (
+            db.query(OddsSnapshot)
+            .filter(OddsSnapshot.match_id == m.id)
+            .filter(OddsSnapshot.in_play == False)  # noqa: E712
+            .order_by(OddsSnapshot.fetched_at.desc())
+            .first()
+        )
+        opening = (
+            db.query(OddsSnapshot)
+            .filter(OddsSnapshot.match_id == m.id)
+            .filter(OddsSnapshot.in_play == False)  # noqa: E712
+            .filter(OddsSnapshot.fetched_at >= window_start)
+            .order_by(OddsSnapshot.fetched_at.asc())
+            .first()
+        )
+        max_1x2 = _max_1x2_move_pp(opening, latest) if (opening and latest) else 0.0
+        totals = _totals_block(db, m)
+        spreads = _spreads_block(db, m)
+        totals_sig = _totals_significant(totals)
+        spreads_sig = _spreads_significant(spreads)
+        would_tweet = (
+            max_1x2 >= SIGNIFICANCE_THRESHOLD_PP or totals_sig or spreads_sig
+        )
+        already_posted = (
+            db.query(PostedTweet)
+            .filter(PostedTweet.match_id == m.id)
+            .filter(PostedTweet.tweet_type == "closing_line")
+            .first()
+        ) is not None
+        gate_checks.append({
+            "match_id": m.id,
+            "match": f"{m.home_team} vs {m.away_team}",
+            "commence_time": m.commence_time.isoformat() + "Z",
+            "max_1x2_move_pp": round(max_1x2, 2),
+            "totals_significant": totals_sig,
+            "spreads_significant": spreads_sig,
+            "would_pass_closing_line_gate": would_tweet,
+            "closing_line_already_posted": already_posted,
+        })
+
+    gate_checks.sort(key=lambda x: x["commence_time"])
+
+    return {
+        "now_utc": now.isoformat(),
+        "significance_threshold_pp": SIGNIFICANCE_THRESHOLD_PP,
+        "recent_tweets": [
+            {
+                "match_id": t.match_id,
+                "tweet_type": t.tweet_type,
+                "tweet_id": t.tweet_id,
+                "posted_at": t.posted_at.isoformat(),
+            }
+            for t in recent_tweets
+        ],
+        "match_gate_checks": gate_checks,
+    }
+
+
 @router.post("/admin/telegram-test-alert")
 async def send_test_telegram_alert(
     password: str = Query(..., description="Admin password")
