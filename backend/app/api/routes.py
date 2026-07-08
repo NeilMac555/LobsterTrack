@@ -3434,8 +3434,8 @@ async def get_tweet_diagnostics(
     from datetime import timedelta
     from app.models import PostedTweet
     from app.services.tweet_generator import (
-        _max_1x2_move_pp, _totals_block, _totals_significant,
-        _spreads_block, _spreads_significant, SIGNIFICANCE_THRESHOLD_PP,
+        _max_1x2_move_pp, _totals_significant, _spreads_significant,
+        SIGNIFICANCE_THRESHOLD_PP, TotalsBlock, SpreadsBlock,
     )
 
     now = datetime.utcnow()
@@ -3480,8 +3480,64 @@ async def get_tweet_diagnostics(
             .first()
         )
         max_1x2 = _max_1x2_move_pp(opening, latest) if (opening and latest) else 0.0
-        totals = _totals_block(db, m)
-        spreads = _spreads_block(db, m)
+
+        # _totals_block/_spreads_block pull the single latest-ever snapshot
+        # with no upper time bound — correct for the live tweet job (which
+        # only ever runs pre-kickoff, so 'latest' is naturally pre-KO at
+        # call time) but WRONG here: calling this endpoint after a match
+        # has finished can pull in-play/settled data that was never visible
+        # during the actual pre-KO decision window, producing a
+        # significance verdict that doesn't reflect what really happened.
+        # Rebuild both blocks constrained to fetched_at < commence_time so
+        # the check is historically accurate regardless of when we run it.
+        totals_opening = (
+            db.query(TotalsSnapshot)
+            .filter(TotalsSnapshot.match_id == m.id)
+            .filter(TotalsSnapshot.fetched_at >= window_start)
+            .filter(TotalsSnapshot.fetched_at < m.commence_time)
+            .order_by(TotalsSnapshot.fetched_at.asc(), TotalsSnapshot.id.asc())
+            .first()
+        )
+        totals_closing = (
+            db.query(TotalsSnapshot)
+            .filter(TotalsSnapshot.match_id == m.id)
+            .filter(TotalsSnapshot.fetched_at < m.commence_time)
+            .order_by(TotalsSnapshot.fetched_at.desc(), TotalsSnapshot.id.desc())
+            .first()
+        )
+        totals = TotalsBlock(
+            open_line=totals_opening.line if totals_opening else None,
+            open_over=totals_opening.over_odds if totals_opening else None,
+            open_under=totals_opening.under_odds if totals_opening else None,
+            close_line=totals_closing.line if totals_closing else None,
+            close_over=totals_closing.over_odds if totals_closing else None,
+            close_under=totals_closing.under_odds if totals_closing else None,
+        ) if (totals_opening or totals_closing) else None
+
+        spreads_opening = (
+            db.query(SpreadsSnapshot)
+            .filter(SpreadsSnapshot.match_id == m.id)
+            .filter(SpreadsSnapshot.fetched_at >= window_start)
+            .filter(SpreadsSnapshot.fetched_at < m.commence_time)
+            .order_by(SpreadsSnapshot.fetched_at.asc(), SpreadsSnapshot.id.asc())
+            .first()
+        )
+        spreads_closing = (
+            db.query(SpreadsSnapshot)
+            .filter(SpreadsSnapshot.match_id == m.id)
+            .filter(SpreadsSnapshot.fetched_at < m.commence_time)
+            .order_by(SpreadsSnapshot.fetched_at.desc(), SpreadsSnapshot.id.desc())
+            .first()
+        )
+        spreads = SpreadsBlock(
+            open_line=spreads_opening.line if spreads_opening else None,
+            open_home=spreads_opening.home_odds if spreads_opening else None,
+            open_away=spreads_opening.away_odds if spreads_opening else None,
+            close_line=spreads_closing.line if spreads_closing else None,
+            close_home=spreads_closing.home_odds if spreads_closing else None,
+            close_away=spreads_closing.away_odds if spreads_closing else None,
+        ) if (spreads_opening or spreads_closing) else None
+
         totals_sig = _totals_significant(totals)
         spreads_sig = _spreads_significant(spreads)
         would_tweet = (
