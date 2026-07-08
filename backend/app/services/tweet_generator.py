@@ -1,17 +1,20 @@
 """
 Auto-tweet content generation for @Steamwatchio.
 
-Three tweet types, each driven directly from the data we already capture:
+Two tweet types, each driven directly from the data we already capture:
 
   1. late_steam   — fired when the syndicate_alerter sends a Telegram alert.
-                    Tweet headline: "🚨 LATE STEAM" + match + the move.
-  2. closing_line — fired ~15 min before kick-off. Snapshots Pinnacle's
-                    closing 1X2 vs opening so subscribers can see who's been
-                    backed late.
-  3. inplay_recap — fired ~10 min after kick-off. Pinnacle close → Polymarket
+                    Tweet headline: "🚨 LATE STEAM" + match + the move. This
+                    is the "big move" signal — inherits the alerter's own
+                    per-league window/threshold (WC: 24hr, 3.5pp).
+  2. inplay_recap — fired ~10 min after kick-off. Pinnacle close → Polymarket
                     T+5 implied prob gap on 1X2 — the signal page surfaces.
                     Skipped when the match had an early goal (price reaction
                     is to a goal, not sharp money).
+
+A third type, closing_line (pre-KO 'here's how the price moved' summary,
+fired on a fixed schedule regardless of move size), was removed per Neil
+2026-07-08 — SteamWatch is followed for big moves, not routine snapshots.
 
 Posts go out via app.services.twitter_poster.post_tweet. Dedup against the
 posted_tweets table — every send routes through `post_once` which is the
@@ -243,109 +246,6 @@ class SpreadsBlock:
     close_away: Optional[float]
 
 
-def _fmt_line(v: Optional[float]) -> str:
-    """+0.5 / -2.5 / 3.0 style formatting for a numeric line."""
-    if v is None:
-        return "—"
-    if v > 0:
-        return f"+{v:g}"
-    return f"{v:g}"
-
-
-def render_closing_line_tweet(
-    match: Match,
-    current_home: float, current_draw: float, current_away: float,
-    opening_home: float, opening_draw: float, opening_away: float,
-    totals: Optional[TotalsBlock] = None,
-    spreads: Optional[SpreadsBlock] = None,
-) -> str:
-    """
-    🔔 Closing — KO in 15 min
-
-    🇪🇸 Spain 🆚 🇸🇦 Saudi Arabia
-
-    1X2: 1.11 / 12 / 24
-    O/U 3.5: O 2.05 / U 1.85 (open line 4.0)
-    AH -2.5: H 1.92 / A 1.97 (open -2)
-
-    Money on Over and Spain to cover.
-    """
-    hf = flag(match.home_team)
-    af = flag(match.away_team)
-
-    # 1X2 mover signal — used in the interpretation line at the end.
-    def shift(open_o, now_o):
-        if not open_o or not now_o:
-            return None
-        return (100.0 / now_o) - (100.0 / open_o)
-    sh = shift(opening_home, current_home)
-    sd = shift(opening_draw, current_draw)
-    sa = shift(opening_away, current_away)
-    name_shifts = [
-        (match.home_team, sh),
-        ("Draw", sd),
-        (match.away_team, sa),
-    ]
-    name_shifts = [(n, s) for n, s in name_shifts if s is not None]
-
-    lines: list[str] = [
-        "🔔 Closing — KO in 15 min",
-        "",
-        f"{hf} {match.home_team} 🆚 {af} {match.away_team}",
-        "",
-        f"1X2: {current_home:.2f} / {current_draw:.2f} / {current_away:.2f}",
-    ]
-
-    # Totals (over/under goals) — only render when we have closing data.
-    # We show the line shift inline because that's the spiciest detail
-    # ("market moved from 3.5 to 3" tells you sharps wanted fewer goals).
-    if totals and totals.close_line is not None and totals.close_over and totals.close_under:
-        line_part = ""
-        if totals.open_line is not None and totals.open_line != totals.close_line:
-            line_part = f" (line shifted {totals.open_line:g} → {totals.close_line:g})"
-        lines.append(
-            f"O/U {totals.close_line:g}: O {totals.close_over:.2f} / U {totals.close_under:.2f}{line_part}"
-        )
-
-    # Asian Handicap — home perspective. Same line-shift annotation.
-    if spreads and spreads.close_line is not None and spreads.close_home and spreads.close_away:
-        line_part = ""
-        if spreads.open_line is not None and spreads.open_line != spreads.close_line:
-            line_part = f" (line shifted {_fmt_line(spreads.open_line)} → {_fmt_line(spreads.close_line)})"
-        lines.append(
-            f"AH {_fmt_line(spreads.close_line)}: H {spreads.close_home:.2f} / A {spreads.close_away:.2f}{line_part}"
-        )
-
-    # Interpretation. Lead with the most informative signal across the
-    # three markets. Priority: line shift > 1X2 mover > steady.
-    interp: Optional[str] = None
-    if totals and totals.open_line is not None and totals.close_line is not None:
-        diff = totals.close_line - totals.open_line
-        if diff >= 0.25:
-            interp = "Market moved the goals line UP — sharps want Over."
-        elif diff <= -0.25:
-            interp = "Market moved the goals line DOWN — sharps want Under."
-    if interp is None and spreads and spreads.open_line is not None and spreads.close_line is not None:
-        diff = spreads.close_line - spreads.open_line
-        if diff <= -0.25:
-            interp = f"AH line tightened — sharps want more from {match.home_team}."
-        elif diff >= 0.25:
-            interp = f"AH line widened — sharps backing {match.away_team}."
-    if interp is None and name_shifts:
-        winner = max(name_shifts, key=lambda kv: kv[1])
-        if winner[1] >= 1.5:
-            interp = f"Money on {winner[0]}."
-        elif winner[1] <= -1.5:
-            interp = f"Money fading {winner[0]}."
-        else:
-            interp = "Steady book — minimal late action."
-
-    if interp:
-        lines.append("")
-        lines.append(interp)
-
-    return "\n".join(lines)
-
 
 def render_inplay_recap_tweet(
     match: Match,
@@ -405,69 +305,6 @@ def post_late_steam_tweet(
     return post_once(db, "late_steam", text, match_id=match.id)
 
 
-def _totals_block(db: Session, match: Match) -> Optional["TotalsBlock"]:
-    """Open + close TotalsSnapshot — using the FIRST snapshot in the
-    12-hour pre-KO window as 'open'. Months of pre-match noise hides
-    the actual steam; the last 12 hours is where the action is."""
-    from datetime import timedelta
-    from app.models import TotalsSnapshot
-    window_start = match.commence_time - timedelta(hours=12)
-    opening = (
-        db.query(TotalsSnapshot)
-        .filter(TotalsSnapshot.match_id == match.id)
-        .filter(TotalsSnapshot.fetched_at >= window_start)
-        .order_by(TotalsSnapshot.fetched_at.asc(), TotalsSnapshot.id.asc())
-        .first()
-    )
-    closing = (
-        db.query(TotalsSnapshot)
-        .filter(TotalsSnapshot.match_id == match.id)
-        .order_by(TotalsSnapshot.fetched_at.desc(), TotalsSnapshot.id.desc())
-        .first()
-    )
-    if not opening and not closing:
-        return None
-    return TotalsBlock(
-        open_line=opening.line if opening else None,
-        open_over=opening.over_odds if opening else None,
-        open_under=opening.under_odds if opening else None,
-        close_line=closing.line if closing else None,
-        close_over=closing.over_odds if closing else None,
-        close_under=closing.under_odds if closing else None,
-    )
-
-
-def _spreads_block(db: Session, match: Match) -> Optional["SpreadsBlock"]:
-    """Open + close SpreadsSnapshot — same 12-hour pre-KO window as
-    totals so the tweet shows actual steam, not weeks of retail noise."""
-    from datetime import timedelta
-    from app.models import SpreadsSnapshot
-    window_start = match.commence_time - timedelta(hours=12)
-    opening = (
-        db.query(SpreadsSnapshot)
-        .filter(SpreadsSnapshot.match_id == match.id)
-        .filter(SpreadsSnapshot.fetched_at >= window_start)
-        .order_by(SpreadsSnapshot.fetched_at.asc(), SpreadsSnapshot.id.asc())
-        .first()
-    )
-    closing = (
-        db.query(SpreadsSnapshot)
-        .filter(SpreadsSnapshot.match_id == match.id)
-        .order_by(SpreadsSnapshot.fetched_at.desc(), SpreadsSnapshot.id.desc())
-        .first()
-    )
-    if not opening and not closing:
-        return None
-    return SpreadsBlock(
-        open_line=opening.line if opening else None,
-        open_home=opening.home_odds if opening else None,
-        open_away=opening.away_odds if opening else None,
-        close_line=closing.line if closing else None,
-        close_home=closing.home_odds if closing else None,
-        close_away=closing.away_odds if closing else None,
-    )
-
-
 SIGNIFICANCE_THRESHOLD_PP = 3.0
 
 
@@ -518,62 +355,6 @@ def _spreads_significant(block: Optional["SpreadsBlock"]) -> bool:
         if abs(_implied_pct(block.close_away) - _implied_pct(block.open_away)) >= SIGNIFICANCE_THRESHOLD_PP:
             return True
     return False
-
-
-def try_post_closing_line_tweet(db: Session, match: Match) -> Optional[TwitterStatus]:
-    """Generate + post the T-15 closing-line tweet for `match`.
-    Returns None if we don't have enough data; status object otherwise.
-
-    Only fires if SOMETHING actually moved in the 12-hour pre-KO
-    window — biggest 1X2 implied-prob swing OR totals/AH line/price
-    movement >= SIGNIFICANCE_THRESHOLD_PP. Silent matches stay silent.
-    'Opening' is the first pre-KO snapshot inside that window."""
-    from datetime import timedelta
-    if _already_posted(db, "closing_line", match_id=match.id):
-        return None
-    window_start = match.commence_time - timedelta(hours=12)
-    latest = (
-        db.query(OddsSnapshot)
-        .filter(OddsSnapshot.match_id == match.id)
-        .filter(OddsSnapshot.in_play == False)  # noqa: E712
-        .order_by(OddsSnapshot.fetched_at.desc())
-        .first()
-    )
-    opening = (
-        db.query(OddsSnapshot)
-        .filter(OddsSnapshot.match_id == match.id)
-        .filter(OddsSnapshot.in_play == False)  # noqa: E712
-        .filter(OddsSnapshot.fetched_at >= window_start)
-        .order_by(OddsSnapshot.fetched_at.asc())
-        .first()
-    )
-    if not latest or not opening:
-        return None
-    if not (latest.home_odds and latest.draw_odds and latest.away_odds):
-        return None
-    if not (opening.home_odds and opening.draw_odds and opening.away_odds):
-        return None
-
-    totals = _totals_block(db, match)
-    spreads = _spreads_block(db, match)
-
-    max_1x2_pp = _max_1x2_move_pp(opening, latest)
-    if (
-        max_1x2_pp < SIGNIFICANCE_THRESHOLD_PP
-        and not _totals_significant(totals)
-        and not _spreads_significant(spreads)
-    ):
-        # Nothing actually moved — stay silent.
-        return None
-
-    text = render_closing_line_tweet(
-        match,
-        latest.home_odds, latest.draw_odds, latest.away_odds,
-        opening.home_odds, opening.draw_odds, opening.away_odds,
-        totals=totals,
-        spreads=spreads,
-    )
-    return post_once(db, "closing_line", text, match_id=match.id)
 
 
 def try_post_inplay_recap_tweet(db: Session, match: Match) -> Optional[TwitterStatus]:

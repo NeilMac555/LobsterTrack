@@ -407,26 +407,30 @@ class OddsScheduler:
 
     async def tweet_check_job(self):
         """
-        Every minute, sweep upcoming + recently-kicked-off matches for
-        any tweet types we haven't posted yet. Resilient to scheduler
-        restarts (vs DateTrigger one-shots which would be lost) since
-        the dedup state lives in posted_tweets, not in the scheduler.
+        Every minute, sweep recently-kicked-off matches for the in-play
+        recap tweet. Resilient to scheduler restarts (vs DateTrigger
+        one-shots which would be lost) since the dedup state lives in
+        posted_tweets, not in the scheduler.
 
-        Two windows per pass:
-          - Matches with KO in next 10-20 min        → closing-line tweet
-          - Matches with KO 8-15 min ago, no early goal → in-play recap tweet
+        Window: matches with KO 8-15 min ago, no early goal → in-play
+        recap tweet.
 
-        Each tweet helper internally checks posted_tweets and is a no-op
+        The closing-line tweet (pre-KO 'here's how the price moved'
+        summary) was removed per Neil 2026-07-08 — it fired on a fixed
+        schedule regardless of move size, which isn't what people follow
+        SteamWatch for. Big pre-KO moves still tweet via late_steam,
+        which fires directly off the Telegram syndicate alert (WC:
+        24hr window, 3.5pp threshold) — that's the actual 'big move'
+        signal now, not a routine pre-match snapshot.
+
+        The tweet helper internally checks posted_tweets and is a no-op
         when already-posted, so this job is safe to fire frequently.
         """
         from datetime import datetime, timedelta
         from app.models import Match
         from app.models.database import SessionLocal
         try:
-            from app.services.tweet_generator import (
-                try_post_closing_line_tweet,
-                try_post_inplay_recap_tweet,
-            )
+            from app.services.tweet_generator import try_post_inplay_recap_tweet
         except Exception as e:
             logger.error("tweet_generator import failed", error=str(e))
             return
@@ -434,20 +438,6 @@ class OddsScheduler:
         db = SessionLocal()
         try:
             now = datetime.utcnow()
-            close_lo = now + timedelta(minutes=10)
-            close_hi = now + timedelta(minutes=20)
-            closing_matches = (
-                db.query(Match)
-                .filter(Match.commence_time >= close_lo)
-                .filter(Match.commence_time <= close_hi)
-                .all()
-            )
-            for m in closing_matches:
-                try:
-                    try_post_closing_line_tweet(db, m)
-                except Exception as e:
-                    logger.warning("closing-line tweet failed", match=m.id, error=str(e))
-
             recap_lo = now - timedelta(minutes=15)
             recap_hi = now - timedelta(minutes=8)
             recap_matches = (

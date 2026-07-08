@@ -3540,15 +3540,11 @@ async def get_tweet_diagnostics(
 
         totals_sig = _totals_significant(totals)
         spreads_sig = _spreads_significant(spreads)
-        would_tweet = (
-            max_1x2 >= SIGNIFICANCE_THRESHOLD_PP or totals_sig or spreads_sig
-        )
-        already_posted = (
-            db.query(PostedTweet)
-            .filter(PostedTweet.match_id == m.id)
-            .filter(PostedTweet.tweet_type == "closing_line")
-            .first()
-        ) is not None
+        # No closing_line tweet type anymore (removed 2026-07-08 — SteamWatch
+        # is followed for big moves, not routine pre-KO snapshots). These
+        # figures are kept as general move-size diagnostics — useful context
+        # for understanding whether late_steam/Telegram should have fired —
+        # not a verdict on a tweet gate that no longer exists.
         gate_checks.append({
             "match_id": m.id,
             "match": f"{m.home_team} vs {m.away_team}",
@@ -3556,8 +3552,6 @@ async def get_tweet_diagnostics(
             "max_1x2_move_pp": round(max_1x2, 2),
             "totals_significant": totals_sig,
             "spreads_significant": spreads_sig,
-            "would_pass_closing_line_gate": would_tweet,
-            "closing_line_already_posted": already_posted,
         })
 
     gate_checks.sort(key=lambda x: x["commence_time"])
