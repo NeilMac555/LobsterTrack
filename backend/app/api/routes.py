@@ -1296,12 +1296,16 @@ async def get_steam_results(
     Only shows odds that SHORTENED (sharp money backing) — no draws, no drifters.
     Deduplicates by match: each match counts only once per team (using the biggest move).
     """
-    # Base query — completed results, odds shortened (negative movement), no draws
+    # Base query — completed results, odds shortened (positive movement per
+    # odds_fetcher.py's SteamMove.movement_percent convention: positive =
+    # implied prob went UP = odds shortened = backed), no draws.
+    # 2026-07-08: was filtering < 0, which is actually DRIFTS — inverted
+    # relative to /drifters below, which had the same bug in reverse.
     base_query = (
         db.query(SteamMove)
         .filter(SteamMove.result_updated == True)
         .filter(SteamMove.outcome != 'draw')
-        .filter(SteamMove.movement_percent < 0)  # Only shortened odds
+        .filter(SteamMove.movement_percent > 0)  # Only shortened odds
     )
     if league:
         base_query = base_query.filter(SteamMove.sport_key == league)
@@ -1442,11 +1446,14 @@ async def get_drifter_results(
     backed the drifting team' — negative P/L confirms the market
     was right to fade them.
     """
+    # 2026-07-08: was filtering > 0, which is actually SHORTENED/backed
+    # odds per odds_fetcher.py's movement_percent convention — the exact
+    # inverse bug as /steam-results above. Drifting = negative movement.
     base_query = (
         db.query(SteamMove)
         .filter(SteamMove.result_updated == True)
         .filter(SteamMove.outcome != 'draw')
-        .filter(SteamMove.movement_percent > 0)  # Only drifting (lengthening) odds
+        .filter(SteamMove.movement_percent < 0)  # Only drifting (lengthening) odds
     )
     if league:
         base_query = base_query.filter(SteamMove.sport_key == league)
