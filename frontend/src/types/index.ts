@@ -367,7 +367,7 @@ export interface TeamPLResponse {
 export const LEAGUE_CONFIG: Record<string, { name: string; shortName: string; color: string; hidden?: boolean }> = {
   soccer_fifa_world_cup: { name: 'FIFA World Cup', shortName: 'WC', color: '#D4AF37' },
   soccer_epl: { name: 'Premier League', shortName: 'EPL', color: '#3D195B', hidden: true },
-  soccer_spain_la_liga: { name: 'La Liga', shortName: 'LAL', color: '#EE8707', hidden: true },
+  soccer_spain_la_liga: { name: 'La Liga', shortName: 'LAL', color: '#EE8707' },
   soccer_germany_bundesliga: { name: 'Bundesliga', shortName: 'BUN', color: '#D20515', hidden: true },
   soccer_france_ligue_one: { name: 'Ligue 1', shortName: 'L1', color: '#091C3E', hidden: true },
   soccer_italy_serie_a: { name: 'Serie A', shortName: 'SEA', color: '#024494', hidden: true },
