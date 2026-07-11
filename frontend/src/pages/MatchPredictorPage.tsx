@@ -54,14 +54,29 @@ interface PredictionResult {
 }
 
 // ===== LEAGUE CONSTANTS =====
-const LEAGUES: Record<string, { name: string; avgGoals: number; avgXG: number; avgShotsPerGame: number; homeAdv: number }> = {
-  PL:  { name: 'Premier League',   avgGoals: 1.43, avgXG: 1.35, avgShotsPerGame: 13.2, homeAdv: 1.12 },
-  BL:  { name: 'Bundesliga',       avgGoals: 1.50, avgXG: 1.45, avgShotsPerGame: 14.1, homeAdv: 1.15 },
-  LL:  { name: 'La Liga',          avgGoals: 1.30, avgXG: 1.25, avgShotsPerGame: 12.4, homeAdv: 1.14 },
-  SA:  { name: 'Serie A',          avgGoals: 1.32, avgXG: 1.26, avgShotsPerGame: 13.0, homeAdv: 1.13 },
-  L1:  { name: 'Ligue 1',          avgGoals: 1.33, avgXG: 1.27, avgShotsPerGame: 12.8, homeAdv: 1.11 },
-  CL:  { name: 'Champions League', avgGoals: 1.45, avgXG: 1.40, avgShotsPerGame: 13.5, homeAdv: 1.18 },
-  UEL: { name: 'Europa League',    avgGoals: 1.40, avgXG: 1.35, avgShotsPerGame: 13.0, homeAdv: 1.18 },
+// avgGoalsPerTeam + homeAwayRatio replace the old flat `homeAdv` multiplier
+// (see calculate() Step 4). homeAwayRatio = (league-average home goals) /
+// (league-average away goals) for a league-average matchup; the pipeline
+// derives symmetric home/away multipliers from it so the expected match
+// total is preserved regardless of how strong the ratio is.
+//
+// premier_league / la_liga / serie_a / bundesliga / ligue_1 values are
+// 2025/26 full-season empirical (avg goals per team per match, home/away
+// goals ratio), lightly shrunk toward the cross-league mean.
+//
+// TODO: Champions League and Europa League are NOT yet empirically
+// calibrated — avgGoalsPerTeam reuses the old avgXG figure and
+// homeAwayRatio reuses the old flat homeAdv value (r = h), which only
+// preserves their previous home:away SPLIT, not a real fitted ratio.
+// Needs a proper pass once we have full-season UCL/UEL data.
+const LEAGUES: Record<string, { name: string; avgGoals: number; avgXG: number; avgShotsPerGame: number; avgGoalsPerTeam: number; homeAwayRatio: number }> = {
+  PL:  { name: 'Premier League',   avgGoals: 1.43, avgXG: 1.35, avgShotsPerGame: 13.2, avgGoalsPerTeam: 1.375, homeAwayRatio: 1.25 },
+  BL:  { name: 'Bundesliga',       avgGoals: 1.50, avgXG: 1.45, avgShotsPerGame: 14.1, avgGoalsPerTeam: 1.620, homeAwayRatio: 1.22 },
+  LL:  { name: 'La Liga',          avgGoals: 1.30, avgXG: 1.25, avgShotsPerGame: 12.4, avgGoalsPerTeam: 1.345, homeAwayRatio: 1.36 },
+  SA:  { name: 'Serie A',          avgGoals: 1.32, avgXG: 1.26, avgShotsPerGame: 13.0, avgGoalsPerTeam: 1.215, homeAwayRatio: 1.15 },
+  L1:  { name: 'Ligue 1',          avgGoals: 1.33, avgXG: 1.27, avgShotsPerGame: 12.8, avgGoalsPerTeam: 1.415, homeAwayRatio: 1.27 },
+  CL:  { name: 'Champions League', avgGoals: 1.45, avgXG: 1.40, avgShotsPerGame: 13.5, avgGoalsPerTeam: 1.40 /* TODO: uncalibrated, = old avgXG */, homeAwayRatio: 1.18 /* TODO: uncalibrated, r = old homeAdv */ },
+  UEL: { name: 'Europa League',    avgGoals: 1.40, avgXG: 1.35, avgShotsPerGame: 13.0, avgGoalsPerTeam: 1.35 /* TODO: uncalibrated, = old avgXG */, homeAwayRatio: 1.18 /* TODO: uncalibrated, r = old homeAdv */ },
 };
 
 const LEAGUE_DEFAULTS: Record<string, { gf: number; ga: number; xgf: number; xga: number; shots: number }> = {
@@ -220,7 +235,6 @@ export default function MatchPredictorPage() {
   const [awayName, setAwayName] = useState('Away');
   const [home, setHome] = useState<TeamInputs>(makeDefaultTeam('PL'));
   const [away, setAway] = useState<TeamInputs>(makeDefaultTeam('PL'));
-  const [homeAdv, setHomeAdv] = useState(LEAGUES.PL.homeAdv.toFixed(2));
   const [adv, setAdv] = useState<AdvancedSettings>(makeDefaultAdvanced());
   const [result, setResult] = useState<PredictionResult | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
@@ -253,13 +267,11 @@ export default function MatchPredictorPage() {
 
   const handleLeagueChange = useCallback((newLeague: string) => {
     setLeague(newLeague);
-    setHomeAdv(LEAGUES[newLeague].homeAdv.toFixed(2));
   }, []);
 
   const handleReset = useCallback(() => {
     setHome(makeDefaultTeam(league));
     setAway(makeDefaultTeam(league));
-    setHomeAdv(LEAGUES[league].homeAdv.toFixed(2));
     setAdv(makeDefaultAdvanced());
     setResult(null);
   }, [league]);
@@ -386,11 +398,25 @@ export default function MatchPredictorPage() {
     const defH = dbH / avgDB, defA = dbA / avgDB;
     log.push(`Step 3 — Defence Strength: H=${defH.toFixed(3)} A=${defA.toFixed(3)}`);
 
-    // Step 4: Lambda (base rate = league avg xG)
-    const ha = v(homeAdv);
-    let lH = clamp(atkH * defA * lg.avgXG * ha, 0.05, 8);
-    let lA = clamp(atkA * defH * lg.avgXG, 0.05, 8);
-    log.push(`Step 4 — Lambda (raw): H=${lH.toFixed(3)} A=${lA.toFixed(3)}`);
+    // Step 4: Lambda (base rate = league avg goals per team, home advantage
+    // split symmetrically so the expected match total is preserved).
+    //
+    // The old version applied a single one-sided homeAdvantage multiplier
+    // to home lambda only, leaving away lambda unscaled — that inflated
+    // the expected match total by (homeAdvantage-1)/2 for every match
+    // (roughly 5.5-9% with the old constants), which would have badly
+    // mispriced Totals once built. Splitting the league's home/away goals
+    // ratio `r` into two multipliers that sum to 2 fixes this: home is
+    // boosted, away is suppressed by the same amount, and two
+    // league-average teams (all strengths = 1.0) reproduce the league's
+    // actual observed home/away split while landing on the league's
+    // actual observed average total.
+    const r = lg.homeAwayRatio;
+    const homeMult = (2 * r) / (1 + r);
+    const awayMult = 2 / (1 + r);
+    let lH = clamp(atkH * defA * lg.avgGoalsPerTeam * homeMult, 0.05, 8);
+    let lA = clamp(atkA * defH * lg.avgGoalsPerTeam * awayMult, 0.05, 8);
+    log.push(`Step 4 — Lambda (raw): H=${lH.toFixed(3)} A=${lA.toFixed(3)} [r=${r.toFixed(3)} homeMult=${homeMult.toFixed(3)} awayMult=${awayMult.toFixed(3)}]`);
 
     // Step 5: Motivation
     lH *= (MOTIVATION_MULT[h.motivation] || 1.00);
@@ -470,7 +496,7 @@ export default function MatchPredictorPage() {
       setResult(null);
       setShowPaywall(true);
     }
-  }, [league, home, away, homeAdv, adv, isSubscribed]);
+  }, [league, home, away, adv, isSubscribed]);
 
   // Scroll to results after calculation
   useEffect(() => {
@@ -801,14 +827,9 @@ export default function MatchPredictorPage() {
             {renderContextFields(home, updateHome, 'home')}
             {renderContextFields(away, updateAway, 'away')}
           </div>
-          <div className="mt-4 pt-4 border-t border-slate-700/40 flex items-center justify-center gap-3">
-            <label className="text-xs sm:text-sm text-slate-400 font-medium">Home Advantage Factor</label>
-            <input
-              type="number" step="0.01" min="0.80" max="1.40" value={homeAdv}
-              onChange={(e) => setHomeAdv(e.target.value)}
-              className="w-20 bg-slate-900/50 border border-slate-600 rounded-lg px-3 py-2 text-white font-mono text-sm text-center focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-            />
-          </div>
+          <p className="mt-4 pt-4 border-t border-slate-700/40 text-[11px] text-slate-500 italic text-center">
+            Home advantage is now a fitted per-league constant (derived from each league's actual home/away goals ratio), applied symmetrically so it shifts the balance between the teams without inflating the expected match total. It's no longer a per-match setting.
+          </p>
         </Section>
 
         <Section title="Advanced Settings">
