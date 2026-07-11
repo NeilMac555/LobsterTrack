@@ -43,6 +43,30 @@ interface AbsenceNote {
   pct: string;
 }
 
+interface AHRow {
+  line: number;
+  homeProb: number;
+  pushProb: number;
+  awayProb: number;
+  homeOdds: number | null;
+  awayOdds: number | null;
+}
+
+interface TotalsRow {
+  line: number;
+  overProb: number;
+  pushProb: number;
+  underProb: number;
+  overOdds: number | null;
+  underOdds: number | null;
+}
+
+interface CorrectScoreRow {
+  home: number;
+  away: number;
+  prob: number;
+}
+
 interface PredictionResult {
   lambdaHome: number;
   lambdaAway: number;
@@ -51,6 +75,15 @@ interface PredictionResult {
   probAway: number;
   absenceNotes: AbsenceNote[];
   calcLog: string[];
+  ahRows: AHRow[];
+  ahClosestLine: number;
+  totalsRows: TotalsRow[];
+  totalsClosestLine: number;
+  bttsYesProb: number;
+  bttsNoProb: number;
+  bttsYesOdds: number | null;
+  bttsNoOdds: number | null;
+  correctScores: CorrectScoreRow[];
 }
 
 // ===== LEAGUE CONSTANTS =====
@@ -78,6 +111,10 @@ const LEAGUES: Record<string, { name: string; avgGoals: number; avgXG: number; a
   CL:  { name: 'Champions League', avgGoals: 1.45, avgXG: 1.40, avgShotsPerGame: 13.5, avgGoalsPerTeam: 1.40 /* TODO: uncalibrated, = old avgXG */, homeAwayRatio: 1.18 /* TODO: uncalibrated, r = old homeAdv */ },
   UEL: { name: 'Europa League',    avgGoals: 1.40, avgXG: 1.35, avgShotsPerGame: 13.0, avgGoalsPerTeam: 1.35 /* TODO: uncalibrated, = old avgXG */, homeAwayRatio: 1.18 /* TODO: uncalibrated, r = old homeAdv */ },
 };
+
+// CL/UEL stay in LEAGUES (so old data / TODOs are preserved) but are pulled
+// from the league picker until they're empirically calibrated.
+const SELECTABLE_LEAGUE_KEYS = Object.keys(LEAGUES).filter((k) => k !== 'CL' && k !== 'UEL');
 
 const LEAGUE_DEFAULTS: Record<string, { gf: number; ga: number; xgf: number; xga: number; shots: number }> = {
   PL:  { gf: 1.43, ga: 1.43, xgf: 1.35, xga: 1.35, shots: 13.2 },
@@ -119,6 +156,81 @@ function poissonPMF(k: number, lambda: number) {
   return Math.exp(-lambda + k * Math.log(lambda) - logFactorial(k));
 }
 function v(s: string) { const n = parseFloat(s); return isNaN(n) ? 0 : n; }
+
+// ===== ASIAN HANDICAP / TOTALS / BTTS / CORRECT SCORE =====
+// Derived from the 11x11 scoreline matrix computed at Step 7 (Dixon-Coles).
+// Does not read or modify any Step 0-9 variables other than the matrix
+// itself (read-only).
+const AH_LINES = [-2.5, -2.25, -2, -1.75, -1.5, -1.25, -1, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5];
+const TOTALS_LINES = [1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5, 3.75, 4, 4.5];
+
+// A line is "whole" (integer, push possible), "half" (x.5, no push), or
+// "quarter" (x.25/x.75, settled as a 50/50 split across its two whole/half
+// neighbours per standard sportsbook quarter-line settlement).
+function classifyLine(line: number): 'whole' | 'half' | 'quarter' {
+  const q = Math.round(Math.abs(line * 4)) % 4;
+  if (q === 0) return 'whole';
+  if (q === 2) return 'half';
+  return 'quarter';
+}
+
+// Settles one Asian Handicap line (home team gets `line`) against the
+// market matrix. d = home goals - away goals. Home covers if d+line>0,
+// pushes if d+line===0 (only reachable for whole lines since d is an
+// integer), away covers if d+line<0.
+function settleAH(matrix: number[][], line: number): { home: number; push: number; away: number } {
+  let home = 0, push = 0, away = 0;
+  for (let i = 0; i <= MAX_GOALS; i++) {
+    for (let j = 0; j <= MAX_GOALS; j++) {
+      const p = matrix[i][j];
+      const x = (i - j) + line;
+      if (x > 0) home += p;
+      else if (x === 0) push += p;
+      else away += p;
+    }
+  }
+  return { home, push, away };
+}
+
+// Settles one Totals line against the market matrix. t = home + away
+// goals. Over covers if t-line>0, pushes if t-line===0 (whole lines
+// only), under covers if t-line<0.
+function settleTotals(matrix: number[][], line: number): { over: number; push: number; under: number } {
+  let over = 0, push = 0, under = 0;
+  for (let i = 0; i <= MAX_GOALS; i++) {
+    for (let j = 0; j <= MAX_GOALS; j++) {
+      const p = matrix[i][j];
+      const x = (i + j) - line;
+      if (x > 0) over += p;
+      else if (x === 0) push += p;
+      else under += p;
+    }
+  }
+  return { over, push, under };
+}
+
+function ahOutcome(matrix: number[][], line: number): { home: number; push: number; away: number } {
+  if (classifyLine(line) !== 'quarter') return settleAH(matrix, line);
+  const lo = settleAH(matrix, line - 0.25);
+  const hi = settleAH(matrix, line + 0.25);
+  return { home: (lo.home + hi.home) / 2, push: (lo.push + hi.push) / 2, away: (lo.away + hi.away) / 2 };
+}
+
+function totalsOutcome(matrix: number[][], line: number): { over: number; push: number; under: number } {
+  if (classifyLine(line) !== 'quarter') return settleTotals(matrix, line);
+  const lo = settleTotals(matrix, line - 0.25);
+  const hi = settleTotals(matrix, line + 0.25);
+  return { over: (lo.over + hi.over) / 2, push: (lo.push + hi.push) / 2, under: (lo.under + hi.under) / 2 };
+}
+
+// Fair decimal odds from a cover probability and its push probability.
+// (1-push)/cover collapses to 1/cover when push is 0, so this formula is
+// used uniformly for push and no-push lines alike. Returns null (render
+// as "-") for a ~zero-probability side rather than an Infinity odds.
+function fairOdds(coverProb: number, pushProb: number): number | null {
+  if (coverProb <= 1e-9) return null;
+  return (1 - pushProb) / coverProb;
+}
 
 // ===== COLLAPSIBLE SECTION COMPONENT =====
 function Section({ title, badge, defaultOpen, children }: { title: string; badge?: string; badgeClass?: string; defaultOpen?: boolean; children: React.ReactNode }) {
@@ -487,7 +599,66 @@ export default function MatchPredictorPage() {
     pH /= tot; pD /= tot; pA /= tot;
     log.push(`Step 9 — Draw Inflation (${adv.drawInflation}): H=${(pH*100).toFixed(1)}% D=${(pD*100).toFixed(1)}% A=${(pA*100).toFixed(1)}%`);
 
-    const computed = { lambdaHome: lH, lambdaAway: lA, probHome: pH, probDraw: pD, probAway: pA, absenceNotes, calcLog: log };
+    // Step 10: Market matrix (AH / Totals / BTTS / Correct Score)
+    // Read-only against `matrix` from Step 7 — does not touch any Step
+    // 0-9 variable. Applies the same draw-inflation-and-renormalise
+    // transform Step 9 applies to the 1X2 aggregate, but cell-by-cell
+    // across the full scoreline grid, so every market derived here is
+    // priced off the identical probability field the 1X2 box shows
+    // (AH -0.5 cover, e.g., reproduces probHome exactly).
+    const drawInfl = v(adv.drawInflation);
+    const marketMatrix: number[][] = [];
+    let marketTotal = 0;
+    for (let i = 0; i <= MAX_GOALS; i++) {
+      marketMatrix[i] = [];
+      for (let j = 0; j <= MAX_GOALS; j++) {
+        const val = matrix[i][j] * (i === j ? drawInfl : 1);
+        marketMatrix[i][j] = val;
+        marketTotal += val;
+      }
+    }
+    for (let i = 0; i <= MAX_GOALS; i++)
+      for (let j = 0; j <= MAX_GOALS; j++)
+        marketMatrix[i][j] /= marketTotal;
+    log.push(`Step 10 — Market Matrix: raw sum=${matrix.reduce((s, row) => s + row.reduce((a, b) => a + b, 0), 0).toFixed(6)} normalised sum=${marketMatrix.reduce((s, row) => s + row.reduce((a, b) => a + b, 0), 0).toFixed(6)}`);
+
+    const ahRows: AHRow[] = AH_LINES.map((line) => {
+      const { home, push, away } = ahOutcome(marketMatrix, line);
+      return { line, homeProb: home, pushProb: push, awayProb: away, homeOdds: fairOdds(home, push), awayOdds: fairOdds(away, push) };
+    });
+    const ahClosestLine = ahRows.reduce((best, row) =>
+      Math.abs(row.homeProb - 0.5) < Math.abs(best.homeProb - 0.5) ? row : best
+    ).line;
+
+    const totalsRows: TotalsRow[] = TOTALS_LINES.map((line) => {
+      const { over, push, under } = totalsOutcome(marketMatrix, line);
+      return { line, overProb: over, pushProb: push, underProb: under, overOdds: fairOdds(over, push), underOdds: fairOdds(under, push) };
+    });
+    const totalsClosestLine = totalsRows.reduce((best, row) =>
+      Math.abs(row.overProb - 0.5) < Math.abs(best.overProb - 0.5) ? row : best
+    ).line;
+
+    let bttsYesProb = 0;
+    for (let i = 1; i <= MAX_GOALS; i++)
+      for (let j = 1; j <= MAX_GOALS; j++)
+        bttsYesProb += marketMatrix[i][j];
+    const bttsNoProb = 1 - bttsYesProb;
+
+    const correctScores: CorrectScoreRow[] = [];
+    for (let i = 0; i <= MAX_GOALS; i++)
+      for (let j = 0; j <= MAX_GOALS; j++)
+        correctScores.push({ home: i, away: j, prob: marketMatrix[i][j] });
+    correctScores.sort((a, b) => b.prob - a.prob);
+    const top8Scores = correctScores.slice(0, 8);
+
+    log.push(`Step 10 — AH closest to 50/50: ${ahClosestLine > 0 ? '+' : ''}${ahClosestLine} (H=${(ahRows.find(r => r.line === ahClosestLine)!.homeProb * 100).toFixed(1)}%) | Totals closest to 50/50: ${totalsClosestLine} (O=${(totalsRows.find(r => r.line === totalsClosestLine)!.overProb * 100).toFixed(1)}%) | BTTS Y=${(bttsYesProb * 100).toFixed(1)}% N=${(bttsNoProb * 100).toFixed(1)}%`);
+
+    const computed = {
+      lambdaHome: lH, lambdaAway: lA, probHome: pH, probDraw: pD, probAway: pA, absenceNotes, calcLog: log,
+      ahRows, ahClosestLine, totalsRows, totalsClosestLine,
+      bttsYesProb, bttsNoProb, bttsYesOdds: fairOdds(bttsYesProb, 0), bttsNoOdds: fairOdds(bttsNoProb, 0),
+      correctScores: top8Scores,
+    };
     if (isSubscribed) {
       setResult(computed);
       setShowPaywall(false);
@@ -774,8 +945,8 @@ export default function MatchPredictorPage() {
           onChange={(e) => handleLeagueChange(e.target.value)}
           className="bg-slate-900/60 text-white border border-slate-700/60 rounded-md px-3 py-2 font-mono text-[12px] font-semibold focus:outline-none focus:border-blue-500 transition-colors"
         >
-          {Object.entries(LEAGUES).map(([key, lg]) => (
-            <option key={key} value={key}>{lg.name}</option>
+          {SELECTABLE_LEAGUE_KEYS.map((key) => (
+            <option key={key} value={key}>{LEAGUES[key].name}</option>
           ))}
         </select>
         <button
@@ -965,6 +1136,109 @@ export default function MatchPredictorPage() {
               ))}
             </div>
           )}
+
+          {/* Asian Handicap */}
+          <details className="mt-5 pt-4 border-t border-slate-700/50">
+            <summary className="text-xs font-mono uppercase tracking-[0.1em] text-slate-400 font-semibold cursor-pointer hover:text-white transition-colors">Asian Handicap</summary>
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full text-[11px] sm:text-xs font-mono">
+                <thead>
+                  <tr className="text-slate-500 uppercase tracking-wider text-[9px] sm:text-[10px]">
+                    <th className="text-left py-1.5 px-2">Line</th>
+                    <th className="text-right py-1.5 px-2 text-emerald-400/80">Home %</th>
+                    <th className="text-right py-1.5 px-2 text-emerald-400/80">Home Odds</th>
+                    <th className="text-right py-1.5 px-2 text-slate-500">Push %</th>
+                    <th className="text-right py-1.5 px-2 text-red-400/80">Away %</th>
+                    <th className="text-right py-1.5 px-2 text-red-400/80">Away Odds</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {result.ahRows.map((row) => {
+                    const isClosest = row.line === result.ahClosestLine;
+                    return (
+                      <tr key={row.line} className={`border-t border-slate-800 ${isClosest ? 'bg-amber-500/10' : ''}`}>
+                        <td className={`py-1.5 px-2 font-semibold ${isClosest ? 'text-amber-400' : 'text-white'}`}>
+                          {row.line > 0 ? '+' : ''}{row.line}{isClosest ? ' ★' : ''}
+                        </td>
+                        <td className="text-right py-1.5 px-2 text-emerald-400 tabular-nums">{(row.homeProb * 100).toFixed(1)}%</td>
+                        <td className="text-right py-1.5 px-2 text-amber-400 tabular-nums">{row.homeOdds !== null ? row.homeOdds.toFixed(2) : '-'}</td>
+                        <td className="text-right py-1.5 px-2 text-slate-500 tabular-nums">{row.pushProb > 0.001 ? (row.pushProb * 100).toFixed(1) + '%' : '-'}</td>
+                        <td className="text-right py-1.5 px-2 text-red-400 tabular-nums">{(row.awayProb * 100).toFixed(1)}%</td>
+                        <td className="text-right py-1.5 px-2 text-amber-400 tabular-nums">{row.awayOdds !== null ? row.awayOdds.toFixed(2) : '-'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </details>
+
+          {/* Totals */}
+          <details className="mt-5 pt-4 border-t border-slate-700/50">
+            <summary className="text-xs font-mono uppercase tracking-[0.1em] text-slate-400 font-semibold cursor-pointer hover:text-white transition-colors">Totals</summary>
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full text-[11px] sm:text-xs font-mono">
+                <thead>
+                  <tr className="text-slate-500 uppercase tracking-wider text-[9px] sm:text-[10px]">
+                    <th className="text-left py-1.5 px-2">Line</th>
+                    <th className="text-right py-1.5 px-2 text-emerald-400/80">Over %</th>
+                    <th className="text-right py-1.5 px-2 text-emerald-400/80">Over Odds</th>
+                    <th className="text-right py-1.5 px-2 text-slate-500">Push %</th>
+                    <th className="text-right py-1.5 px-2 text-red-400/80">Under %</th>
+                    <th className="text-right py-1.5 px-2 text-red-400/80">Under Odds</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {result.totalsRows.map((row) => {
+                    const isClosest = row.line === result.totalsClosestLine;
+                    return (
+                      <tr key={row.line} className={`border-t border-slate-800 ${isClosest ? 'bg-amber-500/10' : ''}`}>
+                        <td className={`py-1.5 px-2 font-semibold ${isClosest ? 'text-amber-400' : 'text-white'}`}>
+                          {row.line}{isClosest ? ' ★' : ''}
+                        </td>
+                        <td className="text-right py-1.5 px-2 text-emerald-400 tabular-nums">{(row.overProb * 100).toFixed(1)}%</td>
+                        <td className="text-right py-1.5 px-2 text-amber-400 tabular-nums">{row.overOdds !== null ? row.overOdds.toFixed(2) : '-'}</td>
+                        <td className="text-right py-1.5 px-2 text-slate-500 tabular-nums">{row.pushProb > 0.001 ? (row.pushProb * 100).toFixed(1) + '%' : '-'}</td>
+                        <td className="text-right py-1.5 px-2 text-red-400 tabular-nums">{(row.underProb * 100).toFixed(1)}%</td>
+                        <td className="text-right py-1.5 px-2 text-amber-400 tabular-nums">{row.underOdds !== null ? row.underOdds.toFixed(2) : '-'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </details>
+
+          {/* Correct Score & BTTS */}
+          <details className="mt-5 pt-4 border-t border-slate-700/50">
+            <summary className="text-xs font-mono uppercase tracking-[0.1em] text-slate-400 font-semibold cursor-pointer hover:text-white transition-colors">Correct Score &amp; BTTS</summary>
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <p className="text-[10px] font-mono uppercase tracking-[0.1em] text-slate-500 font-semibold mb-2">Top 8 Correct Scores</p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {result.correctScores.map((cs, i) => (
+                    <div key={i} className="flex items-center justify-between bg-slate-900/50 border border-slate-700/50 rounded-md px-2.5 py-1.5">
+                      <span className="font-mono text-xs text-white font-semibold">{cs.home}-{cs.away}</span>
+                      <span className="font-mono text-xs text-amber-400 tabular-nums">{(cs.prob * 100).toFixed(1)}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-[10px] font-mono uppercase tracking-[0.1em] text-slate-500 font-semibold mb-2">Both Teams To Score</p>
+                <div className="flex rounded-lg overflow-hidden h-[56px]">
+                  <div className="flex flex-col items-center justify-center bg-slate-900/50 border border-emerald-500/30 flex-1">
+                    <span className="text-[9px] font-mono uppercase tracking-[0.1em] text-emerald-400/80 font-semibold">Yes</span>
+                    <span className="font-mono text-sm text-emerald-400 tabular-nums">{(result.bttsYesProb * 100).toFixed(1)}% <span className="text-amber-400">{result.bttsYesOdds !== null ? result.bttsYesOdds.toFixed(2) : '-'}</span></span>
+                  </div>
+                  <div className="flex flex-col items-center justify-center bg-slate-900/50 border border-red-500/30 flex-1 ml-1.5">
+                    <span className="text-[9px] font-mono uppercase tracking-[0.1em] text-red-400/80 font-semibold">No</span>
+                    <span className="font-mono text-sm text-red-400 tabular-nums">{(result.bttsNoProb * 100).toFixed(1)}% <span className="text-amber-400">{result.bttsNoOdds !== null ? result.bttsNoOdds.toFixed(2) : '-'}</span></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </details>
 
           {/* Calc Log */}
           <details className="mt-5 pt-4 border-t border-slate-700/50">
