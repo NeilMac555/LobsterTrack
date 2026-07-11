@@ -2539,10 +2539,18 @@ async def admin_probe_odds_api(
     events_count = 0
     event_titles = []
     lines_per_event = {}
+    pinnacle_priced_count = 0
     try:
         data = resp.json() if resp.status_code == 200 else None
         if isinstance(data, list):
             events_count = len(data)
+            for ev in data:
+                pin = next(
+                    (b for b in (ev.get('bookmakers') or []) if b.get('key') == 'pinnacle'),
+                    None,
+                )
+                if pin and pin.get('markets'):
+                    pinnacle_priced_count += 1
             for ev in data[:10]:
                 title = f"{ev.get('home_team')} v {ev.get('away_team')} ({ev.get('commence_time')})"
                 event_titles.append(title)
@@ -2566,6 +2574,7 @@ async def admin_probe_odds_api(
         "quota_remaining": resp.headers.get("x-requests-remaining"),
         "quota_used": resp.headers.get("x-requests-used"),
         "events_returned": events_count,
+        "pinnacle_priced_count": pinnacle_priced_count,
         "event_titles_sample": event_titles,
         "lines_per_event_sample": lines_per_event,
         "response_preview": (resp.text[:600] if resp.status_code != 200 else None),
