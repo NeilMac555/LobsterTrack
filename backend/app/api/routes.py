@@ -2503,16 +2503,21 @@ async def admin_recompute_closing_line(
     }
 
 
-@router.get("/admin/probe-alternate-totals")
-async def admin_probe_alternate_totals(
+@router.get("/admin/probe-odds-api")
+async def admin_probe_odds_api(
     password: str = Query(..., description="Admin password"),
     sport_key: str = Query("soccer_fifa_world_cup"),
+    markets: str = Query("alternate_totals", description="e.g. h2h, totals, spreads, alternate_totals"),
 ):
     """
-    One-shot probe: hit The Odds API with markets=alternate_totals and
-    Pinnacle to see whether our plan returns alt lines. If yes we can
-    wire it into the fetcher to keep a 2.5 line tracked even when
-    Pinnacle's main line drifts to 2.25/2.75.
+    One-shot probe: hit The Odds API directly for a given sport_key +
+    markets combo and report what comes back. Originally built to check
+    whether our plan supports alternate_totals; generalized so we can
+    also answer 'does The Odds API have any fixtures yet for a
+    currently-quiet league' (e.g. Champions League between seasons) by
+    probing with a valid market like h2h — a request with an invalid
+    market errors before The Odds API even lists events, so that check
+    needs a market our plan actually supports.
 
     Read-only. Costs ~1 API unit per call.
     """
@@ -2525,41 +2530,43 @@ async def admin_probe_alternate_totals(
     params = {
         "apiKey": s.odds_api_key,
         "regions": "eu",
-        "markets": "alternate_totals",
+        "markets": markets,
         "bookmakers": "pinnacle",
         "oddsFormat": "decimal",
     }
     async with httpx.AsyncClient(timeout=15.0) as client:
         resp = await client.get(url, params=params)
-    sample = None
     events_count = 0
+    event_titles = []
     lines_per_event = {}
     try:
         data = resp.json() if resp.status_code == 200 else None
         if isinstance(data, list):
             events_count = len(data)
-            for ev in data[:3]:
-                title = f"{ev.get('home_team')} v {ev.get('away_team')}"
-                pin = next(
-                    (b for b in (ev.get('bookmakers') or []) if b.get('key') == 'pinnacle'),
-                    None,
-                )
-                if pin:
-                    m = next(
-                        (mk for mk in (pin.get('markets') or []) if mk.get('key') == 'alternate_totals'),
+            for ev in data[:10]:
+                title = f"{ev.get('home_team')} v {ev.get('away_team')} ({ev.get('commence_time')})"
+                event_titles.append(title)
+                if markets == "alternate_totals":
+                    pin = next(
+                        (b for b in (ev.get('bookmakers') or []) if b.get('key') == 'pinnacle'),
                         None,
                     )
-                    outs = (m or {}).get('outcomes') or []
-                    lines = sorted({o.get('point') for o in outs if o.get('point') is not None})
-                    lines_per_event[title] = lines
-            sample = data[0] if data else None
-    except Exception as e:
-        sample = {"error": str(e)}
+                    if pin:
+                        m = next(
+                            (mk for mk in (pin.get('markets') or []) if mk.get('key') == 'alternate_totals'),
+                            None,
+                        )
+                        outs = (m or {}).get('outcomes') or []
+                        lines = sorted({o.get('point') for o in outs if o.get('point') is not None})
+                        lines_per_event[title] = lines
+    except Exception:
+        pass
     return {
         "status": resp.status_code,
         "quota_remaining": resp.headers.get("x-requests-remaining"),
         "quota_used": resp.headers.get("x-requests-used"),
         "events_returned": events_count,
+        "event_titles_sample": event_titles,
         "lines_per_event_sample": lines_per_event,
         "response_preview": (resp.text[:600] if resp.status_code != 200 else None),
     }
