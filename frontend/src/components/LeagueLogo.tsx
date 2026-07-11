@@ -20,6 +20,7 @@ const images: Record<string, string> = {
   soccer_france_ligue_one: '/flags/fr-circle-01.png',
   soccer_italy_serie_a: '/flags/it-circle-01.png',
   soccer_uefa_champs_league: '/flags/UEFA_Champions_League_logo_no_text.svg.png',
+  soccer_uefa_champs_league_qualification: '/flags/UEFA_Champions_League_logo_no_text.svg.png',
   soccer_uefa_europa_league: '/flags/UEFA_Europa_League_logo_(2024_version).svg.png',
   soccer_uefa_europa_conference_league: '/flags/UEFA_Conference_League_full_logo_(2024_version).svg.png',
 };
