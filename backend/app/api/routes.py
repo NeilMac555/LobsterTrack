@@ -2572,6 +2572,53 @@ async def admin_probe_odds_api(
     }
 
 
+@router.get("/admin/list-odds-api-sports")
+async def admin_list_odds_api_sports(
+    password: str = Query(..., description="Admin password"),
+    filter_text: str = Query("soccer", description="Substring filter on sport_key/title, case-insensitive"),
+):
+    """
+    List every sport_key The Odds API currently has active, filtered by
+    substring. Use when a league's usual sport_key returns zero events
+    and we need to check whether it's genuinely off-season or just
+    listed under a different key (e.g. Champions League qualifying
+    rounds sometimes sit under a separate key from the group-stage
+    competition). This call is free — GET /sports doesn't cost quota.
+    """
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid password")
+    from app.config import get_settings
+    import httpx
+    s = get_settings()
+    url = f"{s.odds_api_base_url}/sports"
+    params = {"apiKey": s.odds_api_key}
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        resp = await client.get(url, params=params)
+    matches = []
+    try:
+        data = resp.json() if resp.status_code == 200 else []
+        needle = filter_text.lower()
+        for sport in data:
+            key = sport.get("key", "")
+            title = sport.get("title", "")
+            group = sport.get("group", "")
+            haystack = f"{key} {title} {group}".lower()
+            if needle in haystack:
+                matches.append({
+                    "key": key,
+                    "title": title,
+                    "group": group,
+                    "active": sport.get("active"),
+                })
+    except Exception:
+        pass
+    return {
+        "status": resp.status_code,
+        "matches": matches,
+        "response_preview": (resp.text[:600] if resp.status_code != 200 else None),
+    }
+
+
 @router.get("/admin/fetcher-health")
 async def get_fetcher_health(
     password: str = Query(..., description="Admin password"),
