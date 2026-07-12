@@ -1,12 +1,19 @@
 # Steps 2-3 Diagnosis: 35-50% Home-Win Underprediction
 
-Diagnostic only. No changes to `frontend/src/model/valorModel.ts` or any
-shipped parameter. All numbers below come from `scripts/diagnose_steps23.ts`
+Diagnostic (Steps 1-4 below): no changes to `frontend/src/model/valorModel.ts`
+or any shipped parameter. All numbers come from `scripts/diagnose_steps23.ts`
 (reproducible via `railway run npx tsx diagnose_steps23.ts`), backed by
-`scripts/experimental-model.ts` (a diagnostic-only, never-imported copy of
-the production math with three extra knobs) and a `calibrationTable()`
-change in `scripts/scoring.ts` to support configurable bucket width
-(default unchanged at 5pp; this diagnosis uses 2.5pp).
+`scripts/experimental-model.ts` (never imported by production code) and a
+`calibrationTable()` change in `scripts/scoring.ts` to support configurable
+bucket width (default unchanged at 5pp; this diagnosis uses 2.5pp).
+
+**Update 2026-07-12 — Neil approved a fallback-only correction** (see
+"Applied fix" section at the end). Production is unaffected: the Match
+Predictor page is a manual-input calculator that only ever runs the xG
+pipeline — fallback mode has no live code path and exists solely in
+`scripts/backtest.ts`'s SECONDARY run for pre-xG historical seasons, so
+"fallback firing in production" was never a real scenario to guard
+against.
 
 ## tl;dr
 
@@ -247,3 +254,58 @@ again:** a `drawInflation`-focused hypothesis test targeting the
 mid-range-favourite draw over-allocation found in H4/1b directly, since
 that's the best-supported mechanism but wasn't one of the five knobs this
 task specified.
+
+## Applied fix (Neil approved 2026-07-12)
+
+**Production: no change.** Confirmed fallback mode has no live code path
+— the Match Predictor page always runs the xG pipeline via the real
+`runModel()`; fallback mode only exists in `scripts/backtest.ts`'s
+SECONDARY run. `valorModel.ts` was not touched by anything below.
+
+**Fallback backtest measurement: H2+H5 correction applied**, scoped
+strictly to `backtest.ts`'s fallback-mode branch:
+
+- Added `FALLBACK_CORRECTION_KNOBS` to `scripts/experimental-model.ts`
+  (`defenceBlendWeight: 0.50`, `homeAwayRatioDelta: 0.05`, per the H2/H5
+  sweeps above) — clearly commented as a backtest-measurement correction,
+  not a production parameter change.
+- `scripts/backtest.ts`'s `build1X2Samples()` now branches on `mode`:
+  `'fallback'` samples are scored through `runExperimentalModel(...,
+  FALLBACK_CORRECTION_KNOBS)`; every other mode (`'xg'`, used by PRIMARY
+  and AH/TOTALS/CLV) is untouched and still calls the real `runModel()`.
+- Neither `runModel()` nor `valorModel.ts` were modified. `experimental-model.ts`
+  remains unimported by any frontend or backend code.
+
+### SECONDARY backtest, before vs after (EPL fallback, n=1394)
+
+| | Before (baseline.md) | After (corrected) |
+|---|---|---|
+| Model Brier | 0.5860 | 0.5863 |
+| Model LogLoss | 0.9874 | 0.9878 |
+| Predicted draw % | 22.7% | 22.9% |
+| Actual draw % | 22.7% | 22.7% |
+
+Log loss and Brier are flat within noise (+0.0004, +0.0003 — 4th
+decimal). **Confirms the correction doesn't degrade overall calibration.**
+
+Home calibration, 35-50% band (5pp buckets, matching fit-v1.md/baseline.md
+resolution):
+
+| Bucket | Before: n / pred / obs / gap | After: n / pred / obs / gap |
+|---|---|---|
+| 35-40% | 112 / 37.6% / 44.6% / **+7.0pp** | 112 / 37.4% / 43.8% / **+6.4pp** |
+| 40-45% | 121 / 42.5% / 52.9% / **+10.4pp** | 127 / 42.5% / 51.2% / **+8.7pp** |
+| 45-50% | 105 / 47.5% / 44.8% / -2.7pp | 107 / 47.5% / 43.0% / -4.5pp |
+
+Pooled 35-50% band (n-weighted): gap shrinks from **+5.19pp to ~+3.88pp**
+(roughly matching the diagnosis's isolated-H2-alone estimate of 3.94pp —
+combining H2+H5 didn't stack additively, some overlap between what the two
+knobs correct, as expected since both push probability toward home in
+overlapping ways).
+
+**Verdict: hot buckets improved (35-40% and 40-45% both moved ~0.6-1.7pp
+closer to calibrated), log loss did not degrade** (change is noise-level).
+The correction is real but partial — it does not fully close the gap
+(consistent with H4/draw-mass being the dominant, uncorrected mechanism,
+per the Synthesis section above). This is expected and was flagged as a
+partial fix, not a full one, when proposed.

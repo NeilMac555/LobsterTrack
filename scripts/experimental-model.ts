@@ -1,16 +1,26 @@
-// DIAGNOSTIC-ONLY parameterized copy of valorModel.ts's Steps 0-9
-// (1X2 only — no AH/Totals/BTTS/Correct Score, not needed for this
-// diagnosis). NEVER imported by production code (frontend or backend).
-// Exists solely so docs/calibration/steps23-diagnosis.md's hypothesis
-// tests (H1 strength exponent, H2 defence blend, H5 home/away ratio
-// delta) can vary knobs that the real, unmodified runModel() does not
-// expose as parameters — production pipeline structure is untouched.
+// DIAGNOSTIC/BACKTEST-ONLY parameterized copy of valorModel.ts's Steps
+// 0-9 (1X2 only — no AH/Totals/BTTS/Correct Score, not needed here).
+// NEVER imported by production code (frontend or backend) — production
+// (the live Match Predictor page) only ever runs xG-mode inputs through
+// the real, unmodified runModel(); it never touches fallback mode or
+// this file. Fallback mode exists solely in scripts/backtest.ts's
+// SECONDARY run, scoring pre-xG historical seasons.
+//
+// Two uses:
+//  1. docs/calibration/steps23-diagnosis.md's hypothesis tests (H1
+//     strength exponent, H2 defence blend, H5 home/away ratio delta),
+//     via PRODUCTION_KNOBS as the no-op baseline.
+//  2. FALLBACK_CORRECTION_KNOBS below — a backtest-measurement
+//     correction applied ONLY to backtest.ts's SECONDARY (fallback-mode)
+//     run, per the diagnosis's H2+H5 findings. This does not change
+//     runModel() or valorModel.ts in any way; it only changes which
+//     function scores fallback-mode backtest samples.
 //
 // At every knob's default value (exponent=1, defenceBlendWeight=0.80,
 // homeAwayRatioDelta=0) this function is verified bit-identical to
 // runModel() from frontend/src/model/valorModel.ts — see
 // verify_experimental_model.ts. If you change this file, re-run that
-// verification before trusting any hypothesis-test output.
+// verification before trusting any hypothesis-test or backtest output.
 
 import type { ModelInputs, ModelParams } from '../frontend/src/model/valorModel';
 
@@ -39,6 +49,20 @@ export const PRODUCTION_KNOBS: ExperimentalKnobs = {
   strengthExponent: 1,
   defenceBlendWeight: 0.80,
   homeAwayRatioDelta: 0,
+};
+
+// Backtest-measurement correction for FALLBACK MODE ONLY (goals-based
+// inputs, pre-xG historical seasons — scripts/backtest.ts SECONDARY run).
+// Derived from docs/calibration/steps23-diagnosis.md's H2 (defence
+// blend 80/20 -> 50/50) and H5 (homeAwayRatio +0.05) sweeps, the only
+// two of five tested knobs that reduced the 35-50% band gap with no
+// log-loss cost. Neil approved 2026-07-12. Scoped strictly to
+// backtest.ts's fallback-mode branch — xG-mode runs (PRIMARY, AH/TOTALS)
+// always use PRODUCTION_KNOBS (equivalently, the real runModel()).
+export const FALLBACK_CORRECTION_KNOBS: ExperimentalKnobs = {
+  strengthExponent: 1,
+  defenceBlendWeight: 0.50,
+  homeAwayRatioDelta: 0.05,
 };
 
 export interface ExperimentalResult {

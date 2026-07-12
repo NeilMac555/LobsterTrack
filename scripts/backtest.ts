@@ -30,6 +30,7 @@ import {
 import { buildGoalsHistory, buildXGHistory, buildTeamInputs, type BuildMode } from './inputs';
 import { LEAGUE_PARAMS, CURRENT_ADVANCED_PARAMS, SUPPORTED_LEAGUES, CURRENT_XG_SEASON } from './model-params';
 import { runModel } from '../frontend/src/model/valorModel';
+import { runExperimentalModel, FALLBACK_CORRECTION_KNOBS } from './experimental-model';
 import {
   score1X2, score2Way, clvProxy1X2, clvProxy2Way, calibrationTable,
   type OutcomeSample3, type OutcomeSample2,
@@ -96,10 +97,21 @@ async function build1X2Samples(
     });
     if (skipped) continue;
 
-    const output = runModel(
-      { home: homeBuilt.inputs, away: awayBuilt.inputs },
-      { league: lg, ...CURRENT_ADVANCED_PARAMS }
-    );
+    // FALLBACK-mode samples (goals-based, pre-xG seasons) are scored
+    // through the H2+H5 backtest-measurement correction from
+    // docs/calibration/steps23-diagnosis.md instead of the real
+    // runModel() — see FALLBACK_CORRECTION_KNOBS in experimental-model.ts.
+    // xG-mode samples always use the real, unmodified runModel().
+    const output = mode === 'fallback'
+      ? runExperimentalModel(
+          { home: homeBuilt.inputs, away: awayBuilt.inputs },
+          { league: lg, ...CURRENT_ADVANCED_PARAMS },
+          FALLBACK_CORRECTION_KNOBS
+        )
+      : runModel(
+          { home: homeBuilt.inputs, away: awayBuilt.inputs },
+          { league: lg, ...CURRENT_ADVANCED_PARAMS }
+        );
 
     const actual: 'home' | 'draw' | 'away' = m.ftr === 'H' ? 'home' : m.ftr === 'D' ? 'draw' : 'away';
     const hasClose = m.price_source !== 'missing' && m.psch !== null && m.pscd !== null && m.psca !== null;
@@ -166,7 +178,7 @@ async function runSecondary(leagueArg: string) {
   const { samples, debug } = await build1X2Samples('soccer_epl', 'fallback', (season) => season !== '2526');
   const skippedCount = debug.filter((d) => d.skipped).length;
   const result = {
-    mode: 'FALLBACK MODE (goals-based, no xG)',
+    mode: 'FALLBACK MODE (goals-based, no xG) — H2+H5 backtest correction applied, see steps23-diagnosis.md',
     league: 'soccer_epl',
     seasons: ['2122', '2223', '2324', '2425'],
     matchesConsidered: debug.length,
