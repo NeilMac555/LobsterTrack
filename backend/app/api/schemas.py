@@ -307,6 +307,28 @@ class XGTeamsResponse(BaseModel):
     teams: list[str]
 
 
+class LeagueConstantsItem(BaseModel):
+    """Live-computed avgGoalsPerTeam/homeAwayRatio for one league."""
+    league: str
+    avg_goals_per_team: float
+    home_away_ratio: float
+    sample_matches: float
+    computed_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class LeagueConstantsResponse(BaseModel):
+    """
+    Current league_constants rows. Only leagues with a successfully
+    computed row are included — a league missing here means it has never
+    cleared the refresher's minimum-sample guard, and callers should fall
+    back to their own hardcoded default for it.
+    """
+    constants: list[LeagueConstantsItem]
+
+
 class TeamPLViewStats(BaseModel):
     """
     P/L numbers for one venue (home / away / overall) of a single

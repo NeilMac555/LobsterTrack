@@ -10,6 +10,7 @@ from app.services.odds_fetcher import odds_fetcher
 from app.services.results_fetcher import results_fetcher
 from app.services.closing_line_capturer import closing_line_capturer
 from app.services.xg_refresher import xg_refresher
+from app.services.league_constants_refresher import league_constants_refresher
 from app.services.email_sender import email_sender
 from app.services.stripe_reconciler import stripe_reconciler
 
@@ -338,6 +339,22 @@ class OddsScheduler:
         except Exception as e:
             logger.error("xG refresh failed", error=str(e))
 
+    async def league_constants_refresh_job(self):
+        """
+        Weekly recompute of avgGoalsPerTeam/homeAwayRatio per league from
+        historical_matches. Scheduled after football_data_refresh_job (see
+        registration below) so it always sees that week's freshest
+        results. Failures are logged but don't propagate — worst case
+        league_constants keeps last week's numbers (or the frontend's own
+        hardcoded fallback, if a league has no live row yet) until the
+        next run.
+        """
+        try:
+            logger.info("Starting weekly league constants refresh")
+            await league_constants_refresher.refresh()
+        except Exception as e:
+            logger.error("League constants refresh failed", error=str(e))
+
     async def football_data_refresh_job(self):
         """
         Weekly refresh of historical_matches (current season only) from
@@ -528,6 +545,19 @@ class OddsScheduler:
             coalesce=True,
         )
 
+        # Weekly league constants recompute — Monday 10:00 UTC, an hour
+        # after football_data_refresh_job (09:00) so it always reads that
+        # week's freshest historical_matches rather than racing it.
+        self.scheduler.add_job(
+            self.league_constants_refresh_job,
+            trigger=CronTrigger(day_of_week="mon", hour=10, minute=0),
+            id="league_constants_refresh_weekly",
+            name="Weekly league constants refresh (avgGoalsPerTeam/homeAwayRatio)",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
+
         # Polymarket WC fetcher — every minute during the WC. Polymarket
         # is free to poll (no auth, no usage cap) and live in-play prices
         # move fast, so 1m gives us a usable per-match time series without
@@ -664,6 +694,14 @@ class OddsScheduler:
                 "last_error": self._fdata_last_error,
                 "summary": self._fdata_last_summary,
                 "schedule": "Mondays 09:00 UTC",
+            },
+            # Weekly league constants refresh — avgGoalsPerTeam/homeAwayRatio per league
+            "league_constants_refresh": {
+                "last_run_at": iso(league_constants_refresher.last_run_at),
+                "seconds_since_last_run": seconds_ago(league_constants_refresher.last_run_at),
+                "last_error": league_constants_refresher.last_error,
+                "summary": league_constants_refresher.last_run_summary,
+                "schedule": "Mondays 10:00 UTC",
             },
         }
 

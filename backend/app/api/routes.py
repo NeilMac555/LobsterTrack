@@ -4,7 +4,7 @@ from sqlalchemy import func, desc, text
 from datetime import datetime, timedelta
 from typing import Optional
 
-from app.models import get_db, Match, OddsSnapshot, SteamMove, EmailSubscriber, TotalsSnapshot, SpreadsSnapshot, ClosingLine, SyndicateAlert, XGData, HistoricalMatch
+from app.models import get_db, Match, OddsSnapshot, SteamMove, EmailSubscriber, TotalsSnapshot, SpreadsSnapshot, ClosingLine, SyndicateAlert, XGData, HistoricalMatch, LeagueConstants
 from app.config import get_settings
 from app.services.scheduler import odds_scheduler
 from .schemas import (
@@ -39,6 +39,8 @@ from .schemas import (
     TeamPLRow,
     TeamPLSide,
     TeamPLViewStats,
+    LeagueConstantsItem,
+    LeagueConstantsResponse,
 )
 
 # Simple admin password
@@ -96,6 +98,21 @@ async def get_leagues(db: Session = Depends(get_db)):
         )
         for r in results
     ]
+
+
+@router.get("/league-constants", response_model=LeagueConstantsResponse)
+async def get_league_constants(db: Session = Depends(get_db)):
+    """
+    Live-computed avgGoalsPerTeam/homeAwayRatio per league (see
+    app/services/league_constants_refresher.py, refreshed weekly Mondays
+    10:00 UTC). Only returns leagues with a successfully computed row —
+    the Match Predictor page falls back to its own hardcoded default for
+    any league missing from this list (or if this request fails outright).
+    """
+    rows = db.query(LeagueConstants).all()
+    return LeagueConstantsResponse(
+        constants=[LeagueConstantsItem.model_validate(r) for r in rows]
+    )
 
 
 @router.get("/matches", response_model=list[MatchSummary])
@@ -2765,6 +2782,21 @@ async def admin_refresh_xg(password: str = Query(..., description="Admin passwor
         raise HTTPException(status_code=403, detail="Invalid admin password")
 
     summary = await xg_refresher.refresh()
+    return summary
+
+
+@router.post("/admin/refresh-league-constants")
+async def admin_refresh_league_constants(password: str = Query(..., description="Admin password")):
+    """
+    Manually trigger the weekly league constants recompute (useful on
+    demand — the scheduled run happens every Monday 10:00 UTC).
+    """
+    from app.services.league_constants_refresher import league_constants_refresher
+
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=403, detail="Invalid admin password")
+
+    summary = await league_constants_refresher.refresh()
     return summary
 
 

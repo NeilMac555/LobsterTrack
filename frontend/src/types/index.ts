@@ -209,6 +209,18 @@ export interface XGDataResponse {
   data: XGDataPoint[];
 }
 
+export interface LeagueConstantsItem {
+  league: string;
+  avg_goals_per_team: number;
+  home_away_ratio: number;
+  sample_matches: number;
+  computed_at: string;
+}
+
+export interface LeagueConstantsResponse {
+  constants: LeagueConstantsItem[];
+}
+
 export interface TeamPLViewStats {
   matches: number;
   wins: number;

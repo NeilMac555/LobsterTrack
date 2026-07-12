@@ -1,4 +1,4 @@
-import type { MatchSummary, MatchDetail, LeagueSummary, Stats, BiggestMover, MatchTotals, SyndicateMove, MatchSpreads, SteamResultsData, ClosingLinesResponse, MatchClosingLinesResponse, XGDataResponse, TeamPLResponse, InPlayJumpsResponse, LateSteamResponse } from '../types';
+import type { MatchSummary, MatchDetail, LeagueSummary, Stats, BiggestMover, MatchTotals, SyndicateMove, MatchSpreads, SteamResultsData, ClosingLinesResponse, MatchClosingLinesResponse, XGDataResponse, TeamPLResponse, InPlayJumpsResponse, LateSteamResponse, LeagueConstantsResponse } from '../types';
 
 const API_BASE = '/api';
 
@@ -12,6 +12,10 @@ async function fetchJson<T>(url: string): Promise<T> {
 
 export async function getLeagues(): Promise<LeagueSummary[]> {
   return fetchJson<LeagueSummary[]>(`${API_BASE}/leagues`);
+}
+
+export async function getLeagueConstants(): Promise<LeagueConstantsResponse> {
+  return fetchJson<LeagueConstantsResponse>(`${API_BASE}/league-constants`);
 }
 
 export async function getMatches(params?: {

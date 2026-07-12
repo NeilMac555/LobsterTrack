@@ -1,9 +1,11 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import PaywallOverlay from '../components/PaywallOverlay';
 import { runModel, type ModelOutput, type TeamModelInputs, type LeagueParams } from '../model/valorModel';
+import { getLeagueConstants } from '../api';
+import type { LeagueConstantsItem } from '../types';
 
 // ===== TYPES =====
 interface TeamInputs {
@@ -45,16 +47,25 @@ type PredictionResult = ModelOutput;
 // derives symmetric home/away multipliers from it so the expected match
 // total is preserved regardless of how strong the ratio is.
 //
-// premier_league / la_liga / serie_a / bundesliga / ligue_1 values are
-// 2025/26 full-season empirical (avg goals per team per match, home/away
-// goals ratio), lightly shrunk toward the cross-league mean.
+// FALLBACK ONLY as of the live league constants job: avgGoalsPerTeam and
+// homeAwayRatio for PL/BL/LL/SA/L1 are now normally sourced live from
+// GET /league-constants (backend/app/services/league_constants_refresher.py,
+// recomputed weekly from our own historical_matches data — see
+// docs/calibration for the weighting methodology). These hardcoded values
+// are the values that constants job replaced (2025/26 full-season
+// empirical snapshot) and are used only when the live fetch fails, or for
+// a league that's never cleared the refresher's minimum-sample guard —
+// see effectiveLeague below. avgGoals/avgXG/avgShotsPerGame are NOT part
+// of the live job (unrelated to this feature) and stay hardcoded either way.
 //
 // TODO: Champions League and Europa League are NOT yet empirically
 // calibrated — avgGoalsPerTeam reuses the old avgXG figure and
 // homeAwayRatio reuses the old flat homeAdv value (r = h), which only
 // preserves their previous home:away SPLIT, not a real fitted ratio.
-// Needs a proper pass once we have full-season UCL/UEL data.
-const LEAGUES: Record<string, { name: string; avgGoals: number; avgXG: number; avgShotsPerGame: number; avgGoalsPerTeam: number; homeAwayRatio: number }> = {
+// Needs a proper pass once we have full-season UCL/UEL data. They also
+// have no historical_matches coverage, so they have no entry in
+// SPORT_KEY_BY_LEAGUE below and always use this fallback.
+const FALLBACK_LEAGUES: Record<string, { name: string; avgGoals: number; avgXG: number; avgShotsPerGame: number; avgGoalsPerTeam: number; homeAwayRatio: number }> = {
   PL:  { name: 'Premier League',   avgGoals: 1.43, avgXG: 1.35, avgShotsPerGame: 13.2, avgGoalsPerTeam: 1.375, homeAwayRatio: 1.25 },
   BL:  { name: 'Bundesliga',       avgGoals: 1.50, avgXG: 1.45, avgShotsPerGame: 14.1, avgGoalsPerTeam: 1.620, homeAwayRatio: 1.22 },
   LL:  { name: 'La Liga',          avgGoals: 1.30, avgXG: 1.25, avgShotsPerGame: 12.4, avgGoalsPerTeam: 1.345, homeAwayRatio: 1.36 },
@@ -64,9 +75,21 @@ const LEAGUES: Record<string, { name: string; avgGoals: number; avgXG: number; a
   UEL: { name: 'Europa League',    avgGoals: 1.40, avgXG: 1.35, avgShotsPerGame: 13.0, avgGoalsPerTeam: 1.35 /* TODO: uncalibrated, = old avgXG */, homeAwayRatio: 1.18 /* TODO: uncalibrated, r = old homeAdv */ },
 };
 
-// CL/UEL stay in LEAGUES (so old data / TODOs are preserved) but are pulled
-// from the league picker until they're empirically calibrated.
-const SELECTABLE_LEAGUE_KEYS = Object.keys(LEAGUES).filter((k) => k !== 'CL' && k !== 'UEL');
+// CL/UEL stay in FALLBACK_LEAGUES (so old data / TODOs are preserved) but
+// are pulled from the league picker until they're empirically calibrated.
+const SELECTABLE_LEAGUE_KEYS = Object.keys(FALLBACK_LEAGUES).filter((k) => k !== 'CL' && k !== 'UEL');
+
+// Maps this page's short league keys to the sport_key identifiers used by
+// historical_matches / league_constants (same scheme as
+// scripts/model-params.ts's LEAGUE_PARAMS). CL/UEL intentionally have no
+// entry — no historical_matches coverage, so they always use the fallback.
+const SPORT_KEY_BY_LEAGUE: Partial<Record<string, string>> = {
+  PL: 'soccer_epl',
+  BL: 'soccer_germany_bundesliga',
+  LL: 'soccer_spain_la_liga',
+  SA: 'soccer_italy_serie_a',
+  L1: 'soccer_france_ligue_one',
+};
 
 const LEAGUE_DEFAULTS: Record<string, { ga: number; xgf: number; xga: number }> = {
   PL:  { ga: 1.43, xgf: 1.35, xga: 1.35 },
@@ -223,6 +246,48 @@ export default function MatchPredictorPage() {
   const pendingResult = useRef<PredictionResult | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
 
+  // Live league constants (avgGoalsPerTeam/homeAwayRatio), fetched once on
+  // mount. Keyed by sport_key. null while loading; stays null forever (and
+  // every league falls back to FALLBACK_LEAGUES) if the fetch fails — no
+  // error surfaced to the user beyond the "Constants: fallback defaults"
+  // note, per spec.
+  const [liveConstants, setLiveConstants] = useState<Record<string, LeagueConstantsItem> | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getLeagueConstants()
+      .then((res) => {
+        if (cancelled) return;
+        const byLeague: Record<string, LeagueConstantsItem> = {};
+        res.constants.forEach((c) => { byLeague[c.league] = c; });
+        setLiveConstants(byLeague);
+      })
+      .catch(() => {
+        // Fetch failed (network error, backend down, etc.) — leave
+        // liveConstants null so every league falls back to
+        // FALLBACK_LEAGUES. No error UI; this is an expected, handled path.
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Resolves the currently-selected league to either its live-computed
+  // constants (if the fetch succeeded AND this league has a row — CL/UEL
+  // never do) or the hardcoded FALLBACK_LEAGUES defaults.
+  const effectiveLeague = useMemo(() => {
+    const fallback = FALLBACK_LEAGUES[league];
+    const sportKey = SPORT_KEY_BY_LEAGUE[league];
+    const live = sportKey ? liveConstants?.[sportKey] : undefined;
+    if (live) {
+      return {
+        params: { ...fallback, avgGoalsPerTeam: live.avg_goals_per_team, homeAwayRatio: live.home_away_ratio } as LeagueParams,
+        source: 'live' as const,
+        computedAt: live.computed_at,
+        sampleMatches: live.sample_matches,
+      };
+    }
+    return { params: fallback as LeagueParams, source: 'fallback' as const, computedAt: null as string | null, sampleMatches: null as number | null };
+  }, [league, liveConstants]);
+
   // After successful Stripe checkout, refresh user subscription status
   useEffect(() => {
     if (searchParams.get('checkout') === 'success') {
@@ -280,7 +345,7 @@ export default function MatchPredictorPage() {
   }), []);
 
   const calculate = useCallback(() => {
-    const lg: LeagueParams = LEAGUES[league];
+    const lg: LeagueParams = effectiveLeague.params;
     const computed = runModel(
       { home: toModelTeam(home), away: toModelTeam(away) },
       {
@@ -301,7 +366,7 @@ export default function MatchPredictorPage() {
       setResult(null);
       setShowPaywall(true);
     }
-  }, [league, home, away, adv, isSubscribed, toModelTeam]);
+  }, [effectiveLeague, home, away, adv, isSubscribed, toModelTeam]);
 
   // Scroll to results after calculation
   useEffect(() => {
@@ -538,7 +603,7 @@ export default function MatchPredictorPage() {
           className="bg-slate-900/60 text-white border border-slate-700/60 rounded-md px-3 py-2 font-mono text-[12px] font-semibold focus:outline-none focus:border-blue-500 transition-colors"
         >
           {SELECTABLE_LEAGUE_KEYS.map((key) => (
-            <option key={key} value={key}>{LEAGUES[key].name}</option>
+            <option key={key} value={key}>{FALLBACK_LEAGUES[key].name}</option>
           ))}
         </select>
         <button
@@ -629,6 +694,15 @@ export default function MatchPredictorPage() {
                 className="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-blue-500 transition-colors" />
             </div>
           </div>
+          <p className="mt-4 pt-4 border-t border-slate-700/40 text-[11px] text-center">
+            {effectiveLeague.source === 'live' ? (
+              <span className="text-emerald-400/80">
+                Constants: live, computed {effectiveLeague.computedAt ? effectiveLeague.computedAt.slice(0, 10) : ''}, {Math.round(effectiveLeague.sampleMatches ?? 0)} matches
+              </span>
+            ) : (
+              <span className="text-slate-500">Constants: fallback defaults</span>
+            )}
+          </p>
         </Section>
       </div>
 
