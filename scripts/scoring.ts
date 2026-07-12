@@ -99,7 +99,7 @@ function idx3(actual: 'home' | 'draw' | 'away'): number {
   return actual === 'home' ? 0 : actual === 'draw' ? 1 : 2;
 }
 
-// ===== Calibration table (5%-wide buckets) =====
+// ===== Calibration table (default 5%-wide buckets, width configurable) =====
 export interface CalibrationBucket {
   bucketLow: number; // e.g. 0.30
   bucketHigh: number; // e.g. 0.35
@@ -110,16 +110,17 @@ export interface CalibrationBucket {
 
 export function calibrationTable(
   predictedProbs: number[],
-  actualIndicators: boolean[]
+  actualIndicators: boolean[],
+  bucketWidthPct: number = 5
 ): CalibrationBucket[] {
   const buckets: CalibrationBucket[] = [];
-  for (let lo = 0; lo < 100; lo += 5) {
-    const low = lo / 100, high = (lo + 5) / 100;
+  for (let lo = 0; lo < 100; lo += bucketWidthPct) {
+    const low = lo / 100, high = (lo + bucketWidthPct) / 100;
     const idxs: number[] = [];
     predictedProbs.forEach((p, i) => {
       // Last bucket is inclusive of 1.0; every other bucket is
       // half-open [low, high).
-      if (p >= low && (high === 1 ? p <= high : p < high)) idxs.push(i);
+      if (p >= low && (high >= 1 ? p <= high : p < high)) idxs.push(i);
     });
     if (idxs.length === 0) continue;
     const n = idxs.length;

@@ -5,10 +5,14 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 ## Now
 
-- Steps 2-3 investigation: home-win probs in 35-50% band underpredicted
-  8-10pp (see docs/calibration/fit-v1.md). Diagnostic first, no fixes.
-  Suspects include linear strength ratios compressing mid-range
-  favourites and the 80/20 defence blend.
+- Steps 2-3 diagnosis DONE (see docs/calibration/steps23-diagnosis.md):
+  gap does not reproduce with significance in xG (production) mode;
+  in fallback mode it's 2 hot buckets (~35-42.5%) not a uniform slope,
+  mostly explained by draw over-allocation (H4), not strength exponent
+  (H1, rejected) or lambda clamp (H3, eliminated). Recommendation is
+  "no production change" pending: (a) measuring how often fallback mode
+  actually fires in live predictions, (b) Neil's decision on whether to
+  approve a fallback-only H2+H5 tweak. Awaiting Neil's go/no-go.
 
 ## Next
 
