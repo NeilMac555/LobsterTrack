@@ -6,25 +6,21 @@ import PaywallOverlay from '../components/PaywallOverlay';
 
 // ===== TYPES =====
 interface TeamInputs {
-  goalsFor: string;
   goalsAgainst: string;
   xgFor: string;
   xgAgainst: string;
   matchesPlayed: string;
   penaltiesReceived: string;
   penaltiesConceded: string;
-  avgRedCardsFor: string;
-  avgRedCardsAgainst: string;
   shotsFor: string;
   shotsAgainst: string;
   openPlayXG: string;
   setPieceXG: string;
   last6XGFor: string;
   last6XGAgainst: string;
-  last6XGPerShot: string;
-  motivation: 'normal' | 'elevated' | 'must_win';
-  absenceAtk: number;
-  absenceDef: number;
+  // 1 = None, 3 = Weakened, 5 = Severely weakened — applied equally to
+  // this team's attack and defence via absenceWeight (Step 5b).
+  absence: number;
 }
 
 interface AdvancedSettings {
@@ -38,7 +34,6 @@ interface AdvancedSettings {
 
 interface AbsenceNote {
   team: 'home' | 'away';
-  type: 'attack' | 'defence';
   severity: number;
   pct: string;
 }
@@ -116,36 +111,36 @@ const LEAGUES: Record<string, { name: string; avgGoals: number; avgXG: number; a
 // from the league picker until they're empirically calibrated.
 const SELECTABLE_LEAGUE_KEYS = Object.keys(LEAGUES).filter((k) => k !== 'CL' && k !== 'UEL');
 
-const LEAGUE_DEFAULTS: Record<string, { gf: number; ga: number; xgf: number; xga: number; shots: number }> = {
-  PL:  { gf: 1.43, ga: 1.43, xgf: 1.35, xga: 1.35, shots: 13.2 },
-  BL:  { gf: 1.50, ga: 1.50, xgf: 1.45, xga: 1.45, shots: 14.1 },
-  LL:  { gf: 1.30, ga: 1.30, xgf: 1.25, xga: 1.25, shots: 12.4 },
-  SA:  { gf: 1.32, ga: 1.32, xgf: 1.26, xga: 1.26, shots: 13.0 },
-  L1:  { gf: 1.33, ga: 1.33, xgf: 1.27, xga: 1.27, shots: 12.8 },
-  CL:  { gf: 1.45, ga: 1.45, xgf: 1.40, xga: 1.40, shots: 13.5 },
-  UEL: { gf: 1.40, ga: 1.40, xgf: 1.35, xga: 1.35, shots: 13.0 },
+const LEAGUE_DEFAULTS: Record<string, { ga: number; xgf: number; xga: number }> = {
+  PL:  { ga: 1.43, xgf: 1.35, xga: 1.35 },
+  BL:  { ga: 1.50, xgf: 1.45, xga: 1.45 },
+  LL:  { ga: 1.30, xgf: 1.25, xga: 1.25 },
+  SA:  { ga: 1.32, xgf: 1.26, xga: 1.26 },
+  L1:  { ga: 1.33, xgf: 1.27, xga: 1.27 },
+  CL:  { ga: 1.45, xgf: 1.40, xga: 1.40 },
+  UEL: { ga: 1.40, xgf: 1.35, xga: 1.35 },
 };
 
-const MOTIVATION_MULT: Record<string, number> = { normal: 1.00, elevated: 1.05, must_win: 1.10 };
-const SEVERITY_LABELS: Record<number, string> = { 1: 'Rotation', 2: 'Useful starter', 3: 'Significant', 4: 'Key player', 5: 'Transformational' };
+const ABSENCE_LABELS: Record<number, string> = { 1: 'None', 3: 'Weakened', 5: 'Severely weakened' };
 const MAX_GOALS = 10;
 
 function makeDefaultTeam(league: string): TeamInputs {
   const d = LEAGUE_DEFAULTS[league] || LEAGUE_DEFAULTS.PL;
   return {
-    goalsFor: d.gf.toFixed(2), goalsAgainst: d.ga.toFixed(2),
+    goalsAgainst: d.ga.toFixed(2),
     xgFor: d.xgf.toFixed(2), xgAgainst: d.xga.toFixed(2),
     matchesPlayed: '19', penaltiesReceived: '3', penaltiesConceded: '3',
-    avgRedCardsFor: '0.05', avgRedCardsAgainst: '0.05',
-    shotsFor: d.shots.toFixed(1), shotsAgainst: d.shots.toFixed(1),
-    openPlayXG: '1.00', setPieceXG: '0.25',
-    last6XGFor: '1.30', last6XGAgainst: '1.30', last6XGPerShot: '0.100',
-    motivation: 'normal', absenceAtk: 1, absenceDef: 1,
+    // Advanced inputs — blank by default so Step 0b (SP discount) and
+    // Step 1b (quality) are no-ops until the user opts in.
+    shotsFor: '', shotsAgainst: '',
+    openPlayXG: '', setPieceXG: '',
+    last6XGFor: '1.30', last6XGAgainst: '1.30',
+    absence: 1,
   };
 }
 
 function makeDefaultAdvanced(): AdvancedSettings {
-  return { drawInflation: '1.08', rho: '-0.03', formWeight: '0.25', spDiscount: '0.85', qualityWeight: '0.15', absenceWeight: '0.03' };
+  return { drawInflation: '1.08', rho: '-0.03', formWeight: '0.25', spDiscount: '0.85', qualityWeight: '0', absenceWeight: '0.03' };
 }
 
 // ===== MATH =====
@@ -288,14 +283,13 @@ function DataSourcesSection() {
               <tbody className="text-slate-400">
                 <tr className="border-b border-slate-700/30"><td className="py-1.5 px-1.5 text-white font-medium">Goals For / Against</td><td className="py-1.5 px-1.5"><SourceLink href="https://theanalyst.com/football/stats" name="OPTA Analyst" /></td><td className="py-1.5 px-1.5 text-slate-500 text-[11px] italic">Football &gt; Stats &gt; Team stats &gt; Goals per match</td></tr>
                 <tr className="border-b border-slate-700/30"><td className="py-1.5 px-1.5 text-white font-medium">xG For / Against</td><td className="py-1.5 px-1.5"><SourceLink href="https://theanalyst.com/football/stats" name="OPTA Analyst" /></td><td className="py-1.5 px-1.5 text-slate-500 text-[11px] italic">Football &gt; Stats &gt; Team stats &gt; xG per match</td></tr>
-                <tr className="border-b border-slate-700/30"><td className="py-1.5 px-1.5 text-white font-medium">Penalties Received / Conceded</td><td className="py-1.5 px-1.5"><SourceLink href="https://www.transfermarkt.com" name="Transfermarkt" /></td><td className="py-1.5 px-1.5 text-slate-500 text-[11px] italic">Team page &gt; Detailed stats &gt; Penalties</td></tr>
-                <tr><td className="py-1.5 px-1.5 text-white font-medium">Avg Red Cards For / Against</td><td className="py-1.5 px-1.5"><SourceLink href="https://scoreroom.com" name="Scoreroom" /></td><td className="py-1.5 px-1.5 text-slate-500 text-[11px] italic">Select league &gt; Team &gt; Cards tab</td></tr>
+                <tr><td className="py-1.5 px-1.5 text-white font-medium">Penalties Received / Conceded</td><td className="py-1.5 px-1.5"><SourceLink href="https://www.transfermarkt.com" name="Transfermarkt" /></td><td className="py-1.5 px-1.5 text-slate-500 text-[11px] italic">Team page &gt; Detailed stats &gt; Penalties</td></tr>
               </tbody>
             </table>
           </div>
-          {/* xG Quality */}
+          {/* Advanced Inputs */}
           <div>
-            <h4 className="text-xs font-bold text-red-400 uppercase tracking-wider mb-2 pb-1.5 border-b border-red-500/15">xG Quality Breakdown</h4>
+            <h4 className="text-xs font-bold text-red-400 uppercase tracking-wider mb-2 pb-1.5 border-b border-red-500/15">Advanced Inputs</h4>
             <table className="w-full text-xs sm:text-sm">
               <thead><tr className="text-slate-500 text-[10px] uppercase tracking-wider"><th className="text-left py-1 px-1.5">Stat</th><th className="text-left py-1 px-1.5">Source</th><th className="text-left py-1 px-1.5">Where to Find</th></tr></thead>
               <tbody className="text-slate-400">
@@ -313,8 +307,7 @@ function DataSourcesSection() {
             <table className="w-full text-xs sm:text-sm">
               <thead><tr className="text-slate-500 text-[10px] uppercase tracking-wider"><th className="text-left py-1 px-1.5">Stat</th><th className="text-left py-1 px-1.5">Source</th><th className="text-left py-1 px-1.5">Where to Find</th></tr></thead>
               <tbody className="text-slate-400">
-                <tr className="border-b border-slate-700/30"><td className="py-1.5 px-1.5 text-white font-medium">Last 6 xG For / Against</td><td className="py-1.5 px-1.5"><SourceLink href="https://theanalyst.com/football/stats" name="OPTA Analyst" /></td><td className="py-1.5 px-1.5 text-slate-500 text-[11px] italic">Match-by-match xG &gt; sum last 6 &gt; divide by 6</td></tr>
-                <tr><td className="py-1.5 px-1.5 text-white font-medium">Last 6 xG / Shot</td><td className="py-1.5 px-1.5"><SourceLink href="https://theanalyst.com/football/stats" name="OPTA Analyst" /></td><td className="py-1.5 px-1.5 text-slate-500 text-[11px] italic">Last 6 matches &gt; total xG / total shots</td></tr>
+                <tr><td className="py-1.5 px-1.5 text-white font-medium">Last 6 xG For / Against</td><td className="py-1.5 px-1.5"><SourceLink href="https://theanalyst.com/football/stats" name="OPTA Analyst" /></td><td className="py-1.5 px-1.5 text-slate-500 text-[11px] italic">Match-by-match xG &gt; sum last 6 &gt; divide by 6</td></tr>
               </tbody>
             </table>
           </div>
@@ -324,13 +317,12 @@ function DataSourcesSection() {
             <table className="w-full text-xs sm:text-sm">
               <thead><tr className="text-slate-500 text-[10px] uppercase tracking-wider"><th className="text-left py-1 px-1.5">Stat</th><th className="text-left py-1 px-1.5">Source</th><th className="text-left py-1 px-1.5">Where to Find</th></tr></thead>
               <tbody className="text-slate-400">
-                <tr className="border-b border-slate-700/30"><td className="py-1.5 px-1.5 text-white font-medium">Motivation</td><td className="py-1.5 px-1.5 text-slate-400">Subjective</td><td className="py-1.5 px-1.5 text-slate-500 text-[11px] italic">Normal / Elevated (derbies) / Must-Win (relegation)</td></tr>
-                <tr><td className="py-1.5 px-1.5 text-white font-medium">Absence Severity</td><td className="py-1.5 px-1.5 text-slate-400">Subjective</td><td className="py-1.5 px-1.5 text-slate-500 text-[11px] italic">Check injury news, rate 1-5 for attack & defence</td></tr>
+                <tr><td className="py-1.5 px-1.5 text-white font-medium">Absence Severity</td><td className="py-1.5 px-1.5 text-slate-400">Subjective</td><td className="py-1.5 px-1.5 text-slate-500 text-[11px] italic">Check injury news, rate None / Weakened / Severely weakened</td></tr>
               </tbody>
             </table>
           </div>
           <div className="text-[11px] text-slate-500 italic bg-black/15 rounded-lg p-3 leading-relaxed">
-            <strong className="text-slate-400 not-italic">Tip:</strong> OPTA Analyst for all goals & xG. FBref for shots. MarkStats for LOS/OLOS. Scoreroom & Transfermarkt for cards & penalties. Motivation and absence severity are subjective.
+            <strong className="text-slate-400 not-italic">Tip:</strong> OPTA Analyst for all goals & xG. FBref for shots. MarkStats for LOS/OLOS. Transfermarkt for penalties. Absence severity is subjective.
           </div>
         </div>
       )}
@@ -429,16 +421,6 @@ export default function MatchPredictorPage() {
       log.push(`Step 0b — SP Discount: SKIPPED — no component breakdown`);
     }
 
-    // Step 1: Red card normalisation
-    const atkRedAdjH = clamp(1 - v(h.avgRedCardsFor) * 0.18 + v(h.avgRedCardsAgainst) * 0.12, 0.90, 1.10);
-    const defRedAdjH = clamp(1 + v(h.avgRedCardsFor) * 0.22 - v(h.avgRedCardsAgainst) * 0.12, 0.90, 1.10);
-    const atkRedAdjA = clamp(1 - v(a.avgRedCardsFor) * 0.18 + v(a.avgRedCardsAgainst) * 0.12, 0.90, 1.10);
-    const defRedAdjA = clamp(1 + v(a.avgRedCardsFor) * 0.22 - v(a.avgRedCardsAgainst) * 0.12, 0.90, 1.10);
-
-    exH *= atkRedAdjH; exA *= atkRedAdjA;
-    eaH *= defRedAdjH; eaA *= defRedAdjA;
-    log.push(`Step 1 — Red Card Norm: H_atkAdj=${atkRedAdjH.toFixed(3)} H_defAdj=${defRedAdjH.toFixed(3)} A_atkAdj=${atkRedAdjA.toFixed(3)} A_defAdj=${defRedAdjA.toFixed(3)}`);
-
     // Step 1b: xG Per Shot Quality Modifier
     const qualityWeight = v(adv.qualityWeight);
     const leagueAvgXGPerShot = lg.avgXG / lg.avgShotsPerGame;
@@ -530,36 +512,24 @@ export default function MatchPredictorPage() {
     let lA = clamp(atkA * defH * lg.avgGoalsPerTeam * awayMult, 0.05, 8);
     log.push(`Step 4 — Lambda (raw): H=${lH.toFixed(3)} A=${lA.toFixed(3)} [r=${r.toFixed(3)} homeMult=${homeMult.toFixed(3)} awayMult=${awayMult.toFixed(3)}]`);
 
-    // Step 5: Motivation
-    lH *= (MOTIVATION_MULT[h.motivation] || 1.00);
-    lA *= (MOTIVATION_MULT[a.motivation] || 1.00);
-    lH = clamp(lH, 0.05, 8);
-    lA = clamp(lA, 0.05, 8);
-    if (h.motivation !== 'normal' || a.motivation !== 'normal') {
-      log.push(`Step 5 — Motivation: H=${h.motivation}(${MOTIVATION_MULT[h.motivation]}) A=${a.motivation}(${MOTIVATION_MULT[a.motivation]}) → λH=${lH.toFixed(3)} λA=${lA.toFixed(3)}`);
-    } else {
-      log.push(`Step 5 — Motivation: SKIPPED — both normal`);
-    }
-
-    // Step 5b: Absence severity
+    // Step 5b: Absence severity — one severity value per team, applied
+    // equally to that team's attack and defence via absenceWeight.
     const absWt = v(adv.absenceWeight);
-    lH *= (1 - ((h.absenceAtk - 1) * absWt));
-    lA *= (1 + ((h.absenceDef - 1) * absWt));
-    lA *= (1 - ((a.absenceAtk - 1) * absWt));
-    lH *= (1 + ((a.absenceDef - 1) * absWt));
+    lH *= (1 - ((h.absence - 1) * absWt));
+    lA *= (1 + ((h.absence - 1) * absWt));
+    lA *= (1 - ((a.absence - 1) * absWt));
+    lH *= (1 + ((a.absence - 1) * absWt));
     lH = clamp(lH, 0.05, 8);
     lA = clamp(lA, 0.05, 8);
 
     // Build absence notes
     const absenceNotes: AbsenceNote[] = [];
-    if (h.absenceAtk > 1) absenceNotes.push({ team: 'home', type: 'attack', severity: h.absenceAtk, pct: ((h.absenceAtk - 1) * absWt * 100).toFixed(1) });
-    if (h.absenceDef > 1) absenceNotes.push({ team: 'home', type: 'defence', severity: h.absenceDef, pct: ((h.absenceDef - 1) * absWt * 100).toFixed(1) });
-    if (a.absenceAtk > 1) absenceNotes.push({ team: 'away', type: 'attack', severity: a.absenceAtk, pct: ((a.absenceAtk - 1) * absWt * 100).toFixed(1) });
-    if (a.absenceDef > 1) absenceNotes.push({ team: 'away', type: 'defence', severity: a.absenceDef, pct: ((a.absenceDef - 1) * absWt * 100).toFixed(1) });
+    if (h.absence > 1) absenceNotes.push({ team: 'home', severity: h.absence, pct: ((h.absence - 1) * absWt * 100).toFixed(1) });
+    if (a.absence > 1) absenceNotes.push({ team: 'away', severity: a.absence, pct: ((a.absence - 1) * absWt * 100).toFixed(1) });
     if (absenceNotes.length > 0) {
       log.push(`Step 5b — Absence: λH=${lH.toFixed(3)} λA=${lA.toFixed(3)}`);
     } else {
-      log.push(`Step 5b — Absence: SKIPPED — all sliders at 1`);
+      log.push(`Step 5b — Absence: SKIPPED — both teams at None`);
     }
 
     // Step 6: Poisson marginals
@@ -685,15 +655,12 @@ export default function MatchPredictorPage() {
         <div className={`text-xs uppercase tracking-widest font-bold ${color} pb-2 mb-3 border-b ${borderColor}`}>
           {side === 'home' ? 'Home' : 'Away'}
         </div>
-        <Field label="Goals For / match" value={team.goalsFor} onChange={v => update('goalsFor', v)} step="0.01" min="0" />
         <Field label="Goals Against / match" value={team.goalsAgainst} onChange={v => update('goalsAgainst', v)} step="0.01" min="0" />
         <Field label="xG For / match" value={team.xgFor} onChange={v => update('xgFor', v)} step="0.01" min="0" />
         <Field label="xG Against / match" value={team.xgAgainst} onChange={v => update('xgAgainst', v)} step="0.01" min="0" />
         <Field label="Matches Played" value={team.matchesPlayed} onChange={v => update('matchesPlayed', v)} step="1" min="1" />
         <Field label="Penalties Received (season)" value={team.penaltiesReceived} onChange={v => update('penaltiesReceived', v)} step="1" min="0" />
         <Field label="Penalties Conceded (season)" value={team.penaltiesConceded} onChange={v => update('penaltiesConceded', v)} step="1" min="0" />
-        <Field label="Avg Red Cards For / match" value={team.avgRedCardsFor} onChange={v => update('avgRedCardsFor', v)} step="0.01" min="0" />
-        <Field label="Avg Red Cards Against / match" value={team.avgRedCardsAgainst} onChange={v => update('avgRedCardsAgainst', v)} step="0.01" min="0" />
       </div>
     );
   };
@@ -724,7 +691,6 @@ export default function MatchPredictorPage() {
         </div>
         <Field label="Last 6 xG For / match" value={team.last6XGFor} onChange={v => update('last6XGFor', v)} step="0.01" min="0" />
         <Field label="Last 6 xG Against / match" value={team.last6XGAgainst} onChange={v => update('last6XGAgainst', v)} step="0.01" min="0" />
-        <Field label="Last 6 xG / Shot" value={team.last6XGPerShot} onChange={v => update('last6XGPerShot', v)} step="0.001" min="0" />
       </div>
     );
   };
@@ -737,46 +703,18 @@ export default function MatchPredictorPage() {
         <div className={`text-xs uppercase tracking-widest font-bold ${color} pb-2 mb-3 border-b ${borderColor}`}>
           {side === 'home' ? 'Home' : 'Away'}
         </div>
-        <div className="mb-3">
-          <label className="block text-xs sm:text-sm text-slate-400 mb-1.5">Motivation</label>
-          <select
-            value={team.motivation}
-            onChange={(e) => update('motivation', e.target.value)}
-            className="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-3 py-2.5 text-white text-sm sm:text-base focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-          >
-            <option value="normal">Normal</option>
-            <option value="elevated">Elevated</option>
-            <option value="must_win">Must-Win</option>
-          </select>
-        </div>
         {/* Absence Severity */}
-        <div className="mt-4 pt-3 border-t border-slate-700/40">
-          <p className={`text-xs font-bold uppercase tracking-wider ${color} mb-3`}>Absence Severity</p>
-          <div className="space-y-3">
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs sm:text-sm text-slate-400">Attack Absence</label>
-                <span className="text-sm font-bold text-white font-mono w-5 text-center">{team.absenceAtk}</span>
-              </div>
-              <input
-                type="range" min="1" max="5" step="1" value={team.absenceAtk}
-                onChange={(e) => update('absenceAtk', parseInt(e.target.value))}
-                className="w-full h-1.5 bg-slate-700 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-red-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-[0_0_6px_rgba(239,68,68,0.4)] [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:bg-red-500 [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:cursor-pointer"
-              />
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs sm:text-sm text-slate-400">Defence Absence</label>
-                <span className="text-sm font-bold text-white font-mono w-5 text-center">{team.absenceDef}</span>
-              </div>
-              <input
-                type="range" min="1" max="5" step="1" value={team.absenceDef}
-                onChange={(e) => update('absenceDef', parseInt(e.target.value))}
-                className="w-full h-1.5 bg-slate-700 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-red-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-[0_0_6px_rgba(239,68,68,0.4)] [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:bg-red-500 [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:cursor-pointer"
-              />
-            </div>
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <label className={`text-xs font-bold uppercase tracking-wider ${color}`}>Absence Severity</label>
+            <span className="text-sm font-bold text-white font-mono">{ABSENCE_LABELS[team.absence]}</span>
           </div>
-          <p className="text-[10px] text-slate-500 italic mt-2">1 = Rotation · 2 = Useful starter · 3 = Significant · 4 = Key player · 5 = Transformational</p>
+          <input
+            type="range" min="1" max="5" step="2" value={team.absence}
+            onChange={(e) => update('absence', parseInt(e.target.value))}
+            className="w-full h-1.5 bg-slate-700 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-red-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-[0_0_6px_rgba(239,68,68,0.4)] [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:bg-red-500 [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:cursor-pointer"
+          />
+          <p className="text-[10px] text-slate-500 italic mt-2">None · Weakened · Severely weakened — applied equally to attack &amp; defence</p>
         </div>
       </div>
     );
@@ -818,7 +756,7 @@ export default function MatchPredictorPage() {
                 <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-400 mb-1">OPTA Analyst</p>
                 <a href="https://theanalyst.com" target="_blank" rel="noopener noreferrer" className="text-[11px] text-blue-400 hover:text-blue-300 underline underline-offset-2">theanalyst.com</a>
                 <ul className="mt-1 space-y-0.5">
-                  <li className="text-[11px] text-slate-400">• Goals For / Against per match</li>
+                  <li className="text-[11px] text-slate-400">• Goals Against per match</li>
                   <li className="text-[11px] text-slate-400">• xG For / Against per match</li>
                   <li className="text-[11px] text-slate-400">• Open Play xG</li>
                   <li className="text-[11px] text-slate-400">• Set Piece xG</li>
@@ -833,15 +771,6 @@ export default function MatchPredictorPage() {
                 <ul className="mt-1 space-y-0.5">
                   <li className="text-[11px] text-slate-400">• Penalties Received (season)</li>
                   <li className="text-[11px] text-slate-400">• Penalties Conceded (season)</li>
-                </ul>
-              </div>
-
-              <div className="border-t border-slate-700/40 pt-2">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-red-400 mb-1">Scoreroom</p>
-                <a href="https://scoreroom.com" target="_blank" rel="noopener noreferrer" className="text-[11px] text-blue-400 hover:text-blue-300 underline underline-offset-2">scoreroom.com</a>
-                <ul className="mt-1 space-y-0.5">
-                  <li className="text-[11px] text-slate-400">• Avg Red Cards For / match</li>
-                  <li className="text-[11px] text-slate-400">• Avg Red Cards Against / match</li>
                 </ul>
               </div>
 
@@ -865,8 +794,7 @@ export default function MatchPredictorPage() {
               <div className="border-t border-slate-700/40 pt-2">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Subjective</p>
                 <ul className="mt-1 space-y-0.5">
-                  <li className="text-[11px] text-slate-500">• Motivation level</li>
-                  <li className="text-[11px] text-slate-500">• Absence severity (attack/defence)</li>
+                  <li className="text-[11px] text-slate-500">• Absence severity (per team)</li>
                 </ul>
               </div>
             </div>
@@ -979,7 +907,8 @@ export default function MatchPredictorPage() {
           </div>
         </Section>
 
-        <Section title="xG Quality Breakdown">
+        <Section title="Advanced Inputs" badge="Optional">
+          <p className="text-[11px] text-slate-500 italic mb-4">Leave blank to skip the set-piece and shot-quality adjustments entirely — the model runs fine without them.</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {renderXGFields(home, updateHome, 'home')}
             {renderXGFields(away, updateAway, 'away')}
@@ -1131,7 +1060,7 @@ export default function MatchPredictorPage() {
                   <span className={`font-bold ${n.team === 'home' ? 'text-emerald-400' : 'text-red-400'}`}>
                     {n.team === 'home' ? homeName : awayName}
                   </span>{' '}
-                  {n.type} absence (lvl {n.severity} — {SEVERITY_LABELS[n.severity]}) {n.type === 'attack' ? 'reduces their attack' : 'weakens their defence'} by {n.pct}%
+                  {ABSENCE_LABELS[n.severity]} absences reduce their attack and weaken their defence by {n.pct}% each
                 </p>
               ))}
             </div>
