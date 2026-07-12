@@ -28,6 +28,9 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Steps 2-3 diagnosis + fallback-only H2+H5 correction — xG (production)
+  pipeline exonerated, no production change; backtest-only correction
+  applied to SECONDARY run — `0f4bb1a`
 - xg_data season migration — `2b6d6a5`
 - calibration harness + baseline — `cca2810`
 - fit-v1 (rejected, gates held) — `ee9835e`
