@@ -285,6 +285,7 @@ class XGDataPoint(BaseModel):
     """Single match npxG data point"""
     team_name: str
     league: str
+    season: str
     match_number: int
     npxg_for: float
     npxg_against: float

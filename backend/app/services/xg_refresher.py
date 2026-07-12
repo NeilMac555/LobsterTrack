@@ -40,8 +40,20 @@ LEAGUES: dict[str, str] = {
 }
 
 # Understat uses the season-start year in URLs (2025 = 2025/26 season).
-# In a real switchover (e.g. Aug 2026) this will need bumping to '2026'.
+# In a real switchover (e.g. Aug 2026) this will need bumping to '2026' —
+# SITE_SEASON below derives automatically from this, so nothing else
+# needs to change.
 SEASON = "2025"
+
+
+def _site_season_code(understat_season: str) -> str:
+    """'2025' (Understat's season-start year) -> '2526' (site's season code)."""
+    start_yy = understat_season[-2:]
+    end_yy = str(int(understat_season) + 1)[-2:]
+    return f"{start_yy}{end_yy}"
+
+
+SITE_SEASON = _site_season_code(SEASON)
 
 # Occasional name mismatches between Understat and our site's dropdown.
 # Empty by default — add entries if a team ever goes missing from the chart.
@@ -110,6 +122,7 @@ def _build_rows(slug: str, sport_key: str, payload: dict[str, Any]) -> list[dict
             rows.append({
                 "league": sport_key,
                 "team_name": team_name,
+                "season": SITE_SEASON,
                 "match_number": match_number,
                 "npxg_for": float(npxg_for),
                 "npxg_against": float(npxg_against),
@@ -176,10 +189,13 @@ class XGRefresher:
 
                     team_count = len({r["team_name"] for r in rows})
 
-                    # Wipe this league's existing rows then bulk insert fresh.
-                    # Same approach as /api/admin/upload-xg — idempotent and
-                    # keeps match_numbers consistent season-to-season.
-                    db.query(XGData).filter(XGData.league == sport_key).delete()
+                    # Wipe this league+season's existing rows then bulk
+                    # insert fresh. Scoped to SITE_SEASON so a run never
+                    # touches a prior season's data — same approach as
+                    # /api/admin/upload-xg.
+                    db.query(XGData).filter(
+                        XGData.league == sport_key, XGData.season == SITE_SEASON
+                    ).delete()
                     db.bulk_insert_mappings(XGData, rows)
                     db.commit()
 

@@ -3915,15 +3915,29 @@ async def get_scheduler_status(
 # Rolling xG Data
 # ============================================================
 
+def _latest_xg_season(db: Session, league: str) -> Optional[str]:
+    """
+    Most recent season present for a league (e.g. '2526'). Season codes
+    are consecutive 4-digit strings (YYyy) so a plain string MAX() sorts
+    correctly across any realistic range. Returns None if the league has
+    no xG data at all.
+    """
+    return db.query(func.max(XGData.season)).filter(XGData.league == league).scalar()
+
+
 @router.get("/xg-data/teams", response_model=XGTeamsResponse)
 async def get_xg_teams(
     db: Session = Depends(get_db),
     league: str = Query(..., description="Sport key e.g. soccer_epl"),
+    season: Optional[str] = Query(None, description="Season code e.g. '2526'. Default: most recent season for this league."),
 ):
-    """Return distinct team names that have xG data for a league."""
+    """Return distinct team names that have xG data for a league+season."""
+    target_season = season or _latest_xg_season(db, league)
+    if target_season is None:
+        return XGTeamsResponse(teams=[])
     rows = (
         db.query(XGData.team_name)
-        .filter(XGData.league == league)
+        .filter(XGData.league == league, XGData.season == target_season)
         .distinct()
         .order_by(XGData.team_name)
         .all()
@@ -3936,11 +3950,15 @@ async def get_xg_data(
     db: Session = Depends(get_db),
     league: str = Query(..., description="Sport key e.g. soccer_epl"),
     team: str = Query(..., description="Team name"),
+    season: Optional[str] = Query(None, description="Season code e.g. '2526'. Default: most recent season for this league."),
 ):
-    """Return all match-level npxG data for a team, ordered by match number."""
+    """Return all match-level npxG data for a team+season, ordered by match number."""
+    target_season = season or _latest_xg_season(db, league)
+    if target_season is None:
+        return XGDataResponse(team_name=team, league=league, data=[])
     rows = (
         db.query(XGData)
-        .filter(XGData.league == league, XGData.team_name == team)
+        .filter(XGData.league == league, XGData.team_name == team, XGData.season == target_season)
         .order_by(XGData.match_number)
         .all()
     )
@@ -3955,12 +3973,16 @@ async def get_xg_data(
 async def upload_xg_data(
     db: Session = Depends(get_db),
     password: str = Query(..., description="Admin password"),
+    season: str = Query(..., description="Season code this CSV covers, e.g. '2526'. Required — scopes the replace so other seasons are never touched."),
     file: UploadFile = File(...),
 ):
     """
     Bulk upload xG data from CSV.
     CSV columns: league,team_name,match_number,npxg_for,npxg_against,match_date
-    Replaces all existing data for each league found in the CSV.
+    Replaces existing data for each (league, season) pair found in the
+    CSV — scoped to `season` so uploading a new season never deletes a
+    prior one (pre-2026-07-12 this deleted the whole league regardless
+    of season, which is exactly the collision this parameter prevents).
     """
     if password != ADMIN_PASSWORD:
         raise HTTPException(status_code=403, detail="Invalid admin password")
@@ -3982,20 +4004,21 @@ async def upload_xg_data(
         rows.append({
             "league": league,
             "team_name": row["team_name"].strip(),
+            "season": season,
             "match_number": int(row["match_number"]),
             "npxg_for": float(row["npxg_for"]),
             "npxg_against": float(row["npxg_against"]),
             "match_date": date_type.fromisoformat(row["match_date"].strip()),
         })
 
-    # Delete existing data for those leagues, then insert fresh
+    # Delete existing data for those (league, season) pairs, then insert fresh
     for league in leagues_seen:
-        db.query(XGData).filter(XGData.league == league).delete()
+        db.query(XGData).filter(XGData.league == league, XGData.season == season).delete()
 
     db.bulk_insert_mappings(XGData, rows)
     db.commit()
 
-    return {"success": True, "rows_inserted": len(rows), "leagues_updated": list(leagues_seen)}
+    return {"success": True, "rows_inserted": len(rows), "leagues_updated": list(leagues_seen), "season": season}
 
 
 @router.get("/admin/users")

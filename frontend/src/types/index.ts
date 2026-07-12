@@ -196,6 +196,7 @@ export interface MatchClosingLinesResponse {
 export interface XGDataPoint {
   team_name: string;
   league: string;
+  season: string;
   match_number: number;
   npxg_for: number;
   npxg_against: number;
