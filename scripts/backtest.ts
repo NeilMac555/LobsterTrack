@@ -28,7 +28,7 @@ import {
   type ClosingLineRow,
 } from './db';
 import { buildGoalsHistory, buildXGHistory, buildTeamInputs, type BuildMode } from './inputs';
-import { LEAGUE_PARAMS, CURRENT_ADVANCED_PARAMS, SUPPORTED_LEAGUES } from './model-params';
+import { LEAGUE_PARAMS, CURRENT_ADVANCED_PARAMS, SUPPORTED_LEAGUES, CURRENT_XG_SEASON } from './model-params';
 import { runModel } from '../frontend/src/model/valorModel';
 import {
   score1X2, score2Way, clvProxy1X2, clvProxy2Way, calibrationTable,
@@ -54,7 +54,9 @@ async function build1X2Samples(
 ): Promise<{ samples: OutcomeSample3[]; debug: PerMatchDebug[] }> {
   const allMatches = await fetchHistoricalMatches(league);
   const matches = allMatches.filter((m) => seasonFilter(m.season) && m.ftr !== null);
-  const xgRows = mode === 'xg' ? await fetchXGData(league) : [];
+  // xg_data.season is required post-migration — every xG-mode call in
+  // this file (runPrimary, below) only ever targets CURRENT_XG_SEASON.
+  const xgRows = mode === 'xg' ? await fetchXGData(league, CURRENT_XG_SEASON) : [];
 
   const goalsHistoryCache = new Map<string, ReturnType<typeof buildGoalsHistory>>();
   const xgHistoryCache = new Map<string, ReturnType<typeof buildXGHistory>>();
@@ -197,7 +199,7 @@ async function runAhTotals(leagueArg: string) {
   for (const league of leagues) {
     const closingRows = await fetchClosingLines(league);
     const historicalRows = await fetchHistoricalMatches(league);
-    const xgRows = await fetchXGData(league);
+    const xgRows = await fetchXGData(league, CURRENT_XG_SEASON);
 
     // Group closing_lines by match_id (each match has up to 3 rows: 1x2, asian_handicap, totals).
     const byMatch = new Map<string, ClosingLineRow[]>();

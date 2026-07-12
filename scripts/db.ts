@@ -108,20 +108,26 @@ export async function fetchHistoricalMatches(
 // ===== xg_data =====
 export interface XGDataRow {
   team_name: string;
+  season: string;
   match_number: number;
   npxg_for: number;
   npxg_against: number;
   match_date: string; // YYYY-MM-DD
 }
 
-export async function fetchXGData(league: string): Promise<XGDataRow[]> {
+// `season` is required (not optional) — after the 2026-07-12 migration
+// xg_data can hold multiple seasons per team, and every caller in this
+// harness must be explicit about which one it wants. There is no
+// "fetch all seasons" mode here on purpose: mixing seasons would silently
+// corrupt match_number-based ordering (match_number resets each season).
+export async function fetchXGData(league: string, season: string): Promise<XGDataRow[]> {
   const db = getPool();
   const { rows } = await db.query<XGDataRow>(
-    `SELECT team_name, match_number, npxg_for, npxg_against, match_date
+    `SELECT team_name, season, match_number, npxg_for, npxg_against, match_date
      FROM xg_data
-     WHERE league = $1
+     WHERE league = $1 AND season = $2
      ORDER BY team_name ASC, match_number ASC`,
-    [league]
+    [league, season]
   );
   return rows;
 }

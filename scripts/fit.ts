@@ -11,7 +11,7 @@
 //               while fitting; transfer check only)
 
 import { buildDataset, type DatasetRow } from './dataset';
-import { LEAGUE_PARAMS, CURRENT_ADVANCED_PARAMS, SUPPORTED_LEAGUES } from './model-params';
+import { LEAGUE_PARAMS, CURRENT_ADVANCED_PARAMS, SUPPORTED_LEAGUES, CURRENT_XG_SEASON } from './model-params';
 import { runModel } from '../frontend/src/model/valorModel';
 import { score1X2, calibrationTable, clvProxy1X2, type OutcomeSample3 } from './scoring';
 import { closePool } from './db';
@@ -82,7 +82,7 @@ async function main() {
 
   const holdout2ByLeague: Record<string, DatasetRow[]> = {};
   for (const league of SUPPORTED_LEAGUES) {
-    holdout2ByLeague[league] = await buildDataset(league, 'xg', (s) => s === '2526');
+    holdout2ByLeague[league] = await buildDataset(league, 'xg', (s) => s === '2526', CURRENT_XG_SEASON);
   }
   const holdout2Pooled = Object.values(holdout2ByLeague).flat();
 

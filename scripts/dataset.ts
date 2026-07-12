@@ -35,11 +35,18 @@ export interface DatasetRow {
 export async function buildDataset(
   league: string,
   mode: BuildMode,
-  seasonFilter: (season: string) => boolean
+  seasonFilter: (season: string) => boolean,
+  // Required whenever mode === 'xg' — xg_data.season is a required DB
+  // column post-migration, so fetchXGData() can no longer be called
+  // without one. Unused in 'fallback' mode.
+  xgSeason?: string
 ): Promise<DatasetRow[]> {
+  if (mode === 'xg' && !xgSeason) {
+    throw new Error('buildDataset: xgSeason is required when mode is "xg"');
+  }
   const allMatches = await fetchHistoricalMatches(league);
   const matches = allMatches.filter((m) => seasonFilter(m.season) && m.ftr !== null);
-  const xgRows = mode === 'xg' ? await fetchXGData(league) : [];
+  const xgRows = mode === 'xg' ? await fetchXGData(league, xgSeason!) : [];
 
   const teamsInSeason = new Set<string>();
   matches.forEach((m) => { teamsInSeason.add(m.home_team); teamsInSeason.add(m.away_team); });

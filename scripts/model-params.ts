@@ -36,3 +36,10 @@ export const CURRENT_ADVANCED_PARAMS = {
 };
 
 export const SUPPORTED_LEAGUES = Object.keys(LEAGUE_PARAMS);
+
+// The season xg_data currently has real npxG history for. Every xG-mode
+// call site in this harness must pass this explicitly to fetchXGData()
+// (required parameter since the 2026-07-12 xg_data.season migration —
+// see db.ts) — bump this once 2026/27 data lands and a new baseline is
+// due.
+export const CURRENT_XG_SEASON = '2526';
