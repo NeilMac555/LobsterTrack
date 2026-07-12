@@ -5,15 +5,10 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 ## Now
 
-- Live league constants job: scheduled query computing avgGoalsPerTeam
-  and homeAwayRatio per league from historical_matches (rolling 3
-  seasons), written to a league_constants table, predictor reads live
-  values instead of hardcoded 2025/26.
-
-## Next
-
 - Team name normalizer gaps: Bielefeld, Greuther Fürth, Holstein Kiel,
   Ajaccio unmapped (flagged during backfill).
+
+## Next
 
 ## Later
 
@@ -28,6 +23,12 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Live league constants job: avgGoalsPerTeam/homeAwayRatio computed
+  weekly from historical_matches (weighted 4-season rolling window),
+  league_constants + league_constants_history tables, weekly scheduler
+  job (Mon 10:00 UTC) + admin trigger, GET /league-constants, predictor
+  fetches on load with hardcoded fallback (all 5 leagues verified live
+  in prod, zero console errors) — `2449bd5`
 - Steps 2-3 diagnosis + fallback-only H2+H5 correction — xG (production)
   pipeline exonerated, no production change; backtest-only correction
   applied to SECONDARY run — `0f4bb1a`
