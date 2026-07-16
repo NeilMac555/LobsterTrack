@@ -138,20 +138,40 @@ class SyndicateAlerter:
                 if minutes_to_ko > league_window:
                     continue
 
-                # Check 1X2 market
-                alerts_sent += await self._check_1x2_market(
-                    db, match, window_start, minutes_to_ko, league_threshold
-                )
+                # Each match gets its own try/except: an unhandled
+                # exception checking one match's markets (e.g. a bad
+                # snapshot, a bug in one of the three market checks)
+                # used to propagate out of the whole loop and abort
+                # every other match's check for this cycle silently
+                # (only a swallowed logger.error, nothing surfaced) —
+                # see the France v Spain 2026-07-14 post-mortem. Not
+                # calling db.rollback() here: that would also discard
+                # SyndicateAlert rows already added-but-uncommitted for
+                # earlier matches this cycle; the final db.commit()
+                # below persists whatever succeeded.
+                try:
+                    # Check 1X2 market
+                    alerts_sent += await self._check_1x2_market(
+                        db, match, window_start, minutes_to_ko, league_threshold
+                    )
 
-                # Check Totals market (only same-line comparisons)
-                alerts_sent += await self._check_totals_market(
-                    db, match, window_start, minutes_to_ko, league_threshold
-                )
+                    # Check Totals market (only same-line comparisons)
+                    alerts_sent += await self._check_totals_market(
+                        db, match, window_start, minutes_to_ko, league_threshold
+                    )
 
-                # Check Spreads / Asian Handicap market (only same-line comparisons)
-                alerts_sent += await self._check_spreads_market(
-                    db, match, window_start, minutes_to_ko, league_threshold
-                )
+                    # Check Spreads / Asian Handicap market (only same-line comparisons)
+                    alerts_sent += await self._check_spreads_market(
+                        db, match, window_start, minutes_to_ko, league_threshold
+                    )
+                except Exception as e:
+                    logger.error(
+                        "Error checking syndicate alerts for match (other matches still checked)",
+                        match_id=match.id,
+                        match=f"{match.home_team} vs {match.away_team}",
+                        error=str(e),
+                    )
+                    continue
 
             db.commit()
             return {"alerts_sent": alerts_sent, "matches_checked": len(matches)}
@@ -272,7 +292,7 @@ class SyndicateAlerter:
                     sent = await self._send_alert_if_new(
                         db, match, 'totals', outcome, label, name,
                         curr_odds, prob_move, minutes_to_ko,
-                        line=opening_line,
+                        line=line,
                     )
                     if sent:
                         alerts_sent += 1
