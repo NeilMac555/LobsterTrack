@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import { VISIBLE_LEAGUES } from '../types';
 import LeagueLogo from './LeagueLogo';
 import { useAuth } from '../contexts/AuthContext';
+import { useTimePreference } from '../contexts/TimePreferenceContext';
 import LoginModal from './LoginModal';
 import CheckoutSuccessBanner from './CheckoutSuccessBanner';
 import LiveTicker from './LiveTicker';
@@ -38,6 +39,7 @@ const tools: Array<{
 export default function Layout() {
   const location = useLocation();
   const { user, logout, manageSubscription, isSubscribed, subscribe } = useAuth();
+  const { mode: timeMode, toggle: toggleTimeMode } = useTimePreference();
   const [subscribing, setSubscribing] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [loginMode, setLoginMode] = useState<'signin' | 'subscribe'>('signin');
@@ -177,8 +179,22 @@ export default function Layout() {
               </div>
             </nav>
 
-            {/* Right side: Live pill + Account / Sign In / Upgrade */}
+            {/* Right side: Time toggle + Live pill + Account / Sign In / Upgrade */}
             <div className="hidden md:flex items-center gap-2.5 flex-shrink-0">
+              {/* Local/UTC kickoff-time toggle. Defaults to the browser's
+                  own local zone (auto-detected — nothing to configure);
+                  persisted to localStorage so the choice sticks across
+                  visits. Every kickoff time on the site reads this via
+                  useTimePreference(). */}
+              <button
+                onClick={toggleTimeMode}
+                title={timeMode === 'local' ? 'Showing times in your local timezone — click for UTC' : 'Showing times in UTC — click for your local timezone'}
+                className="flex items-center rounded-full border border-slate-700/60 text-[10px] font-mono font-bold uppercase tracking-[0.1em] overflow-hidden"
+              >
+                <span className={`px-2 py-1 transition-colors ${timeMode === 'local' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}>Local</span>
+                <span className={`px-2 py-1 transition-colors ${timeMode === 'utc' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}>UTC</span>
+              </button>
+
               <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full border border-slate-700/60 text-[10px] font-mono uppercase tracking-[0.12em] text-slate-400">
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -368,6 +384,26 @@ export default function Layout() {
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-slate-700/50 bg-slate-800/95 backdrop-blur-md">
             <div className="px-4 py-4 space-y-4">
+              {/* Time display toggle — same control as desktop, styled
+                  for the mobile menu's stacked-section layout. */}
+              <div>
+                <p className="text-xs text-slate-400 font-medium mb-2 uppercase tracking-wider">Kickoff Times</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => { if (timeMode !== 'local') toggleTimeMode(); }}
+                    className={`px-4 py-3 rounded-xl text-sm font-semibold uppercase tracking-wider transition-colors ${timeMode === 'local' ? 'bg-slate-700 text-white' : 'bg-slate-700/50 text-slate-400 hover:text-white'}`}
+                  >
+                    Local
+                  </button>
+                  <button
+                    onClick={() => { if (timeMode !== 'utc') toggleTimeMode(); }}
+                    className={`px-4 py-3 rounded-xl text-sm font-semibold uppercase tracking-wider transition-colors ${timeMode === 'utc' ? 'bg-slate-700 text-white' : 'bg-slate-700/50 text-slate-400 hover:text-white'}`}
+                  >
+                    UTC
+                  </button>
+                </div>
+              </div>
+
               {/* Account section — placed first so existing Pro users can
                   sign in immediately and don't bounce off the paywall.
                   Mirrors the desktop right-nav UX: signed-in shows email

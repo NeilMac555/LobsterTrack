@@ -1,19 +1,20 @@
 import { Link } from 'react-router-dom';
-import { format } from 'date-fns';
 import type { MatchSummary } from '../types';
 import { LEAGUE_CONFIG } from '../types';
 import { OddsDisplayWithMovement, calculateMovement, getBiggestMover } from './OddsWithMovement';
 import LeagueLogo from './LeagueLogo';
 import Sparkline from './Sparkline';
 import { countryFlagImgUrl } from '../utils/countryFlags';
+import { formatKickoff } from '../utils/time';
+import { useTimePreference } from '../contexts/TimePreferenceContext';
 
 interface MatchCardProps {
   match: MatchSummary;
 }
 
 export default function MatchCard({ match }: MatchCardProps) {
+  const { mode: timeMode } = useTimePreference();
   const leagueConfig = LEAGUE_CONFIG[match.sport_key];
-  const matchDate = new Date(match.commence_time);
 
   const homeMovement = calculateMovement(match.current_home_odds, match.opening_home_odds);
   const drawMovement = calculateMovement(match.current_draw_odds, match.opening_draw_odds);
@@ -93,10 +94,10 @@ export default function MatchCard({ match }: MatchCardProps) {
           {/* Kickoff — mono for the terminal feel */}
           <div className="text-right flex-shrink-0">
             <div className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.12em] text-slate-500">
-              {format(matchDate, 'EEE, MMM d')}
+              {formatKickoff(match.commence_time, 'EEE, MMM d', timeMode)}
             </div>
             <div className="text-xl sm:text-2xl font-mono font-bold text-white tabular-nums tracking-tight leading-none mt-0.5">
-              {format(matchDate, 'HH:mm')}
+              {formatKickoff(match.commence_time, 'HH:mm', timeMode)}
             </div>
           </div>
         </div>

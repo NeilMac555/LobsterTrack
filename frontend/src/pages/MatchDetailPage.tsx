@@ -14,6 +14,8 @@ import LeagueLogo from '../components/LeagueLogo';
 import Sparkline from '../components/Sparkline';
 import { countryFlagImgUrl } from '../utils/countryFlags';
 import Bet105Button from '../components/Bet105Button';
+import { parseUtc, formatKickoff } from '../utils/time';
+import { useTimePreference } from '../contexts/TimePreferenceContext';
 
 // Format ms-until-kickoff as a readable T-minus string, or a T-plus if the
 // match has already kicked off. Kept inside this module because match detail
@@ -83,6 +85,7 @@ function LineHistoryStrip({ segments, formatLine }: LineHistoryStripProps) {
 }
 
 export default function MatchDetailPage() {
+  const { mode: timeMode } = useTimePreference();
   const { matchId } = useParams<{ matchId: string }>();
   const [match, setMatch] = useState<MatchDetail | null>(null);
   const [totals, setTotals] = useState<MatchTotals | null>(null);
@@ -147,7 +150,7 @@ export default function MatchDetailPage() {
   }
 
   const leagueConfig = LEAGUE_CONFIG[match.sport_key];
-  const matchDate = new Date(match.commence_time);
+  const matchDate = parseUtc(match.commence_time);
   const latestOdds = match.odds_history[match.odds_history.length - 1];
   const firstOdds = match.odds_history[0];
 
@@ -231,11 +234,11 @@ export default function MatchDetailPage() {
           <div className="text-right flex-shrink-0">
             <div className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">Kickoff</div>
             <div className="flex items-baseline gap-3 justify-end mt-0.5">
-              <span className="text-xs font-mono text-slate-400 tabular-nums">{format(matchDate, 'EEE, MMM d')}</span>
-              <span className="text-3xl sm:text-4xl font-mono font-bold text-white tabular-nums tracking-tight leading-none">{format(matchDate, 'HH:mm')}</span>
+              <span className="text-xs font-mono text-slate-400 tabular-nums">{formatKickoff(matchDate, 'EEE, MMM d', timeMode)}</span>
+              <span className="text-3xl sm:text-4xl font-mono font-bold text-white tabular-nums tracking-tight leading-none">{formatKickoff(matchDate, 'HH:mm', timeMode)}</span>
             </div>
             <div className="text-[10px] font-mono text-slate-500 mt-1 tabular-nums uppercase tracking-wider">
-              UTC · {formatCountdown(matchDate.getTime() - Date.now())}
+              {timeMode === 'utc' ? 'UTC' : 'Local'} · {formatCountdown(matchDate.getTime() - Date.now())}
             </div>
           </div>
         </div>

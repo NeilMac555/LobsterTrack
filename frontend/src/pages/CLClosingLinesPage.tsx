@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { format, isToday, startOfDay } from 'date-fns';
+import { format, startOfDay } from 'date-fns';
 import { getClosingLinesGrouped } from '../api';
 import type { MatchClosingLinesResponse, MatchClosingLines, ClosingLine } from '../types';
+import { toDisplayDate, dayGroupLabel, formatKickoff, type TimeMode } from '../utils/time';
+import { useTimePreference } from '../contexts/TimePreferenceContext';
 
 function formatOdds(odds: number | null): string {
   if (odds === null) return '-';
@@ -115,7 +117,7 @@ function MarketSection({ title, badge, cl }: { title: string; badge: React.React
 
 function MatchAccordion({ match }: { match: MatchClosingLines }) {
   const [open, setOpen] = useState(false);
-  const kickoff = new Date(match.kickoff_time);
+  const { mode: timeMode } = useTimePreference();
   const marketsAvailable = [match.h2h, match.asian_handicap, match.totals].filter(Boolean).length;
 
   return (
@@ -135,7 +137,7 @@ function MatchAccordion({ match }: { match: MatchClosingLines }) {
           </div>
           <div className="flex items-center gap-3 mt-1">
             <span className="text-xs text-slate-500">
-              {format(kickoff, 'HH:mm')}
+              {formatKickoff(match.kickoff_time, 'HH:mm', timeMode)}
             </span>
             <span className="text-[10px] text-indigo-400/70 bg-indigo-500/10 px-1.5 py-0.5 rounded">
               {marketsAvailable}/3 markets
@@ -201,11 +203,11 @@ interface MatchdayGroup {
   isToday: boolean;
 }
 
-function groupByMatchday(matches: MatchClosingLines[]): MatchdayGroup[] {
+function groupByMatchday(matches: MatchClosingLines[], timeMode: TimeMode): MatchdayGroup[] {
   const groups: Record<string, MatchClosingLines[]> = {};
 
   for (const match of matches) {
-    const kickoff = new Date(match.kickoff_time);
+    const kickoff = toDisplayDate(match.kickoff_time, timeMode);
     const dateKey = format(startOfDay(kickoff), 'yyyy-MM-dd');
     if (!groups[dateKey]) groups[dateKey] = [];
     groups[dateKey].push(match);
@@ -215,13 +217,13 @@ function groupByMatchday(matches: MatchClosingLines[]): MatchdayGroup[] {
   const sortedKeys = Object.keys(groups).sort((a, b) => b.localeCompare(a));
 
   return sortedKeys.map((dateKey) => {
-    const first = new Date(groups[dateKey][0].kickoff_time);
-    const today = isToday(first);
+    const first = toDisplayDate(groups[dateKey][0].kickoff_time, timeMode);
+    const label = dayGroupLabel(first, timeMode);
     return {
       dateKey,
-      label: today ? 'Today' : format(first, 'EEEE, MMMM d yyyy'),
+      label: label === 'Tomorrow' ? format(first, 'EEEE, MMMM d yyyy') : label,
       matches: groups[dateKey],
-      isToday: today,
+      isToday: label === 'Today',
     };
   });
 }
@@ -275,6 +277,7 @@ function MatchdayAccordion({ group }: { group: MatchdayGroup }) {
 }
 
 export default function CLClosingLinesPage() {
+  const { mode: timeMode } = useTimePreference();
   const [data, setData] = useState<MatchClosingLinesResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -323,7 +326,7 @@ export default function CLClosingLinesPage() {
 
   if (!data) return null;
 
-  const matchdays = groupByMatchday(data.matches);
+  const matchdays = groupByMatchday(data.matches, timeMode);
 
   // Compute practical stats
   const allCaptureTimes: number[] = [];

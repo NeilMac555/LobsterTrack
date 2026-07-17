@@ -8,6 +8,8 @@ import { LEAGUE_CONFIG, VISIBLE_LEAGUES } from '../types';
 import LeagueLogo from '../components/LeagueLogo';
 import { useAuth } from '../contexts/AuthContext';
 import PaywallOverlay from '../components/PaywallOverlay';
+import { toDisplayDate, formatKickoff, type TimeMode } from '../utils/time';
+import { useTimePreference } from '../contexts/TimePreferenceContext';
 
 // How many records to pull from the API in one go. Pagination by week
 // happens client-side so users can drill into older matchweeks too.
@@ -20,10 +22,10 @@ interface WeekGroup {
   matches: MatchClosingLines[];
 }
 
-function groupByWeek(matches: MatchClosingLines[]): WeekGroup[] {
+function groupByWeek(matches: MatchClosingLines[], timeMode: TimeMode): WeekGroup[] {
   const buckets = new Map<string, WeekGroup>();
   for (const m of matches) {
-    const ko = new Date(m.kickoff_time);
+    const ko = toDisplayDate(m.kickoff_time, timeMode);
     // Mon-Sun, ISO week
     const weekStart = startOfWeek(ko, { weekStartsOn: 1 });
     const key = weekStart.toISOString().slice(0, 10);
@@ -53,6 +55,7 @@ function fmtLine(v: number | null | undefined): string {
 
 export default function ClosingLinesPage() {
   const { isSubscribed } = useAuth();
+  const { mode: timeMode } = useTimePreference();
   const [searchParams, setSearchParams] = useSearchParams();
   const league = searchParams.get('league') || '';
 
@@ -80,7 +83,7 @@ export default function ClosingLinesPage() {
     };
   }, [league]);
 
-  const weeks = useMemo(() => groupByWeek(matches), [matches]);
+  const weeks = useMemo(() => groupByWeek(matches, timeMode), [matches, timeMode]);
 
   // Default: most recent week expanded, the rest collapsed. Keys reset
   // when the league filter changes (since the matches list reloads).
@@ -275,7 +278,6 @@ export default function ClosingLinesPage() {
                   <div className="border-t border-slate-700/50 divide-y divide-slate-700/40">
                     {week.matches.map((m) => {
                       const cfg = LEAGUE_CONFIG[m.league];
-                      const ko = new Date(m.kickoff_time);
                       return (
                         <Link
                           key={m.match_id}
@@ -291,7 +293,7 @@ export default function ClosingLinesPage() {
                                   {m.home_team} <span className="text-slate-500 font-normal">vs</span> {m.away_team}
                                 </div>
                                 <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mt-0.5 tabular-nums">
-                                  {cfg?.shortName || m.league} · {format(ko, 'EEE d MMM HH:mm')}
+                                  {cfg?.shortName || m.league} · {formatKickoff(m.kickoff_time, 'EEE d MMM HH:mm', timeMode)}
                                 </div>
                               </div>
                             </div>

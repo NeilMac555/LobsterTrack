@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from './contexts/AuthContext';
+import { TimePreferenceProvider } from './contexts/TimePreferenceContext';
 import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import MatchDetailPage from './pages/MatchDetailPage';
@@ -25,6 +26,7 @@ function App() {
     <HelmetProvider>
       <BrowserRouter>
         <AuthProvider>
+        <TimePreferenceProvider>
           <Routes>
             <Route path="/" element={<Layout />}>
               <Route index element={<HomePage />} />
@@ -46,6 +48,7 @@ function App() {
               <Route path="blog/:slug" element={<BlogPostPage />} />
             </Route>
           </Routes>
+        </TimePreferenceProvider>
         </AuthProvider>
       </BrowserRouter>
     </HelmetProvider>

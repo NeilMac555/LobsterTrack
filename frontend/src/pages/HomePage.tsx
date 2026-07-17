@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useSearchParams, Link } from 'react-router-dom';
-import { format, isToday, isTomorrow, startOfDay } from 'date-fns';
+import { startOfDay } from 'date-fns';
 import { getMatches, getStats, getBiggestMovers, getSyndicateMoves } from '../api';
 import type { MatchSummary, BiggestMover, SyndicateMove, Stats } from '../types';
 import { LEAGUE_CONFIG } from '../types';
@@ -14,6 +14,8 @@ import { countryFlagImgUrl } from '../utils/countryFlags';
 import { SteamGuideModal, HelpButton } from '../components/SteamGuideModal';
 import { useAuth } from '../contexts/AuthContext';
 import LoginModal from '../components/LoginModal';
+import { toDisplayDate, dayGroupLabel, formatKickoff, type TimeMode } from '../utils/time';
+import { useTimePreference } from '../contexts/TimePreferenceContext';
 
 interface GroupedMatches {
   label: string;
@@ -21,11 +23,11 @@ interface GroupedMatches {
   matches: MatchSummary[];
 }
 
-function groupMatchesByDay(matches: MatchSummary[]): GroupedMatches[] {
+function groupMatchesByDay(matches: MatchSummary[], timeMode: TimeMode): GroupedMatches[] {
   const groups = new Map<string, { date: Date; matches: MatchSummary[] }>();
 
   for (const match of matches) {
-    const matchDate = new Date(match.commence_time);
+    const matchDate = toDisplayDate(match.commence_time, timeMode);
     const dayKey = startOfDay(matchDate).toISOString();
 
     if (!groups.has(dayKey)) {
@@ -37,17 +39,11 @@ function groupMatchesByDay(matches: MatchSummary[]): GroupedMatches[] {
   // Sort by date and convert to array
   return Array.from(groups.entries())
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([_, { date, matches }]) => {
-      let label: string;
-      if (isToday(date)) {
-        label = 'Today';
-      } else if (isTomorrow(date)) {
-        label = 'Tomorrow';
-      } else {
-        label = format(date, 'EEEE, MMMM d');
-      }
-      return { label, date, matches };
-    });
+    .map(([_, { date, matches }]) => ({
+      label: dayGroupLabel(date, timeMode),
+      date,
+      matches,
+    }));
 }
 
 // Default landing league during the WC '26 tournament window. Hitting
@@ -84,6 +80,7 @@ export default function HomePage() {
       ? null
       : (leagueParam ?? DEFAULT_LEAGUE);
   const { user, isSubscribed, subscribe } = useAuth();
+  const { mode: timeMode } = useTimePreference();
   const [showLoginFromCTA, setShowLoginFromCTA] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
 
@@ -161,7 +158,7 @@ export default function HomePage() {
     };
   }, [league]);
 
-  const groupedMatches = useMemo(() => groupMatchesByDay(matches), [matches]);
+  const groupedMatches = useMemo(() => groupMatchesByDay(matches, timeMode), [matches, timeMode]);
   const leagueConfig = league ? LEAGUE_CONFIG[league] : null;
 
   if (loading) {
@@ -484,7 +481,6 @@ export default function HomePage() {
               <tbody className="divide-y divide-slate-700/50">
                 {biggestMovers.map((mover, index) => {
                   const isSignificant = Math.abs(mover.movement_percent) >= 5;
-                  const matchDate = new Date(mover.commence_time);
                   const leagueInfo = LEAGUE_CONFIG[mover.sport_key];
 
                   // Determine outcome label and color based on market type
@@ -527,7 +523,7 @@ export default function HomePage() {
                             <span>{mover.away_team}</span>
                           </div>
                           <div className="text-[11px] text-slate-500 mt-0.5 font-mono">
-                            {format(matchDate, 'EEE, MMM d  HH:mm')}
+                            {formatKickoff(mover.commence_time, 'EEE, MMM d  HH:mm', timeMode)}
                           </div>
                         </Link>
                       </td>
@@ -584,7 +580,6 @@ export default function HomePage() {
           <div className="md:hidden divide-y divide-slate-700/50">
             {biggestMovers.map((mover, index) => {
               const isSignificant = Math.abs(mover.movement_percent) >= 5;
-              const matchDate = new Date(mover.commence_time);
               const leagueInfo = LEAGUE_CONFIG[mover.sport_key];
 
               // Determine outcome label and color based on market type
@@ -616,7 +611,7 @@ export default function HomePage() {
                         <LeagueLogo sportKey={mover.sport_key} size="sm" />
                         <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">{leagueInfo?.shortName}</span>
                         <span className="text-slate-600">·</span>
-                        <span className="text-[10px] font-mono tabular-nums text-slate-500">{format(matchDate, 'EEE HH:mm')}</span>
+                        <span className="text-[10px] font-mono tabular-nums text-slate-500">{formatKickoff(mover.commence_time, 'EEE HH:mm', timeMode)}</span>
                       </div>
                       <div className="flex items-center gap-1.5 text-white font-semibold text-sm tracking-tight">
                         {(() => {

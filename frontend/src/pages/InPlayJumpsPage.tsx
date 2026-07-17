@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useSearchParams } from 'react-router-dom';
-import { format } from 'date-fns';
 import { getInPlayJumps } from '../api';
 import type { InPlayJump, InPlayJumpsResponse, InPlayJumpOutcome } from '../types';
 import { countryFlagImgUrl } from '../utils/countryFlags';
 import Bet105Button from '../components/Bet105Button';
+import { parseUtc, formatKickoff } from '../utils/time';
+import { useTimePreference } from '../contexts/TimePreferenceContext';
 
 type SortField = 'gap' | 'commence_time';
 
@@ -130,7 +131,7 @@ export default function InPlayJumpsPage() {
     if (sortField === 'gap') {
       arr.sort((a, b) => Math.abs(b.biggest_gap_pp) - Math.abs(a.biggest_gap_pp));
     } else {
-      arr.sort((a, b) => new Date(b.commence_time).getTime() - new Date(a.commence_time).getTime());
+      arr.sort((a, b) => parseUtc(b.commence_time).getTime() - parseUtc(a.commence_time).getTime());
     }
     return arr;
   }, [data, sortField]);
@@ -418,12 +419,12 @@ function GapColumn({ m }: { m: InPlayJump }) {
 }
 
 function DesktopRow({ m }: { m: InPlayJump }) {
-  const ko = new Date(m.commence_time);
+  const { mode: timeMode } = useTimePreference();
   return (
     <>
       <tr className="hover:bg-slate-700/15 transition-colors align-top">
         <td className="px-3 pt-2.5 pb-1"><MatchHeading m={m} /></td>
-        <td className="px-3 pt-2.5 pb-1 font-mono text-[11px] text-slate-400 tabular-nums">{format(ko, 'EEE d MMM HH:mm')}</td>
+        <td className="px-3 pt-2.5 pb-1 font-mono text-[11px] text-slate-400 tabular-nums">{formatKickoff(m.commence_time, 'EEE d MMM HH:mm', timeMode)}</td>
         <td className="px-3 pt-2.5 pb-1"><PinnacleColumn m={m} /></td>
         <td className="px-3 pt-2.5 pb-1"><PolymarketColumn m={m} /></td>
         <td className="px-3 pt-2.5 pb-1"><GapColumn m={m} /></td>
@@ -446,7 +447,7 @@ function DesktopRow({ m }: { m: InPlayJump }) {
 }
 
 function MobileCard({ m }: { m: InPlayJump }) {
-  const ko = new Date(m.commence_time);
+  const { mode: timeMode } = useTimePreference();
   return (
     <Link to={`/match/${m.match_id}`} className="block p-3 hover:bg-slate-700/15 transition-colors">
       <div className="flex items-center justify-between gap-3 mb-2">
@@ -458,7 +459,7 @@ function MobileCard({ m }: { m: InPlayJump }) {
           </div>
         </div>
       </div>
-      <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">{format(ko, 'EEE d MMM HH:mm')}</div>
+      <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-2">{formatKickoff(m.commence_time, 'EEE d MMM HH:mm', timeMode)}</div>
       <div className="grid grid-cols-3 gap-2 mb-2">
         <div>
           <div className="text-[9px] font-mono uppercase tracking-wider text-slate-500 mb-1">Pin close</div>

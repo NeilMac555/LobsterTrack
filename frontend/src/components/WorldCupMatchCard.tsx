@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
-import { format } from 'date-fns';
 import type { MatchSummary } from '../types';
 import { countryFlagImgUrl } from '../utils/countryFlags';
 import Sparkline from './Sparkline';
 import { calculateMovement, getBiggestMover } from './OddsWithMovement';
+import { parseUtc, formatKickoff } from '../utils/time';
+import { useTimePreference } from '../contexts/TimePreferenceContext';
 
 /**
  * Tournament-shaped match card used for FIFA World Cup '26 fixtures.
@@ -66,7 +67,8 @@ function formatCountdown(kickoff: Date): string {
 }
 
 export default function WorldCupMatchCard({ match }: Props) {
-  const kickoff = new Date(match.commence_time);
+  const { mode: timeMode } = useTimePreference();
+  const kickoff = parseUtc(match.commence_time);
   const homeFlag = countryFlagImgUrl(match.home_team, 60);
   const awayFlag = countryFlagImgUrl(match.away_team, 60);
 
@@ -111,7 +113,7 @@ export default function WorldCupMatchCard({ match }: Props) {
           on every pre-tournament card). */}
       <div className="flex items-center justify-between mb-4 gap-2">
         <span className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.14em] text-amber-400/70 font-semibold truncate">
-          FIFA World Cup &middot; {format(kickoff, 'd MMM')}
+          FIFA World Cup &middot; {formatKickoff(kickoff, 'd MMM', timeMode)}
         </span>
         <div className="flex items-center gap-1.5 flex-shrink-0">
           {biggestMover && Math.abs(biggestMover.percentage) >= 1 && (
@@ -167,10 +169,10 @@ export default function WorldCupMatchCard({ match }: Props) {
             vs
           </span>
           <span className="text-base sm:text-lg font-mono font-bold tabular-nums text-white mt-1">
-            {format(kickoff, 'HH:mm')}
+            {formatKickoff(kickoff, 'HH:mm', timeMode)}
           </span>
           <span className="text-[9px] font-mono uppercase tracking-wider text-slate-500 mt-0.5">
-            UTC
+            {timeMode === 'utc' ? 'UTC' : 'Local'}
           </span>
           <div className="mt-3 px-2 py-1 rounded bg-slate-900/60 border border-slate-700/50 flex flex-col items-center">
             <span className="text-[9px] font-mono uppercase tracking-wider text-amber-400/80">
