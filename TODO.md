@@ -23,6 +23,23 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Local/UTC kickoff-time toggle: fixed a real bug along the way — every
+  page parsed the backend's marker-less UTC timestamp strings as browser
+  LOCAL time (wrong by the viewer's UTC offset for anyone outside the
+  UK), including countdown timers. New frontend/src/utils/time.ts is the
+  single parse/format/day-grouping choke point every page now goes
+  through; TimePreferenceContext persists the choice. Verified against
+  live prod data — every time shifts by exactly the UTC offset when
+  toggled, zero console errors. Mobile-menu toggle placement verified by
+  code review only (matches the working desktop toggle + existing
+  Account section pattern) — automated click-through testing was
+  blocked by a browser-automation tooling issue in this session (even
+  an unrelated pre-existing button didn't respond to simulated clicks);
+  worth a quick manual phone check next time the site's touched — `5f3c647`
+- Fixed NameError in syndicate_alerter totals check (opening_line ->
+  line) + isolated per-match failures so one bad match can't blank
+  Telegram/tweet checking for the whole cycle — found during the France
+  v Spain steam-alert post-mortem — `e6a1319`
 - Live league constants job: avgGoalsPerTeam/homeAwayRatio computed
   weekly from historical_matches (weighted 4-season rolling window),
   league_constants + league_constants_history tables, weekly scheduler
