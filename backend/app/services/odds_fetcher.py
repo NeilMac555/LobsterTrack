@@ -170,6 +170,33 @@ class OddsFetcher:
                 # fallback when Pinnacle isn't present for this event)
                 match_odds, bookmaker_used = self._extract_1x2_odds(event)
 
+                # The Betfair fallback is meant for events Pinnacle never
+                # covers (confirmed case: UEFA CL Qualifying — a
+                # structural gap, present from the very first fetch).
+                # It is NOT meant for events where Pinnacle previously
+                # priced this match and then stopped — that's the
+                # signature of a stale/superseded event ID (e.g. a
+                # fixture reschedule where The Odds API issues a new
+                # event ID and real bookmakers migrate to it, leaving
+                # the old ID's Betfair Exchange entry as a thin, dead
+                # order book with no real price discovery — confirmed
+                # live: Freiburg v Werder Bremen and Augsburg v Schalke
+                # both showed 1000+ real Pinnacle snapshots, then
+                # Pinnacle vanished and Betfair filled in with a
+                # nonsensical 1.02/1.09 "draw" price). Skip storing a
+                # snapshot in that case — same as before this fallback
+                # existed, the odds history just stops advancing rather
+                # than being polluted with garbage.
+                if match_odds and bookmaker_used == "betfair_ex_eu":
+                    ever_had_pinnacle = (
+                        db.query(OddsSnapshot.id)
+                        .filter(OddsSnapshot.match_id == match.id, OddsSnapshot.bookmaker == "pinnacle")
+                        .first()
+                        is not None
+                    )
+                    if ever_had_pinnacle:
+                        match_odds = None
+
                 if match_odds:
                     # Compute pre-game vs in-play status for this row.
                     # CAREFUL: match.commence_time can come back from
