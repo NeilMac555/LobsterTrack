@@ -36,6 +36,14 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy real art: swapped all hand-drawn art for professional
+  animated pixel-art spritesheets (Calciumtrice CC-BY heroes/monsters,
+  Buch CC0 dungeon tiles — credits in game/assets/CREDITS.md). New
+  spritesheet animation engine (idle/walk/attack/death, y-sorting,
+  corpse layer), tiled torch-lit dungeon floor with props, 5 heroes,
+  6 enemy tiers, tinted minotaur bosses. Theme reframed as a rogue
+  Danger Room "INFERNO PROTOCOL" sim (user chose pro fantasy art over
+  DIY superhero sprites). Stress-tested at 350 enemies — `2936166`
 - Mutant Academy sprites: replaced the placeholder circles/emoji with
   fully drawn animated vector characters — costumed heroes with walk
   cycles, capes, cowls and claws; robot enemy designs (drones, spider
