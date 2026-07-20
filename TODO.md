@@ -10,14 +10,6 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 ## Next
 
-- In-Play Jumps page is still WC-only (hardcoded `league:
-  'soccer_fifa_world_cup'` fetch + static "World Cup" label,
-  InPlayJumpsPage.tsx) — was built WC-only from inception, no fallback
-  data path for other leagues. Left untouched during the WC revert
-  since generalizing it is a real feature-scope decision, not a
-  one-line change. Decide: generalize to all leagues, or leave as a
-  WC '26-only historical/beta page.
-
 ## Later
 
 - Re-fit rho/drawInflation in xG mode once 2026/27 accumulates enough
@@ -31,6 +23,14 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Hid In-Play Jumps from nav (desktop + mobile) instead of generalizing
+  it — was WC-only from inception (hardcoded league filter, no
+  fallback for other leagues). Route/page untouched, still loads
+  directly, just not linked. Verified live in prod — `7dcf2bd`
+- Fixed dead-end pages from old WC bookmarks/links: Home/SteamResults/
+  DriftersPage now redirect to unfiltered whenever the resolved league
+  is `hidden` in LEAGUE_CONFIG (generalizes to any future league hide,
+  not just WC); /tools/world-cup redirects to "/" — `0d1721c`
 - World Cup over: reverted every WC-tournament-window default back to
   normal (DEFAULT_LEAGUE redirect hack removed from Home/SteamResults/
   Drifters, CL/UEL/UECL unhidden + WC hidden in LEAGUE_CONFIG, featured
