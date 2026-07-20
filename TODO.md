@@ -10,6 +10,19 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 ## Next
 
+- Duplicate match rows from fixture reschedules: DB sweep found ~20
+  pairs of matches (same two teams, commence_time <48h apart) across
+  Ligue 1, Serie A, La Liga and Bundesliga — early-season fixtures
+  getting a provisional kickoff slot swapped for a confirmed TV slot,
+  which makes The Odds API issue a new event ID while the old one
+  lingers in the feed. Only 2 of these (both Bundesliga) have actually
+  broken so far (see Done entry below), but all ~20 pairs mean the
+  same real-world fixture shows as two separate cards on league pages
+  today. Needs a real dedup pass (pick canonical ID, likely by which
+  one keeps getting fresh Pinnacle data, and hide/merge the other) —
+  bigger than a quick patch, wasn't in scope for the Betfair-fallback
+  bug fix.
+
 ## Later
 
 - Re-fit rho/drawInflation in xG mode once 2026/27 accumulates enough
@@ -23,6 +36,21 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Betfair fallback bug: two Bundesliga matches (Freiburg v Werder
+  Bremen, Augsburg v Schalke) showed Betfair Exchange odds with a
+  nonsensical draw price (1.02 / 1.09) instead of Pinnacle. Root
+  cause: both fixtures got rescheduled by a day: The Odds API issued
+  new event IDs for the confirmed slots, Pinnacle migrated to the new
+  IDs, but the old IDs stayed in the feed with no Pinnacle and a
+  thin/dead Betfair Exchange order book — not a real coverage gap
+  like UCLQ, just a stale event ID. Fixed: the Betfair fallback now
+  only applies to events that have *never* had a Pinnacle snapshot;
+  if Pinnacle previously priced an event and stops, the fetcher skips
+  storing a new snapshot instead (odds history freezes rather than
+  filling with garbage). Manually deleted the 46 already-stored
+  garbage betfair_ex_eu rows on the two affected matches. Verified
+  live — both now show current_odds_bookmaker=pinnacle, frozen at
+  their last real price — `082f78b`
 - World Cup data purge: tournament's over, wiped every soccer_fifa_world_cup
   row from prod so Steam Results / Drifters "All leagues" win-rate, P/L
   and rankings aren't diluted by finished-tournament history. Deleted
