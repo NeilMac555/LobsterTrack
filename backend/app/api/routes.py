@@ -2525,6 +2525,8 @@ async def admin_probe_odds_api(
     password: str = Query(..., description="Admin password"),
     sport_key: str = Query("soccer_fifa_world_cup"),
     markets: str = Query("alternate_totals", description="e.g. h2h, totals, spreads, alternate_totals"),
+    bookmakers: str = Query("pinnacle", description="Comma-separated bookmaker keys, or empty string for The Odds API's default set (whichever books it has for this sport, unfiltered)"),
+    regions: str = Query("eu", description="e.g. eu, uk, eu,uk"),
 ):
     """
     One-shot probe: hit The Odds API directly for a given sport_key +
@@ -2534,7 +2536,13 @@ async def admin_probe_odds_api(
     currently-quiet league' (e.g. Champions League between seasons) by
     probing with a valid market like h2h — a request with an invalid
     market errors before The Odds API even lists events, so that check
-    needs a market our plan actually supports.
+    needs a market our plan actually supports. `bookmakers`/`regions`
+    are overridable (still default to our production values) so a
+    "Pinnacle shows 0 here but has real prices on pinnacle.com" report
+    can be root-caused — e.g. pass bookmakers= (empty) to see every
+    bookmaker The Odds API actually has for this sport/market, which
+    tells us whether the gap is Pinnacle-specific or the whole sport
+    just isn't covered on our plan/region.
 
     Read-only. Costs ~1 API unit per call.
     """
@@ -2546,17 +2554,19 @@ async def admin_probe_odds_api(
     url = f"{s.odds_api_base_url}/sports/{sport_key}/odds"
     params = {
         "apiKey": s.odds_api_key,
-        "regions": "eu",
+        "regions": regions,
         "markets": markets,
-        "bookmakers": "pinnacle",
         "oddsFormat": "decimal",
     }
+    if bookmakers:
+        params["bookmakers"] = bookmakers
     async with httpx.AsyncClient(timeout=15.0) as client:
         resp = await client.get(url, params=params)
     events_count = 0
     event_titles = []
     lines_per_event = {}
     pinnacle_priced_count = 0
+    bookmakers_seen: dict = {}
     try:
         data = resp.json() if resp.status_code == 200 else None
         if isinstance(data, list):
@@ -2568,6 +2578,10 @@ async def admin_probe_odds_api(
                 )
                 if pin and pin.get('markets'):
                     pinnacle_priced_count += 1
+                for b in (ev.get('bookmakers') or []):
+                    key = b.get('key')
+                    if key:
+                        bookmakers_seen[key] = bookmakers_seen.get(key, 0) + 1
             for ev in data[:10]:
                 title = f"{ev.get('home_team')} v {ev.get('away_team')} ({ev.get('commence_time')})"
                 event_titles.append(title)
@@ -2592,6 +2606,7 @@ async def admin_probe_odds_api(
         "quota_used": resp.headers.get("x-requests-used"),
         "events_returned": events_count,
         "pinnacle_priced_count": pinnacle_priced_count,
+        "bookmakers_seen": bookmakers_seen,
         "event_titles_sample": event_titles,
         "lines_per_event_sample": lines_per_event,
         "response_preview": (resp.text[:600] if resp.status_code != 200 else None),
