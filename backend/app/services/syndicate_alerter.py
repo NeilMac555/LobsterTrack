@@ -192,9 +192,14 @@ class SyndicateAlerter:
         threshold: float = SYNDICATE_THRESHOLD_PROB_POINTS,
     ) -> int:
         """Check 1X2 market for syndicate moves."""
+        # Pinnacle only — these thresholds are calibrated against
+        # Pinnacle's price behavior specifically. Betfair Exchange rows
+        # (the fallback source for matches Pinnacle doesn't cover) are
+        # excluded so a real-money-relevant Telegram/tweet alert never
+        # fires on an unvalidated source.
         baseline = (
             db.query(OddsSnapshot)
-            .filter(OddsSnapshot.match_id == match.id)
+            .filter(OddsSnapshot.match_id == match.id, OddsSnapshot.bookmaker == "pinnacle")
             .filter(OddsSnapshot.fetched_at >= window_start)
             .order_by(OddsSnapshot.fetched_at.asc())
             .first()
@@ -202,7 +207,7 @@ class SyndicateAlerter:
 
         latest = (
             db.query(OddsSnapshot)
-            .filter(OddsSnapshot.match_id == match.id)
+            .filter(OddsSnapshot.match_id == match.id, OddsSnapshot.bookmaker == "pinnacle")
             .order_by(OddsSnapshot.fetched_at.desc())
             .first()
         )

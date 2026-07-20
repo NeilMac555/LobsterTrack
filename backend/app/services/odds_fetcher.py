@@ -119,7 +119,17 @@ class OddsFetcher:
             "apiKey": self.api_key,
             "regions": "eu",  # European odds format (decimal)
             "markets": "h2h",  # 1x2 market
-            "bookmakers": "pinnacle",
+            # Betfair Exchange as a fallback source: some competitions
+            # (confirmed: UEFA Champions League Qualifying) never carry
+            # Pinnacle in The Odds API's feed at all, even minutes before
+            # kickoff, despite Pinnacle having live prices on its own
+            # site — a gap in the data provider, not a "not posted yet"
+            # situation. Requesting a second bookmaker in the same call
+            # costs no extra API quota (confirmed live: quota is
+            # regions×markets, not bookmaker count). _extract_1x2_odds
+            # below prefers Pinnacle and only uses Betfair when Pinnacle
+            # is absent for that specific event.
+            "bookmakers": "pinnacle,betfair_ex_eu",
             "oddsFormat": "decimal"
         }
 
@@ -156,10 +166,11 @@ class OddsFetcher:
                 # Upsert match
                 match = self._upsert_match(db, event, sport_key, league_name)
 
-                # Extract Pinnacle odds
-                pinnacle_odds = self._extract_pinnacle_odds(event)
+                # Extract 1x2 odds (Pinnacle preferred, Betfair Exchange
+                # fallback when Pinnacle isn't present for this event)
+                match_odds, bookmaker_used = self._extract_1x2_odds(event)
 
-                if pinnacle_odds:
+                if match_odds:
                     # Compute pre-game vs in-play status for this row.
                     # CAREFUL: match.commence_time can come back from
                     # Postgres as timezone-AWARE (after the KO one-shot
@@ -175,26 +186,25 @@ class OddsFetcher:
                         commence_naive = commence_naive.astimezone(timezone.utc).replace(tzinfo=None)
                     is_in_play = fetch_time > commence_naive
 
-                    # Late-steam detection is a PRE-GAME concept — it
-                    # only walks the 2-hour pre-KO window and bails on
-                    # matches that have already started. We pass the
-                    # in_play flag through anyway so the detector can
-                    # additionally skip cleanly when the new snapshot
-                    # is in-play (defensive).
-                    if not is_in_play:
+                    # Late-steam detection (and the public Steam Results
+                    # track record it feeds) is calibrated against
+                    # Pinnacle price behavior specifically — skip it
+                    # entirely for Betfair-sourced rows rather than
+                    # detect movement on an unvalidated source.
+                    if not is_in_play and bookmaker_used == "pinnacle":
                         steam_count = self._detect_late_steam(
-                            db, match, pinnacle_odds, fetch_time, sport_key
+                            db, match, match_odds, fetch_time, sport_key
                         )
                         steam_moves_recorded += steam_count
 
                     snapshot = OddsSnapshot(
                         match_id=match.id,
-                        bookmaker="pinnacle",
-                        home_odds=pinnacle_odds.get("home"),
-                        draw_odds=pinnacle_odds.get("draw"),
-                        away_odds=pinnacle_odds.get("away"),
+                        bookmaker=bookmaker_used,
+                        home_odds=match_odds.get("home"),
+                        draw_odds=match_odds.get("draw"),
+                        away_odds=match_odds.get("away"),
                         fetched_at=fetch_time,
-                        last_update=pinnacle_odds.get("last_update"),
+                        last_update=match_odds.get("last_update"),
                         in_play=is_in_play,
                     )
                     db.add(snapshot)
@@ -250,10 +260,15 @@ class OddsFetcher:
 
         minutes_before_kickoff = int(time_to_kickoff.total_seconds() / 60)
 
-        # Get the opening odds (first snapshot)
+        # Get the opening odds (first snapshot). Filtered to Pinnacle
+        # rows only — the caller already checked the CURRENT odds are
+        # Pinnacle-sourced, but a match's history can still contain
+        # earlier Betfair-only rows (e.g. if Pinnacle only started
+        # pricing it partway through); comparing against those would
+        # mix sources into one "movement" figure.
         opening_snapshot = (
             db.query(OddsSnapshot)
-            .filter(OddsSnapshot.match_id == match.id)
+            .filter(OddsSnapshot.match_id == match.id, OddsSnapshot.bookmaker == "pinnacle")
             .order_by(OddsSnapshot.fetched_at.asc())
             .first()
         )
@@ -265,7 +280,7 @@ class OddsFetcher:
         # Get the most recent snapshot (to compare against)
         previous_snapshot = (
             db.query(OddsSnapshot)
-            .filter(OddsSnapshot.match_id == match.id)
+            .filter(OddsSnapshot.match_id == match.id, OddsSnapshot.bookmaker == "pinnacle")
             .order_by(OddsSnapshot.fetched_at.desc())
             .first()
         )
@@ -357,47 +372,62 @@ class OddsFetcher:
 
         return match
 
-    def _extract_pinnacle_odds(self, event: dict) -> Optional[dict]:
+    # Preference order for 1X2 pricing. Pinnacle first always — it's
+    # what every threshold/label in this codebase is calibrated
+    # against. betfair_ex_eu is a fallback ONLY for events where
+    # Pinnacle never appears in The Odds API's response at all (see the
+    # comment on the bookmakers param above) — not a general second
+    # opinion, and not used when Pinnacle is present.
+    ONE_X_TWO_BOOKMAKER_PREFERENCE = ("pinnacle", "betfair_ex_eu")
+
+    def _extract_1x2_odds(self, event: dict) -> tuple[Optional[dict], Optional[str]]:
         """
-        Extract Pinnacle 1x2 odds from event data.
-        Returns dict with home, draw, away odds or None if not found.
+        Extract 1x2 odds from event data, preferring Pinnacle and
+        falling back to Betfair Exchange when Pinnacle isn't present
+        for this event. Returns (odds_dict, bookmaker_key) — bookmaker_key
+        is which source the odds actually came from, or (None, None) if
+        neither is present.
         """
-        bookmakers = event.get("bookmakers", [])
+        bookmakers_by_key = {b["key"]: b for b in event.get("bookmakers", [])}
 
-        for bookmaker in bookmakers:
-            if bookmaker["key"] == "pinnacle":
-                markets = bookmaker.get("markets", [])
+        for bookmaker_key in self.ONE_X_TWO_BOOKMAKER_PREFERENCE:
+            bookmaker = bookmakers_by_key.get(bookmaker_key)
+            if not bookmaker:
+                continue
 
-                for market in markets:
-                    if market["key"] == "h2h":
-                        outcomes = market.get("outcomes", [])
-                        odds = {}
+            for market in bookmaker.get("markets", []):
+                if market["key"] != "h2h":
+                    continue
 
-                        # Map outcomes to home/draw/away
-                        for outcome in outcomes:
-                            name = outcome["name"]
-                            price = outcome["price"]
+                outcomes = market.get("outcomes", [])
+                odds = {}
 
-                            if name == event["home_team"]:
-                                odds["home"] = price
-                            elif name == event["away_team"]:
-                                odds["away"] = price
-                            elif name.lower() == "draw":
-                                odds["draw"] = price
+                # Map outcomes to home/draw/away
+                for outcome in outcomes:
+                    name = outcome["name"]
+                    price = outcome["price"]
 
-                        # Parse last_update if available
-                        last_update_str = market.get("last_update")
-                        if last_update_str:
-                            try:
-                                odds["last_update"] = datetime.fromisoformat(
-                                    last_update_str.replace("Z", "+00:00")
-                                )
-                            except (ValueError, TypeError):
-                                odds["last_update"] = None
+                    if name == event["home_team"]:
+                        odds["home"] = price
+                    elif name == event["away_team"]:
+                        odds["away"] = price
+                    elif name.lower() == "draw":
+                        odds["draw"] = price
 
-                        return odds if odds else None
+                # Parse last_update if available
+                last_update_str = market.get("last_update")
+                if last_update_str:
+                    try:
+                        odds["last_update"] = datetime.fromisoformat(
+                            last_update_str.replace("Z", "+00:00")
+                        )
+                    except (ValueError, TypeError):
+                        odds["last_update"] = None
 
-        return None
+                if odds:
+                    return odds, bookmaker_key
+
+        return None, None
 
     async def _fetch_league_totals(self, client: httpx.AsyncClient, sport_key: str) -> dict:
         """

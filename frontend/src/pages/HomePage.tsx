@@ -428,7 +428,7 @@ export default function HomePage() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
               </span>
-              Live · Pinnacle
+              Live odds
             </div>
           </div>
 
@@ -864,7 +864,7 @@ export default function HomePage() {
             <div className="min-w-0">
               <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight truncate">{leagueConfig.name}</h2>
               <p className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold mt-0.5 tabular-nums">
-                {matches.length} upcoming match{matches.length !== 1 ? 'es' : ''} · Pinnacle odds
+                {matches.length} upcoming match{matches.length !== 1 ? 'es' : ''} · Live odds
               </p>
             </div>
           </div>
@@ -872,7 +872,7 @@ export default function HomePage() {
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">All Matches</h2>
             <p className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold mt-0.5 tabular-nums">
-              {matches.length} upcoming match{matches.length !== 1 ? 'es' : ''} · Pinnacle odds
+              {matches.length} upcoming match{matches.length !== 1 ? 'es' : ''} · Live odds
             </p>
           </div>
         )}

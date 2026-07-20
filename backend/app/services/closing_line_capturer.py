@@ -110,12 +110,18 @@ class ClosingLineCapturer:
         if existing:
             return False
 
-        # Get the last odds snapshot BEFORE kickoff
+        # Get the last odds snapshot BEFORE kickoff. Pinnacle only —
+        # ClosingLine has no bookmaker column and every page that reads
+        # it presents the value as "Pinnacle closing price"; capturing
+        # a Betfair Exchange fallback row here would silently mislabel
+        # it. Matches Pinnacle never priced simply never get a closing
+        # line, same as before Betfair fallback existed.
         last_snapshot = (
             db.query(OddsSnapshot)
             .filter(
                 and_(
                     OddsSnapshot.match_id == match.id,
+                    OddsSnapshot.bookmaker == "pinnacle",
                     OddsSnapshot.fetched_at < match.commence_time
                 )
             )

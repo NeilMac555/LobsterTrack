@@ -22,6 +22,10 @@ export interface MatchSummary {
   /** Last ~12 home implied probabilities (0-100) in chronological order.
    *  Powers the inline sparkline on match cards. */
   home_prob_spark?: number[] | null;
+  /** Which bookmaker current_*_odds came from — "pinnacle" unless this
+   *  match is one The Odds API doesn't carry Pinnacle for, in which case
+   *  it's the Betfair Exchange fallback ("betfair_ex_eu"). */
+  current_odds_bookmaker?: string | null;
 }
 
 export interface MatchDetail {
@@ -33,6 +37,7 @@ export interface MatchDetail {
   commence_time: string;
   created_at: string;
   odds_history: OddsPoint[];
+  current_odds_bookmaker?: string | null;
 }
 
 export interface LeagueSummary {

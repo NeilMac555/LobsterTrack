@@ -29,6 +29,10 @@ class MatchSummary(BaseModel):
     # Last ~12 home implied probabilities (0-100) in chronological order,
     # used to render an inline sparkline on the match card.
     home_prob_spark: Optional[list[float]] = None
+    # Which bookmaker current_*_odds came from. "pinnacle" unless this
+    # match is one of the ones Pinnacle doesn't cover in The Odds API's
+    # feed, in which case it's the Betfair Exchange fallback.
+    current_odds_bookmaker: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -44,6 +48,7 @@ class MatchDetail(BaseModel):
     commence_time: datetime
     created_at: datetime
     odds_history: list[OddsPoint]
+    current_odds_bookmaker: Optional[str] = None
 
     class Config:
         from_attributes = True

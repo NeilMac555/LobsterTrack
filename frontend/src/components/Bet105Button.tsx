@@ -9,6 +9,11 @@ interface Props {
   variant?: Variant;
   className?: string;
   location?: string;
+  /** Whether the odds shown on this page are actually Pinnacle-sourced.
+   *  Defaults true. Set false for matches falling back to Betfair
+   *  Exchange (Pinnacle absent from The Odds API's feed) — the "same
+   *  odds as Pinnacle" claim doesn't hold for those. */
+  pinnacleSourced?: boolean;
 }
 
 declare global {
@@ -17,7 +22,7 @@ declare global {
   }
 }
 
-export default function Bet105Button({ variant = 'full', className = '', location }: Props) {
+export default function Bet105Button({ variant = 'full', className = '', location, pinnacleSourced = true }: Props) {
   const handleClick = useCallback(() => {
     try {
       window.plausible?.('Bet105 Click', location ? { props: { location } } : undefined);
@@ -34,12 +39,14 @@ export default function Bet105Button({ variant = 'full', className = '', locatio
         rel="sponsored noopener noreferrer"
         onClick={handleClick}
         className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-slate-800/80 border border-slate-700/60 hover:border-[#1B7CEC]/70 hover:bg-slate-800 transition-colors font-mono text-[11px] font-bold uppercase tracking-[0.1em] ${className}`}
-        title="Bet at Bet105 — same odds as Pinnacle"
+        title={pinnacleSourced ? 'Bet at Bet105 — same odds as Pinnacle' : 'Bet at Bet105'}
       >
         <span className="text-slate-200">Bet at</span>
         <span className="text-white">bet</span>
         <span style={{ color: BET105_BLUE }}>105</span>
-        <span className="text-slate-500 normal-case font-medium tracking-normal">· Pin odds</span>
+        {pinnacleSourced && (
+          <span className="text-slate-500 normal-case font-medium tracking-normal">· Pin odds</span>
+        )}
         <span className="text-slate-400">→</span>
       </a>
     );
@@ -60,9 +67,11 @@ export default function Bet105Button({ variant = 'full', className = '', locatio
             <span className="text-white">bet</span>
             <span style={{ color: BET105_BLUE }}>105</span>
           </span>
-          <span className="text-[11px] font-mono uppercase tracking-[0.1em] text-slate-400 mt-1">
-            Same odds as Pinnacle
-          </span>
+          {pinnacleSourced && (
+            <span className="text-[11px] font-mono uppercase tracking-[0.1em] text-slate-400 mt-1">
+              Same odds as Pinnacle
+            </span>
+          )}
         </div>
         <span
           className="text-lg group-hover:translate-x-0.5 transition-transform"

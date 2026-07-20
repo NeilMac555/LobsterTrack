@@ -153,6 +153,7 @@ export default function MatchDetailPage() {
   const matchDate = parseUtc(match.commence_time);
   const latestOdds = match.odds_history[match.odds_history.length - 1];
   const firstOdds = match.odds_history[0];
+  const isBetfairSourced = match.current_odds_bookmaker === 'betfair_ex_eu';
 
   const metaDesc = `Sharp money movement for ${match.home_team} vs ${match.away_team} — track line moves, steam alerts and model probabilities on SteamWatch.`;
 
@@ -203,6 +204,14 @@ export default function MatchDetailPage() {
             </span>
             {matchDate.getTime() > Date.now() ? 'Market Open' : 'Market Closed'}
           </span>
+          {isBetfairSourced && (
+            <span
+              className="inline-flex items-center px-2 py-0.5 rounded-full border border-amber-500/40 bg-amber-500/10 text-[10px] font-mono uppercase tracking-[0.12em] text-amber-400"
+              title="Pinnacle doesn't carry this match — odds shown are from the Betfair Exchange instead"
+            >
+              Betfair Exchange
+            </span>
+          )}
         </div>
 
         {/* Teams + Kickoff */}
@@ -340,7 +349,7 @@ export default function MatchDetailPage() {
       </div>
 
       <div className="my-4 flex justify-center">
-        <Bet105Button variant="full" location="match-detail" />
+        <Bet105Button variant="full" location="match-detail" pinnacleSourced={!isBetfairSourced} />
       </div>
 
       {/* Totals (Over/Under) Section */}

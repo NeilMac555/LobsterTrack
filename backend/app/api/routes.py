@@ -154,6 +154,7 @@ async def get_matches(
             OddsSnapshot.home_odds,
             OddsSnapshot.draw_odds,
             OddsSnapshot.away_odds,
+            OddsSnapshot.bookmaker,
             func.row_number().over(
                 partition_by=OddsSnapshot.match_id,
                 order_by=OddsSnapshot.fetched_at.desc()
@@ -173,7 +174,8 @@ async def get_matches(
         row.match_id: {
             'home': row.home_odds,
             'draw': row.draw_odds,
-            'away': row.away_odds
+            'away': row.away_odds,
+            'bookmaker': row.bookmaker,
         }
         for row in latest_odds_query
     }
@@ -282,6 +284,7 @@ async def get_matches(
             opening_away_odds=opening.get('away'),
             odds_count=odds_count_map.get(match.id, 0),
             home_prob_spark=spark_map.get(match.id) or None,
+            current_odds_bookmaker=latest.get('bookmaker'),
         ))
 
     return result
@@ -324,7 +327,8 @@ async def get_match_detail(match_id: str, db: Session = Depends(get_db)):
         sport_key=match.sport_key,
         commence_time=match.commence_time,
         created_at=match.created_at,
-        odds_history=odds_history
+        odds_history=odds_history,
+        current_odds_bookmaker=snapshots[-1].bookmaker if snapshots else None,
     )
 
 

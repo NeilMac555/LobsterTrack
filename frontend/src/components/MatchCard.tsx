@@ -50,6 +50,14 @@ export default function MatchCard({ match }: MatchCardProps) {
           <span className="text-[10px] sm:text-[11px] font-mono font-semibold uppercase tracking-[0.12em] text-slate-400 truncate">
             {leagueConfig?.shortName || match.league_name}
           </span>
+          {match.current_odds_bookmaker === 'betfair_ex_eu' && (
+            <span
+              className="px-1.5 py-0.5 rounded-full border border-amber-500/40 bg-amber-500/10 text-[9px] font-mono uppercase tracking-[0.1em] text-amber-400 flex-shrink-0"
+              title="Pinnacle doesn't carry this match — odds shown are from the Betfair Exchange instead"
+            >
+              Betfair
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           {biggestMover && (
