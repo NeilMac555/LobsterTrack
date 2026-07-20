@@ -48,8 +48,77 @@ function sfx(freq, dur, type = 'square', vol = 0.06, slide = 0) {
 const sndHit = () => sfx(rand(180, 240), 0.06, 'square', 0.025);
 const sndHurt = () => sfx(110, 0.2, 'sawtooth', 0.08, -40);
 const sndGem = () => sfx(rand(700, 900), 0.07, 'sine', 0.05, 200);
+const sndCoin = () => { sfx(988, 0.06, 'square', 0.05); setTimeout(() => sfx(1319, 0.14, 'square', 0.05), 60); };
+const sndCrit = () => sfx(150, 0.12, 'square', 0.07, -60);
 const sndLevel = () => { sfx(440, 0.12, 'square', 0.06); setTimeout(() => sfx(660, 0.12, 'square', 0.06), 90); setTimeout(() => sfx(880, 0.2, 'square', 0.06), 180); };
 const sndBoss = () => sfx(70, 0.7, 'sawtooth', 0.1, -20);
+const sndStreak = () => { sfx(330, 0.1, 'square', 0.07); setTimeout(() => sfx(494, 0.1, 'square', 0.07), 80); setTimeout(() => sfx(659, 0.22, 'square', 0.08), 160); };
+const sndNuke = () => sfx(60, 1.2, 'sawtooth', 0.14, 500);
+const sndChest = () => { [523, 659, 784, 1047, 1319].forEach((f, i) => setTimeout(() => sfx(f, 0.18, 'square', 0.07), i * 110)); };
+
+// ---------- chiptune music (procedural WebAudio sequencer, no assets) ----------
+const music = { on: true, started: false, step: 0, nextT: 0, timer: null };
+// A harmonic minor flavour: dark, driving
+const M_BASS = [55, 55, 0, 55, 82.4, 0, 55, 0, 65.4, 65.4, 0, 65.4, 49, 0, 61.7, 0]; // A1 E2 C2 G1 B1
+const M_ARP = [220, 261.6, 329.6, 261.6, 220, 329.6, 392, 329.6,
+  261.6, 329.6, 415.3, 329.6, 246.9, 293.7, 370, 293.7]; // Am / C / E arps
+function musicTick() {
+  if (!music.on || !audioCtx) return;
+  const bpm = 138, stepDur = 60 / bpm / 4;
+  while (music.nextT < audioCtx.currentTime + 0.18) {
+    const s = music.step % 16, bar = Math.floor(music.step / 16) % 4;
+    const t = music.nextT;
+    // kick on quarters, snare-ish noise on 2 & 4
+    if (s % 4 === 0) beep(t, 90, 0.11, 'sine', 0.16, -55);
+    if (s === 4 || s === 12) noiseHit(t, 0.06, 0.06);
+    if (s % 2 === 1) noiseHit(t, 0.025, 0.025); // hats
+    const b = M_BASS[s];
+    if (b) beep(t, bar === 3 ? b * 0.75 : b, stepDur * 0.9, 'triangle', 0.12);
+    const intense = state.time > 300;
+    if (intense || s % 2 === 0) {
+      const a = M_ARP[(s + bar * 4) % 16];
+      beep(t, intense ? a * 2 : a, stepDur * 0.8, 'square', 0.028);
+    }
+    music.step++;
+    music.nextT += stepDur;
+  }
+}
+function beep(t, freq, dur, type, vol, slide = 0) {
+  try {
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    if (slide) o.frequency.linearRampToValueAtTime(Math.max(20, freq + slide), t + dur);
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(t); o.stop(t + dur + 0.02);
+  } catch (e) {}
+}
+let noiseBuf = null;
+function noiseHit(t, dur, vol) {
+  try {
+    if (!noiseBuf) {
+      noiseBuf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.2, audioCtx.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    const src = audioCtx.createBufferSource(), g = audioCtx.createGain();
+    src.buffer = noiseBuf;
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    src.connect(g); g.connect(audioCtx.destination);
+    src.start(t); src.stop(t + dur + 0.02);
+  } catch (e) {}
+}
+function startMusic() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (music.started) return;
+    music.started = true;
+    music.nextT = audioCtx.currentTime + 0.1;
+    music.timer = setInterval(musicTick, 60);
+  } catch (e) {}
+}
 
 // ---------- assets & sprite atlas ----------
 const ASSET_FILES = ['warrior', 'wizard', 'ranger', 'rogue', 'cleric',
@@ -111,13 +180,77 @@ function drawShadow(c, x, y, r) {
   c.beginPath(); c.ellipse(x, y, r, r * 0.3, 0, 0, TAU); c.fill();
 }
 
-// ---------- floor & props (Buch dungeon tileset, 16px tiles) ----------
+// ---------- floor, obstacles & braziers (Buch dungeon tileset, 16px tiles) ----------
 const T = 16, TILE = T * SCALE; // 32px world tiles
 const FLOOR_TILES = [
   [3, 3], [4, 3], [3, 4], [4, 4], [5, 4], [4, 5], [5, 5], [3, 3], [4, 4], [3, 4],
   [5, 3], [3, 5], // speckled variants, kept rare
 ];
-const PROPS = { crate: [9, 7], barrel: [12, 7], crate2: [9, 8] };
+
+// deterministic environment: solid crate/barrel obstacles + destructible braziers
+function obstacleAt(ix, iy) { const h = hash2(ix * 13 + 7, iy * 17 + 3); return h % 67 === 0 ? h : 0; }
+function brazierAt(ix, iy) { const h = hash2(ix * 3 + 1, iy * 5 + 9); return h % 131 === 0 ? h : 0; }
+const BRAZIER_HP = 26;
+const brazierDamageMap = new Map(); // "ix,iy" -> damage taken
+const brazierDead = new Set();
+
+function scanEnv() {
+  // rebuild the nearby obstacle/brazier lists once per frame
+  const w = canvas.width, h = canvas.height, M = 120;
+  const x0 = Math.floor((player.x - w / 2 - M) / TILE), x1 = Math.ceil((player.x + w / 2 + M) / TILE);
+  const y0 = Math.floor((player.y - h / 2 - M) / TILE), y1 = Math.ceil((player.y + h / 2 + M) / TILE);
+  const obs = [], braz = [];
+  for (let iy = y0; iy <= y1; iy++) {
+    for (let ix = x0; ix <= x1; ix++) {
+      const oh = obstacleAt(ix, iy);
+      if (oh) {
+        obs.push({ x: ix * TILE + TILE, y: iy * TILE + TILE / 2, r: oh % 2 ? 26 : 30, kind: oh % 2 });
+        continue;
+      }
+      if (brazierAt(ix, iy)) {
+        const key = ix + ',' + iy;
+        if (!brazierDead.has(key)) {
+          braz.push({ key, x: ix * TILE + TILE / 2, y: iy * TILE + TILE / 2, r: 14 });
+        }
+      }
+    }
+  }
+  state.obsList = obs;
+  state.brazList = braz;
+}
+
+function resolveObstacles(ent) {
+  if (!state.obsList) return;
+  const er = ent.r || 12;
+  for (const o of state.obsList) {
+    const dx = ent.x - o.x, dy = ent.y - o.y;
+    const min = o.r + er;
+    const d2 = dx * dx + dy * dy;
+    if (d2 < min * min && d2 > 0.01) {
+      const d = Math.sqrt(d2);
+      ent.x = o.x + (dx / d) * min;
+      ent.y = o.y + (dy / d) * min;
+    }
+  }
+}
+
+// braziers are the slot-machine lamps: break one, get a prize
+function damageBrazier(bz, dmg) {
+  const cur = (brazierDamageMap.get(bz.key) || 0) + dmg;
+  brazierDamageMap.set(bz.key, cur);
+  effects.push({ type: 'boom', x: bz.x, y: bz.y - 16, radius: 18, life: 0.15, maxLife: 0.15 });
+  if (cur < BRAZIER_HP) return;
+  brazierDead.add(bz.key);
+  brazierDamageMap.delete(bz.key);
+  const roll = Math.random();
+  if (roll < 0.45) pickups.push({ x: bz.x, y: bz.y, type: 'gold', v: randInt_(15, 40) });
+  else if (roll < 0.70) pickups.push({ x: bz.x, y: bz.y, type: 'med' });
+  else if (roll < 0.85) gems.push({ x: bz.x, y: bz.y, v: 8 });
+  else if (roll < 0.96) pickups.push({ x: bz.x, y: bz.y, type: 'vac' });
+  else pickups.push({ x: bz.x, y: bz.y, type: 'nuke' });
+  effects.push({ type: 'boom', x: bz.x, y: bz.y - 10, radius: 40, life: 0.3, maxLife: 0.3 });
+  sfx(400, 0.15, 'triangle', 0.07, -150);
+}
 
 function drawFloor(camX, camY, w, h) {
   const img = assets.tiles;
@@ -130,26 +263,33 @@ function drawFloor(camX, camY, w, h) {
       ctx.drawImage(img, tx * T, ty * T, T, T, ix * TILE, iy * TILE, TILE, TILE);
     }
   }
-  // props + torches on a sparser grid, drawn after the floor
-  for (let iy = y0; iy <= y1; iy++) {
-    for (let ix = x0; ix <= x1; ix++) {
-      const hsh = hash2(ix * 7 + 13, iy * 11 + 5);
-      if (hsh % 83 !== 0) continue;
-      const px = ix * TILE, py = iy * TILE;
-      const kind = hsh % 4;
-      if (kind === 0) { // wall torch
-        ctx.drawImage(img, 12 * T, 8 * T, T, 2 * T, px, py - TILE, TILE, 2 * TILE);
-        const flicker = 0.5 + Math.sin(state.time * 9 + ix * 3 + iy) * 0.15;
-        const grad = ctx.createRadialGradient(px + TILE / 2, py, 4, px + TILE / 2, py, 70);
-        grad.addColorStop(0, `rgba(255,170,60,${0.22 * flicker})`);
-        grad.addColorStop(1, 'rgba(255,170,60,0)');
-        ctx.fillStyle = grad;
-        ctx.fillRect(px - 70, py - 70, 172, 172);
-      } else {
-        const [tx, ty] = kind === 1 ? PROPS.crate : kind === 2 ? PROPS.barrel : PROPS.crate2;
-        ctx.drawImage(img, tx * T, ty * T, T, T, px, py, TILE, TILE);
-      }
+}
+
+function drawObstacle(o) {
+  const img = assets.tiles;
+  if (o.kind === 0) { // 2x2 crate stack
+    for (const [ox, oy] of [[-1, -1], [0, -1], [-1, 0], [0, 0]]) {
+      ctx.drawImage(img, 9 * T, (7 + (ox + oy & 1)) * T, T, T,
+        o.x + ox * TILE, o.y - TILE / 2 + oy * TILE + TILE / 2, TILE, TILE);
     }
+  } else { // barrel pair
+    ctx.drawImage(img, 12 * T, 7 * T, T, T, o.x - TILE, o.y - TILE / 2, TILE, TILE);
+    ctx.drawImage(img, 12 * T, 7 * T, T, T, o.x, o.y - TILE / 2 - 4, TILE, TILE);
+  }
+}
+
+function drawBrazier(bz) {
+  const img = assets.tiles;
+  ctx.drawImage(img, 12 * T, 8 * T, T, 2 * T, bz.x - TILE / 2, bz.y - TILE - TILE / 2, TILE, 2 * TILE);
+  const flicker = 0.5 + Math.sin(state.time * 9 + bz.x) * 0.15;
+  const grad = ctx.createRadialGradient(bz.x, bz.y - TILE / 2, 4, bz.x, bz.y - TILE / 2, 80);
+  grad.addColorStop(0, `rgba(255,170,60,${0.24 * flicker})`);
+  grad.addColorStop(1, 'rgba(255,170,60,0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(bz.x - 80, bz.y - TILE / 2 - 80, 160, 160);
+  if (brazierDamageMap.get(bz.key) > 0) { // cracked once hit
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.fillRect(bz.x - 6, bz.y - 8, 12, 4);
   }
 }
 
@@ -160,10 +300,34 @@ const MAX_WEAPONS = 4, MAX_PASSIVES = 4, MAX_LEVEL = 5;
 // ---------- state ----------
 const state = {
   running: false, paused: false, over: false,
-  time: 0, kills: 0, level: 1, xp: 0, xpNeed: 10,
-  spawnTimer: 0, bossesSpawned: 0,
-  shake: 0,
+  time: 0, kills: 0, level: 1, xp: 0, xpNeed: 10, gold: 0,
+  spawnTimer: 0, bossesSpawned: 0, eventsFired: 0, elitesSpawned: 0,
+  shake: 0, flash: 0, killTimes: [], streakTier: 0,
 };
+
+// VS-style wave table: one entry per minute. `min` is the enemy-count quota —
+// below it the spawner force-fills, so the screen is never quiet.
+const WAVES = [
+  { types: ['slime'],                       min: 14,  interval: 0.9 },
+  { types: ['slime', 'goblin'],             min: 24,  interval: 0.8 },
+  { types: ['goblin', 'slime'],             min: 34,  interval: 0.7 },
+  { types: ['goblin', 'skeleton'],          min: 45,  interval: 0.6 },
+  { types: ['skeleton', 'goblin', 'slime'], min: 56,  interval: 0.55 },
+  { types: ['skeleton', 'redslime'],        min: 68,  interval: 0.5 },
+  { types: ['redslime', 'skeleton', 'goblin'], min: 80, interval: 0.45 },
+  { types: ['redslime', 'orc'],             min: 92,  interval: 0.42 },
+  { types: ['orc', 'redslime', 'skeleton'], min: 105, interval: 0.4 },
+  { types: ['orc', 'raider'],               min: 120, interval: 0.36 },
+  { types: ['raider', 'orc', 'redslime'],   min: 135, interval: 0.33 },
+  { types: ['raider', 'orc'],               min: 150, interval: 0.3 },
+  { types: ['raider', 'orc', 'redslime'],   min: 165, interval: 0.28 },
+  { types: ['raider', 'orc'],               min: 185, interval: 0.26 },
+  { types: ['raider', 'orc', 'redslime'],   min: 205, interval: 0.25 },
+];
+function currentWave() { return WAVES[Math.min(WAVES.length - 1, Math.floor(state.time / 60))]; }
+
+// map events: every 30s, alternating a converging ring and a screen-sweeping swarm
+const EVENT_PERIOD = 30;
 
 const player = {
   x: 0, y: 0, r: 14, speed: 150, hp: 100, maxHp: 100,
@@ -220,6 +384,9 @@ const WEAPON_DEFS = {
             hitAny = true;
           }
         }
+        for (const bz of state.brazList || []) {
+          if (dist2(bz.x, bz.y, player.x, player.y) < (range + 14) ** 2) damageBrazier(bz, 20);
+        }
       }
       if (hitAny) sfx(300, 0.06, 'sawtooth', 0.04);
       return true;
@@ -260,6 +427,9 @@ const WEAPON_DEFS = {
         if (dist2(e.x, e.y, player.x, player.y) < (radius + e.r) ** 2) {
           damageEnemy(e, (14 + w.level * 7) * player.dmgMult);
         }
+      }
+      for (const bz of state.brazList || []) {
+        if (dist2(bz.x, bz.y, player.x, player.y) < (radius + 14) ** 2) damageBrazier(bz, 15);
       }
       sfx(200, 0.3, 'sine', 0.07, 150);
       return true;
@@ -342,13 +512,14 @@ function nearestEnemies(n) {
 }
 
 // ---------- enemies ----------
+// move: hop = pulsing lunges, zigzag = weaving approach, charge = windup then rush
 const ENEMY_TYPES = {
-  slime:    { sprite: 'slime',    hp: 8,   speed: 46, dmg: 8,  r: 10, xp: 1, from: 0 },
-  goblin:   { sprite: 'goblin',   hp: 16,  speed: 78, dmg: 10, r: 10, xp: 2, from: 90 },
-  skeleton: { sprite: 'skeleton', hp: 30,  speed: 60, dmg: 14, r: 11, xp: 3, from: 240 },
-  redslime: { sprite: 'slimeR',   hp: 55,  speed: 50, dmg: 16, r: 11, xp: 4, from: 390 },
-  orc:      { sprite: 'orc',      hp: 130, speed: 42, dmg: 22, r: 13, xp: 6, from: 480 },
-  raider:   { sprite: 'goblinB',  hp: 60,  speed: 92, dmg: 16, r: 10, xp: 5, from: 660 },
+  slime:    { sprite: 'slime',    hp: 8,   speed: 60,  dmg: 8,  r: 10, xp: 1, move: 'hop' },
+  goblin:   { sprite: 'goblin',   hp: 16,  speed: 88,  dmg: 10, r: 10, xp: 2, move: 'straight' },
+  skeleton: { sprite: 'skeleton', hp: 32,  speed: 66,  dmg: 14, r: 11, xp: 3, move: 'zigzag' },
+  redslime: { sprite: 'slimeR',   hp: 60,  speed: 62,  dmg: 16, r: 11, xp: 4, move: 'hop' },
+  orc:      { sprite: 'orc',      hp: 140, speed: 50,  dmg: 22, r: 13, xp: 6, move: 'charge' },
+  raider:   { sprite: 'goblinB',  hp: 65,  speed: 104, dmg: 16, r: 10, xp: 5, move: 'straight' },
 };
 const BOSSES = [
   { at: 300, name: 'MINOTAUR PROTOCOL MK-I', hp: 900, speed: 50, dmg: 25, r: 26,
@@ -359,21 +530,76 @@ const BOSSES = [
     xp: 150, scale: 3.6, tint: 'hue-rotate(250deg) saturate(1.6)' },
 ];
 
-function hpScale() { return 1 + (state.time / 60) * 0.35; }
+function hpScale() {
+  const m = state.time / 60;
+  return 1 + m * 0.5 + m * m * 0.045; // steeper than linear — late waves must threaten
+}
+function dmgScale() { return 1 + (state.time / 60) * 0.06; }
+function spdScale() { return 1 + (state.time / 60) * 0.02; }
 
-function spawnEnemy() {
-  if (enemies.length > 380) return;
-  const available = Object.values(ENEMY_TYPES).filter(t => state.time >= t.from);
-  const t = pick(available);
+function spawnRadius() { return Math.max(canvas.width, canvas.height) / 2 + 80; }
+
+function makeEnemy(kind, x, y, opts = {}) {
+  const t = ENEMY_TYPES[kind];
+  const hpMul = (opts.hpMul ?? 1) * rand(0.85, 1.25);
+  const hp = t.hp * hpScale() * hpMul;
+  return {
+    x, y, hp, maxHp: hp,
+    speed: t.speed * spdScale() * rand(0.9, 1.1) * (opts.spdMul ?? 1),
+    dmg: t.dmg * dmgScale(), r: t.r, xp: Math.ceil(t.xp * (opts.xpMul ?? 1)),
+    sprite: t.sprite, scale: (opts.scale ?? SCALE), tint: opts.tint ?? null,
+    move: t.move, boss: false, elite: !!opts.elite, sweep: opts.sweep ?? null,
+    flash: 0, animT: rand(0, 10), chargeT: rand(0, 4),
+  };
+}
+
+function spawnEnemy(kind) {
+  if (enemies.length > 500) return;
+  const a = rand(0, TAU), d = spawnRadius();
+  enemies.push(makeEnemy(kind, player.x + Math.cos(a) * d, player.y + Math.sin(a) * d));
+}
+
+function spawnElite() {
+  const wave = currentWave();
+  const kind = pick(wave.types);
+  const a = rand(0, TAU), d = spawnRadius();
+  const e = makeEnemy(kind, player.x + Math.cos(a) * d, player.y + Math.sin(a) * d,
+    { hpMul: 12, xpMul: 6, scale: SCALE * 1.5, spdMul: 0.85, elite: true,
+      tint: 'saturate(2.2) brightness(1.15)' });
+  enemies.push(e);
+  texts.push({ x: player.x, y: player.y - 100, str: 'ELITE CONSTRUCT DETECTED', color: '#ffb040', life: 1.8, vy: -12 });
+}
+
+// ring event: a circle of weak fodder closes in — carve your way out
+function spawnRing() {
+  const wave = currentWave();
+  const kind = wave.types[0];
+  const n = 42, d = Math.min(canvas.width, canvas.height) / 2 + 60;
+  for (let i = 0; i < n; i++) {
+    const a = (TAU * i) / n;
+    enemies.push(makeEnemy(kind, player.x + Math.cos(a) * d, player.y + Math.sin(a) * d,
+      { hpMul: 0.5, spdMul: 1.35, xpMul: 1 }));
+  }
+  texts.push({ x: player.x, y: player.y - 100, str: '⚠ SURROUNDED ⚠', color: '#ff7040', life: 1.6, vy: -12, big: true });
+  sfx(220, 0.4, 'sawtooth', 0.08, -80);
+}
+
+// sweep event: a wall of 1-hit fodder charges across the screen — mow them down
+function spawnSweep() {
   const a = rand(0, TAU);
-  const d = Math.max(canvas.width, canvas.height) / 2 + 80;
-  enemies.push({
-    x: player.x + Math.cos(a) * d, y: player.y + Math.sin(a) * d,
-    hp: t.hp * hpScale(), maxHp: t.hp * hpScale(),
-    speed: t.speed * rand(0.9, 1.1), dmg: t.dmg, r: t.r, xp: t.xp,
-    sprite: t.sprite, scale: SCALE, tint: null,
-    boss: false, flash: 0, animT: rand(0, 10),
-  });
+  const dirX = -Math.cos(a), dirY = -Math.sin(a);
+  const d = spawnRadius() + 40;
+  const cx = player.x + Math.cos(a) * d, cy = player.y + Math.sin(a) * d;
+  const px = -dirY, py = dirX; // perpendicular
+  const spd = 170;
+  for (let i = -14; i <= 14; i++) {
+    const e = makeEnemy('goblin', cx + px * i * 34 + rand(-10, 10), cy + py * i * 34 + rand(-10, 10),
+      { hpMul: 0.06, xpMul: 1, spdMul: 1 });
+    e.sweep = { vx: dirX * spd, vy: dirY * spd, life: 14 };
+    enemies.push(e);
+  }
+  texts.push({ x: player.x, y: player.y - 100, str: '⚠ HORDE INCOMING ⚠', color: '#7fd4ff', life: 1.6, vy: -12, big: true });
+  sfx(180, 0.5, 'sawtooth', 0.07, 120);
 }
 
 function spawnBoss(def) {
@@ -391,13 +617,39 @@ function spawnBoss(def) {
   state.shake = 12;
 }
 
+let lastHitSnd = 0;
 function damageEnemy(e, dmg) {
+  const crit = Math.random() < 0.12;
+  if (crit) dmg *= 2.2;
   e.hp -= dmg;
   e.flash = 0.1;
-  texts.push({ x: e.x + rand(-8, 8), y: e.y - e.r - 20, str: Math.round(dmg).toString(),
-    color: '#ffe28a', life: 0.6, vy: -50 });
-  sndHit();
+  // cap floating-text and sfx churn so mass hits don't tank the frame rate
+  if (texts.length < 90 || crit) {
+    texts.push({ x: e.x + rand(-8, 8), y: e.y - e.r - 20, str: Math.round(dmg).toString(),
+      color: crit ? '#ff9030' : '#ffe28a', life: crit ? 0.8 : 0.6, vy: crit ? -70 : -50, big: crit });
+  }
+  const now = performance.now();
+  if (now - lastHitSnd > 40) {
+    lastHitSnd = now;
+    if (crit) sndCrit(); else sndHit();
+  }
   if (e.hp <= 0) killEnemy(e);
+}
+
+function trackStreak() {
+  const now = state.time;
+  state.killTimes.push(now);
+  while (state.killTimes.length && state.killTimes[0] < now - 3) state.killTimes.shift();
+  const n = state.killTimes.length;
+  const tier = n >= 90 ? 3 : n >= 45 ? 2 : n >= 20 ? 1 : 0;
+  if (tier > state.streakTier) {
+    const label = ['', 'RAMPAGE!', 'MASSACRE!!', 'ANNIHILATION!!!'][tier];
+    texts.push({ x: player.x, y: player.y - 70, str: `${label} x${n}`,
+      color: '#ffd23e', life: 1.4, vy: -30, big: true });
+    sndStreak();
+    state.shake = Math.max(state.shake, 4 + tier * 2);
+  }
+  state.streakTier = tier;
 }
 
 function killEnemy(e) {
@@ -405,23 +657,26 @@ function killEnemy(e) {
   if (i === -1) return;
   enemies.splice(i, 1);
   state.kills++;
+  trackStreak();
   corpses.push({ sprite: e.sprite, scale: e.scale, tint: e.tint,
     x: e.x, y: e.y, groundY: groundYOf(e), flip: player.x < e.x, animT: 0 });
-  if (e.boss) {
-    for (let g = 0; g < 10; g++) {
+  if (e.boss || e.elite) {
+    for (let g = 0; g < 8; g++) {
       const a = rand(0, TAU), d = rand(10, 60);
-      gems.push({ x: e.x + Math.cos(a) * d, y: e.y + Math.sin(a) * d, v: Math.ceil(e.xp / 10) });
+      gems.push({ x: e.x + Math.cos(a) * d, y: e.y + Math.sin(a) * d, v: Math.ceil(e.xp / 8) });
     }
-    pickups.push({ x: e.x, y: e.y, type: 'med' });
+    pickups.push({ x: e.x, y: e.y, type: 'chest' }); // jackpot time
     state.shake = 8;
   } else {
     gems.push({ x: e.x, y: e.y, v: e.xp });
-    if (gems.length > 400) {
+    if (Math.random() < 0.04) pickups.push({ x: e.x + rand(-8, 8), y: e.y + rand(-8, 8), type: 'gold', v: randInt_(5, 15) });
+    if (gems.length > 450) {
       const old = gems.shift();
       gems[Math.floor(Math.random() * gems.length)].v += old.v;
     }
   }
 }
+function randInt_(a, b) { return Math.floor(rand(a, b + 1)); }
 
 function groundYOf(e) { return e.y + e.r * 0.9; }
 
@@ -490,8 +745,70 @@ function upgradeChoices() {
   return picked;
 }
 
+// ---------- chest jackpot (the slot-machine moment) ----------
+const chestScreen = document.getElementById('chest-screen');
+const chestRewards = document.getElementById('chest-rewards');
+const chestGoldEl = document.getElementById('chest-gold');
+const chestContinue = document.getElementById('chest-continue');
+
+function chestUpgrade() {
+  const opts = [];
+  for (const w of player.weapons) if (w.level < MAX_LEVEL) opts.push({ kind: 'weapon', id: w.id });
+  for (const [id, rank] of Object.entries(player.passives)) if (rank < MAX_LEVEL) opts.push({ kind: 'passive', id });
+  return opts.length ? pick(opts) : null;
+}
+
+function openChest() {
+  state.paused = true;
+  sndChest();
+  state.flash = 0.3;
+  const roll = Math.random();
+  const n = roll < 0.6 ? 1 : roll < 0.92 ? 3 : 5; // jackpot odds, VS-style
+  const goldBonus = randInt_(20, 60) * n;
+  state.gold += goldBonus;
+  chestRewards.innerHTML = '';
+  chestContinue.classList.add('hidden');
+  chestGoldEl.innerHTML = '';
+  const rewards = [];
+  for (let i = 0; i < n; i++) {
+    const up = chestUpgrade();
+    if (up) {
+      if (up.kind === 'weapon') addWeapon(up.id); else addPassive(up.id);
+      const def = up.kind === 'weapon' ? WEAPON_DEFS[up.id] : PASSIVE_DEFS[up.id];
+      const rank = up.kind === 'weapon'
+        ? player.weapons.find(w => w.id === up.id).level
+        : player.passives[up.id];
+      rewards.push({ icon: def.icon, title: `${def.name} → Rank ${rank}`, tag: 'upgraded' });
+    } else {
+      const extra = randInt_(30, 80);
+      state.gold += extra;
+      rewards.push({ icon: '\u{1FA99}', title: `+${extra} gold`, tag: 'bonus' });
+    }
+  }
+  rewards.forEach((rw, i) => {
+    setTimeout(() => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.style.textAlign = 'center';
+      card.innerHTML = `<div class="icon">${rw.icon}</div><div class="tag">${rw.tag}</div><h3>${rw.title}</h3>`;
+      chestRewards.appendChild(card);
+      sfx(600 + i * 140, 0.15, 'square', 0.07);
+      if (i === rewards.length - 1) {
+        chestGoldEl.innerHTML = `\u{1FA99} +${goldBonus} gold`;
+        chestContinue.classList.remove('hidden');
+      }
+    }, 350 + i * 450);
+  });
+  chestScreen.classList.remove('hidden');
+}
+chestContinue.onclick = () => {
+  chestScreen.classList.add('hidden');
+  if (levelupScreen.classList.contains('hidden')) state.paused = false;
+};
+
 function showLevelUp() {
   state.paused = true;
+  state.flash = Math.max(state.flash, 0.35);
   levelupCards.innerHTML = '';
   for (const opt of upgradeChoices()) {
     const card = document.createElement('div');
@@ -503,7 +820,7 @@ function showLevelUp() {
       else if (opt.kind === 'passive') addPassive(opt.id);
       else player.hp = Math.min(player.maxHp, player.hp + 50);
       levelupScreen.classList.add('hidden');
-      state.paused = false;
+      if (chestScreen.classList.contains('hidden')) state.paused = false;
     };
     levelupCards.appendChild(card);
   }
@@ -514,8 +831,10 @@ function showLevelUp() {
 const keys = {};
 window.addEventListener('keydown', e => {
   keys[e.key.toLowerCase()] = true;
+  if (e.key === 'm' || e.key === 'M') music.on = !music.on;
   if ((e.key === 'p' || e.key === 'Escape') && state.running && !state.over
-      && levelupScreen.classList.contains('hidden')) {
+      && levelupScreen.classList.contains('hidden')
+      && chestScreen.classList.contains('hidden')) {
     togglePause();
   }
 });
@@ -578,12 +897,14 @@ window.togglePause = togglePause;
 function endGame(won) {
   state.over = true;
   state.running = false;
+  if (music.timer) { clearInterval(music.timer); music.timer = null; }
   const title = document.getElementById('end-title');
   const stats = document.getElementById('end-stats');
   title.textContent = won ? 'SIMULATION CLEARED — YOU WIN' : 'SIMULATION FAILED';
   title.style.color = won ? '#5fd47f' : '#ff5050';
   stats.innerHTML = `<b>${player.name}</b> survived <b>${fmtTime(state.time)}</b> &middot; ` +
-    `level <b>${state.level}</b> &middot; <b>${state.kills}</b> constructs destroyed`;
+    `level <b>${state.level}</b> &middot; <b>${state.kills}</b> constructs destroyed &middot; ` +
+    `\u{1FA99} <b>${state.gold}</b> gold`;
   document.getElementById('end-screen').classList.remove('hidden');
 }
 
@@ -591,14 +912,32 @@ function endGame(won) {
 function update(dt) {
   state.time += dt;
   if (state.time >= WIN_TIME) { endGame(true); return; }
+  scanEnv();
 
-  const minute = state.time / 60;
-  const interval = Math.max(0.14, 1.1 - minute * 0.065);
-  const batch = 1 + Math.floor(minute / 3);
+  // VS-style wave spawner: keep the quota filled, then trickle one of each type
+  const wave = currentWave();
   state.spawnTimer -= dt;
   if (state.spawnTimer <= 0) {
-    state.spawnTimer = interval;
-    for (let i = 0; i < batch; i++) spawnEnemy();
+    state.spawnTimer = wave.interval;
+    const alive = enemies.length;
+    if (alive < wave.min) {
+      const deficit = Math.min(10, wave.min - alive);
+      for (let i = 0; i < deficit; i++) spawnEnemy(pick(wave.types));
+    } else {
+      for (const kind of wave.types) spawnEnemy(kind);
+    }
+  }
+  // map events: ring / sweep alternating every 30s (skip the first quiet minute)
+  const eventDue = Math.floor((state.time - 45) / EVENT_PERIOD);
+  if (eventDue >= state.eventsFired && state.time > 45) {
+    state.eventsFired = eventDue + 1;
+    if (eventDue % 2 === 0) spawnRing(); else spawnSweep();
+  }
+  // one elite per minute from 1:30 — walking chest with a health bar
+  const eliteDue = Math.floor((state.time - 90) / 60);
+  if (state.time > 90 && eliteDue >= state.elitesSpawned) {
+    state.elitesSpawned = eliteDue + 1;
+    spawnElite();
   }
   while (state.bossesSpawned < BOSSES.length && state.time >= BOSSES[state.bossesSpawned].at) {
     spawnBoss(BOSSES[state.bossesSpawned]);
@@ -656,6 +995,11 @@ function update(dt) {
     b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt;
     let dead = b.life <= 0;
     if (!dead) {
+      for (const bz of state.brazList || []) {
+        if (dist2(bz.x, bz.y, b.x, b.y) < (14 + b.r) ** 2) { damageBrazier(bz, b.dmg); dead = true; break; }
+      }
+    }
+    if (!dead) {
       for (let j = 0; j < enemies.length; j++) {
         const e = enemies[j];
         if (dist2(e.x, e.y, b.x, b.y) < (e.r + b.r) ** 2) {
@@ -677,20 +1021,47 @@ function update(dt) {
     if (dead) { bullets[i] = bullets[bullets.length - 1]; bullets.pop(); }
   }
 
-  // enemies chase player
+  // enemies chase player — each archetype moves differently
   for (let i = enemies.length - 1; i >= 0; i--) {
     const e = enemies[i];
     const dx = player.x - e.x, dy = player.y - e.y;
     const d = Math.hypot(dx, dy) || 1;
-    e.x += (dx / d) * e.speed * dt;
-    e.y += (dy / d) * e.speed * dt;
     e.flash = Math.max(0, e.flash - dt);
     e.animT += dt;
-    if (d < e.r + player.r) hurtPlayer(e.dmg);
-    if (!e.boss && d > Math.max(canvas.width, canvas.height) * 1.8) {
-      enemies[i] = enemies[enemies.length - 1]; enemies.pop();
+    if (e.sweep) {
+      // swarm fodder: fixed heading, ignores the player, expires off-map
+      e.x += e.sweep.vx * dt; e.y += e.sweep.vy * dt;
+      e.sweep.life -= dt;
+      if (e.sweep.life <= 0) { enemies[i] = enemies[enemies.length - 1]; enemies.pop(); continue; }
+    } else {
+      let spd = e.speed, px = dx / d, py = dy / d;
+      if (e.move === 'hop') {
+        spd *= Math.max(0.05, Math.sin(e.animT * 5)) * 1.7; // lunge... rest... lunge
+      } else if (e.move === 'zigzag') {
+        const sway = Math.sin(e.animT * 3.2) * 0.7;
+        const nx = px - py * sway, ny = py + px * sway;
+        const nl = Math.hypot(nx, ny) || 1;
+        px = nx / nl; py = ny / nl;
+      } else if (e.move === 'charge') {
+        e.chargeT = (e.chargeT + dt) % 4;
+        if (e.chargeT < 2.2) spd *= 0.55;        // prowl
+        else if (e.chargeT < 2.8) spd = 0;       // windup — telegraphed
+        else spd *= 2.6;                          // RUSH
+      }
+      e.x += px * spd * dt;
+      e.y += py * spd * dt;
     }
+    if (d < e.r + player.r) hurtPlayer(e.dmg);
+    // never despawn — like VS, stragglers teleport to a fresh angle and rejoin the hunt
+    if (!e.boss && !e.sweep && d > Math.max(canvas.width, canvas.height) * 1.2) {
+      const a = rand(0, TAU), sd = spawnRadius();
+      e.x = player.x + Math.cos(a) * sd;
+      e.y = player.y + Math.sin(a) * sd;
+    }
+    // solid obstacles push enemies out
+    resolveObstacles(e);
   }
+  resolveObstacles(player);
 
   // corpses play their death animation then fade
   for (let i = corpses.length - 1; i >= 0; i--) {
@@ -702,27 +1073,51 @@ function update(dt) {
   for (let i = gems.length - 1; i >= 0; i--) {
     const g = gems[i];
     const d2 = dist2(g.x, g.y, player.x, player.y);
-    if (d2 < player.magnetR ** 2) {
+    if (g.vacuum) {
+      const d = Math.sqrt(d2) || 1;
+      const pull = 1100 * dt;
+      g.x += ((player.x - g.x) / d) * pull;
+      g.y += ((player.y - g.y) / d) * pull;
+    } else if (d2 < player.magnetR ** 2) {
       const d = Math.sqrt(d2) || 1;
       const pull = 420 * dt;
       g.x += ((player.x - g.x) / d) * pull;
       g.y += ((player.y - g.y) / d) * pull;
     }
-    if (d2 < (player.r + 8) ** 2) {
+    if (d2 < (player.r + 10) ** 2) {
       gainXp(g.v);
       sndGem();
       gems[i] = gems[gems.length - 1]; gems.pop();
     }
   }
 
-  // pickups (med kits)
+  // pickups
   for (let i = pickups.length - 1; i >= 0; i--) {
     const p = pickups[i];
-    if (dist2(p.x, p.y, player.x, player.y) < (player.r + 12) ** 2) {
+    if (dist2(p.x, p.y, player.x, player.y) >= (player.r + 14) ** 2) continue;
+    pickups.splice(i, 1);
+    if (p.type === 'med') {
       player.hp = Math.min(player.maxHp, player.hp + 40);
-      texts.push({ x: player.x, y: player.y - 44, str: '+40', color: '#5fd47f', life: 0.8, vy: -40 });
+      texts.push({ x: player.x, y: player.y - 44, str: '+40 HP', color: '#5fd47f', life: 0.8, vy: -40 });
       sfx(500, 0.15, 'sine', 0.06, 200);
-      pickups.splice(i, 1);
+    } else if (p.type === 'gold') {
+      state.gold += p.v;
+      texts.push({ x: player.x, y: player.y - 44, str: `+${p.v} gold`, color: '#ffd23e', life: 0.7, vy: -40 });
+      sndCoin();
+    } else if (p.type === 'vac') {
+      for (const g of gems) g.vacuum = true;
+      texts.push({ x: player.x, y: player.y - 50, str: 'PSYCHIC VACUUM!', color: '#7fd4ff', life: 1.2, vy: -30, big: true });
+      sfx(300, 0.5, 'sine', 0.08, 700);
+      state.flash = Math.max(state.flash, 0.25);
+    } else if (p.type === 'nuke') {
+      // hard-light purge: everything non-boss on the field dies
+      state.flash = 0.6;
+      state.shake = 14;
+      sndNuke();
+      texts.push({ x: player.x, y: player.y - 50, str: 'SYSTEM PURGE!', color: '#ffffff', life: 1.4, vy: -30, big: true });
+      for (const e of [...enemies]) if (!e.boss) killEnemy(e);
+    } else if (p.type === 'chest') {
+      openChest();
     }
   }
 
@@ -737,6 +1132,7 @@ function update(dt) {
     if (t.life <= 0) texts.splice(i, 1);
   }
   state.shake = Math.max(0, state.shake - dt * 30);
+  state.flash = Math.max(0, state.flash - dt * 1.5);
 }
 
 // ---------- render ----------
@@ -767,11 +1163,40 @@ function render() {
 
   // pickups
   for (const p of pickups) {
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(p.x - 10, p.y - 10, 20, 20);
-    ctx.fillStyle = '#e33';
-    ctx.fillRect(p.x - 7, p.y - 2.5, 14, 5);
-    ctx.fillRect(p.x - 2.5, p.y - 7, 5, 14);
+    const bob = Math.sin(state.time * 4 + p.x) * 3;
+    if (p.type === 'med') {
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(p.x - 10, p.y - 10 + bob, 20, 20);
+      ctx.fillStyle = '#e33';
+      ctx.fillRect(p.x - 7, p.y - 2.5 + bob, 14, 5);
+      ctx.fillRect(p.x - 2.5, p.y - 7 + bob, 5, 14);
+    } else if (p.type === 'gold') {
+      ctx.fillStyle = '#ffd23e';
+      ctx.beginPath(); ctx.arc(p.x, p.y + bob, 7, 0, TAU); ctx.fill();
+      ctx.strokeStyle = '#a07800'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(p.x, p.y + bob, 4, 0, TAU); ctx.stroke();
+    } else if (p.type === 'vac') {
+      ctx.strokeStyle = '#7fd4ff'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(p.x, p.y + bob, 10, 0.4, TAU - 0.6); ctx.stroke();
+      ctx.fillStyle = '#7fd4ff';
+      ctx.fillRect(p.x - 2, p.y + bob - 16, 4, 8);
+    } else if (p.type === 'nuke') {
+      const pulse = 1 + Math.sin(state.time * 8) * 0.25;
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.beginPath(); ctx.arc(p.x, p.y + bob, 14 * pulse, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(p.x, p.y + bob, 8, 0, TAU); ctx.fill();
+    } else if (p.type === 'chest') {
+      const glow = 0.4 + Math.sin(state.time * 6) * 0.2;
+      ctx.fillStyle = `rgba(255,210,62,${glow})`;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 22, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#8a5a20';
+      ctx.fillRect(p.x - 12, p.y - 8 + bob * 0.5, 24, 16);
+      ctx.fillStyle = '#c8862f';
+      ctx.fillRect(p.x - 12, p.y - 8 + bob * 0.5, 24, 6);
+      ctx.fillStyle = '#ffd23e';
+      ctx.fillRect(p.x - 2, p.y - 4 + bob * 0.5, 4, 6);
+    }
   }
 
   // corpses (death animations, flat on the ground)
@@ -782,8 +1207,14 @@ function render() {
     ctx.globalAlpha = 1;
   }
 
-  // living entities, y-sorted (painter's algorithm)
+  // living entities + solid props, y-sorted (painter's algorithm)
   const drawables = [];
+  for (const o of state.obsList || []) {
+    drawables.push({ y: o.y + TILE / 2, draw() { drawObstacle(o); } });
+  }
+  for (const bz of state.brazList || []) {
+    drawables.push({ y: bz.y + 8, draw() { drawBrazier(bz); } });
+  }
   for (const e of enemies) {
     drawables.push({ y: groundYOf(e), draw() {
       drawShadow(ctx, e.x, groundYOf(e), e.r * 0.9);
@@ -886,6 +1317,12 @@ function render() {
 
   ctx.restore();
 
+  // dopamine flash (level-ups, chests, purges)
+  if (state.flash > 0) {
+    ctx.fillStyle = `rgba(255,255,240,${Math.min(0.55, state.flash)})`;
+    ctx.fillRect(0, 0, w, h);
+  }
+
   // vignette
   const vg = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.35, w / 2, h / 2, Math.max(w, h) * 0.72);
   vg.addColorStop(0, 'rgba(0,0,0,0)');
@@ -915,6 +1352,12 @@ function render() {
   ctx.font = '13px sans-serif';
   ctx.fillStyle = '#aab';
   ctx.fillText(`LV ${state.level}   ⚔ ${state.kills}`, w / 2, 66);
+
+  // gold counter, top right
+  ctx.textAlign = 'right';
+  ctx.font = 'bold 16px sans-serif';
+  ctx.fillStyle = '#ffd23e';
+  ctx.fillText(`\u{1FA99} ${state.gold}`, w - 20, 32);
 
   if (touch.active) {
     ctx.strokeStyle = 'rgba(255,255,255,0.25)';
@@ -980,9 +1423,11 @@ function startGame(hDef) {
   player.name = hDef.name;
   player.color = hDef.color;
   player.sprite = hDef.sprite;
+  player.speed = 160; // rebase before hero mods
   addWeapon(hDef.weapon);
   hDef.mods();
   document.getElementById('start-screen').classList.add('hidden');
+  startMusic();
   state.running = true;
 }
 

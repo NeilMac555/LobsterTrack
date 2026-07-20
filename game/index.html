@@ -52,12 +52,19 @@
   gene-shards to evolve.</p>
   <h2>Choose your hero</h2>
   <div class="cards" id="hero-cards"></div>
-  <p class="hint">Move: WASD / arrow keys &middot; touch-drag on mobile &middot; P or Esc to pause</p>
+  <p class="hint">Move: WASD / arrow keys &middot; touch-drag on mobile &middot; P or Esc to pause &middot; M to mute music</p>
 </div>
 
 <div id="levelup-screen" class="overlay hidden">
   <h2>MUTATION SURGE &mdash; pick a power</h2>
   <div class="cards" id="levelup-cards"></div>
+</div>
+
+<div id="chest-screen" class="overlay hidden">
+  <h1 style="color:#ffd23e">TREASURE!</h1>
+  <div class="cards" id="chest-rewards"></div>
+  <p class="stat-line" id="chest-gold"></p>
+  <button class="big hidden" id="chest-continue">Continue</button>
 </div>
 
 <div id="pause-screen" class="overlay hidden">
