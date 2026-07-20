@@ -1,6 +1,8 @@
 'use strict';
 /* Mutant Academy: Survivors — a Vampire Survivors-style auto-battler.
-   Single-file canvas game, no dependencies. Open index.html to play. */
+   The Danger Room is running INFERNO PROTOCOL with real pixel-art sprites
+   (Calciumtrice CC-BY 3.0, tiles by Buch CC0 — see assets/CREDITS.md).
+   Serve or open index.html to play. */
 
 // ---------- canvas ----------
 const canvas = document.getElementById('game');
@@ -15,13 +17,18 @@ resize();
 // ---------- helpers ----------
 const TAU = Math.PI * 2;
 const rand = (a, b) => a + Math.random() * (b - a);
-const randInt = (a, b) => Math.floor(rand(a, b + 1));
 const dist2 = (ax, ay, bx, by) => (ax - bx) ** 2 + (ay - by) ** 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function fmtTime(t) {
   const m = Math.floor(t / 60), s = Math.floor(t % 60);
   return `${m}:${s.toString().padStart(2, '0')}`;
+}
+// deterministic 2D hash for world decoration
+function hash2(x, y) {
+  let n = (x * 374761393 + y * 668265263) | 0;
+  n = Math.imul(n ^ (n >>> 13), 1274126177);
+  return (n ^ (n >>> 16)) >>> 0;
 }
 
 // ---------- tiny synth sfx ----------
@@ -44,360 +51,104 @@ const sndGem = () => sfx(rand(700, 900), 0.07, 'sine', 0.05, 200);
 const sndLevel = () => { sfx(440, 0.12, 'square', 0.06); setTimeout(() => sfx(660, 0.12, 'square', 0.06), 90); setTimeout(() => sfx(880, 0.2, 'square', 0.06), 180); };
 const sndBoss = () => sfx(70, 0.7, 'sawtooth', 0.1, -20);
 
-// ---------- character sprites (all vector-drawn, no assets) ----------
-function rrect(c, x, y, w, h, r) {
-  c.beginPath();
-  c.moveTo(x + r, y);
-  c.arcTo(x + w, y, x + w, y + h, r);
-  c.arcTo(x + w, y + h, x, y + h, r);
-  c.arcTo(x, y + h, x, y, r);
-  c.arcTo(x, y, x + w, y, r);
-  c.closePath();
-}
-function line(c, x1, y1, x2, y2) {
-  c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke();
-}
-function drawShadow(c, x, y, r) {
-  c.fillStyle = 'rgba(0,0,0,0.28)';
-  c.beginPath(); c.ellipse(x, y, r, r * 0.32, 0, 0, TAU); c.fill();
+// ---------- assets & sprite atlas ----------
+const ASSET_FILES = ['warrior', 'wizard', 'ranger', 'rogue', 'cleric',
+  'slime', 'goblin', 'skeleton', 'orc', 'minotaur', 'tiles'];
+const assets = {};
+function loadAssets() {
+  return Promise.all(ASSET_FILES.map(name => new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => { assets[name] = img; res(); };
+    img.onerror = () => rej(new Error('failed to load assets/' + name + '.png'));
+    img.src = 'assets/' + name + '.png';
+  })));
 }
 
-// Hero costume definitions. Characters are ~46px tall, drawn facing right
-// around origin (head ~-18, feet ~+21); flip with ctx.scale(-1,1) outside.
-const HERO_LOOKS = {
-  visor: {
-    suit: '#2b4fd4', pants: '#1a2f80', belt: '#ffd23e', boots: '#ffd23e',
-    gloves: '#ffd23e', skin: '#e8b98a', hair: '#5a3a22', visor: '#ff3030',
-  },
-  wildcat: {
-    suit: '#f4c542', pants: '#2b4fd4', belt: '#c0392b', boots: '#2b4fd4',
-    gloves: '#2b4fd4', skin: '#e8b98a', mask: '#f4c542', maskTrim: '#15151f',
-    maskEars: true, claws: '#dfe8f3',
-  },
-  skywitch: {
-    suit: '#15151f', pants: '#15151f', belt: '#ffd23e', boots: '#ffd23e',
-    gloves: '#15151f', skin: '#7a5230', hair: '#f5f5ff', longHair: true,
-    cape: '#e8e8ff', eyes: '#cfe8ff',
-  },
-  polara: {
-    suit: '#1f8a4d', pants: '#14663a', belt: '#6a2fb8', boots: '#6a2fb8',
-    gloves: '#6a2fb8', skin: '#e8b98a', helmet: '#6a2fb8', cape: '#8a45d8',
-  },
+// Every sheet is 10 frames per row. rows map anim -> row index.
+const STD = { idle: 0, walk: 2, attack: 3, death: 4 };
+const SHEETS = {
+  warrior:  { file: 'warrior',  size: 32, rows: STD },
+  wizard:   { file: 'wizard',   size: 32, rows: STD },
+  ranger:   { file: 'ranger',   size: 32, rows: STD },
+  rogue:    { file: 'rogue',    size: 32, rows: STD },
+  cleric:   { file: 'cleric',   size: 32, rows: STD },
+  slime:    { file: 'slime',    size: 32, rows: { idle: 0, walk: 1, attack: 3, death: 4 } },
+  slimeR:   { file: 'slime',    size: 32, rows: { idle: 10, walk: 11, attack: 13, death: 14 } },
+  goblin:   { file: 'goblin',   size: 32, rows: STD },
+  goblinB:  { file: 'goblin',   size: 32, rows: { idle: 5, walk: 7, attack: 8, death: 9 } },
+  skeleton: { file: 'skeleton', size: 32, rows: STD },
+  orc:      { file: 'orc',      size: 32, rows: { idle: 5, walk: 7, attack: 8, death: 9 } },
+  minotaur: { file: 'minotaur', size: 48, rows: { idle: 0, walk: 1, attack: 3, death: 4 } },
 };
 
-function drawCharacter(c, look, t, moving) {
-  const step = moving ? Math.sin(t * 10) * 6 : 0;
-  const armSwing = moving ? Math.sin(t * 10) * 4 : 0;
-  const bob = moving ? Math.abs(Math.cos(t * 10)) * 1.5 : Math.sin(t * 2.5) * 0.8;
-  c.save();
-  c.lineCap = 'round';
+const SCALE = 2; // 1 sprite pixel = 2 world pixels
 
-  // cape flutters behind
-  if (look.cape) {
-    const flut = Math.sin(t * 6) * 2.5 + (moving ? 5 : 1);
-    c.fillStyle = look.cape;
-    c.beginPath();
-    c.moveTo(-1, -14 - bob);
-    c.quadraticCurveTo(-13, -2, -10 - flut, 20);
-    c.quadraticCurveTo(-6, 14, -3, 14 - bob);
-    c.closePath();
-    c.fill();
-  }
-  // long hair flows behind the head
-  if (look.longHair) {
-    const hf = Math.sin(t * 5) * 2 + (moving ? 3 : 0);
-    c.fillStyle = look.hair;
-    c.beginPath();
-    c.moveTo(2, -25 - bob);
-    c.quadraticCurveTo(-10, -22 - bob, -8 - hf, -4);
-    c.quadraticCurveTo(-4, -9, -1, -12 - bob);
-    c.closePath();
-    c.fill();
-  }
+// Draw a sheet frame with its feet anchored at (x, groundY).
+function drawSprite(sheetKey, anim, frame, x, groundY, flip, scale = SCALE, tint = null) {
+  const def = SHEETS[sheetKey];
+  const img = assets[def.file];
+  if (!img) return;
+  const s = def.size;
+  const row = def.rows[anim] ?? def.rows.idle;
+  ctx.save();
+  ctx.translate(x, groundY);
+  if (flip) ctx.scale(-1, 1);
+  if (tint) ctx.filter = tint;
+  // sprites sit ~3px above the cell bottom
+  ctx.drawImage(img, frame * s, row * s, s, s,
+    -s * scale / 2, -s * scale + 3 * scale, s * scale, s * scale);
+  ctx.restore();
+}
+function animFrame(animT, anim) {
+  if (anim === 'death') return Math.min(9, Math.floor(animT * 12));
+  if (anim === 'attack') return Math.floor(animT * 20) % 10;
+  return Math.floor(animT * 10) % 10;
+}
+function drawShadow(c, x, y, r) {
+  c.fillStyle = 'rgba(0,0,0,0.3)';
+  c.beginPath(); c.ellipse(x, y, r, r * 0.3, 0, 0, TAU); c.fill();
+}
 
-  // back arm
-  c.strokeStyle = look.suit;
-  c.lineWidth = 4.5;
-  line(c, -5, -8 - bob, -6 - armSwing, 3 - bob);
-  c.fillStyle = look.gloves;
-  c.beginPath(); c.arc(-6 - armSwing, 3 - bob, 2.8, 0, TAU); c.fill();
+// ---------- floor & props (Buch dungeon tileset, 16px tiles) ----------
+const T = 16, TILE = T * SCALE; // 32px world tiles
+const FLOOR_TILES = [
+  [3, 3], [4, 3], [3, 4], [4, 4], [5, 4], [4, 5], [5, 5], [3, 3], [4, 4], [3, 4],
+  [5, 3], [3, 5], // speckled variants, kept rare
+];
+const PROPS = { crate: [9, 7], barrel: [12, 7], crate2: [9, 8] };
 
-  // legs + boots
-  c.strokeStyle = look.pants;
-  c.lineWidth = 5;
-  line(c, -3, 7 - bob, -3 - step, 20);
-  line(c, 3, 7 - bob, 3 + step, 20);
-  c.fillStyle = look.boots;
-  c.beginPath(); c.arc(-3 - step, 20, 3, 0, TAU); c.fill();
-  c.beginPath(); c.arc(3 + step, 20, 3, 0, TAU); c.fill();
-
-  // torso + belt + chest badge
-  c.fillStyle = look.suit;
-  rrect(c, -7, -13 - bob, 14, 21, 5); c.fill();
-  c.fillStyle = look.belt;
-  c.fillRect(-7, 4 - bob, 14, 3.5);
-  c.strokeStyle = 'rgba(0,0,0,0.35)';
-  c.lineWidth = 1.5;
-  c.beginPath(); c.arc(0, -6 - bob, 3.2, 0, TAU); c.stroke();
-  c.fillStyle = 'rgba(0,0,0,0.35)';
-  c.beginPath(); c.arc(0, -6 - bob, 1.4, 0, TAU); c.fill();
-
-  // front arm
-  c.strokeStyle = look.suit;
-  c.lineWidth = 4.5;
-  const hx = 7 + armSwing, hy = 3 - bob;
-  line(c, 5, -8 - bob, hx, hy);
-  c.fillStyle = look.gloves;
-  c.beginPath(); c.arc(hx, hy, 2.8, 0, TAU); c.fill();
-  // adamant claws from the front fist
-  if (look.claws) {
-    c.strokeStyle = look.claws;
-    c.lineWidth = 1.6;
-    line(c, hx + 1, hy - 1, hx + 11, hy - 5);
-    line(c, hx + 2, hy, hx + 12, hy);
-    line(c, hx + 1, hy + 1, hx + 11, hy + 5);
-  }
-
-  // head
-  const hdy = -18 - bob;
-  c.fillStyle = look.skin;
-  c.beginPath(); c.arc(0, hdy, 7, 0, TAU); c.fill();
-
-  if (look.maskEars) {
-    // cowl over the skull (chin stays bare) with pointed ears
-    c.fillStyle = look.mask;
-    c.beginPath(); c.arc(0, hdy - 0.5, 7.3, Math.PI * 0.8, Math.PI * 2.2); c.fill();
-    c.beginPath(); c.moveTo(-6.2, hdy - 3.5); c.lineTo(-4.6, hdy - 12); c.lineTo(-1.8, hdy - 6); c.closePath(); c.fill();
-    c.beginPath(); c.moveTo(6.2, hdy - 3.5); c.lineTo(4.6, hdy - 12); c.lineTo(1.8, hdy - 6); c.closePath(); c.fill();
-    // dark eye-mask with angry white slits
-    c.fillStyle = look.maskTrim;
-    rrect(c, -6.4, hdy - 4.6, 12.8, 4.4, 2); c.fill();
-    c.fillStyle = '#fff';
-    c.beginPath(); c.moveTo(1, hdy - 1.6); c.lineTo(1.6, hdy - 3.8); c.lineTo(5, hdy - 3); c.lineTo(4.6, hdy - 1.6); c.closePath(); c.fill();
-    c.beginPath(); c.moveTo(-1, hdy - 1.6); c.lineTo(-1.6, hdy - 3.8); c.lineTo(-5, hdy - 3); c.lineTo(-4.6, hdy - 1.6); c.closePath(); c.fill();
-  } else if (look.helmet) {
-    // magno-helmet with crest fin
-    c.fillStyle = look.helmet;
-    c.beginPath(); c.arc(0, hdy - 0.5, 7.4, Math.PI * 0.95, Math.PI * 2.05); c.fill();
-    c.fillRect(-1.2, hdy - 11.5, 2.4, 5);
-    c.fillStyle = '#222';
-    c.beginPath(); c.arc(2, hdy + 0.5, 1.1, 0, TAU); c.fill();
-    c.beginPath(); c.arc(-1.5, hdy + 0.5, 1.1, 0, TAU); c.fill();
-  } else if (look.visor) {
-    // short hair up top + glowing ruby visor across the eyes
-    c.fillStyle = look.hair;
-    c.beginPath(); c.arc(0, hdy - 2.5, 6.6, Math.PI * 1.05, Math.PI * 1.95); c.fill();
-    c.fillStyle = '#20242c';
-    rrect(c, -7.4, hdy - 3, 14.8, 4.6, 2.2); c.fill();
-    c.save();
-    c.shadowColor = look.visor; c.shadowBlur = 7;
-    c.fillStyle = look.visor;
-    rrect(c, -6, hdy - 2.1, 12, 2.8, 1.4); c.fill();
-    c.restore();
-    c.fillStyle = 'rgba(255,255,255,0.55)';
-    c.fillRect(-4.5, hdy - 1.7, 4, 0.9);
-  } else {
-    // bare face: hairline + eyes
-    if (!look.longHair) {
-      c.fillStyle = look.hair;
-      c.beginPath(); c.arc(0, hdy - 1, 7.2, Math.PI * 1.02, Math.PI * 1.98); c.fill();
-    } else {
-      c.fillStyle = look.hair;
-      c.beginPath(); c.arc(-1, hdy - 3, 6.8, Math.PI * 1.02, Math.PI * 1.92); c.fill();
+function drawFloor(camX, camY, w, h) {
+  const img = assets.tiles;
+  const x0 = Math.floor(camX / TILE), y0 = Math.floor(camY / TILE);
+  const x1 = Math.ceil((camX + w) / TILE), y1 = Math.ceil((camY + h) / TILE);
+  for (let iy = y0; iy <= y1; iy++) {
+    for (let ix = x0; ix <= x1; ix++) {
+      const hsh = hash2(ix, iy);
+      const [tx, ty] = FLOOR_TILES[hsh % FLOOR_TILES.length];
+      ctx.drawImage(img, tx * T, ty * T, T, T, ix * TILE, iy * TILE, TILE, TILE);
     }
-    c.fillStyle = look.eyes || '#222';
-    c.beginPath(); c.arc(2.2, hdy - 0.5, 1.2, 0, TAU); c.fill();
-    c.beginPath(); c.arc(-1.4, hdy - 0.5, 1.2, 0, TAU); c.fill();
   }
-  c.restore();
-}
-
-// --- enemy robots ---
-const DARK_METAL = '#262636', MID_METAL = '#3a3a52';
-
-function drawDrone(c, accent, t, phase) {
-  const bob = Math.sin(t * 6 + phase) * 2.5;
-  c.save();
-  c.translate(0, bob);
-  // thruster flame
-  c.fillStyle = `rgba(255,160,60,${0.5 + Math.sin(t * 30 + phase) * 0.3})`;
-  c.beginPath(); c.moveTo(-3, 7); c.lineTo(0, 13 + Math.sin(t * 25) * 2); c.lineTo(3, 7); c.closePath(); c.fill();
-  // stub wings
-  c.fillStyle = MID_METAL;
-  rrect(c, -13, -2, 6, 4, 1.5); c.fill();
-  rrect(c, 7, -2, 6, 4, 1.5); c.fill();
-  // hull
-  c.fillStyle = DARK_METAL;
-  rrect(c, -9, -7, 18, 14, 5); c.fill();
-  c.fillStyle = accent;
-  c.fillRect(-9, 1, 18, 3);
-  // antenna
-  c.strokeStyle = MID_METAL; c.lineWidth = 1.5;
-  line(c, 0, -7, -2, -12);
-  c.fillStyle = accent;
-  c.beginPath(); c.arc(-2, -12.5, 1.5, 0, TAU); c.fill();
-  // mono-eye with glow rings
-  c.fillStyle = 'rgba(255,60,60,0.25)';
-  c.beginPath(); c.arc(3, -1, 5.5, 0, TAU); c.fill();
-  c.fillStyle = '#ff4040';
-  c.beginPath(); c.arc(3, -1, 3, 0, TAU); c.fill();
-  c.fillStyle = '#ffd0d0';
-  c.beginPath(); c.arc(4, -2, 1, 0, TAU); c.fill();
-  c.restore();
-}
-
-function drawStalker(c, accent, t, phase) {
-  // scuttling legs (two pairs each side)
-  c.strokeStyle = MID_METAL; c.lineWidth = 2;
-  for (let i = 0; i < 4; i++) {
-    const side = i < 2 ? -1 : 1;
-    const sc = Math.sin(t * 14 + phase + i * 1.7) * 3;
-    const bx = side * 5, kx = side * 11, fx = side * (13 + sc * 0.5);
-    line(c, bx, 0, kx, -4);
-    line(c, kx, -4, fx, 7 + sc);
+  // props + torches on a sparser grid, drawn after the floor
+  for (let iy = y0; iy <= y1; iy++) {
+    for (let ix = x0; ix <= x1; ix++) {
+      const hsh = hash2(ix * 7 + 13, iy * 11 + 5);
+      if (hsh % 83 !== 0) continue;
+      const px = ix * TILE, py = iy * TILE;
+      const kind = hsh % 4;
+      if (kind === 0) { // wall torch
+        ctx.drawImage(img, 12 * T, 8 * T, T, 2 * T, px, py - TILE, TILE, 2 * TILE);
+        const flicker = 0.5 + Math.sin(state.time * 9 + ix * 3 + iy) * 0.15;
+        const grad = ctx.createRadialGradient(px + TILE / 2, py, 4, px + TILE / 2, py, 70);
+        grad.addColorStop(0, `rgba(255,170,60,${0.22 * flicker})`);
+        grad.addColorStop(1, 'rgba(255,170,60,0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(px - 70, py - 70, 172, 172);
+      } else {
+        const [tx, ty] = kind === 1 ? PROPS.crate : kind === 2 ? PROPS.barrel : PROPS.crate2;
+        ctx.drawImage(img, tx * T, ty * T, T, T, px, py, TILE, TILE);
+      }
+    }
   }
-  // low body
-  c.fillStyle = DARK_METAL;
-  c.beginPath(); c.ellipse(0, 0, 10, 6.5, 0, 0, TAU); c.fill();
-  c.fillStyle = accent;
-  c.beginPath(); c.ellipse(2, -2, 5, 3, 0, 0, TAU); c.fill();
-  // eyes
-  c.fillStyle = '#ff5050';
-  c.beginPath(); c.arc(7, -1, 1.6, 0, TAU); c.fill();
-  c.beginPath(); c.arc(4, 1.5, 1.2, 0, TAU); c.fill();
-}
-
-function drawMech(c, accent, s, t, phase, big) {
-  // s scales the whole mech; design is ~40px tall at s=1
-  c.save();
-  c.scale(s, s);
-  const stomp = Math.sin(t * 6 + phase) * 3;
-  // legs
-  c.strokeStyle = MID_METAL; c.lineWidth = 6; c.lineCap = 'round';
-  line(c, -6, 6, -7, 17 + stomp * 0.4);
-  line(c, 6, 6, 7, 17 - stomp * 0.4);
-  c.fillStyle = DARK_METAL;
-  rrect(c, -11, 15 + stomp * 0.4, 8, 5, 2); c.fill();
-  rrect(c, 3, 15 - stomp * 0.4, 8, 5, 2); c.fill();
-  // arms with fists
-  const swing = Math.sin(t * 6 + phase) * 2;
-  c.strokeStyle = DARK_METAL; c.lineWidth = 5;
-  line(c, -11, -6, -14, 5 + swing);
-  line(c, 11, -6, 14, 5 - swing);
-  c.fillStyle = MID_METAL;
-  c.beginPath(); c.arc(-14, 6 + swing, 3.5, 0, TAU); c.fill();
-  c.beginPath(); c.arc(14, 6 - swing, 3.5, 0, TAU); c.fill();
-  // torso
-  c.fillStyle = DARK_METAL;
-  rrect(c, -11, -12, 22, 20, 4); c.fill();
-  c.fillStyle = accent;
-  rrect(c, -7, -9, 14, 9, 2); c.fill();
-  // rivets
-  c.fillStyle = 'rgba(255,255,255,0.25)';
-  for (const [rx, ry] of [[-9, -10], [9, -10], [-9, 5], [9, 5]]) {
-    c.beginPath(); c.arc(rx, ry, 1, 0, TAU); c.fill();
-  }
-  if (big) {
-    // shoulder pads + chest core
-    c.fillStyle = MID_METAL;
-    rrect(c, -16, -14, 7, 8, 2); c.fill();
-    rrect(c, 9, -14, 7, 8, 2); c.fill();
-    c.fillStyle = 'rgba(255,220,80,0.9)';
-    c.beginPath(); c.arc(0, -4, 2.5 + Math.sin(t * 8) * 0.6, 0, TAU); c.fill();
-  }
-  // head dome + eyes
-  c.fillStyle = MID_METAL;
-  c.beginPath(); c.arc(0, -14, 6, Math.PI, TAU); c.fill();
-  c.fillStyle = '#ff5050';
-  c.beginPath(); c.arc(-2.5, -15, 1.5, 0, TAU); c.fill();
-  c.beginPath(); c.arc(2.5, -15, 1.5, 0, TAU); c.fill();
-  c.restore();
-}
-
-function drawSentinel(c, e, t) {
-  // giant humanoid mech, ~2.4x e.r tall, tinted by the boss accent color
-  const s = e.r / 30;
-  const accent = e.color;
-  c.save();
-  c.scale(s, s);
-  const stomp = Math.sin(t * 4) * 2.5;
-  c.lineCap = 'round';
-  // legs
-  c.strokeStyle = DARK_METAL; c.lineWidth = 10;
-  line(c, -9, 14, -11, 32 + stomp);
-  line(c, 9, 14, 11, 32 - stomp);
-  c.fillStyle = MID_METAL;
-  rrect(c, -17, 30 + stomp, 12, 7, 3); c.fill();
-  rrect(c, 5, 30 - stomp, 12, 7, 3); c.fill();
-  // arms
-  const swing = Math.sin(t * 4) * 3;
-  c.strokeStyle = MID_METAL; c.lineWidth = 8;
-  line(c, -17, -10, -21, 10 + swing);
-  line(c, 17, -10, 21, 10 - swing);
-  c.fillStyle = DARK_METAL;
-  c.beginPath(); c.arc(-21, 12 + swing, 5.5, 0, TAU); c.fill();
-  c.beginPath(); c.arc(21, 12 - swing, 5.5, 0, TAU); c.fill();
-  // torso (tapered)
-  c.fillStyle = DARK_METAL;
-  c.beginPath();
-  c.moveTo(-16, -18); c.lineTo(16, -18); c.lineTo(12, 16); c.lineTo(-12, 16);
-  c.closePath(); c.fill();
-  c.strokeStyle = accent; c.lineWidth = 2;
-  c.stroke();
-  // chest core (pulsing)
-  c.save();
-  c.shadowColor = accent; c.shadowBlur = 14;
-  c.fillStyle = accent;
-  c.beginPath(); c.arc(0, -4, 5 + Math.sin(t * 6) * 1.2, 0, TAU); c.fill();
-  c.restore();
-  c.fillStyle = 'rgba(255,255,255,0.85)';
-  c.beginPath(); c.arc(0, -4, 2, 0, TAU); c.fill();
-  // shoulder blocks
-  c.fillStyle = MID_METAL;
-  rrect(c, -24, -22, 11, 12, 3); c.fill();
-  rrect(c, 13, -22, 11, 12, 3); c.fill();
-  c.fillStyle = accent;
-  c.fillRect(-24, -22, 11, 3);
-  c.fillRect(13, -22, 11, 3);
-  // head with glowing visor slit + fins
-  c.fillStyle = DARK_METAL;
-  rrect(c, -8, -32, 16, 13, 4); c.fill();
-  c.fillStyle = accent;
-  c.beginPath(); c.moveTo(-8, -28); c.lineTo(-13, -34); c.lineTo(-8, -32); c.closePath(); c.fill();
-  c.beginPath(); c.moveTo(8, -28); c.lineTo(13, -34); c.lineTo(8, -32); c.closePath(); c.fill();
-  c.save();
-  c.shadowColor = '#ffee55'; c.shadowBlur = 10;
-  c.fillStyle = '#ffee55';
-  c.fillRect(-5.5, -27.5, 11, 3);
-  c.restore();
-  c.restore();
-}
-
-function drawEnemySprite(c, e, t) {
-  const kind = e.kind || 'drone';
-  if (kind === 'drone') drawDrone(c, e.color, t, e.phase || 0);
-  else if (kind === 'stalker') drawStalker(c, e.color, t, e.phase || 0);
-  else if (kind === 'brute') drawMech(c, e.color, e.r / 20, t, e.phase || 0, false);
-  else drawMech(c, e.color, e.r / 20, t, e.phase || 0, true); // hulker
-}
-
-// rendered portraits for the hero-select cards
-function makePortrait(heroId, color) {
-  const pc = document.createElement('canvas');
-  pc.width = pc.height = 150;
-  const g = pc.getContext('2d');
-  const grad = g.createRadialGradient(75, 62, 8, 75, 75, 78);
-  grad.addColorStop(0, color + '55');
-  grad.addColorStop(1, 'rgba(10,10,25,0)');
-  g.fillStyle = grad;
-  g.fillRect(0, 0, 150, 150);
-  g.strokeStyle = color + '88';
-  g.lineWidth = 3;
-  g.beginPath(); g.arc(75, 75, 66, 0, TAU); g.stroke();
-  g.translate(75, 80);
-  g.scale(3, 3);
-  drawCharacter(g, HERO_LOOKS[heroId], 0.35, true);
-  return pc.toDataURL();
 }
 
 // ---------- game constants ----------
@@ -416,14 +167,13 @@ const player = {
   x: 0, y: 0, r: 14, speed: 150, hp: 100, maxHp: 100,
   regen: 0, armor: 0, magnetR: 70, dmgMult: 1, cdMult: 1,
   facing: { x: 1, y: 0 }, hurtCd: 0, color: '#ffd23e', name: '',
-  heroId: 'visor', face: 1, moving: false,
+  sprite: 'ranger', face: 1, moving: false, animT: 0, attackAge: 99,
   weapons: [], passives: {},
 };
 
-const enemies = [], bullets = [], gems = [], effects = [], texts = [], pickups = [];
+const enemies = [], corpses = [], bullets = [], gems = [], effects = [], texts = [], pickups = [];
 
 // ---------- weapons ----------
-// Each weapon: id, name, icon, desc, cd (base seconds), level, fire(w)
 const WEAPON_DEFS = {
   optic: {
     name: 'Optic Blast', icon: '\u{1F453}',
@@ -436,7 +186,7 @@ const WEAPON_DEFS = {
       for (const t of targets) {
         const a = Math.atan2(t.y - player.y, t.x - player.x);
         bullets.push({
-          x: player.x, y: player.y, vx: Math.cos(a) * 560, vy: Math.sin(a) * 560,
+          x: player.x, y: player.y - 14, vx: Math.cos(a) * 560, vy: Math.sin(a) * 560,
           r: 5, dmg: (10 + w.level * 5) * player.dmgMult, life: 1.2,
           color: '#ff4444', pierce: w.level >= 4 ? 1 : 0,
         });
@@ -522,7 +272,7 @@ const WEAPON_DEFS = {
       for (let i = 0; i < n; i++) {
         const a = rand(0, TAU);
         bullets.push({
-          x: player.x, y: player.y, vx: Math.cos(a) * 340, vy: Math.sin(a) * 340,
+          x: player.x, y: player.y - 14, vx: Math.cos(a) * 340, vy: Math.sin(a) * 340,
           r: 6, dmg: (14 + w.level * 6) * player.dmgMult, life: 1.4,
           color: '#d477ff', aoe: 55 + w.level * 8, spin: true,
         });
@@ -551,20 +301,23 @@ const PASSIVE_DEFS = {
     apply() { player.armor += 2; } },
 };
 
-// ---------- heroes ----------
+// ---------- heroes (Danger Room avatars) ----------
 const HEROES = [
-  { id: 'visor', name: 'Visor', icon: '\u{1F453}', color: '#ff5555',
-    tag: 'Ranged striker', desc: 'Leader of the class. Starts with Optic Blast. Balanced stats.',
+  { id: 'visor', name: 'Visor', sprite: 'ranger', color: '#ff5555',
+    tag: 'Ranged striker', desc: 'Leader of the class. Optic Blast snipes the nearest threat. Balanced stats.',
     weapon: 'optic', mods: () => {} },
-  { id: 'wildcat', name: 'Wildcat', icon: '\u{1FA93}', color: '#f4c542',
-    tag: 'Melee brawler', desc: 'Starts with Adamant Claws. Tougher (+30 HP) and heals faster.',
+  { id: 'wildcat', name: 'Wildcat', sprite: 'warrior', color: '#f4c542',
+    tag: 'Melee brawler', desc: 'Adamant Claws shred everything in reach. Tougher (+30 HP), heals faster.',
     weapon: 'claws', mods: () => { player.maxHp += 30; player.hp += 30; player.regen += 0.4; } },
-  { id: 'skywitch', name: 'Sky Witch', icon: '⚡', color: '#e8e8ff',
-    tag: 'Area caster', desc: 'Starts with Storm Call. Wider pickup aura, slightly fragile (-15 HP).',
+  { id: 'skywitch', name: 'Sky Witch', sprite: 'wizard', color: '#7fd4ff',
+    tag: 'Area caster', desc: 'Storm Call drops lightning on the horde. Wide pickup aura, fragile (-15 HP).',
     weapon: 'storm', mods: () => { player.magnetR *= 1.6; player.maxHp -= 15; player.hp -= 15; } },
-  { id: 'polara', name: 'Polara', icon: '\u{1FAA8}', color: '#5fd47f',
-    tag: 'Orbital defense', desc: 'Starts with Magno Orbs. Moves 10% faster.',
-    weapon: 'orbs', mods: () => { player.speed *= 1.1; } },
+  { id: 'ace', name: 'Ace', sprite: 'rogue', color: '#d477ff',
+    tag: 'Skirmisher', desc: 'Kinetic Cards detonate on impact. Moves 12% faster.',
+    weapon: 'cards', mods: () => { player.speed *= 1.12; } },
+  { id: 'mender', name: 'Mender', sprite: 'cleric', color: '#5fd47f',
+    tag: 'Psi tank', desc: 'Psi Nova pulses damage all around. Strong regeneration (+1 HP/s).',
+    weapon: 'nova', mods: () => { player.regen += 1.0; player.maxHp += 10; player.hp += 10; } },
 ];
 
 // ---------- weapon/passive management ----------
@@ -588,30 +341,36 @@ function nearestEnemies(n) {
 
 // ---------- enemies ----------
 const ENEMY_TYPES = {
-  drone:   { hp: 8,   speed: 58, dmg: 8,  r: 11, xp: 1, color: '#8f7fff', from: 0 },
-  brute:   { hp: 42,  speed: 36, dmg: 15, r: 19, xp: 3, color: '#ff7f7f', from: 120 },
-  stalker: { hp: 20,  speed: 92, dmg: 10, r: 10, xp: 2, color: '#7fffd4', from: 300 },
-  hulker:  { hp: 130, speed: 40, dmg: 22, r: 26, xp: 6, color: '#ffaa44', from: 480 },
+  slime:    { sprite: 'slime',    hp: 8,   speed: 46, dmg: 8,  r: 10, xp: 1, from: 0 },
+  goblin:   { sprite: 'goblin',   hp: 16,  speed: 78, dmg: 10, r: 10, xp: 2, from: 90 },
+  skeleton: { sprite: 'skeleton', hp: 30,  speed: 60, dmg: 14, r: 11, xp: 3, from: 240 },
+  redslime: { sprite: 'slimeR',   hp: 55,  speed: 50, dmg: 16, r: 11, xp: 4, from: 390 },
+  orc:      { sprite: 'orc',      hp: 130, speed: 42, dmg: 22, r: 13, xp: 6, from: 480 },
+  raider:   { sprite: 'goblinB',  hp: 60,  speed: 92, dmg: 16, r: 10, xp: 5, from: 660 },
 };
 const BOSSES = [
-  { at: 300, name: 'SENTINEL MK-I',  hp: 900,  speed: 46, dmg: 25, r: 42, xp: 50, color: '#c060ff' },
-  { at: 600, name: 'SENTINEL MK-II', hp: 2600, speed: 52, dmg: 32, r: 50, xp: 90, color: '#ff60c0' },
-  { at: 840, name: 'OMEGA SENTINEL', hp: 6500, speed: 58, dmg: 42, r: 60, xp: 150, color: '#ff3030' },
+  { at: 300, name: 'MINOTAUR PROTOCOL MK-I', hp: 900, speed: 50, dmg: 25, r: 26,
+    xp: 50, scale: 2.2, tint: null },
+  { at: 600, name: 'MINOTAUR PROTOCOL MK-II', hp: 2600, speed: 55, dmg: 32, r: 32,
+    xp: 90, scale: 2.8, tint: 'hue-rotate(140deg) saturate(1.4)' },
+  { at: 840, name: 'OMEGA MINOTAUR', hp: 6500, speed: 60, dmg: 42, r: 40,
+    xp: 150, scale: 3.6, tint: 'hue-rotate(250deg) saturate(1.6)' },
 ];
 
 function hpScale() { return 1 + (state.time / 60) * 0.35; }
 
 function spawnEnemy() {
   if (enemies.length > 380) return;
-  const available = Object.entries(ENEMY_TYPES).filter(([, t]) => state.time >= t.from);
-  const [kind, t] = pick(available);
+  const available = Object.values(ENEMY_TYPES).filter(t => state.time >= t.from);
+  const t = pick(available);
   const a = rand(0, TAU);
   const d = Math.max(canvas.width, canvas.height) / 2 + 80;
   enemies.push({
     x: player.x + Math.cos(a) * d, y: player.y + Math.sin(a) * d,
     hp: t.hp * hpScale(), maxHp: t.hp * hpScale(),
     speed: t.speed * rand(0.9, 1.1), dmg: t.dmg, r: t.r, xp: t.xp,
-    color: t.color, boss: false, flash: 0, kind, phase: rand(0, TAU),
+    sprite: t.sprite, scale: SCALE, tint: null,
+    boss: false, flash: 0, animT: rand(0, 10),
   });
 }
 
@@ -621,8 +380,8 @@ function spawnBoss(def) {
   enemies.push({
     x: player.x + Math.cos(a) * d, y: player.y + Math.sin(a) * d,
     hp: def.hp, maxHp: def.hp, speed: def.speed, dmg: def.dmg, r: def.r,
-    xp: def.xp, color: def.color, boss: true, name: def.name, flash: 0,
-    phase: rand(0, TAU),
+    xp: def.xp, sprite: 'minotaur', scale: def.scale, tint: def.tint,
+    boss: true, name: def.name, flash: 0, animT: rand(0, 10),
   });
   texts.push({ x: player.x, y: player.y - 120, str: `⚠ ${def.name} INBOUND ⚠`,
     color: '#ff4040', life: 2.5, vy: -10, big: true });
@@ -633,7 +392,7 @@ function spawnBoss(def) {
 function damageEnemy(e, dmg) {
   e.hp -= dmg;
   e.flash = 0.1;
-  texts.push({ x: e.x + rand(-8, 8), y: e.y - e.r, str: Math.round(dmg).toString(),
+  texts.push({ x: e.x + rand(-8, 8), y: e.y - e.r - 20, str: Math.round(dmg).toString(),
     color: '#ffe28a', life: 0.6, vy: -50 });
   sndHit();
   if (e.hp <= 0) killEnemy(e);
@@ -644,9 +403,9 @@ function killEnemy(e) {
   if (i === -1) return;
   enemies.splice(i, 1);
   state.kills++;
-  effects.push({ type: 'pop', x: e.x, y: e.y, color: e.color, life: 0.25, maxLife: 0.25, r: e.r });
+  corpses.push({ sprite: e.sprite, scale: e.scale, tint: e.tint,
+    x: e.x, y: e.y, groundY: groundYOf(e), flip: player.x < e.x, animT: 0 });
   if (e.boss) {
-    // burst of gems + a med kit
     for (let g = 0; g < 10; g++) {
       const a = rand(0, TAU), d = rand(10, 60);
       gems.push({ x: e.x + Math.cos(a) * d, y: e.y + Math.sin(a) * d, v: Math.ceil(e.xp / 10) });
@@ -662,6 +421,8 @@ function killEnemy(e) {
   }
 }
 
+function groundYOf(e) { return e.y + e.r * 0.9; }
+
 // ---------- player damage / xp ----------
 function hurtPlayer(dmg) {
   if (player.hurtCd > 0) return;
@@ -669,7 +430,7 @@ function hurtPlayer(dmg) {
   player.hp -= taken;
   player.hurtCd = 0.5;
   state.shake = Math.max(state.shake, 5);
-  texts.push({ x: player.x, y: player.y - 20, str: `-${Math.round(taken)}`, color: '#ff6060', life: 0.7, vy: -40 });
+  texts.push({ x: player.x, y: player.y - 40, str: `-${Math.round(taken)}`, color: '#ff6060', life: 0.7, vy: -40 });
   sndHurt();
   if (player.hp <= 0) endGame(false);
 }
@@ -715,7 +476,6 @@ function upgradeChoices() {
     opts.push({ kind: 'passive', id, title: isNew ? def.name : `${def.name} → Rank ${rank + 1}`,
       icon: def.icon, tag: isNew ? 'new trait' : 'trait up', desc: def.desc });
   }
-  // shuffle, take 3
   for (let i = opts.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [opts[i], opts[j]] = [opts[j], opts[i]];
@@ -818,10 +578,10 @@ function endGame(won) {
   state.running = false;
   const title = document.getElementById('end-title');
   const stats = document.getElementById('end-stats');
-  title.textContent = won ? 'EVAC COMPLETE — YOU WIN' : 'THE ACADEMY HAS FALLEN';
+  title.textContent = won ? 'SIMULATION CLEARED — YOU WIN' : 'SIMULATION FAILED';
   title.style.color = won ? '#5fd47f' : '#ff5050';
   stats.innerHTML = `<b>${player.name}</b> survived <b>${fmtTime(state.time)}</b> &middot; ` +
-    `level <b>${state.level}</b> &middot; <b>${state.kills}</b> Sentinels destroyed`;
+    `level <b>${state.level}</b> &middot; <b>${state.kills}</b> constructs destroyed`;
   document.getElementById('end-screen').classList.remove('hidden');
 }
 
@@ -830,7 +590,6 @@ function update(dt) {
   state.time += dt;
   if (state.time >= WIN_TIME) { endGame(true); return; }
 
-  // difficulty curve: spawn faster over time, in bigger batches
   const minute = state.time / 60;
   const interval = Math.max(0.14, 1.1 - minute * 0.065);
   const batch = 1 + Math.floor(minute / 3);
@@ -844,13 +603,15 @@ function update(dt) {
     state.bossesSpawned++;
   }
 
-  // player movement
+  // player movement + animation clocks
   const { mx, my } = moveInput();
   player.x += mx * player.speed * dt;
   player.y += my * player.speed * dt;
   if (mx || my) { player.facing.x = mx; player.facing.y = my; }
   player.moving = !!(mx || my);
   if (mx) player.face = mx > 0 ? 1 : -1;
+  player.animT += dt;
+  player.attackAge += dt;
   player.hurtCd = Math.max(0, player.hurtCd - dt);
   player.hp = Math.min(player.maxHp, player.hp + player.regen * dt);
 
@@ -858,7 +619,6 @@ function update(dt) {
   for (const w of player.weapons) {
     const def = WEAPON_DEFS[w.id];
     if (def.passiveOrbit) {
-      // Magno Orbs: continuous orbit, damage on contact with per-orb tick
       const count = 1 + w.level;
       const radius = 70 + w.level * 10;
       const spd = 2.4 + w.level * 0.25;
@@ -883,7 +643,7 @@ function update(dt) {
     }
     w.timer -= dt;
     if (w.timer <= 0) {
-      if (def.fire(w)) w.timer = def.cd * player.cdMult;
+      if (def.fire(w)) { w.timer = def.cd * player.cdMult; player.attackAge = 0; }
       else w.timer = 0.1; // no target yet — retry soon
     }
   }
@@ -923,11 +683,17 @@ function update(dt) {
     e.x += (dx / d) * e.speed * dt;
     e.y += (dy / d) * e.speed * dt;
     e.flash = Math.max(0, e.flash - dt);
+    e.animT += dt;
     if (d < e.r + player.r) hurtPlayer(e.dmg);
-    // cull ordinary enemies that drift absurdly far (offscreen spawn churn)
     if (!e.boss && d > Math.max(canvas.width, canvas.height) * 1.8) {
       enemies[i] = enemies[enemies.length - 1]; enemies.pop();
     }
+  }
+
+  // corpses play their death animation then fade
+  for (let i = corpses.length - 1; i >= 0; i--) {
+    corpses[i].animT += dt;
+    if (corpses[i].animT > 1.15) corpses.splice(i, 1);
   }
 
   // gems
@@ -952,7 +718,7 @@ function update(dt) {
     const p = pickups[i];
     if (dist2(p.x, p.y, player.x, player.y) < (player.r + 12) ** 2) {
       player.hp = Math.min(player.maxHp, player.hp + 40);
-      texts.push({ x: player.x, y: player.y - 24, str: '+40', color: '#5fd47f', life: 0.8, vy: -40 });
+      texts.push({ x: player.x, y: player.y - 44, str: '+40', color: '#5fd47f', life: 0.8, vy: -40 });
       sfx(500, 0.15, 'sine', 0.06, 200);
       pickups.splice(i, 1);
     }
@@ -974,6 +740,7 @@ function update(dt) {
 // ---------- render ----------
 function render() {
   const w = canvas.width, h = canvas.height;
+  ctx.imageSmoothingEnabled = false;
   ctx.fillStyle = '#0e0e1c';
   ctx.fillRect(0, 0, w, h);
 
@@ -983,21 +750,13 @@ function render() {
   const camX = player.x - w / 2 + shx, camY = player.y - h / 2 + shy;
   ctx.translate(-camX, -camY);
 
-  // background grid (academy training floor)
-  const grid = 90;
-  ctx.strokeStyle = 'rgba(80, 90, 140, 0.14)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  for (let gx = Math.floor(camX / grid) * grid; gx < camX + w + grid; gx += grid) {
-    ctx.moveTo(gx, camY); ctx.lineTo(gx, camY + h);
-  }
-  for (let gy = Math.floor(camY / grid) * grid; gy < camY + h + grid; gy += grid) {
-    ctx.moveTo(camX, gy); ctx.lineTo(camX + w, gy);
-  }
-  ctx.stroke();
+  drawFloor(camX, camY, w, h);
 
   // gems
   for (const g of gems) {
+    const pulse = 1 + Math.sin(state.time * 6 + g.x) * 0.15;
+    ctx.fillStyle = g.v >= 5 ? 'rgba(255,210,62,0.25)' : g.v >= 3 ? 'rgba(127,212,255,0.25)' : 'rgba(95,212,127,0.25)';
+    ctx.beginPath(); ctx.arc(g.x, g.y, 9 * pulse, 0, TAU); ctx.fill();
     ctx.fillStyle = g.v >= 5 ? '#ffd23e' : g.v >= 3 ? '#7fd4ff' : '#5fd47f';
     ctx.beginPath();
     ctx.moveTo(g.x, g.y - 6); ctx.lineTo(g.x + 5, g.y); ctx.lineTo(g.x, g.y + 6); ctx.lineTo(g.x - 5, g.y);
@@ -1013,25 +772,44 @@ function render() {
     ctx.fillRect(p.x - 2.5, p.y - 7, 5, 14);
   }
 
-  // enemies (vector-drawn robot sprites, facing the player)
-  for (const e of enemies) {
-    const groundY = e.boss ? e.y + e.r * 1.25 : e.y + (e.kind === 'drone' ? e.r + 6 : e.r * 0.85);
-    drawShadow(ctx, e.x, groundY, e.boss ? e.r * 0.9 : e.r * 0.8);
-    ctx.save();
-    ctx.translate(e.x, e.y);
-    if (player.x < e.x) ctx.scale(-1, 1);
-    if (e.flash > 0) ctx.filter = 'brightness(2.4) saturate(0.4)';
-    if (e.boss) drawSentinel(ctx, e, state.time);
-    else drawEnemySprite(ctx, e, state.time);
-    ctx.restore();
-    if (e.boss) {
-      const barY = e.y - e.r * 1.25 - 12;
-      ctx.fillStyle = 'rgba(0,0,0,0.5)';
-      ctx.fillRect(e.x - e.r, barY, e.r * 2, 6);
-      ctx.fillStyle = '#ff4040';
-      ctx.fillRect(e.x - e.r, barY, e.r * 2 * (e.hp / e.maxHp), 6);
-    }
+  // corpses (death animations, flat on the ground)
+  for (const c of corpses) {
+    ctx.globalAlpha = c.animT > 0.85 ? clamp((1.15 - c.animT) / 0.3, 0, 1) : 1;
+    drawSprite(c.sprite, 'death', Math.min(9, Math.floor(c.animT * 12)),
+      c.x, c.groundY, c.flip, c.scale, c.tint);
+    ctx.globalAlpha = 1;
   }
+
+  // living entities, y-sorted (painter's algorithm)
+  const drawables = [];
+  for (const e of enemies) {
+    drawables.push({ y: groundYOf(e), draw() {
+      drawShadow(ctx, e.x, groundYOf(e), e.r * 0.9);
+      const near = dist2(e.x, e.y, player.x, player.y) < (e.r + player.r + 26) ** 2;
+      const anim = near ? 'attack' : 'walk';
+      let tint = e.tint;
+      if (e.flash > 0) tint = (tint ? tint + ' ' : '') + 'brightness(2.4) saturate(0.5)';
+      drawSprite(e.sprite, anim, animFrame(e.animT, anim), e.x, groundYOf(e), player.x < e.x, e.scale, tint);
+      if (e.boss) {
+        const top = groundYOf(e) - SHEETS[e.sprite].size * e.scale;
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(e.x - e.r, top - 12, e.r * 2, 6);
+        ctx.fillStyle = '#ff4040';
+        ctx.fillRect(e.x - e.r, top - 12, e.r * 2 * (e.hp / e.maxHp), 6);
+      }
+    } });
+  }
+  const blink = player.hurtCd > 0 && Math.floor(state.time * 20) % 2 === 0;
+  drawables.push({ y: player.y + 20, draw() {
+    if (blink) return;
+    drawShadow(ctx, player.x, player.y + 20, 13);
+    const anim = player.attackAge < 0.45 ? 'attack' : (player.moving ? 'walk' : 'idle');
+    const frame = anim === 'attack' ? Math.min(9, Math.floor(player.attackAge / 0.45 * 10))
+      : animFrame(player.animT, anim);
+    drawSprite(player.sprite, anim, frame, player.x, player.y + 20, player.face < 0);
+  } });
+  drawables.sort((a, b) => a.y - b.y);
+  for (const d of drawables) d.draw();
 
   // bullets
   for (const b of bullets) {
@@ -1040,9 +818,12 @@ function render() {
       ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.life * 15);
       ctx.fillRect(-5, -7, 10, 14); ctx.restore();
     } else {
+      ctx.save();
+      ctx.shadowColor = b.color; ctx.shadowBlur = 10;
       ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,0.6)';
-      ctx.beginPath(); ctx.arc(b.x - b.vx * 0.01, b.y - b.vy * 0.01, b.r * 0.5, 0, TAU); ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.beginPath(); ctx.arc(b.x - b.vx * 0.008, b.y - b.vy * 0.008, b.r * 0.5, 0, TAU); ctx.fill();
     }
   }
 
@@ -1088,27 +869,7 @@ function render() {
     } else if (fx.type === 'boom') {
       ctx.fillStyle = `rgba(255, 170, 60, ${0.5 * p})`;
       ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius * (1 - p * 0.5), 0, TAU); ctx.fill();
-    } else if (fx.type === 'pop') {
-      ctx.fillStyle = fx.color;
-      ctx.globalAlpha = p;
-      for (let s = 0; s < 6; s++) {
-        const a = (TAU * s) / 6;
-        const d = fx.r * (1.6 - p);
-        ctx.beginPath(); ctx.arc(fx.x + Math.cos(a) * d, fx.y + Math.sin(a) * d, 3, 0, TAU); ctx.fill();
-      }
-      ctx.globalAlpha = 1;
     }
-  }
-
-  // player (vector-drawn hero with walk cycle)
-  const blink = player.hurtCd > 0 && Math.floor(state.time * 20) % 2 === 0;
-  if (!blink) {
-    drawShadow(ctx, player.x, player.y + 21, 12);
-    ctx.save();
-    ctx.translate(player.x, player.y);
-    ctx.scale(player.face, 1);
-    drawCharacter(ctx, HERO_LOOKS[player.heroId], state.time, player.moving);
-    ctx.restore();
   }
 
   // floating texts
@@ -1123,8 +884,14 @@ function render() {
 
   ctx.restore();
 
+  // vignette
+  const vg = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.35, w / 2, h / 2, Math.max(w, h) * 0.72);
+  vg.addColorStop(0, 'rgba(0,0,0,0)');
+  vg.addColorStop(1, 'rgba(0,0,0,0.5)');
+  ctx.fillStyle = vg;
+  ctx.fillRect(0, 0, w, h);
+
   // ---------- HUD ----------
-  // hp bar
   const hpw = Math.min(320, w * 0.4);
   ctx.fillStyle = 'rgba(0,0,0,0.55)';
   ctx.fillRect(16, 16, hpw, 18);
@@ -1134,13 +901,11 @@ function render() {
   ctx.fillStyle = '#fff'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'left';
   ctx.fillText(`${Math.ceil(player.hp)} / ${player.maxHp}`, 22, 30);
 
-  // xp bar across top
   ctx.fillStyle = 'rgba(0,0,0,0.55)';
   ctx.fillRect(0, 0, w, 8);
   ctx.fillStyle = '#7fd4ff';
   ctx.fillRect(0, 0, w * clamp(state.xp / state.xpNeed, 0, 1), 8);
 
-  // timer + stats
   ctx.textAlign = 'center';
   ctx.font = 'bold 30px sans-serif';
   ctx.fillStyle = '#fff';
@@ -1149,7 +914,6 @@ function render() {
   ctx.fillStyle = '#aab';
   ctx.fillText(`LV ${state.level}   ⚔ ${state.kills}`, w / 2, 66);
 
-  // touch joystick indicator
   if (touch.active) {
     ctx.strokeStyle = 'rgba(255,255,255,0.25)';
     ctx.lineWidth = 2;
@@ -1173,15 +937,38 @@ function loop(t) {
 }
 
 // ---------- hero select ----------
+function portraitCanvas(hDef) {
+  const pc = document.createElement('canvas');
+  pc.width = pc.height = 108;
+  const g = pc.getContext('2d');
+  g.imageSmoothingEnabled = false;
+  const grad = g.createRadialGradient(54, 46, 6, 54, 54, 56);
+  grad.addColorStop(0, hDef.color + '4d');
+  grad.addColorStop(1, 'rgba(10,10,25,0)');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 108, 108);
+  g.strokeStyle = hDef.color + '99';
+  g.lineWidth = 3;
+  g.beginPath(); g.arc(54, 54, 49, 0, TAU); g.stroke();
+  const def = SHEETS[hDef.sprite];
+  const img = assets[def.file];
+  g.drawImage(img, 0, def.rows.idle * def.size, def.size, def.size, 6, 6, 96, 96);
+  return pc;
+}
+
 function buildHeroSelect() {
   const holder = document.getElementById('hero-cards');
+  holder.innerHTML = '';
   for (const hDef of HEROES) {
     const card = document.createElement('div');
     card.className = 'card';
-    card.innerHTML = `<img src="${makePortrait(hDef.id, hDef.color)}" alt="${hDef.name}"
-        style="width:96px;height:96px;display:block;margin:0 auto 4px">
-      <div class="tag" style="text-align:center">${hDef.tag}</div>
+    const pc = portraitCanvas(hDef);
+    pc.style.cssText = 'display:block;margin:0 auto 4px';
+    card.appendChild(pc);
+    const info = document.createElement('div');
+    info.innerHTML = `<div class="tag" style="text-align:center">${hDef.tag}</div>
       <h3 style="text-align:center">${hDef.name}</h3><p>${hDef.desc}</p>`;
+    card.appendChild(info);
     card.onclick = () => startGame(hDef);
     holder.appendChild(card);
   }
@@ -1190,12 +977,19 @@ function buildHeroSelect() {
 function startGame(hDef) {
   player.name = hDef.name;
   player.color = hDef.color;
-  player.heroId = hDef.id;
+  player.sprite = hDef.sprite;
   addWeapon(hDef.weapon);
   hDef.mods();
   document.getElementById('start-screen').classList.add('hidden');
   state.running = true;
 }
 
-buildHeroSelect();
-requestAnimationFrame(loop);
+loadAssets().then(() => {
+  buildHeroSelect();
+  requestAnimationFrame(loop);
+}).catch(err => {
+  const el = document.querySelector('#start-screen .subtitle');
+  if (el) el.innerHTML = `<b style="color:#ff6060">Failed to load sprite assets (${err.message}).</b><br>
+    If you opened this via file://, some browsers block local images — try
+    <code>npx http-server game/</code> and open the served URL instead.`;
+});
