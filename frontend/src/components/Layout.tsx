@@ -73,7 +73,6 @@ export default function Layout() {
   const isDriftersPage = location.pathname === '/drifters';
   const isClosingLinesPage = location.pathname === '/closing-lines' || location.pathname === '/cl-closing-lines';
   const isTeamPLPage = location.pathname === '/team-pnl';
-  const isInPlayJumpsPage = location.pathname === '/in-play-jumps';
   const isOverviewPage = !currentLeague && !isToolsPage && !isSteamResultsPage && !isDriftersPage && !isClosingLinesPage && !isTeamPLPage && location.pathname === '/';
 
   const navItemClass = (active: boolean) =>
@@ -115,7 +114,6 @@ export default function Layout() {
               <Link to="/drifters" className={navItemClass(isDriftersPage)}>Drifters</Link>
               <Link to="/closing-lines" className={navItemClass(isClosingLinesPage)}>Closing Lines</Link>
               <Link to="/team-pnl" className={navItemClass(isTeamPLPage)}>Team P/L</Link>
-              <Link to="/in-play-jumps" className={navItemClass(isInPlayJumpsPage)}>In-Play Jumps</Link>
 
               {/* Tools dropdown */}
               <div className="relative" ref={dropdownRef}>
@@ -520,17 +518,6 @@ export default function Layout() {
                   >
                     <span className="text-lg">&#163;</span>
                     <span className="font-medium">Team P/L</span>
-                  </Link>
-                  <Link
-                    to="/in-play-jumps"
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors ${
-                      isInPlayJumpsPage
-                        ? 'bg-amber-600/20 text-amber-300'
-                        : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700 hover:text-white'
-                    }`}
-                  >
-                    <span className="text-lg">⚡</span>
-                    <span className="font-medium">In-Play Jumps</span>
                   </Link>
                 </div>
               </div>
