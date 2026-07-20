@@ -36,6 +36,15 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy VS-faithful overhaul: researched Vampire Survivors'
+  real mechanics and rebuilt the loop — per-minute wave tables with
+  min-enemy quotas, ring/sweep map events every 30s, elites dropping
+  slot-machine treasure chests (1/3/5 upgrade jackpot + fanfare),
+  psychic vacuum + screen-purge pickups, destructible braziers with
+  loot, gold economy, crits, kill-streak banners, per-archetype enemy
+  movement (hop/zigzag/charge), solid crate/barrel obstacles, steeper
+  scaling with offscreen teleport-back, procedural chiptune music.
+  Profiled 4.6ms/frame JS at 363 enemies — `9dd4506`
 - Mutant Academy real art: swapped all hand-drawn art for professional
   animated pixel-art spritesheets (Calciumtrice CC-BY heroes/monsters,
   Buch CC0 dungeon tiles — credits in game/assets/CREDITS.md). New
