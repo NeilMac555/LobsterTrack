@@ -25,7 +25,7 @@ const tools: Array<{
 }> = [
   {
     name: 'AI Bet Tracker',
-    path: 'https://amiup.io/?ref=steamwatch-tools',
+    path: 'https://amiup.io/?utm_source=steamwatch&utm_medium=cross-promo&utm_campaign=tools',
     icon: '🤖',
     external: true,
     isNew: true,

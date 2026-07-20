@@ -20,7 +20,7 @@ interface AmIUpCTAProps {
 }
 
 export default function AmIUpCTA({ placement }: AmIUpCTAProps) {
-  const href = `https://amiup.io/?ref=steamwatch-${placement}`;
+  const href = `https://amiup.io/?utm_source=steamwatch&utm_medium=cross-promo&utm_campaign=${placement}`;
   return (
     <a
       href={href}
