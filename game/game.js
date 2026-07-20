@@ -44,6 +44,362 @@ const sndGem = () => sfx(rand(700, 900), 0.07, 'sine', 0.05, 200);
 const sndLevel = () => { sfx(440, 0.12, 'square', 0.06); setTimeout(() => sfx(660, 0.12, 'square', 0.06), 90); setTimeout(() => sfx(880, 0.2, 'square', 0.06), 180); };
 const sndBoss = () => sfx(70, 0.7, 'sawtooth', 0.1, -20);
 
+// ---------- character sprites (all vector-drawn, no assets) ----------
+function rrect(c, x, y, w, h, r) {
+  c.beginPath();
+  c.moveTo(x + r, y);
+  c.arcTo(x + w, y, x + w, y + h, r);
+  c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r);
+  c.arcTo(x, y, x + w, y, r);
+  c.closePath();
+}
+function line(c, x1, y1, x2, y2) {
+  c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke();
+}
+function drawShadow(c, x, y, r) {
+  c.fillStyle = 'rgba(0,0,0,0.28)';
+  c.beginPath(); c.ellipse(x, y, r, r * 0.32, 0, 0, TAU); c.fill();
+}
+
+// Hero costume definitions. Characters are ~46px tall, drawn facing right
+// around origin (head ~-18, feet ~+21); flip with ctx.scale(-1,1) outside.
+const HERO_LOOKS = {
+  visor: {
+    suit: '#2b4fd4', pants: '#1a2f80', belt: '#ffd23e', boots: '#ffd23e',
+    gloves: '#ffd23e', skin: '#e8b98a', hair: '#5a3a22', visor: '#ff3030',
+  },
+  wildcat: {
+    suit: '#f4c542', pants: '#2b4fd4', belt: '#c0392b', boots: '#2b4fd4',
+    gloves: '#2b4fd4', skin: '#e8b98a', mask: '#f4c542', maskTrim: '#15151f',
+    maskEars: true, claws: '#dfe8f3',
+  },
+  skywitch: {
+    suit: '#15151f', pants: '#15151f', belt: '#ffd23e', boots: '#ffd23e',
+    gloves: '#15151f', skin: '#7a5230', hair: '#f5f5ff', longHair: true,
+    cape: '#e8e8ff', eyes: '#cfe8ff',
+  },
+  polara: {
+    suit: '#1f8a4d', pants: '#14663a', belt: '#6a2fb8', boots: '#6a2fb8',
+    gloves: '#6a2fb8', skin: '#e8b98a', helmet: '#6a2fb8', cape: '#8a45d8',
+  },
+};
+
+function drawCharacter(c, look, t, moving) {
+  const step = moving ? Math.sin(t * 10) * 6 : 0;
+  const armSwing = moving ? Math.sin(t * 10) * 4 : 0;
+  const bob = moving ? Math.abs(Math.cos(t * 10)) * 1.5 : Math.sin(t * 2.5) * 0.8;
+  c.save();
+  c.lineCap = 'round';
+
+  // cape flutters behind
+  if (look.cape) {
+    const flut = Math.sin(t * 6) * 2.5 + (moving ? 5 : 1);
+    c.fillStyle = look.cape;
+    c.beginPath();
+    c.moveTo(-1, -14 - bob);
+    c.quadraticCurveTo(-13, -2, -10 - flut, 20);
+    c.quadraticCurveTo(-6, 14, -3, 14 - bob);
+    c.closePath();
+    c.fill();
+  }
+  // long hair flows behind the head
+  if (look.longHair) {
+    const hf = Math.sin(t * 5) * 2 + (moving ? 3 : 0);
+    c.fillStyle = look.hair;
+    c.beginPath();
+    c.moveTo(2, -25 - bob);
+    c.quadraticCurveTo(-10, -22 - bob, -8 - hf, -4);
+    c.quadraticCurveTo(-4, -9, -1, -12 - bob);
+    c.closePath();
+    c.fill();
+  }
+
+  // back arm
+  c.strokeStyle = look.suit;
+  c.lineWidth = 4.5;
+  line(c, -5, -8 - bob, -6 - armSwing, 3 - bob);
+  c.fillStyle = look.gloves;
+  c.beginPath(); c.arc(-6 - armSwing, 3 - bob, 2.8, 0, TAU); c.fill();
+
+  // legs + boots
+  c.strokeStyle = look.pants;
+  c.lineWidth = 5;
+  line(c, -3, 7 - bob, -3 - step, 20);
+  line(c, 3, 7 - bob, 3 + step, 20);
+  c.fillStyle = look.boots;
+  c.beginPath(); c.arc(-3 - step, 20, 3, 0, TAU); c.fill();
+  c.beginPath(); c.arc(3 + step, 20, 3, 0, TAU); c.fill();
+
+  // torso + belt + chest badge
+  c.fillStyle = look.suit;
+  rrect(c, -7, -13 - bob, 14, 21, 5); c.fill();
+  c.fillStyle = look.belt;
+  c.fillRect(-7, 4 - bob, 14, 3.5);
+  c.strokeStyle = 'rgba(0,0,0,0.35)';
+  c.lineWidth = 1.5;
+  c.beginPath(); c.arc(0, -6 - bob, 3.2, 0, TAU); c.stroke();
+  c.fillStyle = 'rgba(0,0,0,0.35)';
+  c.beginPath(); c.arc(0, -6 - bob, 1.4, 0, TAU); c.fill();
+
+  // front arm
+  c.strokeStyle = look.suit;
+  c.lineWidth = 4.5;
+  const hx = 7 + armSwing, hy = 3 - bob;
+  line(c, 5, -8 - bob, hx, hy);
+  c.fillStyle = look.gloves;
+  c.beginPath(); c.arc(hx, hy, 2.8, 0, TAU); c.fill();
+  // adamant claws from the front fist
+  if (look.claws) {
+    c.strokeStyle = look.claws;
+    c.lineWidth = 1.6;
+    line(c, hx + 1, hy - 1, hx + 11, hy - 5);
+    line(c, hx + 2, hy, hx + 12, hy);
+    line(c, hx + 1, hy + 1, hx + 11, hy + 5);
+  }
+
+  // head
+  const hdy = -18 - bob;
+  c.fillStyle = look.skin;
+  c.beginPath(); c.arc(0, hdy, 7, 0, TAU); c.fill();
+
+  if (look.maskEars) {
+    // cowl over the skull (chin stays bare) with pointed ears
+    c.fillStyle = look.mask;
+    c.beginPath(); c.arc(0, hdy - 0.5, 7.3, Math.PI * 0.8, Math.PI * 2.2); c.fill();
+    c.beginPath(); c.moveTo(-6.2, hdy - 3.5); c.lineTo(-4.6, hdy - 12); c.lineTo(-1.8, hdy - 6); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(6.2, hdy - 3.5); c.lineTo(4.6, hdy - 12); c.lineTo(1.8, hdy - 6); c.closePath(); c.fill();
+    // dark eye-mask with angry white slits
+    c.fillStyle = look.maskTrim;
+    rrect(c, -6.4, hdy - 4.6, 12.8, 4.4, 2); c.fill();
+    c.fillStyle = '#fff';
+    c.beginPath(); c.moveTo(1, hdy - 1.6); c.lineTo(1.6, hdy - 3.8); c.lineTo(5, hdy - 3); c.lineTo(4.6, hdy - 1.6); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(-1, hdy - 1.6); c.lineTo(-1.6, hdy - 3.8); c.lineTo(-5, hdy - 3); c.lineTo(-4.6, hdy - 1.6); c.closePath(); c.fill();
+  } else if (look.helmet) {
+    // magno-helmet with crest fin
+    c.fillStyle = look.helmet;
+    c.beginPath(); c.arc(0, hdy - 0.5, 7.4, Math.PI * 0.95, Math.PI * 2.05); c.fill();
+    c.fillRect(-1.2, hdy - 11.5, 2.4, 5);
+    c.fillStyle = '#222';
+    c.beginPath(); c.arc(2, hdy + 0.5, 1.1, 0, TAU); c.fill();
+    c.beginPath(); c.arc(-1.5, hdy + 0.5, 1.1, 0, TAU); c.fill();
+  } else if (look.visor) {
+    // short hair up top + glowing ruby visor across the eyes
+    c.fillStyle = look.hair;
+    c.beginPath(); c.arc(0, hdy - 2.5, 6.6, Math.PI * 1.05, Math.PI * 1.95); c.fill();
+    c.fillStyle = '#20242c';
+    rrect(c, -7.4, hdy - 3, 14.8, 4.6, 2.2); c.fill();
+    c.save();
+    c.shadowColor = look.visor; c.shadowBlur = 7;
+    c.fillStyle = look.visor;
+    rrect(c, -6, hdy - 2.1, 12, 2.8, 1.4); c.fill();
+    c.restore();
+    c.fillStyle = 'rgba(255,255,255,0.55)';
+    c.fillRect(-4.5, hdy - 1.7, 4, 0.9);
+  } else {
+    // bare face: hairline + eyes
+    if (!look.longHair) {
+      c.fillStyle = look.hair;
+      c.beginPath(); c.arc(0, hdy - 1, 7.2, Math.PI * 1.02, Math.PI * 1.98); c.fill();
+    } else {
+      c.fillStyle = look.hair;
+      c.beginPath(); c.arc(-1, hdy - 3, 6.8, Math.PI * 1.02, Math.PI * 1.92); c.fill();
+    }
+    c.fillStyle = look.eyes || '#222';
+    c.beginPath(); c.arc(2.2, hdy - 0.5, 1.2, 0, TAU); c.fill();
+    c.beginPath(); c.arc(-1.4, hdy - 0.5, 1.2, 0, TAU); c.fill();
+  }
+  c.restore();
+}
+
+// --- enemy robots ---
+const DARK_METAL = '#262636', MID_METAL = '#3a3a52';
+
+function drawDrone(c, accent, t, phase) {
+  const bob = Math.sin(t * 6 + phase) * 2.5;
+  c.save();
+  c.translate(0, bob);
+  // thruster flame
+  c.fillStyle = `rgba(255,160,60,${0.5 + Math.sin(t * 30 + phase) * 0.3})`;
+  c.beginPath(); c.moveTo(-3, 7); c.lineTo(0, 13 + Math.sin(t * 25) * 2); c.lineTo(3, 7); c.closePath(); c.fill();
+  // stub wings
+  c.fillStyle = MID_METAL;
+  rrect(c, -13, -2, 6, 4, 1.5); c.fill();
+  rrect(c, 7, -2, 6, 4, 1.5); c.fill();
+  // hull
+  c.fillStyle = DARK_METAL;
+  rrect(c, -9, -7, 18, 14, 5); c.fill();
+  c.fillStyle = accent;
+  c.fillRect(-9, 1, 18, 3);
+  // antenna
+  c.strokeStyle = MID_METAL; c.lineWidth = 1.5;
+  line(c, 0, -7, -2, -12);
+  c.fillStyle = accent;
+  c.beginPath(); c.arc(-2, -12.5, 1.5, 0, TAU); c.fill();
+  // mono-eye with glow rings
+  c.fillStyle = 'rgba(255,60,60,0.25)';
+  c.beginPath(); c.arc(3, -1, 5.5, 0, TAU); c.fill();
+  c.fillStyle = '#ff4040';
+  c.beginPath(); c.arc(3, -1, 3, 0, TAU); c.fill();
+  c.fillStyle = '#ffd0d0';
+  c.beginPath(); c.arc(4, -2, 1, 0, TAU); c.fill();
+  c.restore();
+}
+
+function drawStalker(c, accent, t, phase) {
+  // scuttling legs (two pairs each side)
+  c.strokeStyle = MID_METAL; c.lineWidth = 2;
+  for (let i = 0; i < 4; i++) {
+    const side = i < 2 ? -1 : 1;
+    const sc = Math.sin(t * 14 + phase + i * 1.7) * 3;
+    const bx = side * 5, kx = side * 11, fx = side * (13 + sc * 0.5);
+    line(c, bx, 0, kx, -4);
+    line(c, kx, -4, fx, 7 + sc);
+  }
+  // low body
+  c.fillStyle = DARK_METAL;
+  c.beginPath(); c.ellipse(0, 0, 10, 6.5, 0, 0, TAU); c.fill();
+  c.fillStyle = accent;
+  c.beginPath(); c.ellipse(2, -2, 5, 3, 0, 0, TAU); c.fill();
+  // eyes
+  c.fillStyle = '#ff5050';
+  c.beginPath(); c.arc(7, -1, 1.6, 0, TAU); c.fill();
+  c.beginPath(); c.arc(4, 1.5, 1.2, 0, TAU); c.fill();
+}
+
+function drawMech(c, accent, s, t, phase, big) {
+  // s scales the whole mech; design is ~40px tall at s=1
+  c.save();
+  c.scale(s, s);
+  const stomp = Math.sin(t * 6 + phase) * 3;
+  // legs
+  c.strokeStyle = MID_METAL; c.lineWidth = 6; c.lineCap = 'round';
+  line(c, -6, 6, -7, 17 + stomp * 0.4);
+  line(c, 6, 6, 7, 17 - stomp * 0.4);
+  c.fillStyle = DARK_METAL;
+  rrect(c, -11, 15 + stomp * 0.4, 8, 5, 2); c.fill();
+  rrect(c, 3, 15 - stomp * 0.4, 8, 5, 2); c.fill();
+  // arms with fists
+  const swing = Math.sin(t * 6 + phase) * 2;
+  c.strokeStyle = DARK_METAL; c.lineWidth = 5;
+  line(c, -11, -6, -14, 5 + swing);
+  line(c, 11, -6, 14, 5 - swing);
+  c.fillStyle = MID_METAL;
+  c.beginPath(); c.arc(-14, 6 + swing, 3.5, 0, TAU); c.fill();
+  c.beginPath(); c.arc(14, 6 - swing, 3.5, 0, TAU); c.fill();
+  // torso
+  c.fillStyle = DARK_METAL;
+  rrect(c, -11, -12, 22, 20, 4); c.fill();
+  c.fillStyle = accent;
+  rrect(c, -7, -9, 14, 9, 2); c.fill();
+  // rivets
+  c.fillStyle = 'rgba(255,255,255,0.25)';
+  for (const [rx, ry] of [[-9, -10], [9, -10], [-9, 5], [9, 5]]) {
+    c.beginPath(); c.arc(rx, ry, 1, 0, TAU); c.fill();
+  }
+  if (big) {
+    // shoulder pads + chest core
+    c.fillStyle = MID_METAL;
+    rrect(c, -16, -14, 7, 8, 2); c.fill();
+    rrect(c, 9, -14, 7, 8, 2); c.fill();
+    c.fillStyle = 'rgba(255,220,80,0.9)';
+    c.beginPath(); c.arc(0, -4, 2.5 + Math.sin(t * 8) * 0.6, 0, TAU); c.fill();
+  }
+  // head dome + eyes
+  c.fillStyle = MID_METAL;
+  c.beginPath(); c.arc(0, -14, 6, Math.PI, TAU); c.fill();
+  c.fillStyle = '#ff5050';
+  c.beginPath(); c.arc(-2.5, -15, 1.5, 0, TAU); c.fill();
+  c.beginPath(); c.arc(2.5, -15, 1.5, 0, TAU); c.fill();
+  c.restore();
+}
+
+function drawSentinel(c, e, t) {
+  // giant humanoid mech, ~2.4x e.r tall, tinted by the boss accent color
+  const s = e.r / 30;
+  const accent = e.color;
+  c.save();
+  c.scale(s, s);
+  const stomp = Math.sin(t * 4) * 2.5;
+  c.lineCap = 'round';
+  // legs
+  c.strokeStyle = DARK_METAL; c.lineWidth = 10;
+  line(c, -9, 14, -11, 32 + stomp);
+  line(c, 9, 14, 11, 32 - stomp);
+  c.fillStyle = MID_METAL;
+  rrect(c, -17, 30 + stomp, 12, 7, 3); c.fill();
+  rrect(c, 5, 30 - stomp, 12, 7, 3); c.fill();
+  // arms
+  const swing = Math.sin(t * 4) * 3;
+  c.strokeStyle = MID_METAL; c.lineWidth = 8;
+  line(c, -17, -10, -21, 10 + swing);
+  line(c, 17, -10, 21, 10 - swing);
+  c.fillStyle = DARK_METAL;
+  c.beginPath(); c.arc(-21, 12 + swing, 5.5, 0, TAU); c.fill();
+  c.beginPath(); c.arc(21, 12 - swing, 5.5, 0, TAU); c.fill();
+  // torso (tapered)
+  c.fillStyle = DARK_METAL;
+  c.beginPath();
+  c.moveTo(-16, -18); c.lineTo(16, -18); c.lineTo(12, 16); c.lineTo(-12, 16);
+  c.closePath(); c.fill();
+  c.strokeStyle = accent; c.lineWidth = 2;
+  c.stroke();
+  // chest core (pulsing)
+  c.save();
+  c.shadowColor = accent; c.shadowBlur = 14;
+  c.fillStyle = accent;
+  c.beginPath(); c.arc(0, -4, 5 + Math.sin(t * 6) * 1.2, 0, TAU); c.fill();
+  c.restore();
+  c.fillStyle = 'rgba(255,255,255,0.85)';
+  c.beginPath(); c.arc(0, -4, 2, 0, TAU); c.fill();
+  // shoulder blocks
+  c.fillStyle = MID_METAL;
+  rrect(c, -24, -22, 11, 12, 3); c.fill();
+  rrect(c, 13, -22, 11, 12, 3); c.fill();
+  c.fillStyle = accent;
+  c.fillRect(-24, -22, 11, 3);
+  c.fillRect(13, -22, 11, 3);
+  // head with glowing visor slit + fins
+  c.fillStyle = DARK_METAL;
+  rrect(c, -8, -32, 16, 13, 4); c.fill();
+  c.fillStyle = accent;
+  c.beginPath(); c.moveTo(-8, -28); c.lineTo(-13, -34); c.lineTo(-8, -32); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(8, -28); c.lineTo(13, -34); c.lineTo(8, -32); c.closePath(); c.fill();
+  c.save();
+  c.shadowColor = '#ffee55'; c.shadowBlur = 10;
+  c.fillStyle = '#ffee55';
+  c.fillRect(-5.5, -27.5, 11, 3);
+  c.restore();
+  c.restore();
+}
+
+function drawEnemySprite(c, e, t) {
+  const kind = e.kind || 'drone';
+  if (kind === 'drone') drawDrone(c, e.color, t, e.phase || 0);
+  else if (kind === 'stalker') drawStalker(c, e.color, t, e.phase || 0);
+  else if (kind === 'brute') drawMech(c, e.color, e.r / 20, t, e.phase || 0, false);
+  else drawMech(c, e.color, e.r / 20, t, e.phase || 0, true); // hulker
+}
+
+// rendered portraits for the hero-select cards
+function makePortrait(heroId, color) {
+  const pc = document.createElement('canvas');
+  pc.width = pc.height = 150;
+  const g = pc.getContext('2d');
+  const grad = g.createRadialGradient(75, 62, 8, 75, 75, 78);
+  grad.addColorStop(0, color + '55');
+  grad.addColorStop(1, 'rgba(10,10,25,0)');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 150, 150);
+  g.strokeStyle = color + '88';
+  g.lineWidth = 3;
+  g.beginPath(); g.arc(75, 75, 66, 0, TAU); g.stroke();
+  g.translate(75, 80);
+  g.scale(3, 3);
+  drawCharacter(g, HERO_LOOKS[heroId], 0.35, true);
+  return pc.toDataURL();
+}
+
 // ---------- game constants ----------
 const WIN_TIME = 15 * 60;           // survive this long to win
 const MAX_WEAPONS = 4, MAX_PASSIVES = 4, MAX_LEVEL = 5;
@@ -60,6 +416,7 @@ const player = {
   x: 0, y: 0, r: 14, speed: 150, hp: 100, maxHp: 100,
   regen: 0, armor: 0, magnetR: 70, dmgMult: 1, cdMult: 1,
   facing: { x: 1, y: 0 }, hurtCd: 0, color: '#ffd23e', name: '',
+  heroId: 'visor', face: 1, moving: false,
   weapons: [], passives: {},
 };
 
@@ -247,14 +604,14 @@ function hpScale() { return 1 + (state.time / 60) * 0.35; }
 function spawnEnemy() {
   if (enemies.length > 380) return;
   const available = Object.entries(ENEMY_TYPES).filter(([, t]) => state.time >= t.from);
-  const [, t] = pick(available);
+  const [kind, t] = pick(available);
   const a = rand(0, TAU);
   const d = Math.max(canvas.width, canvas.height) / 2 + 80;
   enemies.push({
     x: player.x + Math.cos(a) * d, y: player.y + Math.sin(a) * d,
     hp: t.hp * hpScale(), maxHp: t.hp * hpScale(),
     speed: t.speed * rand(0.9, 1.1), dmg: t.dmg, r: t.r, xp: t.xp,
-    color: t.color, boss: false, flash: 0,
+    color: t.color, boss: false, flash: 0, kind, phase: rand(0, TAU),
   });
 }
 
@@ -265,6 +622,7 @@ function spawnBoss(def) {
     x: player.x + Math.cos(a) * d, y: player.y + Math.sin(a) * d,
     hp: def.hp, maxHp: def.hp, speed: def.speed, dmg: def.dmg, r: def.r,
     xp: def.xp, color: def.color, boss: true, name: def.name, flash: 0,
+    phase: rand(0, TAU),
   });
   texts.push({ x: player.x, y: player.y - 120, str: `⚠ ${def.name} INBOUND ⚠`,
     color: '#ff4040', life: 2.5, vy: -10, big: true });
@@ -491,6 +849,8 @@ function update(dt) {
   player.x += mx * player.speed * dt;
   player.y += my * player.speed * dt;
   if (mx || my) { player.facing.x = mx; player.facing.y = my; }
+  player.moving = !!(mx || my);
+  if (mx) player.face = mx > 0 ? 1 : -1;
   player.hurtCd = Math.max(0, player.hurtCd - dt);
   player.hp = Math.min(player.maxHp, player.hp + player.regen * dt);
 
@@ -653,26 +1013,23 @@ function render() {
     ctx.fillRect(p.x - 2.5, p.y - 7, 5, 14);
   }
 
-  // enemies
+  // enemies (vector-drawn robot sprites, facing the player)
   for (const e of enemies) {
-    ctx.fillStyle = e.flash > 0 ? '#ffffff' : e.color;
-    ctx.beginPath();
+    const groundY = e.boss ? e.y + e.r * 1.25 : e.y + (e.kind === 'drone' ? e.r + 6 : e.r * 0.85);
+    drawShadow(ctx, e.x, groundY, e.boss ? e.r * 0.9 : e.r * 0.8);
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    if (player.x < e.x) ctx.scale(-1, 1);
+    if (e.flash > 0) ctx.filter = 'brightness(2.4) saturate(0.4)';
+    if (e.boss) drawSentinel(ctx, e, state.time);
+    else drawEnemySprite(ctx, e, state.time);
+    ctx.restore();
     if (e.boss) {
-      // sentinels are big angular diamonds
-      ctx.moveTo(e.x, e.y - e.r); ctx.lineTo(e.x + e.r, e.y); ctx.lineTo(e.x, e.y + e.r); ctx.lineTo(e.x - e.r, e.y);
-      ctx.closePath(); ctx.fill();
-      ctx.fillStyle = '#ffee55';
-      ctx.beginPath(); ctx.arc(e.x, e.y - e.r * 0.3, e.r * 0.18, 0, TAU); ctx.fill();
-      // boss hp bar
+      const barY = e.y - e.r * 1.25 - 12;
       ctx.fillStyle = 'rgba(0,0,0,0.5)';
-      ctx.fillRect(e.x - e.r, e.y - e.r - 12, e.r * 2, 6);
+      ctx.fillRect(e.x - e.r, barY, e.r * 2, 6);
       ctx.fillStyle = '#ff4040';
-      ctx.fillRect(e.x - e.r, e.y - e.r - 12, e.r * 2 * (e.hp / e.maxHp), 6);
-    } else {
-      ctx.arc(e.x, e.y, e.r, 0, TAU); ctx.fill();
-      ctx.fillStyle = 'rgba(0,0,0,0.35)';
-      ctx.beginPath(); ctx.arc(e.x - e.r * 0.3, e.y - e.r * 0.25, e.r * 0.18, 0, TAU); ctx.fill();
-      ctx.beginPath(); ctx.arc(e.x + e.r * 0.3, e.y - e.r * 0.25, e.r * 0.18, 0, TAU); ctx.fill();
+      ctx.fillRect(e.x - e.r, barY, e.r * 2 * (e.hp / e.maxHp), 6);
     }
   }
 
@@ -743,19 +1100,15 @@ function render() {
     }
   }
 
-  // player
+  // player (vector-drawn hero with walk cycle)
   const blink = player.hurtCd > 0 && Math.floor(state.time * 20) % 2 === 0;
   if (!blink) {
-    ctx.fillStyle = player.color;
-    ctx.beginPath(); ctx.arc(player.x, player.y, player.r, 0, TAU); ctx.fill();
-    // cape hint
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.beginPath();
-    ctx.arc(player.x - player.facing.x * 6, player.y - player.facing.y * 6, player.r * 0.75, 0, TAU);
-    ctx.fill();
-    // visor stripe
-    ctx.fillStyle = '#101020';
-    ctx.fillRect(player.x - player.r + 2, player.y - 4, player.r * 2 - 4, 5);
+    drawShadow(ctx, player.x, player.y + 21, 12);
+    ctx.save();
+    ctx.translate(player.x, player.y);
+    ctx.scale(player.face, 1);
+    drawCharacter(ctx, HERO_LOOKS[player.heroId], state.time, player.moving);
+    ctx.restore();
   }
 
   // floating texts
@@ -825,8 +1178,10 @@ function buildHeroSelect() {
   for (const hDef of HEROES) {
     const card = document.createElement('div');
     card.className = 'card';
-    card.innerHTML = `<div class="icon">${hDef.icon}</div><div class="tag">${hDef.tag}</div>
-      <h3>${hDef.name}</h3><p>${hDef.desc}</p>`;
+    card.innerHTML = `<img src="${makePortrait(hDef.id, hDef.color)}" alt="${hDef.name}"
+        style="width:96px;height:96px;display:block;margin:0 auto 4px">
+      <div class="tag" style="text-align:center">${hDef.tag}</div>
+      <h3 style="text-align:center">${hDef.name}</h3><p>${hDef.desc}</p>`;
     card.onclick = () => startGame(hDef);
     holder.appendChild(card);
   }
@@ -835,6 +1190,7 @@ function buildHeroSelect() {
 function startGame(hDef) {
   player.name = hDef.name;
   player.color = hDef.color;
+  player.heroId = hDef.id;
   addWeapon(hDef.weapon);
   hDef.mods();
   document.getElementById('start-screen').classList.add('hidden');
