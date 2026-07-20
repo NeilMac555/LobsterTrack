@@ -47,8 +47,20 @@ function groupMatchesByDay(matches: MatchSummary[], timeMode: TimeMode): Grouped
 }
 
 export default function HomePage() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const league = searchParams.get('league');
+
+  // A league that's since been marked `hidden` in LEAGUE_CONFIG (season
+  // or tournament ended, e.g. World Cup) has no upcoming matches — an
+  // old bookmark or shared link pointing at it would otherwise dead-end
+  // on a permanent "No upcoming matches found" page. Bounce back to the
+  // unfiltered homepage instead.
+  useEffect(() => {
+    if (league && LEAGUE_CONFIG[league]?.hidden) {
+      setSearchParams({}, { replace: true });
+    }
+  }, [league, setSearchParams]);
+
   const { user, isSubscribed, subscribe } = useAuth();
   const { mode: timeMode } = useTimePreference();
   const [showLoginFromCTA, setShowLoginFromCTA] = useState(false);

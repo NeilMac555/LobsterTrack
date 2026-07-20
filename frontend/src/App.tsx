@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from './contexts/AuthContext';
 import { TimePreferenceProvider } from './contexts/TimePreferenceContext';
@@ -39,6 +39,10 @@ function App() {
               <Route path="tools/hedge-calculator" element={<HedgeCalculatorPage />} />
               <Route path="tools/match-predictor" element={<MatchPredictorPage />} />
               <Route path="tools/rolling-xg" element={<RollingXGPage />} />
+              {/* The WC hub was removed once the tournament ended — old
+                  bookmarks/shared links should land on the homepage
+                  instead of a blank page. */}
+              <Route path="tools/world-cup" element={<Navigate to="/" replace />} />
               <Route path="auth/verify" element={<AuthVerifyPage />} />
               <Route path="admin/emails" element={<AdminEmailsPage />} />
               <Route path="about" element={<AboutPage />} />

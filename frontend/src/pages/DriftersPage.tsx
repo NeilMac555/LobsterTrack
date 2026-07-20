@@ -46,6 +46,15 @@ export default function DriftersPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const league = searchParams.get('league');
 
+  // A league that's since been marked `hidden` in LEAGUE_CONFIG (season
+  // or tournament ended) has no fresh drift data — an old bookmark or
+  // shared link would otherwise dead-end. Bounce back to unfiltered.
+  useEffect(() => {
+    if (league && LEAGUE_CONFIG[league]?.hidden) {
+      setSearchParams({}, { replace: true });
+    }
+  }, [league, setSearchParams]);
+
   const [data, setData] = useState<SteamResultsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
