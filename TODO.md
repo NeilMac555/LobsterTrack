@@ -23,6 +23,22 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Betfair Exchange fallback for 1x2 odds when Pinnacle is absent: UCLQ
+  matches showed zero odds all the way to kickoff — confirmed The Odds
+  API's feed never carries Pinnacle for this competition at all (0/14
+  events, even minutes before KO) despite Pinnacle pricing them live
+  on its own site (13-14 other bookmakers, incl. betfair_ex_eu, WERE
+  present — a provider gap, not "not posted yet"). odds_fetcher now
+  requests both bookmakers in one call (confirmed free — quota is
+  regions×markets, not bookmaker count) and stores whichever is
+  present, Pinnacle preferred. Late-steam detection, syndicate_alerter
+  1X2 checks, and closing_line_capturer are all guarded to Pinnacle-
+  only rows so the Betfair fallback can't corrupt the calibrated
+  thresholds or mislabel a closing line. current_odds_bookmaker
+  exposed via API, shown as a "Betfair Exchange" badge on match
+  card/detail; Bet105's "same odds as Pinnacle" claim gated off for
+  those matches. Verified live: all 14 UCLQ matches now carry real
+  Betfair-sourced odds and history — `dcd78cf`
 - Hid In-Play Jumps from nav (desktop + mobile) instead of generalizing
   it — was WC-only from inception (hardcoded league filter, no
   fallback for other leagues). Route/page untouched, still loads
