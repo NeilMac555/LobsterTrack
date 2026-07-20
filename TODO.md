@@ -23,6 +23,16 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- World Cup data purge: tournament's over, wiped every soccer_fifa_world_cup
+  row from prod so Steam Results / Drifters "All leagues" win-rate, P/L
+  and rankings aren't diluted by finished-tournament history. Deleted
+  105 matches (cascaded to 760 steam_moves, 312 closing_lines, 238K
+  odds_snapshots, 245K totals_snapshots, 245K spreads_snapshots) plus
+  266K polymarket_snapshots, 116 posted_tweets, 42 syndicate_alerts
+  (no DB cascade on those three — deleted explicitly first). User
+  confirmed destructive delete (no backup) after being shown exact
+  row counts. Verified live: /steam-results and /drifter-results no
+  longer return any soccer_fifa_world_cup rows.
 - Betfair Exchange fallback for 1x2 odds when Pinnacle is absent: UCLQ
   matches showed zero odds all the way to kickoff — confirmed The Odds
   API's feed never carries Pinnacle for this competition at all (0/14
