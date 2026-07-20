@@ -60,7 +60,9 @@ function loadAssets() {
     const img = new Image();
     img.onload = () => { assets[name] = img; res(); };
     img.onerror = () => rej(new Error('failed to load assets/' + name + '.png'));
-    img.src = 'assets/' + name + '.png';
+    // EMBEDDED_ASSETS lets a single-file bundle (e.g. the published demo) inline
+    // the sheets as data URIs instead of fetching from assets/
+    img.src = (typeof EMBEDDED_ASSETS !== 'undefined' && EMBEDDED_ASSETS[name]) || ('assets/' + name + '.png');
   })));
 }
 
