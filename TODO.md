@@ -10,6 +10,14 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 ## Next
 
+- In-Play Jumps page is still WC-only (hardcoded `league:
+  'soccer_fifa_world_cup'` fetch + static "World Cup" label,
+  InPlayJumpsPage.tsx) — was built WC-only from inception, no fallback
+  data path for other leagues. Left untouched during the WC revert
+  since generalizing it is a real feature-scope decision, not a
+  one-line change. Decide: generalize to all leagues, or leave as a
+  WC '26-only historical/beta page.
+
 ## Later
 
 - Re-fit rho/drawInflation in xG mode once 2026/27 accumulates enough
@@ -23,6 +31,13 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- World Cup over: reverted every WC-tournament-window default back to
+  normal (DEFAULT_LEAGUE redirect hack removed from Home/SteamResults/
+  Drifters, CL/UEL/UECL unhidden + WC hidden in LEAGUE_CONFIG, featured
+  gold WC pill removed from nav, LiveTicker generalized back to all
+  leagues). Deleted WorldCupHubPage + components/wc/. Verified live in
+  prod — clean "/" with no redirect, Top 5 + UCL/UCLQ/UEL/UECL in the
+  picker, no "World Cup" text anywhere, zero console errors — `0da9253`
 - Local/UTC kickoff-time toggle: fixed a real bug along the way — every
   page parsed the backend's marker-less UTC timestamp strings as browser
   LOCAL time (wrong by the viewer's UTC offset for anyone outside the
