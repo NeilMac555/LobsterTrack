@@ -36,6 +36,12 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy: Survivors — standalone Vampire Survivors-style browser
+  game in game/ (superhero/mutant themed, original characters). Zero
+  dependencies, open game/index.html to play. 4 heroes, 6 upgradable
+  powers, 7 passives, 3 Sentinel bosses, 15-min survival win condition,
+  keyboard + touch controls. Smoke-tested in headless Chromium (combat,
+  level-ups, bosses, pause, game over — zero console errors) — `587e264`
 - Betfair fallback bug: two Bundesliga matches (Freiburg v Werder
   Bremen, Augsburg v Schalke) showed Betfair Exchange odds with a
   nonsensical draw price (1.02 / 1.09) instead of Pinnacle. Root
