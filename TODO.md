@@ -36,6 +36,12 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy sprites: replaced the placeholder circles/emoji with
+  fully drawn animated vector characters — costumed heroes with walk
+  cycles, capes, cowls and claws; robot enemy designs (drones, spider
+  stalkers, mechs); giant Sentinel bosses with glowing cores; rendered
+  portraits on the hero-select screen. Still zero image assets.
+  Smoke-tested in headless Chromium, zero console errors — `0fad5b8`
 - Mutant Academy: Survivors — standalone Vampire Survivors-style browser
   game in game/ (superhero/mutant themed, original characters). Zero
   dependencies, open game/index.html to play. 4 heroes, 6 upgradable
