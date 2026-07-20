@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Mutant Academy: Survivors</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a14; font-family: 'Segoe UI', system-ui, sans-serif; }
+  #game { display: block; width: 100%; height: 100%; touch-action: none; }
+  .overlay {
+    position: fixed; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 18px;
+    background: rgba(6, 6, 18, 0.88); color: #eee; z-index: 10; text-align: center;
+    padding: 20px;
+  }
+  .hidden { display: none; }
+  h1 { font-size: clamp(28px, 6vw, 52px); letter-spacing: 2px; color: #ffd23e;
+       text-shadow: 0 0 24px rgba(255, 210, 62, 0.5); }
+  h2 { font-size: clamp(20px, 4vw, 32px); color: #7fd4ff; }
+  .subtitle { color: #aab; max-width: 560px; line-height: 1.5; }
+  .cards { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; max-width: 900px; }
+  .card {
+    background: linear-gradient(160deg, #1a1a30, #10101f);
+    border: 2px solid #333355; border-radius: 12px; padding: 16px 18px;
+    width: 200px; cursor: pointer; transition: transform .12s, border-color .12s;
+    text-align: left;
+  }
+  .card:hover { transform: translateY(-4px); border-color: #ffd23e; }
+  .card .icon { font-size: 34px; }
+  .card h3 { color: #ffd23e; margin: 6px 0 4px; font-size: 17px; }
+  .card .tag { font-size: 11px; color: #7fd4ff; text-transform: uppercase; letter-spacing: 1px; }
+  .card p { font-size: 12.5px; color: #99a; line-height: 1.45; margin-top: 6px; }
+  .stat-line { font-size: 15px; color: #ccd; }
+  .hint { font-size: 13px; color: #667; }
+  button.big {
+    background: #ffd23e; color: #201800; border: 0; border-radius: 8px;
+    font-size: 18px; font-weight: 700; padding: 12px 34px; cursor: pointer;
+  }
+  button.big:hover { filter: brightness(1.1); }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="start-screen" class="overlay">
+  <h1>MUTANT ACADEMY: SURVIVORS</h1>
+  <p class="subtitle">The Sentinel drones have found the Academy. Hold the grounds for
+  <b>15 minutes</b> until the evac jet arrives. Your powers fire automatically &mdash;
+  you just have to <b>move</b>, dodge, and grab the glowing gene-shards to evolve.</p>
+  <h2>Choose your hero</h2>
+  <div class="cards" id="hero-cards"></div>
+  <p class="hint">Move: WASD / arrow keys &middot; touch-drag on mobile &middot; P or Esc to pause</p>
+</div>
+
+<div id="levelup-screen" class="overlay hidden">
+  <h2>MUTATION SURGE &mdash; pick a power</h2>
+  <div class="cards" id="levelup-cards"></div>
+</div>
+
+<div id="pause-screen" class="overlay hidden">
+  <h2>PAUSED</h2>
+  <div class="cards" id="pause-loadout"></div>
+  <button class="big" onclick="togglePause()">Resume</button>
+</div>
+
+<div id="end-screen" class="overlay hidden">
+  <h1 id="end-title"></h1>
+  <p class="subtitle" id="end-stats"></p>
+  <button class="big" onclick="location.reload()">Play again</button>
+</div>
+
+<script src="game.js"></script>
+</body>
+</html>
