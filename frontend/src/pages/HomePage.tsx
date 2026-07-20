@@ -46,39 +46,9 @@ function groupMatchesByDay(matches: MatchSummary[], timeMode: TimeMode): Grouped
     }));
 }
 
-// Default landing league during the WC '26 tournament window. Hitting
-// '/' with no ?league= param lands the user on WC matches directly so
-// the most-active competition is front-and-centre. Users can opt out
-// to see every league by clicking the 'All' pill — which links to
-// '/?league=all' — and we treat that magic value as a no-filter.
-const DEFAULT_LEAGUE = 'soccer_fifa_world_cup';
-const ALL_LEAGUES_SENTINEL = 'all';
-
 export default function HomePage() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const leagueParam = searchParams.get('league');
-
-  // Land on the WC by default: if the URL carries no ?league= we
-  // rewrite it to ?league=soccer_fifa_world_cup so the league-pill
-  // highlight in the nav, the page filter, and the user-shareable
-  // URL all agree on what they're looking at.
-  useEffect(() => {
-    if (leagueParam === null) {
-      const next = new URLSearchParams(searchParams);
-      next.set('league', DEFAULT_LEAGUE);
-      setSearchParams(next, { replace: true });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [leagueParam]);
-
-  // Resolve the effective filter:
-  //   no param         → DEFAULT_LEAGUE (WC)  — about to be persisted to URL
-  //   ?league=all      → null (show every league)
-  //   ?league=<key>    → that league
-  const league =
-    leagueParam === ALL_LEAGUES_SENTINEL
-      ? null
-      : (leagueParam ?? DEFAULT_LEAGUE);
+  const [searchParams] = useSearchParams();
+  const league = searchParams.get('league');
   const { user, isSubscribed, subscribe } = useAuth();
   const { mode: timeMode } = useTimePreference();
   const [showLoginFromCTA, setShowLoginFromCTA] = useState(false);

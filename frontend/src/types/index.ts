@@ -367,27 +367,27 @@ export interface TeamPLResponse {
   opponents_filter: string | null;  // 'top' or null
 }
 
-// First entry sorts first across every league picker on the site. World
-// Cup is intentionally on top during the May-July 2026 tournament window
-// because the European leagues are winding down / finished.
+// First entry sorts first across every league picker on the site.
 //
 // `hidden: true` removes a league from active filter UIs (nav pills,
 // Closing Lines / Drifters / Steam Results / Rolling xG selectors) but
 // KEEPS it in the lookup table so any historical data that references
 // the league key still renders correctly (logo, name, color). Used to
-// take a league off-air once its season ends. Team P/L deliberately
-// ignores this flag since it's the retrospective view.
+// take a league off-air once its season/tournament ends. Team P/L
+// deliberately ignores this flag since it's the retrospective view.
 export const LEAGUE_CONFIG: Record<string, { name: string; shortName: string; color: string; hidden?: boolean }> = {
-  soccer_fifa_world_cup: { name: 'FIFA World Cup', shortName: 'WC', color: '#D4AF37' },
   soccer_epl: { name: 'Premier League', shortName: 'EPL', color: '#3D195B' },
   soccer_spain_la_liga: { name: 'La Liga', shortName: 'LAL', color: '#EE8707' },
   soccer_germany_bundesliga: { name: 'Bundesliga', shortName: 'BUN', color: '#D20515' },
   soccer_france_ligue_one: { name: 'Ligue 1', shortName: 'L1', color: '#091C3E' },
   soccer_italy_serie_a: { name: 'Serie A', shortName: 'SEA', color: '#024494' },
-  soccer_uefa_champs_league: { name: 'Champions League', shortName: 'UCL', color: '#071D49', hidden: true },
+  soccer_uefa_champs_league: { name: 'Champions League', shortName: 'UCL', color: '#071D49' },
   soccer_uefa_champs_league_qualification: { name: 'Champions League Qualifying', shortName: 'UCLQ', color: '#071D49' },
-  soccer_uefa_europa_league: { name: 'Europa League', shortName: 'UEL', color: '#F47B20', hidden: true },
-  soccer_uefa_europa_conference_league: { name: 'Conference League', shortName: 'UECL', color: '#0AC44B', hidden: true },
+  soccer_uefa_europa_league: { name: 'Europa League', shortName: 'UEL', color: '#F47B20' },
+  soccer_uefa_europa_conference_league: { name: 'Conference League', shortName: 'UECL', color: '#0AC44B' },
+  // World Cup '26 has finished — hidden from the picker, kept in the
+  // lookup so historical WC matches/pages still render correctly.
+  soccer_fifa_world_cup: { name: 'FIFA World Cup', shortName: 'WC', color: '#D4AF37', hidden: true },
 };
 
 // Filtered helper for filter / picker UIs that should only show active

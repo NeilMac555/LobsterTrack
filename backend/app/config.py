@@ -37,13 +37,11 @@ class Settings(BaseSettings):
     resend_api_key: str = ""
     email_from: str = "SteamWatch <noreply@steamwatch.io>"
 
-    # League mappings for The Odds API
-    # Format: sport_key for the API
-    # Order matters — first entry = displayed first in the UI. World Cup
-    # is intentionally first during the tournament window (May-July 2026)
-    # because the European leagues are wound down.
+    # League mappings for The Odds API. Format: sport_key for the API.
+    # Order here does NOT drive frontend display order (that's entirely
+    # controlled by LEAGUE_CONFIG's key order in frontend/src/types/index.ts) —
+    # this dict only affects backend fetch/scheduling iteration order.
     leagues: dict = {
-        "soccer_fifa_world_cup": "FIFA World Cup",
         "soccer_epl": "English Premier League",
         "soccer_spain_la_liga": "La Liga",
         "soccer_germany_bundesliga": "Bundesliga",
@@ -53,6 +51,7 @@ class Settings(BaseSettings):
         "soccer_uefa_champs_league_qualification": "Champions League Qualifying",
         "soccer_uefa_europa_league": "Europa League",
         "soccer_uefa_europa_conference_league": "Conference League",
+        "soccer_fifa_world_cup": "FIFA World Cup",
     }
 
     class Config:
