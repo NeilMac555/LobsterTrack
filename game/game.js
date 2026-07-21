@@ -144,10 +144,13 @@ const SHEETS = {
   rogue:    { file: 'rogue',    size: 32, rows: STD },
   cleric:   { file: 'cleric',   size: 32, rows: STD },
   slime:    { file: 'slime',    size: 32, rows: { idle: 0, walk: 1, attack: 3, death: 4 } },
+  slimeB:   { file: 'slime',    size: 32, rows: { idle: 5, walk: 6, attack: 8, death: 9 } },
   slimeR:   { file: 'slime',    size: 32, rows: { idle: 10, walk: 11, attack: 13, death: 14 } },
+  slimeY:   { file: 'slime',    size: 32, rows: { idle: 15, walk: 16, attack: 18, death: 19 } },
   goblin:   { file: 'goblin',   size: 32, rows: STD },
   goblinB:  { file: 'goblin',   size: 32, rows: { idle: 5, walk: 7, attack: 8, death: 9 } },
   skeleton: { file: 'skeleton', size: 32, rows: STD },
+  orcA:     { file: 'orc',      size: 32, rows: STD },
   orc:      { file: 'orc',      size: 32, rows: { idle: 5, walk: 7, attack: 8, death: 9 } },
   minotaur: { file: 'minotaur', size: 48, rows: { idle: 0, walk: 1, attack: 3, death: 4 } },
 };
@@ -307,22 +310,23 @@ const state = {
 
 // VS-style wave table: one entry per minute. `min` is the enemy-count quota —
 // below it the spawner force-fills, so the screen is never quiet.
+// Each minute headlines a NEW, visually distinct enemy (first type = most common).
 const WAVES = [
-  { types: ['slime'],                       min: 14,  interval: 0.9 },
-  { types: ['slime', 'goblin'],             min: 24,  interval: 0.8 },
-  { types: ['goblin', 'slime'],             min: 34,  interval: 0.7 },
-  { types: ['goblin', 'skeleton'],          min: 45,  interval: 0.6 },
-  { types: ['skeleton', 'goblin', 'slime'], min: 56,  interval: 0.55 },
-  { types: ['skeleton', 'redslime'],        min: 68,  interval: 0.5 },
-  { types: ['redslime', 'skeleton', 'goblin'], min: 80, interval: 0.45 },
-  { types: ['redslime', 'orc'],             min: 92,  interval: 0.42 },
-  { types: ['orc', 'redslime', 'skeleton'], min: 105, interval: 0.4 },
-  { types: ['orc', 'raider'],               min: 120, interval: 0.36 },
-  { types: ['raider', 'orc', 'redslime'],   min: 135, interval: 0.33 },
-  { types: ['raider', 'orc'],               min: 150, interval: 0.3 },
-  { types: ['raider', 'orc', 'redslime'],   min: 165, interval: 0.28 },
-  { types: ['raider', 'orc'],               min: 185, interval: 0.26 },
-  { types: ['raider', 'orc', 'redslime'],   min: 205, interval: 0.25 },
+  { types: ['slime'],                          min: 14,  interval: 0.9 },
+  { types: ['skeleton', 'slime'],              min: 24,  interval: 0.8 },
+  { types: ['goblin', 'skeleton'],             min: 34,  interval: 0.7 },
+  { types: ['blueslime', 'goblin', 'skeleton'], min: 45, interval: 0.6 },
+  { types: ['brute', 'blueslime', 'skeleton'], min: 56,  interval: 0.55 },
+  { types: ['brute', 'goblin', 'blueslime'],   min: 68,  interval: 0.5 },
+  { types: ['redslime', 'brute', 'skeleton'],  min: 80,  interval: 0.45 },
+  { types: ['raider', 'redslime', 'blueslime'], min: 92, interval: 0.42 },
+  { types: ['raider', 'brute', 'redslime'],    min: 105, interval: 0.4 },
+  { types: ['orc', 'raider', 'redslime'],      min: 120, interval: 0.36 },
+  { types: ['orc', 'raider', 'blueslime'],     min: 135, interval: 0.33 },
+  { types: ['voltslime', 'orc', 'raider'],     min: 150, interval: 0.3 },
+  { types: ['voltslime', 'orc', 'redslime'],   min: 165, interval: 0.28 },
+  { types: ['orc', 'voltslime', 'raider'],     min: 185, interval: 0.26 },
+  { types: ['voltslime', 'orc', 'redslime'],   min: 205, interval: 0.25 },
 ];
 function currentWave() { return WAVES[Math.min(WAVES.length - 1, Math.floor(state.time / 60))]; }
 
@@ -512,14 +516,19 @@ function nearestEnemies(n) {
 }
 
 // ---------- enemies ----------
-// move: hop = pulsing lunges, zigzag = weaving approach, charge = windup then rush
+// Nine visually distinct threats — one new face (and colour) per wave.
+// move: hop = pulsing lunges, zigzag = weaving, charge = windup then rush,
+//       orbit = circles you at mid range, then bleeds inward
 const ENEMY_TYPES = {
-  slime:    { sprite: 'slime',    hp: 8,   speed: 60,  dmg: 8,  r: 10, xp: 1, move: 'hop' },
-  goblin:   { sprite: 'goblin',   hp: 16,  speed: 88,  dmg: 10, r: 10, xp: 2, move: 'straight' },
-  skeleton: { sprite: 'skeleton', hp: 32,  speed: 66,  dmg: 14, r: 11, xp: 3, move: 'zigzag' },
-  redslime: { sprite: 'slimeR',   hp: 60,  speed: 62,  dmg: 16, r: 11, xp: 4, move: 'hop' },
-  orc:      { sprite: 'orc',      hp: 140, speed: 50,  dmg: 22, r: 13, xp: 6, move: 'charge' },
-  raider:   { sprite: 'goblinB',  hp: 65,  speed: 104, dmg: 16, r: 10, xp: 5, move: 'straight' },
+  slime:    { sprite: 'slime',    name: 'TRAINING OOZE', hp: 8,   speed: 60,  dmg: 8,  r: 10, xp: 1, move: 'hop' },
+  skeleton: { sprite: 'skeleton', name: 'BONE WALKER',   hp: 26,  speed: 68,  dmg: 12, r: 11, xp: 2, move: 'zigzag' },
+  goblin:   { sprite: 'goblin',   name: 'GREMLIN',       hp: 18,  speed: 92,  dmg: 10, r: 10, xp: 2, move: 'straight' },
+  blueslime:{ sprite: 'slimeB',   name: 'FROST OOZE',    hp: 45,  speed: 66,  dmg: 14, r: 11, xp: 3, move: 'hop' },
+  brute:    { sprite: 'orcA',     name: 'PIT BRUTE',     hp: 110, speed: 52,  dmg: 20, r: 13, xp: 5, move: 'charge' },
+  redslime: { sprite: 'slimeR',   name: 'MAGMA OOZE',    hp: 75,  speed: 62,  dmg: 18, r: 11, xp: 4, move: 'hop' },
+  raider:   { sprite: 'goblinB',  name: 'NIGHT RAIDER',  hp: 70,  speed: 108, dmg: 16, r: 10, xp: 5, move: 'orbit' },
+  orc:      { sprite: 'orc',      name: 'WAR CHIEF',     hp: 180, speed: 50,  dmg: 26, r: 13, xp: 7, move: 'charge' },
+  voltslime:{ sprite: 'slimeY',   name: 'VOLT OOZE',     hp: 60,  speed: 95,  dmg: 18, r: 11, xp: 6, move: 'hop' },
 };
 const BOSSES = [
   { at: 300, name: 'MINOTAUR PROTOCOL MK-I', hp: 900, speed: 50, dmg: 25, r: 26,
@@ -550,11 +559,27 @@ function makeEnemy(kind, x, y, opts = {}) {
     sprite: t.sprite, scale: (opts.scale ?? SCALE), tint: opts.tint ?? null,
     move: t.move, boss: false, elite: !!opts.elite, sweep: opts.sweep ?? null,
     flash: 0, animT: rand(0, 10), chargeT: rand(0, 4),
+    orbitSign: Math.random() < 0.5 ? 1 : -1,
   };
+}
+
+const seenTypes = new Set();
+function announceType(kind) {
+  if (seenTypes.has(kind)) return;
+  seenTypes.add(kind);
+  if (kind === 'slime') return; // opening fodder needs no fanfare
+  texts.push({ x: player.x, y: player.y - 130, str: `NEW THREAT: ${ENEMY_TYPES[kind].name}`,
+    color: '#ff9a5a', life: 2.2, vy: -8, big: true });
+  sfx(160, 0.35, 'sawtooth', 0.07, 60);
+}
+
+function pickWeighted(types) {
+  return Math.random() < 0.55 ? types[0] : pick(types);
 }
 
 function spawnEnemy(kind) {
   if (enemies.length > 500) return;
+  announceType(kind);
   const a = rand(0, TAU), d = spawnRadius();
   enemies.push(makeEnemy(kind, player.x + Math.cos(a) * d, player.y + Math.sin(a) * d));
 }
@@ -567,7 +592,8 @@ function spawnElite() {
     { hpMul: 12, xpMul: 6, scale: SCALE * 1.5, spdMul: 0.85, elite: true,
       tint: 'saturate(2.2) brightness(1.15)' });
   enemies.push(e);
-  texts.push({ x: player.x, y: player.y - 100, str: 'ELITE CONSTRUCT DETECTED', color: '#ffb040', life: 1.8, vy: -12 });
+  texts.push({ x: player.x, y: player.y - 100, str: `⚠ ELITE ${ENEMY_TYPES[kind].name} ⚠`,
+    color: '#ffb040', life: 2, vy: -12, big: true });
 }
 
 // ring event: a circle of weak fodder closes in — carve your way out
@@ -593,7 +619,7 @@ function spawnSweep() {
   const px = -dirY, py = dirX; // perpendicular
   const spd = 170;
   for (let i = -14; i <= 14; i++) {
-    const e = makeEnemy('goblin', cx + px * i * 34 + rand(-10, 10), cy + py * i * 34 + rand(-10, 10),
+    const e = makeEnemy('skeleton', cx + px * i * 34 + rand(-10, 10), cy + py * i * 34 + rand(-10, 10),
       { hpMul: 0.06, xpMul: 1, spdMul: 1 });
     e.sweep = { vx: dirX * spd, vy: dirY * spd, life: 14 };
     enemies.push(e);
@@ -922,7 +948,7 @@ function update(dt) {
     const alive = enemies.length;
     if (alive < wave.min) {
       const deficit = Math.min(10, wave.min - alive);
-      for (let i = 0; i < deficit; i++) spawnEnemy(pick(wave.types));
+      for (let i = 0; i < deficit; i++) spawnEnemy(pickWeighted(wave.types));
     } else {
       for (const kind of wave.types) spawnEnemy(kind);
     }
@@ -1047,6 +1073,13 @@ function update(dt) {
         if (e.chargeT < 2.2) spd *= 0.55;        // prowl
         else if (e.chargeT < 2.8) spd = 0;       // windup — telegraphed
         else spd *= 2.6;                          // RUSH
+      } else if (e.move === 'orbit' && d < 240) {
+        // circle at mid range, bleeding inward — flanks instead of beelines
+        const tx = -py * e.orbitSign, ty = px * e.orbitSign;
+        const inward = d > 90 ? 0.35 : 0.9;
+        const nx = tx * (1 - inward) + px * inward, ny = ty * (1 - inward) + py * inward;
+        const nl = Math.hypot(nx, ny) || 1;
+        px = nx / nl; py = ny / nl;
       }
       e.x += px * spd * dt;
       e.y += py * spd * dt;
