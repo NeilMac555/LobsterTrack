@@ -164,9 +164,15 @@ export default function BetCalculatorPage() {
   };
 
   const inputClass =
-    'w-full bg-slate-900/50 border border-slate-600 rounded-lg px-2.5 py-2 text-white font-mono text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors';
+    'w-full bg-slate-900/60 border border-slate-600 rounded-lg px-2.5 py-1.5 text-white font-mono text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors';
   const selectClass =
-    'w-full bg-slate-900/50 border border-slate-600 rounded-lg px-2.5 py-2 text-white text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors';
+    'w-full bg-slate-900/60 border border-slate-600 rounded-lg px-2.5 py-1.5 text-white text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors';
+
+  const OUTCOME_ACCENT: Record<Outcome, string> = {
+    won: 'border-l-2 border-l-emerald-500/60',
+    lost: 'border-l-2 border-l-red-500/60',
+    void: 'border-l-2 border-l-amber-500/60',
+  };
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -190,25 +196,31 @@ export default function BetCalculatorPage() {
       </Helmet>
 
       {/* Page Header */}
-      <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Bet Calculator</h1>
-        <p className="text-slate-400 text-sm sm:text-base">
-          Work out returns for singles, doubles, trebles and accumulators — fraction, decimal or American odds.
-        </p>
+      <div className="mb-4 sm:mb-6 flex items-center gap-3">
+        <div className="w-1 h-9 sm:h-10 rounded-full bg-gradient-to-b from-blue-400 to-blue-600 flex-shrink-0" />
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">🎫 Bet Calculator</h1>
+          <p className="text-slate-400 text-xs sm:text-sm mt-0.5">
+            Singles, doubles, trebles &amp; accumulators — fraction, decimal or American odds.
+          </p>
+        </div>
       </div>
 
-      <div className="bg-slate-800 rounded-xl sm:rounded-2xl border border-slate-700/80 card-shadow overflow-hidden">
+      <div
+        className="rounded-xl sm:rounded-2xl border border-slate-700/50 overflow-hidden card-shadow"
+        style={{ background: 'linear-gradient(180deg, rgba(30,41,59,0.85) 0%, rgba(15,23,42,0.95) 100%)' }}
+      >
         {/* Settings row */}
-        <div className="p-4 sm:p-6 border-b border-slate-700/50">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-slate-700/50">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-sm text-slate-400 mb-2">Odds Format</label>
+              <label className="block text-[10px] sm:text-xs font-mono uppercase tracking-wider text-slate-500 mb-1.5">Odds Format</label>
               <div className="flex rounded-lg border border-slate-600 overflow-hidden">
                 {(['fraction', 'decimal', 'american'] as OddsFormat[]).map((f) => (
                   <button
                     key={f}
                     onClick={() => setOddsFormat(f)}
-                    className={`flex-1 px-2 py-2 text-xs sm:text-sm font-medium capitalize transition-colors ${
+                    className={`flex-1 px-2 py-1.5 text-xs font-medium capitalize transition-colors ${
                       oddsFormat === f ? 'bg-blue-500 text-white' : 'bg-slate-900/50 text-slate-400 hover:text-white'
                     }`}
                   >
@@ -219,7 +231,7 @@ export default function BetCalculatorPage() {
             </div>
 
             <div>
-              <label className="block text-sm text-slate-400 mb-2">Number of Selections</label>
+              <label className="block text-[10px] sm:text-xs font-mono uppercase tracking-wider text-slate-500 mb-1.5">Selections</label>
               <select
                 value={numSelections}
                 onChange={(e) => handleNumSelectionsChange(parseInt(e.target.value, 10))}
@@ -232,7 +244,7 @@ export default function BetCalculatorPage() {
             </div>
 
             <div>
-              <label className="block text-sm text-slate-400 mb-2">Bet Type</label>
+              <label className="block text-[10px] sm:text-xs font-mono uppercase tracking-wider text-slate-500 mb-1.5">Bet Type</label>
               <select
                 value={betType}
                 onChange={(e) => handleBetTypeChange(e.target.value as BetType)}
@@ -247,23 +259,25 @@ export default function BetCalculatorPage() {
         </div>
 
         {/* Selections */}
-        <div className="p-4 sm:p-6 border-b border-slate-700/50 space-y-3">
-          <div className="flex items-center justify-between mb-1">
-            <h2 className="text-base sm:text-lg font-semibold text-white">Selections</h2>
-            <div className="flex items-center gap-2">
+        <div className="border-b border-slate-700/50">
+          <div className="flex items-center justify-between px-3 sm:px-5 py-2.5">
+            <h2 className="text-xs sm:text-sm font-mono uppercase tracking-wider text-slate-400 font-semibold">
+              Selections
+            </h2>
+            <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setNumSelections((n) => Math.max(1, n - 1))}
                 disabled={numSelections <= 1}
-                className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-700 hover:bg-slate-600 disabled:opacity-30 disabled:cursor-not-allowed text-slate-300 hover:text-white text-sm font-bold transition-colors"
+                className="w-6 h-6 flex items-center justify-center rounded-md bg-slate-700 hover:bg-slate-600 disabled:opacity-30 disabled:cursor-not-allowed text-slate-300 hover:text-white text-sm font-bold transition-colors"
                 aria-label="Remove selection"
               >
                 −
               </button>
-              <span className="text-xs text-slate-500 font-mono w-16 text-center">{numSelections} / 20</span>
+              <span className="text-[10px] sm:text-xs text-slate-500 font-mono w-12 text-center tabular-nums">{numSelections} / 20</span>
               <button
                 onClick={() => setNumSelections((n) => Math.min(20, n + 1))}
                 disabled={numSelections >= 20}
-                className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-700 hover:bg-slate-600 disabled:opacity-30 disabled:cursor-not-allowed text-slate-300 hover:text-white text-sm font-bold transition-colors"
+                className="w-6 h-6 flex items-center justify-center rounded-md bg-slate-700 hover:bg-slate-600 disabled:opacity-30 disabled:cursor-not-allowed text-slate-300 hover:text-white text-sm font-bold transition-colors"
                 aria-label="Add selection"
               >
                 +
@@ -271,99 +285,96 @@ export default function BetCalculatorPage() {
             </div>
           </div>
           {betType === 'accumulator' && (
-            <p className="text-xs text-slate-500 -mt-1">
-              Accumulators can carry as many selections as you need — use + above to add more (up to 20).
+            <p className="text-[10px] sm:text-xs text-slate-500 px-3 sm:px-5 -mt-1.5 pb-2">
+              Accumulators can carry as many selections as you need — up to 20.
             </p>
           )}
-          {rows.map((row, i) => (
-            <div key={row.id} className="bg-slate-900/40 border border-slate-700/50 rounded-xl p-3 sm:p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="w-6 h-6 flex items-center justify-center rounded-full bg-slate-700 text-slate-300 text-xs font-mono font-bold flex-shrink-0">
+
+          {/* Column header — shown once instead of relabeling every row */}
+          <div className="hidden sm:flex items-center gap-2 px-5 pb-1.5 text-[10px] font-mono uppercase tracking-wider text-slate-500">
+            <span className="w-5 flex-shrink-0" />
+            <span className="w-28 flex-shrink-0">Outcome</span>
+            <span>Odds</span>
+          </div>
+
+          <div>
+            {rows.map((row, i) => (
+              <div
+                key={row.id}
+                className={`flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-3 px-3 sm:px-5 py-1.5 border-t border-slate-700/40 hover:bg-slate-800/40 transition-colors ${OUTCOME_ACCENT[row.outcome]}`}
+              >
+                <span className="w-5 h-5 flex items-center justify-center rounded-full bg-slate-700 text-slate-300 text-[10px] font-mono font-bold flex-shrink-0">
                   {i + 1}
                 </span>
-                <span className="text-xs sm:text-sm text-slate-400 font-medium">Selection {i + 1}</span>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-xs text-slate-500 mb-1.5">Outcome</label>
-                  <select
-                    value={row.outcome}
-                    onChange={(e) => updateRow(row.id, { outcome: e.target.value as Outcome })}
-                    className={selectClass}
-                  >
-                    {OUTCOME_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
-                </div>
+
+                <select
+                  value={row.outcome}
+                  onChange={(e) => updateRow(row.id, { outcome: e.target.value as Outcome })}
+                  className={`${selectClass} sm:w-28 sm:flex-shrink-0`}
+                >
+                  {OUTCOME_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
 
                 {oddsFormat === 'fraction' && (
-                  <div className="col-span-2 sm:col-span-2">
-                    <label className="block text-xs text-slate-500 mb-1.5">Odds (fraction)</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min="0"
-                        value={row.fractionNum}
-                        onChange={(e) => handleFractionChange(row.id, 'num', e.target.value)}
-                        className={inputClass}
-                        placeholder="5"
-                      />
-                      <span className="text-slate-500 font-mono">/</span>
-                      <input
-                        type="number"
-                        min="1"
-                        value={row.fractionDen}
-                        onChange={(e) => handleFractionChange(row.id, 'den', e.target.value)}
-                        className={inputClass}
-                        placeholder="2"
-                      />
-                    </div>
+                  <div className="flex items-center gap-1.5 flex-1 min-w-[140px]">
+                    <input
+                      type="number"
+                      min="0"
+                      value={row.fractionNum}
+                      onChange={(e) => handleFractionChange(row.id, 'num', e.target.value)}
+                      className={inputClass}
+                      placeholder="5"
+                    />
+                    <span className="text-slate-500 font-mono flex-shrink-0">/</span>
+                    <input
+                      type="number"
+                      min="1"
+                      value={row.fractionDen}
+                      onChange={(e) => handleFractionChange(row.id, 'den', e.target.value)}
+                      className={inputClass}
+                      placeholder="2"
+                    />
                   </div>
                 )}
 
                 {oddsFormat === 'decimal' && (
-                  <div className="col-span-2 sm:col-span-2">
-                    <label className="block text-xs text-slate-500 mb-1.5">Odds (decimal)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="1.01"
-                      value={row.decimalStr}
-                      onChange={(e) => handleDecimalChange(row.id, e.target.value)}
-                      className={inputClass}
-                      placeholder="3.50"
-                    />
-                  </div>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="1.01"
+                    value={row.decimalStr}
+                    onChange={(e) => handleDecimalChange(row.id, e.target.value)}
+                    className={`${inputClass} flex-1 min-w-[90px]`}
+                    placeholder="3.50"
+                  />
                 )}
 
                 {oddsFormat === 'american' && (
-                  <div className="col-span-2 sm:col-span-2">
-                    <label className="block text-xs text-slate-500 mb-1.5">Odds (American)</label>
-                    <input
-                      type="text"
-                      value={row.americanStr}
-                      onChange={(e) => handleAmericanChange(row.id, e.target.value)}
-                      className={inputClass}
-                      placeholder="+150"
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    value={row.americanStr}
+                    onChange={(e) => handleAmericanChange(row.id, e.target.value)}
+                    className={`${inputClass} flex-1 min-w-[90px]`}
+                    placeholder="+150"
+                  />
                 )}
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
         {/* Stake */}
-        <div className="p-4 sm:p-6 border-b border-slate-700/50">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-slate-700/50">
+          <div className="flex flex-wrap items-end gap-3">
             {betType === 'single' && numSelections > 1 && (
-              <div>
-                <label className="block text-sm text-slate-400 mb-2">Stake Type</label>
+              <div className="flex-1 min-w-[160px]">
+                <label className="block text-[10px] sm:text-xs font-mono uppercase tracking-wider text-slate-500 mb-1.5">Stake Type</label>
                 <div className="flex rounded-lg border border-slate-600 overflow-hidden">
                   <button
                     onClick={() => setStakeMode('perBet')}
-                    className={`flex-1 px-2 py-2 text-xs sm:text-sm font-medium transition-colors ${
+                    className={`flex-1 px-2 py-1.5 text-xs font-medium transition-colors ${
                       stakeMode === 'perBet' ? 'bg-blue-500 text-white' : 'bg-slate-900/50 text-slate-400 hover:text-white'
                     }`}
                   >
@@ -371,18 +382,18 @@ export default function BetCalculatorPage() {
                   </button>
                   <button
                     onClick={() => setStakeMode('totalCombined')}
-                    className={`flex-1 px-2 py-2 text-xs sm:text-sm font-medium transition-colors ${
+                    className={`flex-1 px-2 py-1.5 text-xs font-medium transition-colors ${
                       stakeMode === 'totalCombined' ? 'bg-blue-500 text-white' : 'bg-slate-900/50 text-slate-400 hover:text-white'
                     }`}
                   >
-                    Total Combined
+                    Total
                   </button>
                 </div>
               </div>
             )}
-            <div>
-              <label className="block text-sm text-slate-400 mb-2">
-                Stake ($){betType === 'single' && numSelections > 1 ? (stakeMode === 'perBet' ? ' per bet' : ' total') : ''}
+            <div className="flex-1 min-w-[140px]">
+              <label className="block text-[10px] sm:text-xs font-mono uppercase tracking-wider text-slate-500 mb-1.5">
+                Stake ($){betType === 'single' && numSelections > 1 ? (stakeMode === 'perBet' ? ' / bet' : ' total') : ''}
               </label>
               <input
                 type="number"
@@ -390,16 +401,13 @@ export default function BetCalculatorPage() {
                 min="0"
                 value={stake}
                 onChange={(e) => setStake(e.target.value)}
-                className="w-full bg-slate-900/50 border border-slate-600 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-white font-mono text-base sm:text-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                className="w-full bg-slate-900/60 border border-slate-600 rounded-lg px-3 py-1.5 text-white font-mono text-base focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                 placeholder="10"
               />
             </div>
-          </div>
-
-          <div className="mt-6 flex justify-end">
             <button
               onClick={handleReset}
-              className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white rounded-xl text-sm font-medium transition-all duration-200"
+              className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white rounded-lg text-xs font-medium transition-colors flex-shrink-0"
             >
               Reset
             </button>
@@ -408,11 +416,19 @@ export default function BetCalculatorPage() {
 
         {/* Results */}
         {result ? (
-          <div className="p-4 sm:p-6 bg-slate-800/50">
-            <h2 className="text-base sm:text-lg font-semibold text-white mb-4 sm:mb-5">Summary</h2>
+          <div className="p-3 sm:p-5 bg-slate-800/50">
+            <div className="flex items-center gap-1.5 mb-3 sm:mb-4">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+              </span>
+              <h2 className="text-xs sm:text-sm font-mono uppercase tracking-wider text-slate-400 font-semibold">
+                Summary
+              </h2>
+            </div>
 
             {result.combinedOdds !== undefined && (
-              <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 sm:p-4 mb-4 sm:mb-5">
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 mb-3 sm:mb-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-xs sm:text-sm text-blue-400 font-medium">Combined Odds</p>
@@ -426,23 +442,23 @@ export default function BetCalculatorPage() {
             )}
 
             {result.selectionResults && (
-              <div className="mb-4 sm:mb-5 overflow-x-auto">
+              <div className="mb-3 sm:mb-4 overflow-x-auto rounded-lg border border-slate-700/50">
                 <table className="w-full text-xs sm:text-sm">
                   <thead>
-                    <tr className="text-slate-500 text-left">
-                      <th className="font-medium pb-2">#</th>
-                      <th className="font-medium pb-2">Stake</th>
-                      <th className="font-medium pb-2">Return</th>
-                      <th className="font-medium pb-2 text-right">Profit</th>
+                    <tr className="text-slate-500 text-left bg-slate-900/40">
+                      <th className="font-mono text-[10px] uppercase tracking-wider font-medium py-1.5 px-2">#</th>
+                      <th className="font-mono text-[10px] uppercase tracking-wider font-medium py-1.5 px-2">Stake</th>
+                      <th className="font-mono text-[10px] uppercase tracking-wider font-medium py-1.5 px-2">Return</th>
+                      <th className="font-mono text-[10px] uppercase tracking-wider font-medium py-1.5 px-2 text-right">Profit</th>
                     </tr>
                   </thead>
                   <tbody className="font-mono">
                     {result.selectionResults.map((r, i) => (
                       <tr key={r.id} className="border-t border-slate-700/50">
-                        <td className="py-2 text-slate-400">{i + 1}</td>
-                        <td className="py-2 text-slate-300">${r.stake.toFixed(2)}</td>
-                        <td className="py-2 text-slate-300">${r.return.toFixed(2)}</td>
-                        <td className={`py-2 text-right ${r.profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        <td className="py-1.5 px-2 text-slate-400">{i + 1}</td>
+                        <td className="py-1.5 px-2 text-slate-300">${r.stake.toFixed(2)}</td>
+                        <td className="py-1.5 px-2 text-slate-300">${r.return.toFixed(2)}</td>
+                        <td className={`py-1.5 px-2 text-right ${r.profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                           {formatCurrency(r.profit)}
                         </td>
                       </tr>
@@ -452,9 +468,9 @@ export default function BetCalculatorPage() {
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-              <div className="bg-slate-900/50 rounded-xl p-3 sm:p-4 border border-slate-700/50">
-                <p className="text-xs sm:text-sm text-slate-400 mb-1">Total Outlay</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
+              <div className="bg-slate-900/50 rounded-xl p-3 border border-slate-700/50">
+                <p className="text-[10px] sm:text-xs font-mono uppercase tracking-wider text-slate-500 mb-1">Total Outlay</p>
                 <p className="text-lg sm:text-xl font-bold text-white font-mono">${result.totalOutlay.toFixed(2)}</p>
                 {result.numberOfBets > 1 && (
                   <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">
@@ -462,15 +478,15 @@ export default function BetCalculatorPage() {
                   </p>
                 )}
               </div>
-              <div className="bg-slate-900/50 rounded-xl p-3 sm:p-4 border border-slate-700/50">
-                <p className="text-xs sm:text-sm text-slate-400 mb-1">Total Return</p>
+              <div className="bg-slate-900/50 rounded-xl p-3 border border-slate-700/50">
+                <p className="text-[10px] sm:text-xs font-mono uppercase tracking-wider text-slate-500 mb-1">Total Return</p>
                 <p className="text-lg sm:text-xl font-bold text-white font-mono">${result.totalReturn.toFixed(2)}</p>
               </div>
-              <div className={`rounded-xl p-3 sm:p-4 border ${
+              <div className={`rounded-xl p-3 border ${
                 result.totalProfit >= 0 ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'
               }`}>
-                <p className={`text-xs sm:text-sm mb-1 ${result.totalProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                  Total Profit
+                <p className={`text-[10px] sm:text-xs font-mono uppercase tracking-wider mb-1 ${result.totalProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {result.totalProfit >= 0 ? '▲ Total Profit' : '▼ Total Profit'}
                 </p>
                 <p className={`text-lg sm:text-xl font-bold font-mono ${result.totalProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                   {formatCurrency(result.totalProfit)}
@@ -479,9 +495,9 @@ export default function BetCalculatorPage() {
             </div>
           </div>
         ) : (
-          <div className="p-6 bg-slate-800/50">
-            <div className="text-center py-8">
-              <p className="text-slate-500">Enter valid odds and a stake to see calculations</p>
+          <div className="p-5 bg-slate-800/50">
+            <div className="text-center py-6">
+              <p className="text-slate-500 text-sm">Enter valid odds and a stake to see calculations</p>
               <p className="text-xs text-slate-600 mt-1">Odds must be greater than 1.00 (evens)</p>
             </div>
           </div>
