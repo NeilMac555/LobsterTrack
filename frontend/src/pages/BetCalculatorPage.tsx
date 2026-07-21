@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import {
   ALL_BET_TYPES,
@@ -55,36 +55,40 @@ export default function BetCalculatorPage() {
   const [stake, setStake] = useState('10');
   const [rows, setRows] = useState<SelectionRow[]>([makeRow('sel-0'), makeRow('sel-1')]);
 
-  const resizeRows = (n: number) => {
+  // Single source of truth for "numSelections changed, however that
+  // happened" — resizes the row list and, if the current bet type no
+  // longer fits (e.g. Double stops being valid once N != 2), snaps to
+  // whichever combined type now fits. Keyed only on numSelections and
+  // using functional updaters throughout, so it stays correct even
+  // under rapid-fire clicks on the +/- buttons where multiple updates
+  // can queue before a re-render (a plain closure-based handler would
+  // silently drop all but the last click since every queued call would
+  // read the same stale numSelections).
+  useEffect(() => {
     setRows((prev) => {
-      if (n > prev.length) {
-        const additions = Array.from({ length: n - prev.length }, (_, i) => makeRow(`sel-${prev.length + i}`));
+      if (numSelections > prev.length) {
+        const additions = Array.from(
+          { length: numSelections - prev.length },
+          (_, i) => makeRow(`sel-${prev.length + i}`)
+        );
         return [...prev, ...additions];
       }
-      return prev.slice(0, n);
+      return prev.slice(0, numSelections);
     });
-  };
+    setBetType((prev) => (isBetTypeValidForCount(prev, numSelections) ? prev : naturalBetTypeForCount(numSelections)));
+  }, [numSelections]);
 
-  // Number of Selections changed directly — keep the current bet type if
-  // it's still valid for the new count (e.g. Accumulator going from 4 to
-  // 5 selections), otherwise snap to whichever combined type now fits
-  // (e.g. Double at 2 selections -> bump to 3 -> auto-switch to Treble).
-  const handleNumSelectionsChange = (n: number) => {
-    setNumSelections(n);
-    resizeRows(n);
-    if (!isBetTypeValidForCount(betType, n)) setBetType(naturalBetTypeForCount(n));
-  };
+  const handleNumSelectionsChange = (n: number) => setNumSelections(n);
 
   // Bet type changed directly — Double/Treble/Accumulator drive the
   // selection count to whatever fits them (see requiredSelectionCount),
-  // the way picking a bet type on a real bookmaker slip works.
+  // the way picking a bet type on a real bookmaker slip works. The
+  // effect above then re-validates against the new count, but
+  // requiredSelectionCount always returns a count the chosen type is
+  // valid for, so that's a no-op in practice.
   const handleBetTypeChange = (type: BetType) => {
     setBetType(type);
-    const n = requiredSelectionCount(type, numSelections);
-    if (n !== numSelections) {
-      setNumSelections(n);
-      resizeRows(n);
-    }
+    setNumSelections((prev) => requiredSelectionCount(type, prev));
   };
 
   const updateRow = (id: string, patch: Partial<SelectionRow>) => {
@@ -244,7 +248,33 @@ export default function BetCalculatorPage() {
 
         {/* Selections */}
         <div className="p-4 sm:p-6 border-b border-slate-700/50 space-y-3">
-          <h2 className="text-base sm:text-lg font-semibold text-white mb-1">Selections</h2>
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-base sm:text-lg font-semibold text-white">Selections</h2>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setNumSelections((n) => Math.max(1, n - 1))}
+                disabled={numSelections <= 1}
+                className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-700 hover:bg-slate-600 disabled:opacity-30 disabled:cursor-not-allowed text-slate-300 hover:text-white text-sm font-bold transition-colors"
+                aria-label="Remove selection"
+              >
+                −
+              </button>
+              <span className="text-xs text-slate-500 font-mono w-16 text-center">{numSelections} / 20</span>
+              <button
+                onClick={() => setNumSelections((n) => Math.min(20, n + 1))}
+                disabled={numSelections >= 20}
+                className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-700 hover:bg-slate-600 disabled:opacity-30 disabled:cursor-not-allowed text-slate-300 hover:text-white text-sm font-bold transition-colors"
+                aria-label="Add selection"
+              >
+                +
+              </button>
+            </div>
+          </div>
+          {betType === 'accumulator' && (
+            <p className="text-xs text-slate-500 -mt-1">
+              Accumulators can carry as many selections as you need — use + above to add more (up to 20).
+            </p>
+          )}
           {rows.map((row, i) => (
             <div key={row.id} className="bg-slate-900/40 border border-slate-700/50 rounded-xl p-3 sm:p-4">
               <div className="flex items-center gap-2 mb-3">
