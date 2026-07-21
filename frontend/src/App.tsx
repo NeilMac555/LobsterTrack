@@ -6,6 +6,7 @@ import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import MatchDetailPage from './pages/MatchDetailPage';
 import HedgeCalculatorPage from './pages/HedgeCalculatorPage';
+import BetCalculatorPage from './pages/BetCalculatorPage';
 import MatchPredictorPage from './pages/MatchPredictorPage';
 import SteamResultsPage from './pages/SteamResultsPage';
 import DriftersPage from './pages/DriftersPage';
@@ -37,6 +38,7 @@ function App() {
               <Route path="team-pnl" element={<TeamPLPage />} />
               <Route path="in-play-jumps" element={<InPlayJumpsPage />} />
               <Route path="tools/hedge-calculator" element={<HedgeCalculatorPage />} />
+              <Route path="tools/bet-calculator" element={<BetCalculatorPage />} />
               <Route path="tools/match-predictor" element={<MatchPredictorPage />} />
               <Route path="tools/rolling-xg" element={<RollingXGPage />} />
               {/* The WC hub was removed once the tournament ended — old

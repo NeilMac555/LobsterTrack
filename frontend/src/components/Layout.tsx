@@ -30,6 +30,7 @@ const tools: Array<{
     external: true,
     isNew: true,
   },
+  { name: 'Bet Calculator', path: '/tools/bet-calculator', icon: '🎫' },
   { name: 'Hedging Calculator', path: '/tools/hedge-calculator', icon: '🧮' },
   { name: 'Match Model', path: '/tools/match-predictor', icon: '⚽' },
   { name: 'Rolling xG', path: '/tools/rolling-xg', icon: '📊' },
