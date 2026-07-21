@@ -36,6 +36,16 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Bet Calculator fix: Bet Type dropdown was only ever showing the one
+  combined type that matched the CURRENT selection count, so at the
+  default (2 selections) Treble and Accumulator were invisible — user
+  report: "there's only a singles and double option". Flipped the
+  direction: all 4 types always shown; picking one now drives the
+  selection count (Double->2, Treble->3, Accumulator->4+, growing
+  further without resetting), and changing the count directly
+  auto-picks the natural fit instead of falling back to Single.
+  Labeled Accumulator as "Accumulator (Parlay)" for US readers.
+  Verified live — `0c15088`
 - Bet Calculator tool: new /tools/bet-calculator page (linked in nav),
   modeled on AceOdds' calculator minus each-way and Rule 4 (horse-
   racing concepts, not relevant to a football-only site). Bet type
