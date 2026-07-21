@@ -113,12 +113,20 @@ function noiseHit(t, dur, vol) {
 function startMusic() {
   try {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    // iframes and strict autoplay policies hand us a suspended context —
+    // resume now (we're inside a click) and again on any later gesture
+    if (audioCtx.state === 'suspended') audioCtx.resume();
     if (music.started) return;
     music.started = true;
     music.nextT = audioCtx.currentTime + 0.1;
     music.timer = setInterval(musicTick, 60);
   } catch (e) {}
 }
+function unlockAudio() {
+  try { if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); } catch (e) {}
+}
+window.addEventListener('pointerdown', unlockAudio);
+window.addEventListener('keydown', unlockAudio);
 
 // ---------- assets & sprite atlas ----------
 const ASSET_FILES = ['warrior', 'wizard', 'ranger', 'rogue', 'cleric',
@@ -1386,11 +1394,14 @@ function render() {
   ctx.fillStyle = '#aab';
   ctx.fillText(`LV ${state.level}   ⚔ ${state.kills}`, w / 2, 66);
 
-  // gold counter, top right
+  // gold counter + music state, top right
   ctx.textAlign = 'right';
   ctx.font = 'bold 16px sans-serif';
   ctx.fillStyle = '#ffd23e';
   ctx.fillText(`\u{1FA99} ${state.gold}`, w - 20, 32);
+  ctx.font = '11px sans-serif';
+  ctx.fillStyle = music.on ? '#7fd4ff' : '#556';
+  ctx.fillText(music.on ? '♪ music on · M' : '♪ muted · M', w - 20, 50);
 
   if (touch.active) {
     ctx.strokeStyle = 'rgba(255,255,255,0.25)';
