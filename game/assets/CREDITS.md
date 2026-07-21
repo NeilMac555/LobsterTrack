@@ -17,3 +17,9 @@ goblin, skeleton, orc, minotaur) are by **Calciumtrice**, licensed
 
 Dungeon environment tileset (`tiles.png`) is by **Buch**, licensed **CC0**
 (public domain): https://opengameart.org/content/dungeon-tileset
+
+Biski the cat (`biski.png`) is repacked from **Cat sprites** by
+**Shepardskin**, licensed **CC0** (public domain):
+https://opengameart.org/content/cat-sprites
+(frames mirrored to face right and rearranged into this project's
+10-frames-per-row sheet layout)

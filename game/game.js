@@ -164,7 +164,7 @@ document.getElementById('mute-btn').addEventListener('click', e => {
 
 // ---------- assets & sprite atlas ----------
 const ASSET_FILES = ['warrior', 'wizard', 'ranger', 'rogue', 'cleric',
-  'slime', 'goblin', 'skeleton', 'orc', 'minotaur', 'tiles'];
+  'slime', 'goblin', 'skeleton', 'orc', 'minotaur', 'tiles', 'biski'];
 const assets = {};
 function loadAssets() {
   return Promise.all(ASSET_FILES.map(name => new Promise((res, rej) => {
@@ -195,234 +195,11 @@ const SHEETS = {
   orcA:     { file: 'orc',      size: 32, rows: STD },
   orc:      { file: 'orc',      size: 32, rows: { idle: 5, walk: 7, attack: 8, death: 9 } },
   minotaur: { file: 'minotaur', size: 48, rows: { idle: 0, walk: 1, attack: 3, death: 4 } },
-  biski:    { file: 'biski',    size: 32, rows: STD }, // generated in makeBiskiSheet()
+  biski:    { file: 'biski',    size: 32, rows: STD }, // Shepardskin's CC0 cat, repacked
 };
 
 const SCALE = 2; // 1 sprite pixel = 2 world pixels
 
-// ---------- Biski, the academy's black cat (procedural pixel art) ----------
-// Rendered at full 32x32 (same fidelity as the Calciumtrice sheets) from
-// shape primitives, then run through an outline + fur-texture post-process:
-// dark edge outline, lighter belly, sheen along the back, dithered fur.
-const CAT_PAL = {
-  base: '#26262c', dark: '#1a1a20', outline: '#0b0b10', sheen: '#41414f',
-  belly: '#32323b', eye: '#ffb347', nose: '#e08c9c', paw: '#cfcfd6',
-  earIn: '#5e4550',
-};
-
-function catCanvasFrame(build) {
-  const N = 32;
-  const px = Array.from({ length: N }, () => Array(N).fill(null));
-  const set = (x, y, c) => {
-    x = Math.round(x); y = Math.round(y);
-    if (x >= 0 && x < N && y >= 0 && y < N) px[y][x] = c;
-  };
-  const blob = (cx, cy, rx, ry, c = 'base') => {
-    for (let y = Math.floor(cy - ry); y <= Math.ceil(cy + ry); y++) {
-      for (let x = Math.floor(cx - rx); x <= Math.ceil(cx + rx); x++) {
-        if (((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1) set(x, y, c);
-      }
-    }
-  };
-  const line = (x1, y1, x2, y2, wd = 1.8, c = 'base') => {
-    const steps = Math.ceil(Math.hypot(x2 - x1, y2 - y1) * 2) + 1;
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps;
-      blob(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t, wd / 2, wd / 2, c);
-    }
-  };
-  const ear = (x, ytip) => { // short wide triangle fused to the skull
-    set(x, ytip, 'base'); set(x + 1, ytip, 'base');
-    for (let dx = -1; dx <= 2; dx++) set(x + dx, ytip + 1, 'base');
-    for (let dx = -1; dx <= 2; dx++) set(x + dx, ytip + 2, 'base');
-  };
-  const details = [];
-  const detail = (x, y, c) => details.push([x, y, c]);
-  build({ set, blob, line, ear, detail });
-
-  // --- post-process: belly tone, outline, back sheen, fur dither ---
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    if (px[y][x] === 'base' && y >= 20) px[y][x] = 'belly';
-  }
-  const isBody = (x, y) => x >= 0 && x < N && y >= 0 && y < N && px[y][x] !== null;
-  const edges = [];
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    if (px[y][x] === null || px[y][x] === 'dark') continue;
-    if (!isBody(x - 1, y) || !isBody(x + 1, y) || !isBody(x, y - 1) || !isBody(x, y + 1)) edges.push([x, y]);
-  }
-  for (const [x, y] of edges) px[y][x] = 'outline';
-  for (let y = 1; y < N; y++) for (let x = 0; x < N; x++) {
-    if ((px[y][x] === 'base' || px[y][x] === 'belly') && px[y - 1][x] === 'outline') px[y][x] = 'sheen';
-  }
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    if ((px[y][x] === 'base' || px[y][x] === 'belly') && hash2(x, y) % 7 === 0) px[y][x] = 'sheen';
-  }
-  // details (eyes, nose, paws, streaks) go on last, untouched by texturing
-  for (const [x, y, c] of details) {
-    const xi = Math.round(x), yi = Math.round(y);
-    if (xi >= 0 && xi < N && yi >= 0 && yi < N) px[yi][xi] = c;
-  }
-  return px;
-}
-
-// side-view gallop, facing right; t in [0,1)
-function catWalk(t) {
-  return catCanvasFrame(({ blob, line, ear, detail }) => {
-    const s = Math.sin(t * Math.PI * 2);
-    const bob = Math.abs(Math.cos(t * Math.PI * 2)) * 1.2;
-    const by = 19 - bob;          // body midline
-    const hy = by - 6.5;          // head center
-    // tail: raised S-curve off the rump
-    line(6, by - 2, 3.5, by - 7, 1.9);
-    line(3.5, by - 7, 5.5, by - 11, 1.6);
-    detail(6, by - 12, 'base');
-    // body: haunch, torso, chest
-    blob(10, by + 0.5, 5, 4.6);
-    blob(15, by, 6.5, 4.2);
-    blob(20.5, by + 0.3, 4.2, 3.9);
-    // head + muzzle
-    blob(25, hy, 4, 3.6);
-    blob(28.2, hy + 1.4, 2, 1.5);
-    ear(23, hy - 5.4); ear(27, hy - 5.4);
-    // legs: far pair darker, near pair with light paws. y runs to the ground.
-    const g = 27.5;
-    line(9.5 - s * 2.6, by + 3, 9.5 - s * 3.4, g, 1.8, 'dark');
-    line(20.5 + s * 2.6, by + 3, 20.5 + s * 3.4, g, 1.8, 'dark');
-    line(10.5 + s * 2.6, by + 3, 10.5 + s * 3.4, g, 1.9);
-    line(20 - s * 2.6, by + 3, 20 - s * 3.4, g, 1.9);
-    detail(10.5 + s * 3.4, g, 'paw');
-    detail(20 - s * 3.4, g, 'paw');
-    // face
-    detail(25.4, hy - 0.4, 'eye'); detail(26.4, hy - 0.4, 'eye');
-    detail(30, hy + 1.2, 'nose');
-    detail(23, hy - 3.9, 'earIn'); detail(27, hy - 3.9, 'earIn');
-  });
-}
-
-// sitting idle; variant b lifts the tail tip and flicks an ear
-function catSit(b, blink) {
-  return catCanvasFrame(({ blob, line, ear, detail }) => {
-    // tail wrapped around the front paws
-    line(7.5, 25.5, 13, 27, 1.8);
-    line(13, 27, 20.5, 26.4, 1.7);
-    if (b) { line(20.5, 26.4, 23, 24.4, 1.5); detail(23.6, 23.4, 'base'); }
-    else detail(21.6, 25.6, 'base');
-    // haunch + upright chest + head
-    blob(13, 21.5, 6, 5.2);
-    blob(18.5, 17.5, 4.5, 6.2);
-    blob(19.5, 9.2, 4.5, 4.1);
-    ear(16.8, 4.2); ear(22.2, b ? 3.8 : 4.2);
-    // front legs
-    line(17, 20, 17, 26.6, 1.9);
-    line(20.4, 20, 20.4, 26.6, 1.9);
-    detail(17, 27, 'paw'); detail(20.4, 27, 'paw');
-    // face: 3/4 view, two amber eyes + nose
-    if (blink) { detail(17.6, 9, 'outline'); detail(21.8, 9, 'outline'); }
-    else { detail(17.6, 9, 'eye'); detail(21.8, 9, 'eye'); }
-    detail(19.8, 11, 'nose');
-    detail(16.8, 5.7, 'earIn'); detail(22.2, b ? 5.3 : 5.7, 'earIn');
-  });
-}
-
-// pounce: 0 = crouch, 1 = airborne swipe with claw streaks, 2 = landing
-function catPounce(phase) {
-  return catCanvasFrame(({ blob, line, ear, detail }) => {
-    if (phase === 0) { // coiled crouch, tail low
-      line(5, 22, 2.5, 18.5, 1.7);
-      blob(10, 22.5, 5.2, 4);
-      blob(15.5, 22, 6.2, 3.7);
-      blob(20.5, 21.6, 4, 3.4);
-      blob(25, 16.5, 4, 3.5);
-      blob(28.2, 18, 2, 1.5);
-      ear(23, 11.2); ear(27, 11.2);
-      line(9, 25, 9, 27.5, 1.9); line(20, 25, 20, 27.5, 1.9);
-      detail(25.4, 16, 'eye'); detail(26.4, 16, 'eye');
-      detail(30, 17.8, 'nose');
-    } else if (phase === 1) { // stretched leap, front claws out
-      line(4.5, 20, 2, 14.5, 1.8);
-      blob(8.5, 19.5, 4.8, 4);
-      blob(14.5, 17, 7, 4);
-      blob(21, 14.3, 4.4, 3.6);
-      blob(25.5, 11, 4, 3.4);
-      blob(28.6, 12.6, 2, 1.5);
-      ear(23.6, 5.8); ear(27.4, 5.8);
-      line(24, 14, 29.5, 15.5, 1.9);   // front legs reaching
-      line(23, 16, 28, 18.5, 1.8, 'dark');
-      line(6.5, 22.5, 3.5, 26, 1.9);   // back legs trailing
-      line(9.5, 23, 7.5, 27, 1.8, 'dark');
-      detail(30, 15, 'paw'); detail(28.6, 19, 'paw');
-      detail(25.8, 10.6, 'eye'); detail(26.8, 10.6, 'eye');
-      // claw streaks
-      detail(31, 11, 'paw'); detail(31, 13, 'paw'); detail(31, 16, 'paw');
-      detail(30, 9.6, 'paw');
-    } else { // landing
-      line(5.5, 20.5, 3, 15.5, 1.7);
-      blob(10, 20.5, 5, 4.4);
-      blob(15.5, 20, 6.4, 4);
-      blob(21, 19.6, 4, 3.6);
-      blob(25.2, 14, 4, 3.5);
-      blob(28.4, 15.5, 2, 1.5);
-      ear(23, 8.8); ear(27, 8.8);
-      line(10, 23.5, 10, 27.5, 1.9); line(20.5, 23.5, 20.5, 27.5, 1.9);
-      detail(25.6, 13.6, 'eye'); detail(26.6, 13.6, 'eye');
-      detail(30.2, 15.2, 'nose');
-    }
-  });
-}
-
-// death: droop, then curl up on the ground
-function catDeath(phase) {
-  return catCanvasFrame(({ blob, line, ear, detail }) => {
-    if (phase === 0) { // sitting, head sunk
-      line(7.5, 25.5, 14, 27, 1.8); line(14, 27, 20, 26.5, 1.6);
-      blob(13, 21.5, 6, 5.2);
-      blob(18.5, 18.5, 4.5, 5.6);
-      blob(19.5, 12, 4.4, 3.9);
-      ear(16.8, 7.4); ear(22.2, 7.4);
-      line(17, 21, 17, 26.6, 1.9); line(20.4, 21, 20.4, 26.6, 1.9);
-      detail(17.8, 12, 'outline'); detail(21.6, 12, 'outline');
-    } else if (phase === 1) { // slumping onto its side
-      line(4, 25.5, 8, 26.5, 1.7);
-      blob(15, 24, 9, 3.8);
-      blob(24.5, 23.5, 3.8, 3.2);
-      ear(22.8, 19.2); ear(26.4, 19.4);
-      line(27, 25.5, 30.5, 26, 1.7);
-      detail(25, 22.8, 'outline'); detail(26.2, 22.8, 'outline');
-    } else { // curled flat, at rest
-      line(3.5, 26.5, 7, 27, 1.6);
-      blob(15, 25.5, 9.5, 2.9);
-      blob(24.5, 25, 3.6, 2.6);
-      ear(23, 21.4); ear(26.4, 21.6);
-      line(27.5, 26.8, 30.5, 27, 1.6);
-      detail(25.2, 24.4, 'outline');
-    }
-  });
-}
-
-function makeBiskiSheet() {
-  const c = document.createElement('canvas');
-  c.width = 320; c.height = 160;
-  const g = c.getContext('2d');
-  const paint = (px, col, row) => {
-    for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) {
-      const k = px[y][x];
-      if (!k) continue;
-      g.fillStyle = CAT_PAL[k] || k;
-      g.fillRect(col * 32 + x, row * 32 + y, 1, 1);
-    }
-  };
-  // row 0: idle (tail swish + occasional blink), row 2: gallop,
-  // row 3: pounce, row 4: death — same layout the whole engine expects
-  const idle = [catSit(0), catSit(0), catSit(0), catSit(1), catSit(1),
-    catSit(1, true), catSit(1), catSit(0), catSit(0, true), catSit(0)];
-  idle.forEach((f, i) => paint(f, i, 0));
-  for (let i = 0; i < 10; i++) paint(catWalk((i % 5) / 5), i, 2);
-  const pounce = [0, 0, 1, 1, 1, 1, 2, 2, 2, 0].map(p => catPounce(p));
-  pounce.forEach((f, i) => paint(f, i, 3));
-  const death = [0, 0, 1, 1, 2, 2, 2, 2, 2, 2].map(p => catDeath(p));
-  death.forEach((f, i) => paint(f, i, 4));
-  assets.biski = c;
-}
 
 // Draw a sheet frame with its feet anchored at (x, groundY).
 function drawSprite(sheetKey, anim, frame, x, groundY, flip, scale = SCALE, tint = null) {
@@ -605,7 +382,7 @@ const player = {
   regen: 0, armor: 0, magnetR: 70, dmgMult: 1, cdMult: 1,
   facing: { x: 1, y: 0 }, hurtCd: 0, color: '#ffd23e', name: '',
   sprite: 'ranger', face: 1, moving: false, animT: 0, attackAge: 99,
-  critChance: 0.12,
+  critChance: 0.12, tint: null,
   weapons: [], passives: {},
 };
 
@@ -763,6 +540,8 @@ const HEROES = [
     tag: 'Psi tank', desc: 'Psi Nova pulses damage all around. Strong regeneration (+1 HP/s).',
     weapon: 'nova', mods: () => { player.regen += 1.0; player.maxHp += 10; player.hp += 10; } },
   { id: 'biski', name: 'Biski', sprite: 'biski', color: '#8a7fff',
+    tint: 'brightness(1.5)', // dark fur needs a lift against the dungeon floor
+    pCrop: [4, 11, 24, 20],
     tag: 'Lucky familiar', desc: 'The academy’s black cat. Claws, obviously. Fastest hero, crits 22% of the time — but only 75 HP.',
     weapon: 'claws', mods: () => {
       player.speed *= 1.2; player.magnetR *= 1.3; player.critChance = 0.22;
@@ -1546,7 +1325,7 @@ function render() {
     const anim = player.attackAge < 0.45 ? 'attack' : (player.moving ? 'walk' : 'idle');
     const frame = anim === 'attack' ? Math.min(9, Math.floor(player.attackAge / 0.45 * 10))
       : animFrame(player.animT, anim);
-    drawSprite(player.sprite, anim, frame, player.x, player.y + 20, player.face < 0);
+    drawSprite(player.sprite, anim, frame, player.x, player.y + 20, player.face < 0, SCALE, player.tint);
   } });
   drawables.sort((a, b) => a.y - b.y);
   for (const d of drawables) d.draw();
@@ -1704,7 +1483,15 @@ function portraitCanvas(hDef) {
   g.beginPath(); g.arc(54, 54, 49, 0, TAU); g.stroke();
   const def = SHEETS[hDef.sprite];
   const img = assets[def.file];
-  g.drawImage(img, 0, def.rows.idle * def.size, def.size, def.size, 6, 6, 96, 96);
+  if (hDef.tint) g.filter = hDef.tint;
+  if (hDef.pCrop) {
+    const [sx, sy, sw, sh] = hDef.pCrop;
+    const s = Math.min(88 / sw, 88 / sh);
+    g.drawImage(img, sx, def.rows.idle * def.size + sy, sw, sh,
+      54 - sw * s / 2, 58 - sh * s / 2, sw * s, sh * s);
+  } else {
+    g.drawImage(img, 0, def.rows.idle * def.size, def.size, def.size, 6, 6, 96, 96);
+  }
   return pc;
 }
 
@@ -1730,6 +1517,7 @@ function startGame(hDef) {
   player.name = hDef.name;
   player.color = hDef.color;
   player.sprite = hDef.sprite;
+  player.tint = hDef.tint || null;
   player.speed = 160; // rebase before hero mods
   addWeapon(hDef.weapon);
   hDef.mods();
@@ -1739,7 +1527,6 @@ function startGame(hDef) {
 }
 
 loadAssets().then(() => {
-  makeBiskiSheet();
   buildHeroSelect();
   requestAnimationFrame(loop);
 }).catch(err => {
