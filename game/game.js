@@ -195,9 +195,254 @@ const SHEETS = {
   orcA:     { file: 'orc',      size: 32, rows: STD },
   orc:      { file: 'orc',      size: 32, rows: { idle: 5, walk: 7, attack: 8, death: 9 } },
   minotaur: { file: 'minotaur', size: 48, rows: { idle: 0, walk: 1, attack: 3, death: 4 } },
+  biski:    { file: 'biski',    size: 32, rows: STD }, // generated in makeBiskiSheet()
 };
 
 const SCALE = 2; // 1 sprite pixel = 2 world pixels
+
+// ---------- Biski, the academy's black cat (hand-authored pixel art) ----------
+// 16x16 string maps rendered at 2x into a generated 320x160 sheet that follows
+// the same 10-frames-per-row layout as the Calciumtrice packs.
+const BISKI_PAL = {
+  K: '#26262e', // body
+  H: '#3d3d4a', // highlight
+  O: '#14141a', // shadowed edge
+  E: '#7fff6a', // eyes
+  P: '#ff9bb5', // nose / inner ear
+  W: '#e8e8f0', // paws, chest patch, claw streaks
+};
+const BISKI = {
+  idleA: [
+    '................',
+    '................',
+    '...K.K..........',
+    '...KKKK.........',
+    '...KKKK.........',
+    '...KEKE.........',
+    '...KKPK.....KK..',
+    '....KKK....KK...',
+    '....KKKK...KK...',
+    '...KKKKKK..KK...',
+    '...KKKKKKK.KK...',
+    '...KKKKKKKKK....',
+    '...KKKKKKKKK....',
+    '...KW.KW........',
+    '................',
+    '................'],
+  idleB: [
+    '................',
+    '................',
+    '...K.K..........',
+    '...KKKK.........',
+    '...KKKK.........',
+    '...KEKE.........',
+    '...KKPK.........',
+    '....KKK.....KK..',
+    '....KKKK...KK...',
+    '...KKKKKK.KK....',
+    '...KKKKKKKKK....',
+    '...KKKKKKKK.....',
+    '...KKKKKKKK.....',
+    '...KW.KW........',
+    '................',
+    '................'],
+  walk0: [
+    '................',
+    '................',
+    '...........KK...',
+    '.K........KKKK..',
+    '.KK.......KEKK..',
+    '..KK......KKKKP.',
+    '...KKKKKKKKKKK..',
+    '..KKKKKKKKKKKK..',
+    '..KKKKKKKKKKK...',
+    '..KKKKKKKKKK....',
+    '...KK.....KK....',
+    '...KK.....KK....',
+    '...WW.....WW....',
+    '................',
+    '................',
+    '................'],
+  walk1: [
+    '................',
+    '................',
+    '...........KK...',
+    '..K.......KKKK..',
+    '..KK......KEKK..',
+    '...KK.....KKKKP.',
+    '...KKKKKKKKKKK..',
+    '..KKKKKKKKKKKK..',
+    '..KKKKKKKKKKK...',
+    '..KKKKKKKKKK....',
+    '..KK.......KKK..',
+    '.KK.........KK..',
+    '.WW.........WW..',
+    '................',
+    '................',
+    '................'],
+  walk2: [
+    '................',
+    '................',
+    '................',
+    '.K.........KK...',
+    '.KK.......KKKK..',
+    '..KK......KEKK..',
+    '...KKKKKKKKKKKP.',
+    '..KKKKKKKKKKKK..',
+    '..KKKKKKKKKKK...',
+    '..KKKKKKKKKK....',
+    '....KKK..KKK....',
+    '.....KK..KK.....',
+    '.....WW..WW.....',
+    '................',
+    '................',
+    '................'],
+  walk3: [
+    '................',
+    '................',
+    '...........KK...',
+    '..K.......KKKK..',
+    '..KK......KEKK..',
+    '...KK.....KKKKP.',
+    '...KKKKKKKKKKK..',
+    '..KKKKKKKKKKKK..',
+    '..KKKKKKKKKKK...',
+    '..KKKKKKKKKK....',
+    '....KKK...KK....',
+    '.....KK....KK...',
+    '.....WW....WW...',
+    '................',
+    '................',
+    '................'],
+  pounce0: [
+    '................',
+    '................',
+    '................',
+    '................',
+    '...........KK...',
+    '.K........KKKK..',
+    '.KK.......KEKK..',
+    '..KKKKKKKKKKKKP.',
+    '..KKKKKKKKKKKK..',
+    '..KKKKKKKKKKK...',
+    '...KKK....KKK...',
+    '...KK......KK...',
+    '...WW......WW...',
+    '................',
+    '................',
+    '................'],
+  pounce1: [
+    '................',
+    '................',
+    '..........KK..W.',
+    '.........KKKK.W.',
+    '.K.......KEKKW..',
+    '.KK......KKKKPW.',
+    '..KKKKKKKKKKKKW.',
+    '.KKKKKKKKKKKWW..',
+    '.KKKKKKKKKKKW...',
+    '..KKK....KKK....',
+    '..KK......KKKW..',
+    '..WW.......WW...',
+    '................',
+    '................',
+    '................',
+    '................'],
+  pounce2: [
+    '................',
+    '................',
+    '...........KK...',
+    '..........KKKK..',
+    '.K........KEKK..',
+    '.KK.......KKKKP.',
+    '..KKKKKKKKKKKK..',
+    '..KKKKKKKKKKK...',
+    '..KKKKKKKKKK....',
+    '...KKK...KKK....',
+    '...KK.....KK....',
+    '...WW.....WW....',
+    '................',
+    '................',
+    '................',
+    '................'],
+  death0: [
+    '................',
+    '................',
+    '................',
+    '................',
+    '...K.K..........',
+    '...KKKK.....K...',
+    '...KOKO....KK...',
+    '...KKPK...KK....',
+    '....KKKKKKKK....',
+    '...KKKKKKKKK....',
+    '...KKKKKKKK.....',
+    '...KW.KW........',
+    '................',
+    '................',
+    '................',
+    '................'],
+  death1: [
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '...KK...........',
+    '..KKKK....KKK...',
+    '..KOKO..KKKKKK..',
+    '..KKKKKKKKKKKK..',
+    '..KKKKKKKKKKK...',
+    '...W..W..W......',
+    '................',
+    '................',
+    '................',
+    '................'],
+  death2: [
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '..KK............',
+    '..KOKO...KKKKK..',
+    '..KKKKKKKKKKKKK.',
+    '..KKKKKKKKKKKK..',
+    '................',
+    '................',
+    '................',
+    '................'],
+};
+
+function makeBiskiSheet() {
+  const c = document.createElement('canvas');
+  c.width = 320; c.height = 160;
+  const g = c.getContext('2d');
+  const put = (map, col, row) => {
+    for (let y = 0; y < 16; y++) {
+      for (let x = 0; x < 16; x++) {
+        const ch = map[y][x];
+        if (ch === '.' || ch === undefined) continue;
+        g.fillStyle = BISKI_PAL[ch] || '#f0f';
+        g.fillRect(col * 32 + x * 2, row * 32 + y * 2, 2, 2);
+      }
+    }
+  };
+  const rows = {
+    0: ['idleA', 'idleA', 'idleA', 'idleA', 'idleB', 'idleB', 'idleA', 'idleA', 'idleB', 'idleA'],
+    2: ['walk0', 'walk1', 'walk2', 'walk3', 'walk0', 'walk1', 'walk2', 'walk3', 'walk0', 'walk1'],
+    3: ['pounce0', 'pounce0', 'pounce1', 'pounce1', 'pounce1', 'pounce2', 'pounce2', 'pounce1', 'pounce1', 'pounce0'],
+    4: ['death0', 'death0', 'death1', 'death1', 'death2', 'death2', 'death2', 'death2', 'death2', 'death2'],
+  };
+  for (const [row, frames] of Object.entries(rows)) {
+    frames.forEach((name, i) => put(BISKI[name], i, +row));
+  }
+  assets.biski = c;
+}
 
 // Draw a sheet frame with its feet anchored at (x, groundY).
 function drawSprite(sheetKey, anim, frame, x, groundY, flip, scale = SCALE, tint = null) {
@@ -380,6 +625,7 @@ const player = {
   regen: 0, armor: 0, magnetR: 70, dmgMult: 1, cdMult: 1,
   facing: { x: 1, y: 0 }, hurtCd: 0, color: '#ffd23e', name: '',
   sprite: 'ranger', face: 1, moving: false, animT: 0, attackAge: 99,
+  critChance: 0.12,
   weapons: [], passives: {},
 };
 
@@ -536,6 +782,12 @@ const HEROES = [
   { id: 'mender', name: 'Mender', sprite: 'cleric', color: '#5fd47f',
     tag: 'Psi tank', desc: 'Psi Nova pulses damage all around. Strong regeneration (+1 HP/s).',
     weapon: 'nova', mods: () => { player.regen += 1.0; player.maxHp += 10; player.hp += 10; } },
+  { id: 'biski', name: 'Biski', sprite: 'biski', color: '#8a7fff',
+    tag: 'Lucky familiar', desc: 'The academy’s black cat. Claws, obviously. Fastest hero, crits 22% of the time — but only 75 HP.',
+    weapon: 'claws', mods: () => {
+      player.speed *= 1.2; player.magnetR *= 1.3; player.critChance = 0.22;
+      player.maxHp -= 25; player.hp -= 25;
+    } },
 ];
 
 // ---------- weapon/passive management ----------
@@ -687,7 +939,7 @@ function spawnBoss(def) {
 
 let lastHitSnd = 0;
 function damageEnemy(e, dmg) {
-  const crit = Math.random() < 0.12;
+  const crit = Math.random() < player.critChance;
   if (crit) dmg *= 2.2;
   e.hp -= dmg;
   e.flash = 0.1;
@@ -1507,6 +1759,7 @@ function startGame(hDef) {
 }
 
 loadAssets().then(() => {
+  makeBiskiSheet();
   buildHeroSelect();
   requestAnimationFrame(loop);
 }).catch(err => {
