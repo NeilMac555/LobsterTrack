@@ -36,6 +36,19 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Bet Calculator tool: new /tools/bet-calculator page (linked in nav),
+  modeled on AceOdds' calculator minus each-way and Rule 4 (horse-
+  racing concepts, not relevant to a football-only site). Bet type
+  limited to Single/Double/Treble/Accumulator — gated by selection
+  count (Double=exactly 2 legs, Treble=3, Accumulator=4+) rather than
+  the full Trixie/Patent/Yankee coverage-bet family. Odds format
+  toggle (fraction/decimal/US, decimal default) keeps all three
+  representations in sync per selection as you type. Math lives in
+  frontend/src/utils/betCalculator.ts as pure functions. Verified live:
+  conversions correct (5/2=3.50=+250), Won/Lost/Void handling correct
+  (Lost zeroes a combined bet, Void drops out without killing it),
+  both stake modes correct, bet-type options correctly reset on
+  selection-count change — `d09867e`
 - Betfair fallback bug: two Bundesliga matches (Freiburg v Werder
   Bremen, Augsburg v Schalke) showed Betfair Exchange odds with a
   nonsensical draw price (1.02 / 1.09) instead of Pinnacle. Root
