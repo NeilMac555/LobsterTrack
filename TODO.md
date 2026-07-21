@@ -36,6 +36,12 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy: Biski the black cat added as 6th hero — hand-authored
+  16x16 pixel-art frames (idle tail-swish, gallop, pounce with claw
+  streaks, curl-up death) generated into a runtime spritesheet matching
+  the Calciumtrice row layout; fastest hero, 22% crit (crit now a
+  per-hero stat), 75 HP. Also master-mute fixes shipped earlier
+  (`068882d`, `d07cb0b`) — `a2fd3b5`
 - Mutant Academy enemy identity pass: roster was wall-to-wall green —
   now 9 visually distinct threats (green/white/blue/red/yellow/dark
   palette variants from the sheets), each wave headlines exactly one
