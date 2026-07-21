@@ -36,6 +36,11 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Biski goes legit: replaced procedural cat with Shepardskin's CC0
+  "Cat sprites" (OpenGameArt) — real animator frames incl. a 6-frame
+  bounding gallop; extraction script segments/mirrors/repacks the
+  contact sheet into game/assets/biski.png; brightness tint + portrait
+  crop for readability; procedural cat code deleted — `43e55e6`
 - Biski redraw after playtest feedback ("looks like a duck from the
   side"): full 32x32 procedural pixel art — real cat anatomy (skull +
   muzzle + fused triangular ears, S-curve tail, 4 gallop legs with
