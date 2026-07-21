@@ -36,6 +36,17 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Bet Calculator: added inline +/- selection controls so Accumulator
+  can visibly grow past its default 4 (user report: "should be able
+  to add up to 15 selections") — the math already supported up to 20,
+  but nothing near the Selections list hinted at it. Also fixed a real
+  bug caught while testing: rapid +/- clicks collapsed into a single
+  +1/-1 because the handler read numSelections from a stale render
+  closure; moved the resize/bet-type-revalidation into one useEffect
+  keyed on numSelections and made the buttons use functional
+  setState, so every click counts regardless of click speed. Verified
+  live: +11 clicks from 4 correctly lands on 15/20 with 32768.00
+  combined odds — `6edb0ac`
 - Bet Calculator fix: Bet Type dropdown was only ever showing the one
   combined type that matched the CURRENT selection count, so at the
   default (2 selections) Treble and Accumulator were invisible — user
