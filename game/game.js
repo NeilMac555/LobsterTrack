@@ -32,16 +32,42 @@ function hash2(x, y) {
 }
 
 // ---------- tiny synth sfx ----------
-let audioCtx = null;
+// Every sound (music AND sfx) routes through one master gain so mute is total.
+let audioCtx = null, masterGain = null, muted = false;
+function audioOut() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = audioCtx.createGain();
+    masterGain.connect(audioCtx.destination);
+    masterGain.gain.value = muted ? 0 : 1;
+  }
+  return masterGain;
+}
+function setMuted(m) {
+  muted = m;
+  music.on = !m;
+  try { if (masterGain) masterGain.gain.value = m ? 0 : 1; } catch (e) {}
+  const btn = document.getElementById('mute-btn');
+  if (btn) btn.textContent = m ? '\u{1F507}' : '\u{1F50A}';
+}
+// tab hidden -> total silence; back -> resume unless muted
+document.addEventListener('visibilitychange', () => {
+  try {
+    if (!audioCtx) return;
+    if (document.hidden) audioCtx.suspend();
+    else if (!muted) audioCtx.resume();
+  } catch (e) {}
+});
 function sfx(freq, dur, type = 'square', vol = 0.06, slide = 0) {
   try {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (muted) return;
+    const out = audioOut();
     const o = audioCtx.createOscillator(), g = audioCtx.createGain();
     o.type = type; o.frequency.value = freq;
     if (slide) o.frequency.linearRampToValueAtTime(freq + slide, audioCtx.currentTime + dur);
     g.gain.value = vol;
     g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
-    o.connect(g); g.connect(audioCtx.destination);
+    o.connect(g); g.connect(out);
     o.start(); o.stop(audioCtx.currentTime + dur);
   } catch (e) { /* audio unavailable — fine */ }
 }
@@ -63,8 +89,10 @@ const M_BASS = [55, 55, 0, 55, 82.4, 0, 55, 0, 65.4, 65.4, 0, 65.4, 49, 0, 61.7,
 const M_ARP = [220, 261.6, 329.6, 261.6, 220, 329.6, 392, 329.6,
   261.6, 329.6, 415.3, 329.6, 246.9, 293.7, 370, 293.7]; // Am / C / E arps
 function musicTick() {
-  if (!music.on || !audioCtx) return;
+  if (!music.on || muted || !audioCtx) return;
   const bpm = 138, stepDur = 60 / bpm / 4;
+  // never play catch-up after mute/background throttling — snap to now
+  if (music.nextT < audioCtx.currentTime - 0.1) music.nextT = audioCtx.currentTime + 0.05;
   while (music.nextT < audioCtx.currentTime + 0.18) {
     const s = music.step % 16, bar = Math.floor(music.step / 16) % 4;
     const t = music.nextT;
@@ -85,12 +113,13 @@ function musicTick() {
 }
 function beep(t, freq, dur, type, vol, slide = 0) {
   try {
+    const out = audioOut();
     const o = audioCtx.createOscillator(), g = audioCtx.createGain();
     o.type = type; o.frequency.setValueAtTime(freq, t);
     if (slide) o.frequency.linearRampToValueAtTime(Math.max(20, freq + slide), t + dur);
     g.gain.setValueAtTime(vol, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-    o.connect(g); g.connect(audioCtx.destination);
+    o.connect(g); g.connect(out);
     o.start(t); o.stop(t + dur + 0.02);
   } catch (e) {}
 }
@@ -106,13 +135,13 @@ function noiseHit(t, dur, vol) {
     src.buffer = noiseBuf;
     g.gain.setValueAtTime(vol, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-    src.connect(g); g.connect(audioCtx.destination);
+    src.connect(g); g.connect(audioOut());
     src.start(t); src.stop(t + dur + 0.02);
   } catch (e) {}
 }
 function startMusic() {
   try {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    audioOut();
     // iframes and strict autoplay policies hand us a suspended context —
     // resume now (we're inside a click) and again on any later gesture
     if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -127,6 +156,11 @@ function unlockAudio() {
 }
 window.addEventListener('pointerdown', unlockAudio);
 window.addEventListener('keydown', unlockAudio);
+document.getElementById('mute-btn').addEventListener('click', e => {
+  e.stopPropagation();
+  setMuted(!muted);
+  e.currentTarget.blur(); // don't let space/enter re-toggle while playing
+});
 
 // ---------- assets & sprite atlas ----------
 const ASSET_FILES = ['warrior', 'wizard', 'ranger', 'rogue', 'cleric',
@@ -865,7 +899,7 @@ function showLevelUp() {
 const keys = {};
 window.addEventListener('keydown', e => {
   keys[e.key.toLowerCase()] = true;
-  if (e.key === 'm' || e.key === 'M') music.on = !music.on;
+  if (e.key === 'm' || e.key === 'M') setMuted(!muted);
   if ((e.key === 'p' || e.key === 'Escape') && state.running && !state.over
       && levelupScreen.classList.contains('hidden')
       && chestScreen.classList.contains('hidden')) {
@@ -1399,9 +1433,6 @@ function render() {
   ctx.font = 'bold 16px sans-serif';
   ctx.fillStyle = '#ffd23e';
   ctx.fillText(`\u{1FA99} ${state.gold}`, w - 20, 32);
-  ctx.font = '11px sans-serif';
-  ctx.fillStyle = music.on ? '#7fd4ff' : '#556';
-  ctx.fillText(music.on ? '♪ music on · M' : '♪ muted · M', w - 20, 50);
 
   if (touch.active) {
     ctx.strokeStyle = 'rgba(255,255,255,0.25)';
