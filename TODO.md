@@ -36,6 +36,9 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Biski black-cat polish: fur recoloured to true black in the asset
+  (eyes/ears keep colour), grey-making 1.5x tint dropped to 1.15,
+  per-hero drawScale renders her 25% bigger — `3a79d00`
 - Biski goes legit: replaced procedural cat with Shepardskin's CC0
   "Cat sprites" (OpenGameArt) — real animator frames incl. a 6-frame
   bounding gallop; extraction script segments/mirrors/repacks the
