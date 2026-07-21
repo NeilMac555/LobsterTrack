@@ -36,6 +36,19 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Bet Calculator compact redesign: user feedback ("too much dead
+  space, looks vanilla"). Selections list was the worst offender —
+  each selection was a full bordered card with per-field labels
+  repeated on every row; at 15 selections that ran well past 1500px
+  of scrolling. Replaced with a single divided list, one shared
+  column header, one line per selection, and a colored left border
+  per row (emerald/red/amber for Won/Lost/Void) instead of extra
+  text. Also tightened settings/stake/results padding, switched to
+  mono uppercase micro-labels matching the rest of the site, and
+  added a gradient hero background + pulsing "live" dot + ticket
+  emoji for visual consistency with MatchDetailPage. Verified live:
+  15-selection layout now fits in ~965px, all bet types/odds
+  formats/outcomes still calculate correctly — `3be73ac`
 - Bet Calculator: added inline +/- selection controls so Accumulator
   can visibly grow past its default 4 (user report: "should be able
   to add up to 15 selections") — the math already supported up to 20,
