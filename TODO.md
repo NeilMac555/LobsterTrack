@@ -36,6 +36,11 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy enemy identity pass: roster was wall-to-wall green —
+  now 9 visually distinct threats (green/white/blue/red/yellow/dark
+  palette variants from the sheets), each wave headlines exactly one
+  new enemy with a "NEW THREAT" banner, Night Raiders got flanking
+  orbit movement, sweeps use white skeletons — `fcb3546`
 - Mutant Academy VS-faithful overhaul: researched Vampire Survivors'
   real mechanics and rebuilt the loop — per-minute wave tables with
   min-enemy quotas, ring/sweep map events every 30s, elites dropping
