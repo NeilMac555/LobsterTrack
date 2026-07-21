@@ -1,13 +1,16 @@
 import { useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import {
+  ALL_BET_TYPES,
   americanToDecimal,
-  availableBetTypes,
   betTypeLabel,
   calculateBet,
   decimalToAmerican,
   decimalToFraction,
   fractionToDecimal,
+  isBetTypeValidForCount,
+  naturalBetTypeForCount,
+  requiredSelectionCount,
   type BetType,
   type OddsFormat,
   type Outcome,
@@ -52,10 +55,7 @@ export default function BetCalculatorPage() {
   const [stake, setStake] = useState('10');
   const [rows, setRows] = useState<SelectionRow[]>([makeRow('sel-0'), makeRow('sel-1')]);
 
-  const betTypeOptions = availableBetTypes(numSelections);
-
-  const handleNumSelectionsChange = (n: number) => {
-    setNumSelections(n);
+  const resizeRows = (n: number) => {
     setRows((prev) => {
       if (n > prev.length) {
         const additions = Array.from({ length: n - prev.length }, (_, i) => makeRow(`sel-${prev.length + i}`));
@@ -63,8 +63,28 @@ export default function BetCalculatorPage() {
       }
       return prev.slice(0, n);
     });
-    const validTypes = availableBetTypes(n);
-    if (!validTypes.includes(betType)) setBetType('single');
+  };
+
+  // Number of Selections changed directly — keep the current bet type if
+  // it's still valid for the new count (e.g. Accumulator going from 4 to
+  // 5 selections), otherwise snap to whichever combined type now fits
+  // (e.g. Double at 2 selections -> bump to 3 -> auto-switch to Treble).
+  const handleNumSelectionsChange = (n: number) => {
+    setNumSelections(n);
+    resizeRows(n);
+    if (!isBetTypeValidForCount(betType, n)) setBetType(naturalBetTypeForCount(n));
+  };
+
+  // Bet type changed directly — Double/Treble/Accumulator drive the
+  // selection count to whatever fits them (see requiredSelectionCount),
+  // the way picking a bet type on a real bookmaker slip works.
+  const handleBetTypeChange = (type: BetType) => {
+    setBetType(type);
+    const n = requiredSelectionCount(type, numSelections);
+    if (n !== numSelections) {
+      setNumSelections(n);
+      resizeRows(n);
+    }
   };
 
   const updateRow = (id: string, patch: Partial<SelectionRow>) => {
@@ -211,10 +231,10 @@ export default function BetCalculatorPage() {
               <label className="block text-sm text-slate-400 mb-2">Bet Type</label>
               <select
                 value={betType}
-                onChange={(e) => setBetType(e.target.value as BetType)}
+                onChange={(e) => handleBetTypeChange(e.target.value as BetType)}
                 className={selectClass}
               >
-                {betTypeOptions.map((bt) => (
+                {ALL_BET_TYPES.map((bt) => (
                   <option key={bt} value={bt}>{betTypeLabel(bt, numSelections)}</option>
                 ))}
               </select>

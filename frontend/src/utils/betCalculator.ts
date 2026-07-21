@@ -65,16 +65,48 @@ export function decimalToAmerican(decimal: number): number {
 
 // ---- Bet type <-> selection count -------------------------------------
 
-/** Which bet types are valid for a given number of selections. Single is
- *  always available; the "combined" type is fixed to its exact fold size
- *  (a Double is inherently 2 legs, a Treble 3) rather than AceOdds' fuller
- *  "N choose K" coverage bets (Trixie/Patent/Yankee/...), which this
- *  calculator deliberately doesn't support. */
-export function availableBetTypes(numSelections: number): BetType[] {
-  if (numSelections <= 1) return ['single'];
-  if (numSelections === 2) return ['single', 'double'];
-  if (numSelections === 3) return ['single', 'treble'];
-  return ['single', 'accumulator'];
+/** All four bet types are always offered — the picker doesn't hide Treble
+ *  or Accumulator just because the current selection count doesn't match
+ *  yet. Instead, picking a type drives the selection count (see
+ *  requiredSelectionCount below), the way a normal bookmaker bet slip
+ *  works: choose "Treble", it gives you 3 selection rows. */
+export const ALL_BET_TYPES: BetType[] = ['single', 'double', 'treble', 'accumulator'];
+
+/** Whether the current selection count still matches a bet type — a
+ *  Double is inherently 2 legs, a Treble 3, so changing the count away
+ *  from that invalidates it. Accumulator just needs 4+; Single fits any
+ *  count. Used to decide when to auto-correct betType after the user
+ *  edits Number of Selections directly (rather than via the type picker). */
+export function isBetTypeValidForCount(betType: BetType, numSelections: number): boolean {
+  switch (betType) {
+    case 'single': return true;
+    case 'double': return numSelections === 2;
+    case 'treble': return numSelections === 3;
+    case 'accumulator': return numSelections >= 4;
+  }
+}
+
+/** The selection count a bet type implies when chosen from the picker —
+ *  Double/Treble snap to their exact fold size; Accumulator bumps up to
+ *  4 only if the current count is below that (it's happy with more). */
+export function requiredSelectionCount(betType: BetType, currentCount: number): number {
+  switch (betType) {
+    case 'single': return currentCount;
+    case 'double': return 2;
+    case 'treble': return 3;
+    case 'accumulator': return Math.max(currentCount, 4);
+  }
+}
+
+/** The natural bet type for a given selection count — used to auto-pick
+ *  a sensible combined type when Number of Selections changes underneath
+ *  the current type (e.g. Double -> bump count to 3 -> auto-switch to
+ *  Treble rather than falling back to Single). */
+export function naturalBetTypeForCount(numSelections: number): BetType {
+  if (numSelections <= 1) return 'single';
+  if (numSelections === 2) return 'double';
+  if (numSelections === 3) return 'treble';
+  return 'accumulator';
 }
 
 export function betTypeLabel(betType: BetType, numSelections: number): string {
@@ -82,7 +114,7 @@ export function betTypeLabel(betType: BetType, numSelections: number): string {
     case 'single': return numSelections > 1 ? 'Singles' : 'Single';
     case 'double': return 'Double';
     case 'treble': return 'Treble';
-    case 'accumulator': return `${numSelections}-Fold Accumulator`;
+    case 'accumulator': return 'Accumulator (Parlay)';
   }
 }
 
