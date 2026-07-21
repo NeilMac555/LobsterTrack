@@ -36,6 +36,11 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Biski redraw after playtest feedback ("looks like a duck from the
+  side"): full 32x32 procedural pixel art — real cat anatomy (skull +
+  muzzle + fused triangular ears, S-curve tail, 4 gallop legs with
+  near/far depth), fur texture post-process (outline, belly tone, back
+  sheen, dithered highlights), amber eyes — `7da4b83`
 - Mutant Academy: Biski the black cat added as 6th hero — hand-authored
   16x16 pixel-art frames (idle tail-swish, gallop, pounce with claw
   streaks, curl-up death) generated into a runtime spritesheet matching
