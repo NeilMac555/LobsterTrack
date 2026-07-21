@@ -382,7 +382,7 @@ const player = {
   regen: 0, armor: 0, magnetR: 70, dmgMult: 1, cdMult: 1,
   facing: { x: 1, y: 0 }, hurtCd: 0, color: '#ffd23e', name: '',
   sprite: 'ranger', face: 1, moving: false, animT: 0, attackAge: 99,
-  critChance: 0.12, tint: null,
+  critChance: 0.12, tint: null, drawScale: SCALE,
   weapons: [], passives: {},
 };
 
@@ -540,8 +540,8 @@ const HEROES = [
     tag: 'Psi tank', desc: 'Psi Nova pulses damage all around. Strong regeneration (+1 HP/s).',
     weapon: 'nova', mods: () => { player.regen += 1.0; player.maxHp += 10; player.hp += 10; } },
   { id: 'biski', name: 'Biski', sprite: 'biski', color: '#8a7fff',
-    tint: 'brightness(1.5)', // dark fur needs a lift against the dungeon floor
-    pCrop: [4, 11, 24, 20],
+    tint: 'brightness(1.15)', // just enough lift to read on the floor, still black
+    pCrop: [4, 11, 24, 20], drawScale: 2.5,
     tag: 'Lucky familiar', desc: 'The academy’s black cat. Claws, obviously. Fastest hero, crits 22% of the time — but only 75 HP.',
     weapon: 'claws', mods: () => {
       player.speed *= 1.2; player.magnetR *= 1.3; player.critChance = 0.22;
@@ -1325,7 +1325,7 @@ function render() {
     const anim = player.attackAge < 0.45 ? 'attack' : (player.moving ? 'walk' : 'idle');
     const frame = anim === 'attack' ? Math.min(9, Math.floor(player.attackAge / 0.45 * 10))
       : animFrame(player.animT, anim);
-    drawSprite(player.sprite, anim, frame, player.x, player.y + 20, player.face < 0, SCALE, player.tint);
+    drawSprite(player.sprite, anim, frame, player.x, player.y + 20, player.face < 0, player.drawScale, player.tint);
   } });
   drawables.sort((a, b) => a.y - b.y);
   for (const d of drawables) d.draw();
@@ -1518,6 +1518,7 @@ function startGame(hDef) {
   player.color = hDef.color;
   player.sprite = hDef.sprite;
   player.tint = hDef.tint || null;
+  player.drawScale = hDef.drawScale || SCALE;
   player.speed = 160; // rebase before hero mods
   addWeapon(hDef.weapon);
   hDef.mods();
