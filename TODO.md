@@ -36,6 +36,18 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Biggest Movers now measures movement over the trailing 48h instead
+  of all-time since first-tracked: previously compared current odds
+  to the very first snapshot ever recorded (often a month before
+  kickoff for top-5-league fixtures), so a match could sit at the top
+  showing the same stale figure for weeks. Baseline is now the
+  snapshot closest to 48h ago (1X2 + Totals markets), falling back to
+  the true opening snapshot for matches tracked <48h so new additions
+  still show something. Frontend: "Open" column renamed "48h Ago",
+  subtitle now reads "Sharp money signals · Last 48h". Verified live
+  — leaderboard composition changed as expected (old EPL/Serie A
+  entries with month-old moves replaced by matches with genuine
+  recent 48h swings) — `20bea64`
 - Bet Calculator compact redesign: user feedback ("too much dead
   space, looks vanilla"). Selections list was the worst offender —
   each selection was a full bordered card with per-field labels
