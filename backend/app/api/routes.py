@@ -797,10 +797,11 @@ async def get_biggest_movers(
     sport_key: Optional[str] = Query(None, description="Optional league filter — e.g. soccer_fifa_world_cup")
 ):
     """
-    Get matches with the biggest odds movements across all markets (1X2, Totals, Asian Handicap).
-    Returns one move per match (the biggest across all markets).
+    Get matches with the biggest odds movements across all markets (1X2, Totals, Asian Handicap)
+    over the trailing 48 hours. Returns one move per match (the biggest across all markets).
     """
     now = datetime.utcnow()
+    cutoff_48h = now - timedelta(hours=48)
 
     # Get upcoming matches, optionally filtered to a single league.
     matches_q = db.query(Match).filter(Match.commence_time > now)
@@ -849,6 +850,33 @@ async def get_biggest_movers(
     )
     opening_1x2 = {row.match_id: row for row in db.query(opening_1x2_subq).filter(opening_1x2_subq.c.rn == 1).all()}
 
+    # Baseline for the "48 hours" window: the most recent snapshot at or
+    # before the cutoff (i.e. closest available reading to 48h ago). Matches
+    # tracked for less than 48h have no row here at all, so they fall back
+    # to their true opening snapshot below — otherwise a match added
+    # yesterday would show zero movement instead of what little it's moved
+    # since we started watching it.
+    baseline_1x2_subq = (
+        db.query(
+            OddsSnapshot.match_id,
+            OddsSnapshot.home_odds,
+            OddsSnapshot.draw_odds,
+            OddsSnapshot.away_odds,
+            func.row_number().over(
+                partition_by=OddsSnapshot.match_id,
+                order_by=OddsSnapshot.fetched_at.desc()
+            ).label('rn')
+        )
+        .filter(OddsSnapshot.match_id.in_(match_ids))
+        .filter(OddsSnapshot.in_play == False)  # noqa: E712
+        .filter(OddsSnapshot.fetched_at <= cutoff_48h)
+        .subquery()
+    )
+    baseline_1x2_at_cutoff = {
+        row.match_id: row for row in db.query(baseline_1x2_subq).filter(baseline_1x2_subq.c.rn == 1).all()
+    }
+    baseline_1x2 = {**opening_1x2, **baseline_1x2_at_cutoff}
+
     # === TOTALS MARKET ===
     # With alternate_totals we store many lines per fetch, so partition by
     # (match_id, line) to get latest/opening per line. The "opening" line
@@ -887,10 +915,32 @@ async def get_biggest_movers(
         .subquery()
     )
     opening_totals = {row.match_id: row for row in db.query(opening_totals_subq).filter(opening_totals_subq.c.rn == 1).all()}
-    # latest_totals lookup: grab the latest snapshot AT the opening line
+
+    # Same 48h-cutoff/fallback-to-opening pattern as the 1X2 market above.
+    baseline_totals_subq = (
+        db.query(
+            TotalsSnapshot.match_id,
+            TotalsSnapshot.line,
+            TotalsSnapshot.over_odds,
+            TotalsSnapshot.under_odds,
+            func.row_number().over(
+                partition_by=TotalsSnapshot.match_id,
+                order_by=(TotalsSnapshot.fetched_at.desc(), TotalsSnapshot.id.asc())
+            ).label('rn')
+        )
+        .filter(TotalsSnapshot.match_id.in_(match_ids))
+        .filter(TotalsSnapshot.fetched_at <= cutoff_48h)
+        .subquery()
+    )
+    baseline_totals_at_cutoff = {
+        row.match_id: row for row in db.query(baseline_totals_subq).filter(baseline_totals_subq.c.rn == 1).all()
+    }
+    baseline_totals = {**opening_totals, **baseline_totals_at_cutoff}
+
+    # latest_totals lookup: grab the latest snapshot AT the baseline line
     latest_totals = {
-        match_id: latest_totals_map.get((match_id, opening_t.line))
-        for match_id, opening_t in opening_totals.items()
+        match_id: latest_totals_map.get((match_id, baseline_t.line))
+        for match_id, baseline_t in baseline_totals.items()
     }
 
     # === SPREADS (ASIAN HANDICAP) MARKET ===
@@ -935,7 +985,7 @@ async def get_biggest_movers(
 
         # 1X2 outcomes
         latest = latest_1x2.get(match_id)
-        opening = opening_1x2.get(match_id)
+        opening = baseline_1x2.get(match_id)
         if latest and opening:
             outcomes = [
                 ('home', match.home_team, opening.home_odds, latest.home_odds),
@@ -960,7 +1010,7 @@ async def get_biggest_movers(
 
         # Totals outcomes
         latest_t = latest_totals.get(match_id)
-        opening_t = opening_totals.get(match_id)
+        opening_t = baseline_totals.get(match_id)
         if latest_t and opening_t:
             line = opening_t.line
             outcomes = [

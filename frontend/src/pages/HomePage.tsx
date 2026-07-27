@@ -417,7 +417,7 @@ export default function HomePage() {
                       : 'Biggest Movers'}
                   </h2>
                   <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em] font-semibold">
-                    Sharp money signals{league === 'soccer_fifa_world_cup' ? ' · 72 fixtures' : ''}
+                    Sharp money signals · Last 48h{league === 'soccer_fifa_world_cup' ? ' · 72 fixtures' : ''}
                   </p>
                 </div>
                 <HelpButton onClick={() => setShowSteamGuide(true)} />
@@ -450,7 +450,7 @@ export default function HomePage() {
                     Move
                   </th>
                   <th className="px-4 py-3 text-center text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">
-                    Open
+                    48h Ago
                   </th>
                   <th className="px-4 py-3 text-center text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">
                     Now
