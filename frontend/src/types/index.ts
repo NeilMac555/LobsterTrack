@@ -399,3 +399,101 @@ export const LEAGUE_CONFIG: Record<string, { name: string; shortName: string; co
 // leagues. Use this anywhere you iterate to render selectors; keep
 // LEAGUE_CONFIG[key] for direct lookups so legacy data still renders.
 export const VISIBLE_LEAGUES = Object.entries(LEAGUE_CONFIG).filter(([, v]) => !v.hidden);
+
+// ===== Forecast Engine (/tools/forecast) =====
+// Mirrors the payload shapes produced by backend
+// app/services/forecast/engine.py — the payload blob is versioned by
+// engine_version, so additive backend changes should extend these
+// optionally rather than repurposing fields.
+
+export interface ForecastSource {
+  id: string;
+  name: string;
+  tier: number;
+  detail: string;
+}
+
+export interface ForecastRegistry {
+  engine_version: string;
+  sources: ForecastSource[];
+}
+
+export interface ForecastStage {
+  source: string;
+  status: 'done' | 'empty' | 'error';
+  headline: string;
+  ms: number;
+}
+
+export interface ForecastEntry {
+  team: string;
+  probability: number;
+  current_points: number;
+  played: number;
+  mean_points: number;
+}
+
+export interface ForecastRationalePara {
+  text: string;
+  sources: string[];
+}
+
+export interface ForecastMarket {
+  home: number;
+  draw: number;
+  away: number;
+  fetched_at: string;
+}
+
+export interface ForecastMatchResult {
+  home: string;
+  away: string;
+  venue_known: boolean;
+  p_home: number;
+  p_draw: number;
+  p_away: number;
+  lambda_home: number;
+  lambda_away: number;
+  commence_time: string | null;
+  market: ForecastMarket | null;
+  polymarket: Record<string, unknown> | null;
+}
+
+export interface ForecastResult {
+  type: 'distribution' | 'binary' | 'match';
+  outcome_label?: string;
+  entries?: ForecastEntry[];
+  binary?: { team: string; outcome_label: string; probability: number };
+  match?: ForecastMatchResult;
+  meta?: { n_sims: number; remaining_fixtures: number; season: string };
+}
+
+export interface ForecastResponse {
+  id?: number;
+  question: string;
+  kind: string;
+  league: string | null;
+  league_name?: string;
+  status: 'ok' | 'unsupported' | 'error';
+  reason?: string;
+  suggestions?: string[];
+  result: ForecastResult | null;
+  rationale: ForecastRationalePara[];
+  stages: ForecastStage[];
+  evidence: Record<string, Record<string, unknown>>;
+  warnings?: string[];
+  engine_version: string;
+  duration_ms: number;
+  created_at?: string;
+}
+
+export interface RecentForecastsResponse {
+  forecasts: Array<{
+    id: number;
+    question: string;
+    kind: string;
+    league: string | null;
+    created_at: string;
+    payload: ForecastResponse;
+  }>;
+}

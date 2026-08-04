@@ -4303,3 +4303,113 @@ async def admin_force_activate(
         "user_created": created_user,
         "magic_link_sent": magic_link_sent,
     }
+
+
+# =============================================================================
+# FORECAST ENGINE (/forecast) — controlled-source season/match forecasts.
+# See app/services/forecast/ for the engine; registry.py is the contract
+# for what a forecast may consult.
+# =============================================================================
+
+@router.get("/forecast/registry")
+async def get_forecast_registry():
+    """
+    The forecast engine's source registry — every source a forecast can
+    draw on, and nothing else. The /forecast page renders exactly these
+    nodes in its research-swarm view.
+    """
+    from app.services.forecast import SOURCES, ENGINE_VERSION
+    return {"engine_version": ENGINE_VERSION, "sources": SOURCES}
+
+
+@router.get("/forecast/recent")
+async def get_recent_forecasts(
+    limit: int = Query(10, le=50),
+    db: Session = Depends(get_db),
+):
+    """Most recent successful forecast runs (the public ledger)."""
+    import json as _json
+    from app.models import Forecast
+
+    rows = (
+        db.query(Forecast)
+        .filter(Forecast.status == "ok")
+        .order_by(desc(Forecast.created_at))
+        .limit(limit)
+        .all()
+    )
+    return {
+        "forecasts": [
+            {
+                "id": r.id,
+                "question": r.question,
+                "kind": r.kind,
+                "league": r.league,
+                "created_at": r.created_at.isoformat(),
+                "payload": _json.loads(r.payload),
+            }
+            for r in rows
+        ]
+    }
+
+
+@router.get("/forecast/{forecast_id}")
+async def get_forecast(forecast_id: int, db: Session = Depends(get_db)):
+    import json as _json
+    from app.models import Forecast
+
+    row = db.query(Forecast).filter(Forecast.id == forecast_id).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Forecast not found")
+    payload = _json.loads(row.payload)
+    payload["id"] = row.id
+    payload["created_at"] = row.created_at.isoformat()
+    return payload
+
+
+@router.post("/forecast")
+def create_forecast(
+    body: dict,
+    db: Session = Depends(get_db),
+):
+    """
+    Run the forecast engine on a natural-language question. Deliberately
+    a sync `def` route: the Monte Carlo is CPU-bound, so FastAPI runs it
+    on the threadpool instead of blocking the event loop.
+
+    Every run — including unsupported/error outcomes — is persisted to
+    the forecasts ledger for auditability.
+    """
+    from app.models import Forecast
+    from app.services.forecast import run_forecast
+    from app.services.forecast.engine import serialize_payload
+
+    question = (body.get("question") or "").strip()
+    if not question:
+        raise HTTPException(status_code=422, detail="question is required")
+    if len(question) > 300:
+        raise HTTPException(status_code=422, detail="question too long (300 chars max)")
+
+    try:
+        payload = run_forecast(db, question)
+    except Exception as e:
+        import structlog as _structlog
+        _structlog.get_logger().error("forecast run failed", question=question, error=str(e))
+        raise HTTPException(status_code=500, detail="Forecast engine error")
+
+    row = Forecast(
+        question=question,
+        kind=payload["kind"],
+        league=payload.get("league"),
+        status=payload["status"],
+        engine_version=payload["engine_version"],
+        duration_ms=payload.get("duration_ms", 0),
+        payload=serialize_payload(payload),
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+
+    payload["id"] = row.id
+    payload["created_at"] = row.created_at.isoformat()
+    return payload
