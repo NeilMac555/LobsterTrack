@@ -76,6 +76,16 @@ class _Run:
         t0 = time.monotonic()
         try:
             card = fn()
+        except ValueError as e:
+            # Data-integrity errors (e.g. team-name normalization gaps)
+            # are user-meaningful — surface the message in the stage log
+            # instead of hiding it behind a generic label.
+            logger.warning("forecast collector data error", source=source, error=str(e))
+            self.stages.append({
+                "source": source, "status": "error",
+                "headline": str(e)[:200], "ms": _ms(t0),
+            })
+            return None
         except Exception as e:  # collector failure must not kill the run
             logger.warning("forecast collector failed", source=source, error=str(e))
             self.stages.append({
@@ -190,6 +200,7 @@ def run_forecast(db: Session, question: str) -> dict:
         top = sorted(fit.strengths.items(), key=lambda kv: -kv[1].attack)[:3]
         headline = (
             f"{fit.weighted_match_count:.0f} weighted matches · seasons {'/'.join(fit.seasons_used) or '—'}"
+            f" · {len(fit.draws)} bootstrap draws · conv {fit.final_max_update:.1e}"
         )
         if fit.defaulted_teams:
             headline += f" · {len(fit.defaulted_teams)} promoted defaults"
@@ -249,6 +260,8 @@ def run_forecast(db: Session, question: str) -> dict:
         payload = _forecast_match(run, parsed, fit, mu, ratio, pinnacle, polymarket, steam)
     else:
         payload = _forecast_league(run, parsed, cfg, standings, fit, mu, ratio)
+    if payload.get("error_reason"):
+        return _abort(run, question, parsed, t0, payload["error_reason"])
 
     payload.update({
         "question": question, "kind": parsed.kind, "league": league,
@@ -284,17 +297,27 @@ def _forecast_league(run, parsed, cfg, standings, fit, mu, ratio) -> dict:
             home_away_ratio=ratio,
             top_n=cfg["top_n"],
             relegation_spots=cfg["relegation_spots"],
+            strength_draws=fit.draws or None,
         )
         run._sim = sim
         return {
-            "headline": f"{sim.n_sims:,} seasons · {sim.remaining_fixture_count} remaining fixtures",
+            "headline": (
+                f"{sim.n_sims:,} seasons · {sim.remaining_fixture_count} remaining fixtures"
+                f" · {len(fit.draws)} strength draws"
+            ),
             "n_sims": sim.n_sims,
             "remaining_fixtures": sim.remaining_fixture_count,
         }
 
     sim_card = run.stage("monte_carlo", collect_sim)
     if sim_card is None:
-        raise RuntimeError("season simulation failed")
+        # The stage log carries the specific message (a name-mismatch
+        # ValueError hard-fails the sim by design — see season_simulator).
+        return {"error_reason": (
+            "Season simulation refused to run — most likely a team-name "
+            "normalization gap between the results data and the fixture "
+            "feed. See the stage log for the offending names."
+        )}
     sim = run._sim
 
     if parsed.kind == "relegation" or (parsed.kind == "team_outcome" and parsed.outcome == "relegation"):

@@ -5,16 +5,30 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 ## Now
 
-- Forecast engine: JOINT refit of rho + drawInflation on our own
+- Forecast engine: SEVER-then-refit rho and drawInflation on our own
   window — external review flags a likely double-correction (negative
   rho already boosts the draw-adjacent cells; multiplying the diagonal
-  by 1.08 on top is the same fix applied twice). Refit both jointly
-  with the existing harness (gates held), including the "drop
-  drawInflation entirely" candidate. Then optimise the season-bucket
-  recency weights out of sample — currently inherited from the
-  league-constants job, never validated for forecasting. NOTE: the
-  strength fit has NO within-season time decay, only season buckets;
-  evaluate adding exponential day-decay while at it.
+  by 1.08 on top is the same fix applied twice, and rho is probably
+  small BECAUSE the inflation is doing its job for it). Reviewer
+  guidance: drop DRAW_INFLATION first, refit rho alone (expect larger
+  |rho| than -0.03), harness gates held.
+- Forecast engine: out-of-sample tuning of the three provisional
+  constants introduced by the review-two fixes — HALF_LIFE_DAYS=365
+  (exponential day-decay, replaced season buckets), K_SHRINK=15
+  (shrinkage prior), N_DRAWS=100 / BOOTSTRAP_ITERATIONS=8. All
+  mechanisms are live; the values are placeholders until the harness
+  says otherwise.
+- Forecast engine: opponent-adjusted npxG form — the last-6 window is
+  schedule-blind (six easy fixtures mark a team up). Needs an
+  xg_data<->historical_matches join to identify each match's opponent
+  (xg_data has no opponent column): match on (league, team, match_date),
+  then divide each match npxG by opponent fitted defence. Verify the
+  date alignment against real Understat rows before trusting it.
+- Forecast engine: cache the strength fit per league (~1h TTL, keyed
+  on league + latest historical row) — fit + bootstrap is ~0.9s and
+  the draw-aware sim ~5.7s; the fit is question-independent so repeat
+  forecasts on the same league shouldn't repay it. Also vectorise
+  _fit_core with numpy if the request path needs to get back under 2s.
 - Team name normalizer gaps: Bielefeld, Greuther Fürth, Holstein Kiel,
   Ajaccio unmapped (flagged during backfill).
 

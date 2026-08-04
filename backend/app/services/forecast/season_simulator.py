@@ -98,9 +98,28 @@ def simulate_season(
     relegation_spots: int,
     n_sims: int = N_SIMS,
     seed: int | None = None,
+    strength_draws: list[dict] | None = None,
 ) -> SimResult:
     idx = {t: i for i, t in enumerate(teams)}
     n = len(teams)
+
+    # HARD-FAIL on any played result whose team is missing from the
+    # index. The old behaviour (skip with `continue`) was a silent
+    # double-corruption: the match's points vanished from the table AND
+    # — because the pairing never entered played_pairs — the structural
+    # fixture derivation resurrected it as a remaining fixture and
+    # simulated it again. One name-normalizer gap produced confident
+    # garbage. Raising forces the mismatch to the surface, where the
+    # engine converts it into an honest user-facing error.
+    unknown = sorted({
+        t for home, away, _, _ in played_results
+        for t in (home, away) if t not in idx
+    })
+    if unknown:
+        raise ValueError(
+            "played results reference teams missing from the team index "
+            f"(name-normalization gap?): {', '.join(unknown)}"
+        )
 
     # Current table from played results.
     points = np.zeros(n, dtype=np.int64)
@@ -109,8 +128,6 @@ def simulate_season(
     played = np.zeros(n, dtype=np.int64)
     played_pairs: set[tuple[int, int]] = set()
     for home, away, fthg, ftag in played_results:
-        if home not in idx or away not in idx:
-            continue  # opponent relegated/renamed — engine reports coverage separately
         hi, ai = idx[home], idx[away]
         played_pairs.add((hi, ai))
         played[hi] += 1
@@ -141,23 +158,43 @@ def simulate_season(
     sim_gd = np.tile(gd, (n_sims, 1)).astype(np.int64)
     sim_gf = np.tile(gf, (n_sims, 1)).astype(np.int64)
 
-    for hi, ai in remaining:
-        probs = _scoreline_probs(
-            *_lambdas(strengths, teams[hi], teams[ai], avg_goals_per_team, home_away_ratio)
-        )
-        outcomes = rng.choice(goals, size=n_sims, p=probs)
-        hg, ag = hg_of[outcomes], ag_of[outcomes]
-        home_win = hg > ag
-        draw = hg == ag
-        sim_points[:, hi] += 3 * home_win + draw
-        sim_points[:, ai] += 3 * (ag > hg) + draw
-        sim_gd[:, hi] += hg - ag
-        sim_gd[:, ai] += ag - hg
-        sim_gf[:, hi] += hg
-        sim_gf[:, ai] += ag
+    # Parameter uncertainty: each simulated season is assigned one
+    # bootstrap strength draw (round-robin), so strength-estimation
+    # error propagates into the outcome distribution instead of the
+    # MLE point fit being treated as known truth. With no draws, all
+    # sims share the point estimate (old behaviour).
+    if strength_draws:
+        n_draws = len(strength_draws)
+        draw_of_sim = np.arange(n_sims) % n_draws
+        sims_by_draw = [np.where(draw_of_sim == b)[0] for b in range(n_draws)]
+        param_sets = strength_draws
+    else:
+        sims_by_draw = [np.arange(n_sims)]
+        param_sets = [strengths]
 
-    # Rank by (points, gd, gf) via a single composite key. Bounds: points
-    # <= 3*38 < 2**7 headroom with gd/gf each well under 2**9 offsets.
+    for hi, ai in remaining:
+        for params, sim_ix in zip(param_sets, sims_by_draw):
+            if sim_ix.size == 0:
+                continue
+            probs = _scoreline_probs(
+                *_lambdas(params, teams[hi], teams[ai], avg_goals_per_team, home_away_ratio)
+            )
+            outcomes = rng.choice(goals, size=sim_ix.size, p=probs)
+            hg, ag = hg_of[outcomes], ag_of[outcomes]
+            home_win = hg > ag
+            draw = hg == ag
+            sim_points[sim_ix, hi] += 3 * home_win + draw
+            sim_points[sim_ix, ai] += 3 * (ag > hg) + draw
+            sim_gd[sim_ix, hi] += hg - ag
+            sim_gd[sim_ix, ai] += ag - hg
+            sim_gf[sim_ix, hi] += hg
+            sim_gf[sim_ix, ai] += ag
+
+    # Rank by (points, gd, gf) lexicographically via one integer key:
+    # gd and gf are offset by +500 to make them non-negative and each
+    # confined to a [0, 1000) slot, so points dominates gd, and gd
+    # dominates gf. (Max |gd|, gf over a 38-match season is bounded by
+    # 38*MAX_GOALS = 380 < 500, so the slots cannot overflow.)
     composite = (
         sim_points.astype(np.int64) * 1_000_000
         + (sim_gd + 500) * 1_000
