@@ -5,6 +5,16 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 ## Now
 
+- Forecast engine: JOINT refit of rho + drawInflation on our own
+  window — external review flags a likely double-correction (negative
+  rho already boosts the draw-adjacent cells; multiplying the diagonal
+  by 1.08 on top is the same fix applied twice). Refit both jointly
+  with the existing harness (gates held), including the "drop
+  drawInflation entirely" candidate. Then optimise the season-bucket
+  recency weights out of sample — currently inherited from the
+  league-constants job, never validated for forecasting. NOTE: the
+  strength fit has NO within-season time decay, only season buckets;
+  evaluate adding exponential day-decay while at it.
 - Team name normalizer gaps: Bielefeld, Greuther Fürth, Holstein Kiel,
   Ajaccio unmapped (flagged during backfill).
 
@@ -30,6 +40,24 @@ session; update before finishing (move cards, add new ones, trim Done).
   predicts closing-line error. Independent engine stays the
   published/scored ledger; any anchored blend that drives
   market-facing output publishes its alpha.
+  Mechanics locked after review two: (a) de-vig method must be NAMED
+  and VERSIONED in the spec — current engine code is proportional
+  (1/odds normalised); evaluate Shin/power, which diverge on
+  longshots; (b) "closing line" = last pre-KO snapshot at 15-min
+  Odds API cadence — a stale close is easier to beat and the bias
+  runs in our favour, so the ledger DISCLOSES the capture rule;
+  (c) skill-score CIs bootstrap by MATCHDAY CLUSTER, not per
+  forecast (same-slate forecasts aren't independent); (d) alpha:
+  blend in log-odds space, walk-forward OOS max-likelihood, pooled
+  first, per-segment via hierarchical shrinkage only past ~150
+  resolved per segment, publish pooled from ~150-200 resolved with
+  a provisional label; (e) thin-venue P&L: content-addressed raw
+  CLOB snapshots (hash in ledger entry, snapshots published),
+  fills computed by walking resting depth, taker fees included,
+  stated adverse-selection haircut — reproducibility over prose;
+  (f) outright interim credibility = inheritance from match-level
+  calibration (same probability field), convergence-vs-market plots
+  are DIAGNOSTICS ONLY, never a scoreboard.
 - Duplicate match rows from fixture reschedules: DB sweep found ~20
   pairs of matches (same two teams, commence_time <48h apart) across
   Ligue 1, Serie A, La Liga and Bundesliga — early-season fixtures
