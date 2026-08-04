@@ -12,14 +12,24 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 - Forecast engine: register an outright market source (Polymarket
   league-winner / top-4 / relegation markets via the Gamma API) so
-  league-level forecasts get a real model-vs-market comparison — the
-  rationale currently states plainly that none is registered. This is
-  also the edge-detection play: model probability vs Polymarket price
-  on thin outright markets.
-- Forecast engine: scoring pass over the forecasts ledger — resolve
-  stored season/match forecasts against final tables and closing lines
-  (Brier score per engine_version) so the public ledger becomes a
-  track record, not just a log.
+  league-level forecasts get a real model-vs-market comparison.
+  Per external review: capture ORDER-BOOK DEPTH at snapshot time,
+  not just midpoint — thin-venue performance is only scoreable as
+  realised paper P/L at executable size. Edge Screen presentation
+  must be neutral divergence ("model above/below market" + magnitude
+  + liquidity), NO directional BACK/FADE calls — tipster-territory
+  regulatory constraint, not a naming preference.
+- Forecast engine: scoring pass over the forecasts ledger — revised
+  per external review, three arenas with different scoreboards:
+  (1) liquid markets: LOG-LOSS skill delta vs de-vigged Pinnacle
+  close with CIs, per segment (not raw Brier — conflates skill with
+  slate difficulty); (2) thin venues: realised paper P/L at
+  executable prices; (3) unpriced questions: calibration curves on
+  resolution. Headline statistic: out-of-sample alpha in
+  alpha*model + (1-alpha)*close — alpha reliably > 0 means the model
+  predicts closing-line error. Independent engine stays the
+  published/scored ledger; any anchored blend that drives
+  market-facing output publishes its alpha.
 - Duplicate match rows from fixture reschedules: DB sweep found ~20
   pairs of matches (same two teams, commence_time <48h apart) across
   Ligue 1, Serie A, La Liga and Bundesliga — early-season fixtures
