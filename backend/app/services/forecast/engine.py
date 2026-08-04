@@ -172,12 +172,6 @@ def run_forecast(db: Session, question: str) -> dict:
         teams = sorted(hist_teams | feed_teams)
         if not teams:
             return None
-        if len(teams) != cfg["teams"]:
-            run.warnings.append(
-                f"Team list has {len(teams)} of {cfg['teams']} expected clubs "
-                "(early-season fixture feed coverage) — probabilities for "
-                "missing clubs can't be produced and totals may be slightly off."
-            )
         return {
             "headline": f"{len(played)} played · {len(teams)} clubs · season {season}",
             "season": season, "teams": teams, "played": played,
@@ -288,6 +282,22 @@ def _abort(run: _Run, question: str, parsed: ParsedQuestion, t0: float, reason: 
 # ---------------------------------------------------------------------------
 
 def _forecast_league(run, parsed, cfg, standings, fit, mu, ratio) -> dict:
+    # HARD-FAIL on team-count mismatch: 20 means 20. A 21st club named
+    # apostrophe-differently isn't a curiosity — it adds two phantom
+    # fixtures per real club and shifts every positional probability in
+    # the league; too few clubs breaks the round-robin the same way.
+    # (Match-level forecasts don't pass through here and are unaffected.)
+    teams = standings["teams"]
+    expected = cfg["teams"]
+    if len(teams) != expected:
+        return {"error_reason": (
+            f"Team index has {len(teams)} clubs; the {cfg['name']} has "
+            f"{expected}. Refusing to simulate a corrupted universe — too "
+            "many means a name-normalization phantom (the same club under "
+            "two spellings), too few means the fixture feed hasn't "
+            f"populated the season. Index: {', '.join(teams)}"
+        )}
+
     def collect_sim():
         sim = simulate_season(
             teams=standings["teams"],

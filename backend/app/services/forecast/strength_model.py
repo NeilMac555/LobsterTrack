@@ -11,53 +11,48 @@ same way valorModel.ts Step 4 does (symmetric split, sums to 2, so the
 expected match total is preserved). atk/def are updated to the weighted
 ratio observed/expected until convergence, then normalised to mean 1.
 
-Design decisions from external review (2026-08):
+Design decisions from external review (2026-08, rounds two and three):
 
 - Match weights are EXPONENTIAL DAY-DECAY (half-life HALF_LIFE_DAYS,
   provisional — optimise out of sample with the backtest harness),
-  replacing the season-bucket weights inherited from
-  league_constants_refresher. Buckets gave last season equal weight to
-  this one; in February half the information was two transfer windows
-  stale. The constants job keeps its own buckets — mu is a league
-  scalar and far less decay-sensitive; the mean-1 normalisation here
-  preserves mu's league-average meaning within the fit.
+  replacing the season-bucket weights that gave last season equal
+  weight to this one. Note the 4-season window cutoff is now largely
+  decorative (season t-3 sits near 1/8 weight) — kept as a query
+  bound, not a modelling choice.
 - Ratings are SHRUNK toward 1.0 by effective (weighted) match count:
   1 + (x - 1) * n/(n + K_SHRINK). Unregularised ratio fits overfit
-  low-sample teams; shrinkage also rescues teams that drop out of a
-  bootstrap resample (n=0 -> exactly 1.0) and softens the
-  promoted-prior cliff.
-- PARAMETER UNCERTAINTY: n_draws bootstrap refits (uniform resample of
-  match rows keeping their decay weights, warm-started from the point
-  fit) produce strength draws the season simulator samples per
-  simulated season. The point fit treats MLE strengths as truth; the
-  draws are what stop mid-table tail probabilities from being too
-  tight.
+  low-sample teams; shrinkage also lands a team with no effective
+  sample exactly on 1.0 and softens the promoted-prior cliff.
+- PARAMETER UNCERTAINTY via the BAYESIAN (Dirichlet-weight) BOOTSTRAP:
+  each draw multiplies the decay weights by i.i.d. Exp(1) noise
+  (Rubin 1981) — no resampling, plays naturally with the decay
+  weights, and sidesteps the resample-vs-retain-weights question the
+  earlier uniform scheme fudged. The fit core is numpy-batched across
+  (point fit + all draws), so every draw runs to the same convergence
+  tolerance as the point fit — no warm-start truncation biasing draws
+  toward the point estimate. Convergence of the worst row is reported.
 - `as_of` filters the fit and the form window to matches strictly
   before that date. Live forecasts pass None; any future backtest MUST
   pass the forecast date, making look-ahead leakage structurally
   impossible rather than a discipline.
-- Post-fit form blending re-normalises to mean 1 so league totals
-  don't drift with aggregate form.
+- Post-fit form blending re-normalises each row to mean 1 so league
+  totals don't drift with aggregate form.
 - League avg npxG is computed from the same xg_data being blended
-  (fallback: the model-params.ts mirror) — a hardcoded mirror is a
-  silent multiplicative bias on every form ratio when it drifts.
+  (fallback: the model-params.ts mirror).
 
 Teams with no history in the window (promoted sides) get a documented
 default (attack 0.85 / defence 1.15) and are flagged so the rationale
 can say so.
 
-If recent npxG form exists in xg_data, each team's ratings get a last-6
-form blend at FORM_WEIGHT (mirrors production formWeight in
-scripts/model-params.ts). KNOWN LIMITATION (queued): the form window is
-schedule-blind — six easy fixtures mark a team up. Opponent adjustment
-needs an xg_data<->historical_matches join (xg_data has no opponent
-column); see TODO.
+KNOWN LIMITATION (queued): the npxG form window is schedule-blind —
+opponent adjustment needs an xg_data<->historical_matches join (xg_data
+has no opponent column); see TODO.
 """
 
-import random
 from dataclasses import dataclass, field
 from datetime import date
 
+import numpy as np
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -66,18 +61,17 @@ from app.models import HistoricalMatch, XGData
 FORM_WEIGHT = 0.25          # mirrors CURRENT_ADVANCED_PARAMS.formWeight
 PROMOTED_ATTACK = 0.85
 PROMOTED_DEFENCE = 1.15
-FIT_ITERATIONS = 25
-CONVERGENCE_TOL = 1e-7      # early stop when max update falls below
+FIT_ITERATIONS = 40         # cap; tol break normally fires far earlier
+CONVERGENCE_TOL = 1e-7
 FORM_MATCHES = 6
 
 # Provisional — optimise out of sample before trusting (review item).
 HALF_LIFE_DAYS = 365.0
 # Shrinkage prior strength in weighted-match units. Provisional.
 K_SHRINK = 15.0
-# Bootstrap draws for parameter uncertainty; warm-started so few
-# iterations are needed per refit.
-N_DRAWS_DEFAULT = 100
-BOOTSTRAP_ITERATIONS = 8
+# Bayesian-bootstrap draws. Batched fit makes these cheap; raise once
+# the harness has tuned the other constants if tail MC error warrants.
+N_DRAWS_DEFAULT = 500
 
 # Fallback mirror of scripts/model-params.ts LEAGUE_PARAMS avgXG — used
 # only when xg_data has too few rows to compute the league average
@@ -110,8 +104,10 @@ class StrengthFit:
     weighted_match_count: float
     defaulted_teams: list[str] = field(default_factory=list)
     form_teams: list[str] = field(default_factory=list)
-    # max |update| in the final fit iteration — convergence diagnostic
+    # max |update| in the final iteration — point fit and the WORST
+    # bootstrap draw respectively. Both should sit at/below tol.
     final_max_update: float = 0.0
+    draws_final_max_update: float = 0.0
     # bootstrap strength draws for the simulator (may be empty)
     draws: list[dict[str, TeamStrength]] = field(default_factory=list)
 
@@ -142,145 +138,160 @@ def fit_strengths(
     )
     if as_of is not None:
         q = q.filter(HistoricalMatch.match_date < as_of)
-    rows = q.all()
+    rows = [r for r in q.all()]
 
     seasons_used = sorted({r.season for r in rows}, reverse=True)[:4]
 
-    # (weight, home, away, fthg, ftag) with exponential day-decay.
-    matches = []
+    # Base weights: exponential day-decay; drop >4-half-life dust.
+    kept = []
     for r in rows:
         age_days = max(0, (today - r.match_date).days)
         w = 0.5 ** (age_days / HALF_LIFE_DAYS)
-        if w > 1e-4:  # >4 half-lives contributes nothing but fit time
-            matches.append((w, r.home_team, r.away_team, r.fthg, r.ftag))
+        if w > 1e-4:
+            kept.append((w, r.home_team, r.away_team, r.fthg, r.ftag))
+
+    # Fit over every team present in the window, not just the current
+    # 18/20 — a relegated opponent's matches still inform the fit.
+    all_teams = sorted({t for m in kept for t in (m[1], m[2])})
+    t_index = {t: i for i, t in enumerate(all_teams)}
+    n_teams = len(all_teams)
+    n_m = len(kept)
+
+    form_data = _last6_form(db, league, as_of)
+    avg_xg = _league_avg_xg(db, league)
+
+    if n_m == 0 or n_teams == 0:
+        strengths = _package_row(
+            teams, {}, {}, {}, form_data, avg_xg,
+        )
+        return StrengthFit(
+            strengths=strengths, seasons_used=seasons_used,
+            weighted_match_count=0.0,
+            defaulted_teams=[t for t in teams if strengths[t].promoted_default],
+            form_teams=[t for t in teams if strengths[t].form_adjusted],
+        )
+
+    base_w = np.array([m[0] for m in kept])
+    hi = np.array([t_index[m[1]] for m in kept], dtype=np.int64)
+    ai = np.array([t_index[m[2]] for m in kept], dtype=np.int64)
+    fthg = np.array([m[3] for m in kept], dtype=np.float64)
+    ftag = np.array([m[4] for m in kept], dtype=np.float64)
+
+    # Row 0 = point fit (base weights); rows 1..n_draws = Bayesian
+    # bootstrap (base weights x Exp(1) noise). Batched, all rows run to
+    # the same tolerance.
+    rng = np.random.default_rng(seed)
+    B = 1 + max(0, n_draws)
+    w = np.tile(base_w, (B, 1))
+    if B > 1:
+        w[1:] *= rng.exponential(1.0, size=(B - 1, n_m))
 
     r_ha = home_away_ratio
     home_mult = (2 * r_ha) / (1 + r_ha)
     away_mult = 2 / (1 + r_ha)
     mu = avg_goals_per_team
 
-    # Fit over every team present in the window, not just the current
-    # 18/20 — a relegated opponent's matches still inform the fit.
-    all_teams = sorted({t for m in matches for t in (m[1], m[2])})
-
-    atk, dfn, final_max_update = _fit_core(
-        matches, all_teams, mu, home_mult, away_mult,
-        iterations=FIT_ITERATIONS,
+    atk, dfn, final_updates = _fit_batched(
+        w, hi, ai, fthg, ftag, n_teams, mu, home_mult, away_mult,
     )
 
-    weighted_count = {t: 0.0 for t in all_teams}
-    for w, home, away, _, _ in matches:
-        weighted_count[home] += w
-        weighted_count[away] += w
+    # Effective (weighted) counts per row -> shrinkage toward 1.0.
+    counts = np.zeros((B, n_teams))
+    np.add.at(counts, (slice(None), hi), w)
+    np.add.at(counts, (slice(None), ai), w)
+    g = counts / (counts + K_SHRINK)
+    atk = 1.0 + (atk - 1.0) * g
+    dfn = 1.0 + (dfn - 1.0) * g
 
-    _shrink(atk, dfn, weighted_count)
-
-    form_data = _last6_form(db, league, as_of)
-    avg_xg = _league_avg_xg(db, league)
-
-    strengths = _package(
-        teams, atk, dfn, weighted_count, form_data, avg_xg,
-    )
-
-    # Bootstrap draws: uniform resample of match rows (keeping decay
-    # weights), warm-started from the point fit. Same shrink/blend/
-    # renormalise path as the point estimate so draws are exchangeable
-    # with it.
-    rng = random.Random(seed)
-    draws: list[dict[str, TeamStrength]] = []
-    n_m = len(matches)
-    for _ in range(max(0, n_draws) if n_m > 0 else 0):
-        sample = [matches[rng.randrange(n_m)] for _ in range(n_m)]
-        b_atk, b_dfn, _ = _fit_core(
-            sample, all_teams, mu, home_mult, away_mult,
-            iterations=BOOTSTRAP_ITERATIONS,
-            warm_atk=atk, warm_dfn=dfn,
+    def row_maps(b: int) -> tuple[dict, dict, dict]:
+        return (
+            {t: float(atk[b, t_index[t]]) for t in all_teams},
+            {t: float(dfn[b, t_index[t]]) for t in all_teams},
+            {t: float(counts[b, t_index[t]]) for t in all_teams},
         )
-        b_count = {t: 0.0 for t in all_teams}
-        for w, home, away, _, _ in sample:
-            b_count[home] += w
-            b_count[away] += w
-        _shrink(b_atk, b_dfn, b_count)
-        draws.append(_package(
-            teams, b_atk, b_dfn, b_count, form_data, avg_xg,
-        ))
+
+    a0, d0, c0 = row_maps(0)
+    strengths = _package_row(teams, a0, d0, c0, form_data, avg_xg)
+    draws = []
+    for b in range(1, B):
+        ab, db_, cb = row_maps(b)
+        draws.append(_package_row(teams, ab, db_, cb, form_data, avg_xg))
 
     return StrengthFit(
         strengths=strengths,
         seasons_used=seasons_used,
-        weighted_match_count=sum(w for w, *_ in matches),
+        weighted_match_count=float(base_w.sum()),
         defaulted_teams=[t for t in teams if strengths[t].promoted_default],
         form_teams=[t for t in teams if strengths[t].form_adjusted],
-        final_max_update=final_max_update,
+        final_max_update=float(final_updates[0]),
+        draws_final_max_update=float(final_updates[1:].max()) if B > 1 else 0.0,
         draws=draws,
     )
 
 
-def _fit_core(
-    matches, all_teams, mu, home_mult, away_mult,
-    iterations: int,
-    warm_atk: dict | None = None,
-    warm_dfn: dict | None = None,
-) -> tuple[dict, dict, float]:
-    atk = dict(warm_atk) if warm_atk else {t: 1.0 for t in all_teams}
-    dfn = dict(warm_dfn) if warm_dfn else {t: 1.0 for t in all_teams}
-    n = len(all_teams)
-    max_update = 0.0
-    for _ in range(iterations):
-        gf = {t: 0.0 for t in all_teams}
-        exp_gf = {t: 1e-9 for t in all_teams}
-        ga = {t: 0.0 for t in all_teams}
-        exp_ga = {t: 1e-9 for t in all_teams}
-        for w, home, away, fthg, ftag in matches:
-            exp_home = mu * home_mult * atk[home] * dfn[away]
-            exp_away = mu * away_mult * atk[away] * dfn[home]
-            gf[home] += w * fthg
-            gf[away] += w * ftag
-            exp_gf[home] += w * exp_home
-            exp_gf[away] += w * exp_away
-            ga[home] += w * ftag
-            ga[away] += w * fthg
-            exp_ga[home] += w * exp_away
-            exp_ga[away] += w * exp_home
-        max_update = 0.0
-        for t in all_teams:
-            new_a = atk[t] * (gf[t] / exp_gf[t])
-            new_d = dfn[t] * (ga[t] / exp_ga[t])
-            max_update = max(max_update, abs(new_a - atk[t]), abs(new_d - dfn[t]))
-            atk[t], dfn[t] = new_a, new_d
-        # Renormalise to mean 1 so mu keeps its league-average meaning.
-        atk_mean = sum(atk.values()) / n
-        dfn_mean = sum(dfn.values()) / n
-        for t in all_teams:
-            atk[t] /= atk_mean
-            dfn[t] /= dfn_mean
-        if max_update < CONVERGENCE_TOL:
+def _fit_batched(
+    w: np.ndarray, hi: np.ndarray, ai: np.ndarray,
+    fthg: np.ndarray, ftag: np.ndarray,
+    n_teams: int, mu: float, home_mult: float, away_mult: float,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Alternating Poisson scaling, batched over B weight vectors.
+    Returns (atk (B,T), dfn (B,T), final_max_update (B,))."""
+    B = w.shape[0]
+    atk = np.ones((B, n_teams))
+    dfn = np.ones((B, n_teams))
+    w_fthg = w * fthg
+    w_ftag = w * ftag
+
+    gf = np.zeros((B, n_teams))
+    np.add.at(gf, (slice(None), hi), w_fthg)
+    np.add.at(gf, (slice(None), ai), w_ftag)
+    ga = np.zeros((B, n_teams))
+    np.add.at(ga, (slice(None), hi), w_ftag)
+    np.add.at(ga, (slice(None), ai), w_fthg)
+
+    updates = np.zeros(B)
+    for _ in range(FIT_ITERATIONS):
+        exp_home = (mu * home_mult) * atk[:, hi] * dfn[:, ai]
+        exp_away = (mu * away_mult) * atk[:, ai] * dfn[:, hi]
+        egf = np.full((B, n_teams), 1e-9)
+        np.add.at(egf, (slice(None), hi), w * exp_home)
+        np.add.at(egf, (slice(None), ai), w * exp_away)
+        ega = np.full((B, n_teams), 1e-9)
+        np.add.at(ega, (slice(None), hi), w * exp_away)
+        np.add.at(ega, (slice(None), ai), w * exp_home)
+
+        new_atk = atk * (gf / egf)
+        new_dfn = dfn * (ga / ega)
+        # Renormalise each row to mean 1 so mu keeps its meaning —
+        # BEFORE measuring the update. The imposed mu means the raw
+        # scaling step carries a persistent uniform scale factor that
+        # the renorm removes; comparing across the renorm boundary
+        # would report that factor as a phantom non-convergence.
+        new_atk /= new_atk.mean(axis=1, keepdims=True)
+        new_dfn /= new_dfn.mean(axis=1, keepdims=True)
+        updates = np.maximum(
+            np.abs(new_atk - atk).max(axis=1),
+            np.abs(new_dfn - dfn).max(axis=1),
+        )
+        atk, dfn = new_atk, new_dfn
+        if updates.max() < CONVERGENCE_TOL:
             break
-    return atk, dfn, max_update
+    return atk, dfn, updates
 
 
-def _shrink(atk: dict, dfn: dict, weighted_count: dict) -> None:
-    """Shrink toward 1.0 by effective sample: 1 + (x-1) * n/(n+K).
-    A team with no sampled matches lands exactly on 1.0."""
-    for t in atk:
-        lam = weighted_count.get(t, 0.0)
-        g = lam / (lam + K_SHRINK)
-        atk[t] = 1.0 + (atk[t] - 1.0) * g
-        dfn[t] = 1.0 + (dfn[t] - 1.0) * g
-
-
-def _package(
-    teams, atk, dfn, weighted_count, form_data, avg_xg,
+def _package_row(
+    teams, atk_map, dfn_map, count_map, form_data, avg_xg,
 ) -> dict[str, TeamStrength]:
-    """Assemble the returned per-team strengths: promoted defaults, npxG
-    form blend, then renormalise the returned set to mean 1 so aggregate
-    form can't drift the league's expected totals."""
+    """Assemble per-team strengths for one weight row: promoted
+    defaults, npxG form blend, then renormalise the returned set to
+    mean 1 so aggregate form can't drift the league's expected
+    totals."""
     strengths: dict[str, TeamStrength] = {}
     for team in teams:
-        if team in atk and weighted_count.get(team, 0.0) > 0:
+        if count_map.get(team, 0.0) > 0:
             s = TeamStrength(
-                attack=atk[team], defence=dfn[team],
-                weighted_matches=weighted_count[team],
+                attack=atk_map[team], defence=dfn_map[team],
+                weighted_matches=count_map[team],
             )
         else:
             s = TeamStrength(

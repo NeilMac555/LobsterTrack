@@ -150,9 +150,6 @@ def simulate_season(
     ]
 
     rng = np.random.default_rng(seed)
-    goals = np.arange((MAX_GOALS + 1) ** 2)
-    hg_of = goals // (MAX_GOALS + 1)
-    ag_of = goals % (MAX_GOALS + 1)
 
     sim_points = np.tile(points, (n_sims, 1)).astype(np.int64)
     sim_gd = np.tile(gd, (n_sims, 1)).astype(np.int64)
@@ -162,33 +159,55 @@ def simulate_season(
     # bootstrap strength draw (round-robin), so strength-estimation
     # error propagates into the outcome distribution instead of the
     # MLE point fit being treated as known truth. With no draws, all
-    # sims share the point estimate (old behaviour).
-    if strength_draws:
-        n_draws = len(strength_draws)
-        draw_of_sim = np.arange(n_sims) % n_draws
-        sims_by_draw = [np.where(draw_of_sim == b)[0] for b in range(n_draws)]
-        param_sets = strength_draws
-    else:
-        sims_by_draw = [np.arange(n_sims)]
-        param_sets = [strengths]
+    # sims share the point estimate. Strengths are packed into (D, n)
+    # arrays so per-fixture scoreline distributions for every draw are
+    # built in one vectorised pass.
+    param_sets = strength_draws if strength_draws else [strengths]
+    D = len(param_sets)
+    atk_d = np.empty((D, n))
+    dfn_d = np.empty((D, n))
+    for d, params in enumerate(param_sets):
+        for t, i in idx.items():
+            atk_d[d, i] = params[t].attack
+            dfn_d[d, i] = params[t].defence
+    draw_of_sim = np.arange(n_sims) % D
+
+    r_ha = home_away_ratio
+    home_mult = (2 * r_ha) / (1 + r_ha)
+    away_mult = 2 / (1 + r_ha)
+    k = np.arange(MAX_GOALS + 1)
+    log_fact = np.cumsum(np.concatenate(([0.0], np.log(np.arange(1, MAX_GOALS + 1)))))
+    diag = np.eye(MAX_GOALS + 1, dtype=bool)
 
     for hi, ai in remaining:
-        for params, sim_ix in zip(param_sets, sims_by_draw):
-            if sim_ix.size == 0:
-                continue
-            probs = _scoreline_probs(
-                *_lambdas(params, teams[hi], teams[ai], avg_goals_per_team, home_away_ratio)
-            )
-            outcomes = rng.choice(goals, size=sim_ix.size, p=probs)
-            hg, ag = hg_of[outcomes], ag_of[outcomes]
-            home_win = hg > ag
-            draw = hg == ag
-            sim_points[sim_ix, hi] += 3 * home_win + draw
-            sim_points[sim_ix, ai] += 3 * (ag > hg) + draw
-            sim_gd[sim_ix, hi] += hg - ag
-            sim_gd[sim_ix, ai] += ag - hg
-            sim_gf[sim_ix, hi] += hg
-            sim_gf[sim_ix, ai] += ag
+        lam_h = np.clip(atk_d[:, hi] * dfn_d[:, ai] * avg_goals_per_team * home_mult, 0.05, 8)
+        lam_a = np.clip(atk_d[:, ai] * dfn_d[:, hi] * avg_goals_per_team * away_mult, 0.05, 8)
+
+        # (D, 11) Poisson marginals -> (D, 11, 11) DC-corrected matrices.
+        ph = np.exp(-lam_h[:, None] + k[None, :] * np.log(lam_h)[:, None] - log_fact[None, :])
+        pa = np.exp(-lam_a[:, None] + k[None, :] * np.log(lam_a)[:, None] - log_fact[None, :])
+        m = ph[:, :, None] * pa[:, None, :]
+        m[:, 0, 0] *= np.maximum(0.0, 1 - lam_h * lam_a * RHO)
+        m[:, 1, 0] *= np.maximum(0.0, 1 + lam_a * RHO)
+        m[:, 0, 1] *= np.maximum(0.0, 1 + lam_h * RHO)
+        m[:, 1, 1] *= max(0.0, 1 - RHO)
+        m[:, diag] *= DRAW_INFLATION
+        flat = m.reshape(D, -1)
+        cum = np.cumsum(flat / flat.sum(axis=1, keepdims=True), axis=1)
+
+        # Inverse-CDF sample per sim against its own draw's distribution.
+        u = rng.random(n_sims)
+        outcomes = (cum[draw_of_sim] < u[:, None]).sum(axis=1)
+        hg = outcomes // (MAX_GOALS + 1)
+        ag = outcomes % (MAX_GOALS + 1)
+        home_win = hg > ag
+        draw = hg == ag
+        sim_points[:, hi] += 3 * home_win + draw
+        sim_points[:, ai] += 3 * (ag > hg) + draw
+        sim_gd[:, hi] += hg - ag
+        sim_gd[:, ai] += ag - hg
+        sim_gf[:, hi] += hg
+        sim_gf[:, ai] += ag
 
     # Rank by (points, gd, gf) lexicographically via one integer key:
     # gd and gf are offset by +500 to make them non-negative and each
