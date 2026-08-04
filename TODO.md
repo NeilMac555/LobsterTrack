@@ -10,6 +10,16 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 ## Next
 
+- Forecast engine: register an outright market source (Polymarket
+  league-winner / top-4 / relegation markets via the Gamma API) so
+  league-level forecasts get a real model-vs-market comparison — the
+  rationale currently states plainly that none is registered. This is
+  also the edge-detection play: model probability vs Polymarket price
+  on thin outright markets.
+- Forecast engine: scoring pass over the forecasts ledger — resolve
+  stored season/match forecasts against final tables and closing lines
+  (Brier score per engine_version) so the public ledger becomes a
+  track record, not just a log.
 - Duplicate match rows from fixture reschedules: DB sweep found ~20
   pairs of matches (same two teams, commence_time <48h apart) across
   Ligue 1, Serie A, La Liga and Bundesliga — early-season fixtures
@@ -25,6 +35,13 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 ## Later
 
+- Forecast engine: LLM question parser in front of the closed grammar
+  (ParsedQuestion is the seam — engine untouched). Also injury-news
+  ingestion as a registered source to drive the absence adjustment.
+- Forecast engine: La Liga head-to-head tie-break is approximated by
+  goal difference in the season simulator; Bundesliga/Ligue 1
+  relegation playoff counted as survival. Revisit if forecasts get
+  quoted seriously.
 - Re-fit rho/drawInflation in xG mode once 2026/27 accumulates enough
   matches (fallback fit was rejected — see fit-v1.md).
 - CL/UEL restoration: needs Elo-based cross-league strengths +
@@ -36,6 +53,17 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Forecast Engine v1 (/tools/forecast): FutureSearch-style question box
+  over the Top 5 leagues built on a closed source registry (own-DB
+  tables + Poisson strength fit + 10k-season Dixon-Coles Monte Carlo) —
+  no open web search, no LLM. Rules-based question grammar (winner /
+  top 4 / relegation / team outcome / A vs B), forecasts persisted to a
+  new `forecasts` ledger table, research-swarm UI that replays the
+  recorded stage timeline as the audit trail. Match questions compare
+  model vs de-vigged Pinnacle; league questions state that no outright
+  market source is registered yet. Verified end-to-end on seeded data
+  (distributions sum correctly, ~0.4s/run) + Playwright screenshots of
+  all three flows — `8af47da`
 - Biggest Movers now measures movement over the trailing 48h instead
   of all-time since first-tracked: previously compared current odds
   to the very first snapshot ever recorded (often a month before
