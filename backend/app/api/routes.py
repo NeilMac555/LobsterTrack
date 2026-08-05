@@ -2223,6 +2223,66 @@ async def admin_fetch_outrights(
     return await outright_fetcher.fetch_and_store()
 
 
+@router.post("/admin/load-club-finances")
+async def admin_load_club_finances(
+    password: str = Query(..., description="Admin password"),
+    db: Session = Depends(get_db),
+):
+    """Reload the committed club-finance snapshot (PL wage bills) into
+    club_finances. Run after refreshing the snapshot for a new season."""
+    from app.services.club_finance_importer import load_snapshot
+
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid password")
+    return load_snapshot(db)
+
+
+@router.get("/admin/club-finances-health")
+async def get_club_finances_health(
+    password: str = Query(..., description="Admin password"),
+    db: Session = Depends(get_db),
+):
+    """Latest-season wage table currently loaded, so the numbers feeding
+    the Forecast Engine's `wages` source are inspectable."""
+    from app.models import ClubFinance
+
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid password")
+
+    total = db.query(func.count(ClubFinance.id)).scalar()
+    latest = (
+        db.query(ClubFinance.season)
+        .filter(ClubFinance.wage_total_m.isnot(None))
+        .order_by(ClubFinance.season.desc())
+        .limit(1)
+        .scalar()
+    )
+    rows = (
+        db.query(ClubFinance)
+        .filter(ClubFinance.season == latest, ClubFinance.wage_total_m.isnot(None))
+        .order_by(ClubFinance.wage_total_m.desc())
+        .all()
+        if latest is not None else []
+    )
+    return {
+        "total_rows": total,
+        "latest_season": latest,
+        "latest_season_code": rows[0].season_code if rows else None,
+        "source": rows[0].source if rows else None,
+        "clubs": [
+            {
+                "team": r.team_name,
+                "team_raw": r.team_name_raw,
+                "wage_total_m": r.wage_total_m,
+                "revenue_m": r.total_revenue_m,
+                "net_spend_m": r.net_spend_m,
+                "currency": r.currency,
+            }
+            for r in rows
+        ],
+    }
+
+
 @router.get("/admin/alert-stats")
 async def admin_alert_stats(
     password: str = Query(..., description="Admin password"),

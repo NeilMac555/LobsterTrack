@@ -65,6 +65,15 @@ _EURO_COMPETITIONS = [
     "uecl", "european cup",
 ]
 
+# Player-market questions (top scorer, golden boot, assists, MVP, POTY).
+# The engine is a team-strength Poisson model with no player-level data
+# source, so these are refused with a specific reason rather than a
+# generic "outside the grammar" fall-through.
+_PLAYER_MARKET_RE = re.compile(
+    r"\b(top ?scorers?|goalscorers?|golden boot|top assists?|most (goals|assists)"
+    r"|player of the (season|year)|mvp|pichichi|capocannoniere|ballon d'? ?or)\b"
+)
+
 # Hand-rolled nicknames on top of the canonical names. Bare ambiguous
 # words ("united", "city") are deliberately absent — a miss is better
 # than a silent wrong team.
@@ -203,6 +212,21 @@ def parse(question: str) -> ParsedQuestion:
 
     league = _find_league(q)
     teams = _find_teams(q)
+
+    # Player markets have no data source — refuse specifically, before the
+    # league/team grammar can turn "top scorer in the Premier League" into
+    # a vague league fall-through.
+    if _PLAYER_MARKET_RE.search(q):
+        return ParsedQuestion(
+            kind="unsupported", league=league,
+            reason=(
+                "Player markets — top scorer, golden boot, assists, player "
+                "of the season — aren't supported: the engine is a team-"
+                "strength model with no player-level data source. It "
+                "forecasts team outcomes (title, top 4, relegation, a single "
+                "match), not individual players."
+            ),
+        )
 
     # Top-4 phrasing first: "qualify for the champions league" is a
     # domestic top-4 question, not a UCL forecast.

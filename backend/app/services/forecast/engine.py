@@ -30,6 +30,7 @@ import structlog
 from sqlalchemy.orm import Session
 
 from app.models import (
+    ClubFinance,
     HistoricalMatch,
     LeagueConstants,
     Match,
@@ -248,8 +249,12 @@ def run_forecast(db: Session, question: str) -> dict:
     def collect_steam():
         return _steam_card(db, league, focus_teams)
 
+    def collect_wages():
+        return _wages_card(db, league, teams, focus_teams)
+
     pinnacle = run.stage("pinnacle", collect_pinnacle)
     polymarket = run.stage("polymarket", collect_polymarket)
+    run.stage("wages", collect_wages)
     steam = run.stage("steam", collect_steam)
 
     # -- the forecast itself --------------------------------------------
@@ -449,6 +454,47 @@ def _league_rationale(parsed, cfg, standings, fit, sim, dist, label, run) -> lis
             ),
             "sources": ["strength_fit"],
         })
+
+    wages = run.evidence.get("wages")
+    if wages and wages.get("top_spenders"):
+        spenders = ", ".join(
+            f"{s['team']} {wages['currency']} {s['wage_total_m']:.0f}m"
+            for s in wages["top_spenders"]
+        )
+        text = (
+            "Wage bills are among the strongest structural predictors of "
+            "finishing position (higher payroll → higher finish, across "
+            f"seasons). Biggest {name} bills on the latest filed accounts "
+            f"(FY{wages['season_code']}): {spenders}."
+        )
+        # Rank divergence only where higher model probability means a
+        # BETTER finish (title / top-4) — for relegation the direction is
+        # inverted and the comparison would mislead.
+        if label != "relegated":
+            wr = wages["wage_rank"]
+            model_rank = {t: i + 1 for i, (t, _) in enumerate(ranked)}
+            common = [t for t in wr if t in model_rank]
+            over = min(common, key=lambda t: model_rank[t] - wr[t], default=None)
+            under = max(common, key=lambda t: model_rank[t] - wr[t], default=None)
+            bits = []
+            if over is not None and wr[over] - model_rank[over] >= 3:
+                bits.append(
+                    f"the model rates {over} well above its spend "
+                    f"(#{wr[over]} by wage bill, #{model_rank[over]} by model)"
+                )
+            if under is not None and model_rank[under] - wr[under] >= 3:
+                bits.append(
+                    f"{under} well below it (#{wr[under]} by wage bill, "
+                    f"#{model_rank[under]} by model)"
+                )
+            if bits:
+                text += " Relative to spend, " + " and ".join(bits) + "."
+        text += (
+            " This is context, not a model input — the strength fit reads "
+            "results, not payroll; the two lining up is the correlation "
+            "showing, not double-counting."
+        )
+        paras.append({"text": text, "sources": ["wages"]})
 
     outright = (run.evidence.get("polymarket") or {}).get("outright") \
         if label == "champions" else None
@@ -756,6 +802,75 @@ def _latest_outrights(db: Session, league: str, market: str) -> dict | None:
             }
             for r in priced if r.team_name is not None
         },
+    }
+
+
+def _wages_card(db: Session, league: str, teams: list[str],
+                focus_teams: list[str] | None) -> dict | None:
+    """Latest filed club wage bills for the current field, ranked. Only
+    the Premier League has a wage snapshot today (Companies House is
+    England-only); other leagues get an honest empty (grey) node."""
+    latest_season = (
+        db.query(ClubFinance.season)
+        .filter(ClubFinance.league == league, ClubFinance.wage_total_m.isnot(None))
+        .order_by(ClubFinance.season.desc())
+        .limit(1)
+        .scalar()
+    )
+    if latest_season is None:
+        return None
+    rows = (
+        db.query(ClubFinance)
+        .filter(
+            ClubFinance.league == league,
+            ClubFinance.season == latest_season,
+            ClubFinance.wage_total_m.isnot(None),
+            ClubFinance.team_name.isnot(None),
+        )
+        .all()
+    )
+    by_team = {r.team_name: r for r in rows}
+    # Rank only across the clubs currently in the league that we have a
+    # wage bill for (a promoted club with no PL filing yet is absent —
+    # honestly missing, not zero).
+    present = [t for t in teams if t in by_team]
+    if not present:
+        return None
+    ranked = sorted(present, key=lambda t: -by_team[t].wage_total_m)
+    wage_rank = {t: i + 1 for i, t in enumerate(ranked)}
+    season_code = rows[0].season_code
+    currency = rows[0].currency
+    hi, lo = by_team[ranked[0]].wage_total_m, by_team[ranked[-1]].wage_total_m
+    missing = [t for t in teams if t not in by_team]
+
+    team_out = {
+        t: {
+            "wage_total_m": round(by_team[t].wage_total_m, 1),
+            "revenue_m": round(by_team[t].total_revenue_m, 1) if by_team[t].total_revenue_m else None,
+            "wage_rank": wage_rank[t],
+        }
+        for t in present
+    }
+    if focus_teams:
+        team_out = {t: v for t, v in team_out.items() if t in focus_teams}
+        if not team_out:
+            return None
+
+    return {
+        "headline": (
+            f"{len(present)} clubs · wage bills {currency} {lo:.0f}m–{hi:.0f}m · "
+            f"FY{season_code} (latest filed)"
+            + (f" · {len(missing)} without a filing yet" if missing else "")
+        ),
+        "season_code": season_code,
+        "currency": currency,
+        "top_spenders": [
+            {"team": t, "wage_total_m": round(by_team[t].wage_total_m, 1)}
+            for t in ranked[:3]
+        ],
+        "missing": missing,
+        "teams": team_out,
+        "wage_rank": wage_rank,
     }
 
 

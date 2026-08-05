@@ -141,6 +141,22 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning("posted_tweets index migration failed (non-fatal)", error=str(e))
 
+    # Club-finance snapshot (Premier League wage bills for the Forecast
+    # Engine's `wages` source) — load the committed JSON into club_finances.
+    # Idempotent wipe+reload of ~660 rows; non-fatal so a bad file can't
+    # block boot.
+    try:
+        from app.models.database import SessionLocal
+        from app.services.club_finance_importer import load_snapshot
+        _fin_db = SessionLocal()
+        try:
+            summary = load_snapshot(_fin_db)
+            logger.info("club finances loaded", rows=summary["inserted"])
+        finally:
+            _fin_db.close()
+    except Exception as e:
+        logger.warning("club finance snapshot load failed (non-fatal)", error=str(e))
+
     # Start the scheduler
     logger.info("Starting odds scheduler")
     odds_scheduler.start()

@@ -55,6 +55,12 @@ SOURCES: list[dict] = [
         "detail": "Match markets (polymarket_snapshots) + season-outright winner book (outright_snapshots, hourly Gamma fetch)",
     },
     {
+        "id": "wages",
+        "name": "Club wage bills",
+        "tier": 1,
+        "detail": "Premier League club-level wage bills from audited accounts (valuball.co / Companies House), snapshot in club_finances — a documented predictor of finishing position",
+    },
+    {
         "id": "steam",
         "name": "Steam move detector",
         "tier": 1,

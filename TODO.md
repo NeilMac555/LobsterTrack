@@ -51,27 +51,22 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 ## Next
 
-- Wage/value-informed promoted-team priors (Neil, via valuball.co):
-  the wages-success correlation is real, but its marginal value to
-  the model is concentrated where match history is thin — for
-  established clubs the fitted strengths already embody it (wages →
-  performance → the results we fit on). Best entry point: replace
-  the asserted 0.85/1.15 promoted priors with a fit of strength on
-  log(squad wage/value share of league) across the 4-season window,
-  which also turns the reviewer's promoted-prior grid axis into a
-  data-driven one. SOURCE DECISION NEEDED: valuball.co itself is
-  PL-only and a paid product (private Supabase + app subscriptions,
-  no API — scraping it would circumvent a paywall and republish
-  SportMonks-licensed data; rejected). Clean options: (a) Companies
-  House filings — free public API, actual audited wage bills, but
-  England-only and 9-14 months stale, club-level incl. non-playing
-  staff; (b) Transfermarkt squad market values — all 5 leagues,
-  covers promoted clubs pre-season, correlates with success at least
-  as strongly as wages, already a SteamWatch-adjacent source (the
-  newsletter + match-predictor workflows use Transfermarkt);
-  (c) SportMonks/Capology licensed wage feeds if we want true wages
-  cross-league. Recommendation: (b) for the model prior, (a) as a
-  PL-only enrichment later.
+- Wage-informed promoted-team priors (the actual model integration):
+  the `wages` source now DISPLAYS wage bills but does NOT feed the
+  model — probabilities are unchanged. The real win is replacing the
+  asserted 0.85/1.15 promoted priors with a fit of strength on
+  log(wage or value share of league), which also turns the reviewer's
+  promoted-prior grid axis into a data-driven one. BLOCKER: club
+  wages are PL-only and lag ~1 season, and a promoted club has no PL
+  wage bill the year we need it — so wages can't set a promoted
+  prior. Use Transfermarkt SQUAD VALUES instead (all 5 leagues,
+  exist pre-season for promoted clubs, correlate with finish as
+  strongly as wages). Wage bills stay as established-club context/
+  display. Do this inside the joint grid (it's the third axis).
+- Cross-league wage/value data if we ever want wages beyond the PL:
+  Transfermarkt squad values (free-ish, 5 leagues) or a licensed
+  SportMonks/Capology feed. valuball only covers ENG (Companies
+  House is England-only).
 
 - Outrights follow-ups: (1) Polymarket top-4 / relegation books
   usually appear mid-season — add slugs to OUTRIGHT_EVENTS when
@@ -147,6 +142,25 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Club wage-bill source (`wages`) + top-scorer parser fix. Snapshotted
+  valuball.co's club_season_financial_summary (ENG1) — figures derive
+  from Companies House filings — into a committed JSON (660 PL rows,
+  1993–FY24/25, £m) loaded into a new club_finances table on boot; NOT
+  a live dependency on their backend (durable static snapshot,
+  regenerate via scripts/refresh_valuball_finances.py). PL only:
+  Companies House is England-only, valuball has ~0 rows for the other
+  four leagues. New `wages` registry source (9th swarm node) surfaces
+  the latest filed wage bills ranked for the current field, with a
+  neutral rationale paragraph (top spenders + a model-vs-spend
+  divergence line, gated OFF for relegation where the direction
+  inverts) — explicitly context, NOT a model input (probabilities
+  unchanged; the strength fit still reads results, not payroll).
+  Promoted clubs with no PL filing shown as honestly missing.
+  Admin: POST /admin/load-club-finances, GET
+  /admin/club-finances-health. Separately: player-market questions
+  (top scorer / golden boot / assists / Ballon d'Or) now return a
+  specific "no player-level data" refusal instead of the generic
+  outside-the-grammar fall-through Neil hit. Verified end-to-end.
 - Polymarket season-outright source: hourly Gamma fetch of the five
   whitelisted "2027 Champion" events ($4.4M on EPL alone) into new
   outright_snapshots + content-addressed outright_captures (sha256 of

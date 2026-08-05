@@ -15,11 +15,12 @@ interface Props {
   running: boolean;
 }
 
-// Hand-placed scatter for up to 8 nodes (viewBox 800x360) — a loose
+// Hand-placed scatter for up to 9 nodes (viewBox 800x360) — a loose
 // constellation rather than a grid, engine hub in the middle.
 const POSITIONS: Array<[number, number]> = [
   [95, 75], [265, 42], [500, 48], [690, 88],
   [110, 280], [330, 318], [545, 305], [700, 255],
+  [55, 180],
 ];
 
 const HUB: [number, number] = [400, 178];
