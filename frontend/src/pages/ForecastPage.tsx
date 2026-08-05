@@ -359,9 +359,26 @@ export default function ForecastPage() {
                       <span className="w-14 text-right font-mono text-xs font-semibold text-white">
                         {(e.probability * 100).toFixed(1)}%
                       </span>
+                      {response.result?.meta?.outright_market && (
+                        <span className="w-16 text-right font-mono text-[11px] text-amber-300/80">
+                          {e.market_implied !== undefined
+                            ? `${(e.market_implied * 100).toFixed(1)}%`
+                            : '—'}
+                        </span>
+                      )}
                     </div>
                   );
                 })}
+                {response.result.meta?.outright_market && (
+                  <div className="flex items-center justify-end gap-3 px-2 pt-1">
+                    <span className="font-mono text-[10px] text-slate-500">
+                      model
+                    </span>
+                    <span className="w-16 text-right font-mono text-[10px] text-amber-300/60">
+                      polymarket
+                    </span>
+                  </div>
+                )}
                 {response.result.entries.length > 8 && (
                   <button
                     onClick={() => setShowAllEntries(!showAllEntries)}
@@ -384,6 +401,14 @@ export default function ForecastPage() {
               <span className="ml-3 font-mono text-sm text-slate-300">
                 {response.result.binary.team} finish {response.result.binary.outcome_label}
               </span>
+              {response.result.binary.market_implied !== undefined && (
+                <div className="mt-2 font-mono text-xs text-amber-300/80">
+                  polymarket {(response.result.binary.market_implied * 100).toFixed(1)}%
+                  <span className="ml-2 text-slate-500">
+                    (raw {((response.result.binary.market_yes ?? 0) * 100).toFixed(1)}¢)
+                  </span>
+                </div>
+              )}
             </div>
           )}
 

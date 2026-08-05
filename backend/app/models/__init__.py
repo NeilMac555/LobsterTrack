@@ -13,8 +13,10 @@ from .magic_link import MagicLink
 from .xg_data import XGData
 from .historical_match import HistoricalMatch
 from .polymarket_snapshot import PolymarketSnapshot
+from .outright_snapshot import OutrightSnapshot, OutrightCapture
+from .club_finance import ClubFinance
 from .posted_tweet import PostedTweet
 from .league_constants import LeagueConstants, LeagueConstantsHistory
 from .forecast import Forecast
 
-__all__ = ["Base", "get_db", "engine", "Match", "OddsSnapshot", "SteamMove", "EmailSubscriber", "TotalsSnapshot", "SpreadsSnapshot", "SyndicateAlert", "ClosingLine", "MarketType", "User", "Subscription", "MagicLink", "XGData", "HistoricalMatch", "PolymarketSnapshot", "PostedTweet", "LeagueConstants", "LeagueConstantsHistory", "Forecast"]
+__all__ = ["Base", "get_db", "engine", "Match", "OddsSnapshot", "SteamMove", "EmailSubscriber", "TotalsSnapshot", "SpreadsSnapshot", "SyndicateAlert", "ClosingLine", "MarketType", "User", "Subscription", "MagicLink", "XGData", "HistoricalMatch", "PolymarketSnapshot", "OutrightSnapshot", "OutrightCapture", "ClubFinance", "PostedTweet", "LeagueConstants", "LeagueConstantsHistory", "Forecast"]

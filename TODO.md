@@ -51,15 +51,35 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 ## Next
 
-- Forecast engine: register an outright market source (Polymarket
-  league-winner / top-4 / relegation markets via the Gamma API) so
-  league-level forecasts get a real model-vs-market comparison.
-  Per external review: capture ORDER-BOOK DEPTH at snapshot time,
-  not just midpoint — thin-venue performance is only scoreable as
-  realised paper P/L at executable size. Edge Screen presentation
-  must be neutral divergence ("model above/below market" + magnitude
-  + liquidity), NO directional BACK/FADE calls — tipster-territory
-  regulatory constraint, not a naming preference.
+- Wage-informed promoted-team priors (the actual model integration):
+  the `wages` source now DISPLAYS wage bills but does NOT feed the
+  model — probabilities are unchanged. The real win is replacing the
+  asserted 0.85/1.15 promoted priors with a fit of strength on
+  log(wage or value share of league), which also turns the reviewer's
+  promoted-prior grid axis into a data-driven one. BLOCKER: club
+  wages are PL-only and lag ~1 season, and a promoted club has no PL
+  wage bill the year we need it — so wages can't set a promoted
+  prior. Use Transfermarkt SQUAD VALUES instead (all 5 leagues,
+  exist pre-season for promoted clubs, correlate with finish as
+  strongly as wages). Wage bills stay as established-club context/
+  display. Do this inside the joint grid (it's the third axis).
+- Cross-league wage/value data if we ever want wages beyond the PL:
+  Transfermarkt squad values (free-ish, 5 leagues) or a licensed
+  SportMonks/Capology feed. valuball only covers ENG (Companies
+  House is England-only).
+
+- Outrights follow-ups: (1) Polymarket top-4 / relegation books
+  usually appear mid-season — add slugs to OUTRIGHT_EVENTS when
+  listed (schema already carries the `market` discriminator);
+  (2) full order-book depth via the CLOB API (current capture is
+  bestBid/bestAsk/spread from Gamma — enough for divergence display,
+  NOT enough for the walk-the-book executable-price P/L the scoring
+  spec requires on thin venues); (3) Betfair Exchange API-NG as a
+  second outright venue; (4) outright_captures growth is ~120
+  rows/day (~600KB) — add a TTL sweep if it ever matters; (5) new
+  season = update OUTRIGHT_EVENTS slugs by hand (timestamped, not
+  derivable) and check _PM_ALIASES promoted-club guesses against
+  the canonical names the normalizer adopts for 27/28.
 - Forecast engine: scoring pass over the forecasts ledger — revised
   per external review, three arenas with different scoreboards:
   (1) liquid markets: LOG-LOSS skill delta vs de-vigged Pinnacle
@@ -122,6 +142,40 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Club wage-bill source (`wages`) + top-scorer parser fix. Snapshotted
+  valuball.co's club_season_financial_summary (ENG1) — figures derive
+  from Companies House filings — into a committed JSON (660 PL rows,
+  1993–FY24/25, £m) loaded into a new club_finances table on boot; NOT
+  a live dependency on their backend (durable static snapshot,
+  regenerate via scripts/refresh_valuball_finances.py). PL only:
+  Companies House is England-only, valuball has ~0 rows for the other
+  four leagues. New `wages` registry source (9th swarm node) surfaces
+  the latest filed wage bills ranked for the current field, with a
+  neutral rationale paragraph (top spenders + a model-vs-spend
+  divergence line, gated OFF for relegation where the direction
+  inverts) — explicitly context, NOT a model input (probabilities
+  unchanged; the strength fit still reads results, not payroll).
+  Promoted clubs with no PL filing shown as honestly missing.
+  Admin: POST /admin/load-club-finances, GET
+  /admin/club-finances-health. Separately: player-market questions
+  (top scorer / golden boot / assists / Ballon d'Or) now return a
+  specific "no player-level data" refusal instead of the generic
+  outside-the-grammar fall-through Neil hit. Verified end-to-end.
+- Polymarket season-outright source: hourly Gamma fetch of the five
+  whitelisted "2027 Champion" events ($4.4M on EPL alone) into new
+  outright_snapshots + content-addressed outright_captures (sha256 of
+  the canonicalized price payload, deduped across fetches). Team
+  labels resolve through the normalizer's names + a de-accenting
+  alias layer — all 96 live club labels across the 5 leagues resolve,
+  promoted-club guesses are harmless-if-wrong (non-joining), raw
+  label always kept. Folded into the existing 'polymarket' registry
+  source (swarm stays 8 nodes): league-winner forecasts now attach
+  proportionally de-vigged market prices per club, a neutral
+  divergence rationale paragraph (largest model-market gaps, no
+  directional calls), and a staleness warning past 26h; top-4/
+  relegation stay honestly market-free. Admin: /admin/outrights-health
+  + POST /admin/fetch-outrights; scheduler hourly + 90s-after-boot
+  one-shot. Verified with a LIVE Gamma fetch end-to-end.
 - Forecast Engine v1 (/tools/forecast): FutureSearch-style question box
   over the Top 5 leagues built on a closed source registry (own-DB
   tables + Poisson strength fit + 10k-season Dixon-Coles Monte Carlo) —

@@ -431,6 +431,11 @@ export interface ForecastEntry {
   current_points: number;
   played: number;
   mean_points: number;
+  // Polymarket outright winner book, when listed for this league —
+  // market_implied is proportionally de-vigged, market_yes is the raw
+  // cent price. Absent for top-4/relegation (no book exists yet).
+  market_implied?: number;
+  market_yes?: number;
 }
 
 export interface ForecastRationalePara {
@@ -463,9 +468,27 @@ export interface ForecastResult {
   type: 'distribution' | 'binary' | 'match';
   outcome_label?: string;
   entries?: ForecastEntry[];
-  binary?: { team: string; outcome_label: string; probability: number };
+  binary?: {
+    team: string;
+    outcome_label: string;
+    probability: number;
+    market_implied?: number;
+    market_yes?: number;
+  };
   match?: ForecastMatchResult;
-  meta?: { n_sims: number; remaining_fixtures: number; season: string };
+  meta?: {
+    n_sims: number;
+    remaining_fixtures: number;
+    season: string;
+    outright_market?: {
+      venue: string;
+      event_slug: string;
+      fetched_at: string;
+      age_hours: number;
+      book_sum: number;
+      event_volume: number | null;
+    };
+  };
 }
 
 export interface ForecastResponse {
