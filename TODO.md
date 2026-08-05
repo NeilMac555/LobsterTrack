@@ -51,6 +51,28 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 ## Next
 
+- Wage/value-informed promoted-team priors (Neil, via valuball.co):
+  the wages-success correlation is real, but its marginal value to
+  the model is concentrated where match history is thin — for
+  established clubs the fitted strengths already embody it (wages →
+  performance → the results we fit on). Best entry point: replace
+  the asserted 0.85/1.15 promoted priors with a fit of strength on
+  log(squad wage/value share of league) across the 4-season window,
+  which also turns the reviewer's promoted-prior grid axis into a
+  data-driven one. SOURCE DECISION NEEDED: valuball.co itself is
+  PL-only and a paid product (private Supabase + app subscriptions,
+  no API — scraping it would circumvent a paywall and republish
+  SportMonks-licensed data; rejected). Clean options: (a) Companies
+  House filings — free public API, actual audited wage bills, but
+  England-only and 9-14 months stale, club-level incl. non-playing
+  staff; (b) Transfermarkt squad market values — all 5 leagues,
+  covers promoted clubs pre-season, correlates with success at least
+  as strongly as wages, already a SteamWatch-adjacent source (the
+  newsletter + match-predictor workflows use Transfermarkt);
+  (c) SportMonks/Capology licensed wage feeds if we want true wages
+  cross-league. Recommendation: (b) for the model prior, (a) as a
+  PL-only enrichment later.
+
 - Outrights follow-ups: (1) Polymarket top-4 / relegation books
   usually appear mid-season — add slugs to OUTRIGHT_EVENTS when
   listed (schema already carries the `market` discriminator);
