@@ -13,6 +13,9 @@ httpx>=0.26.0
 # Scheduling
 apscheduler>=3.10.4
 
+# Forecast engine Monte Carlo (season simulator)
+numpy>=1.26.0
+
 # Environment and config
 python-dotenv>=1.0.0
 pydantic-settings>=2.1.0

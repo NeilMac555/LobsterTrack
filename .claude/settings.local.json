@@ -39,7 +39,8 @@
       "Bash(pip install:*)",
       "WebFetch(domain:api.telegram.org)",
       "WebFetch(domain:steamwatch.io)",
-      "WebFetch(domain:www.steamwatch.io)"
+      "WebFetch(domain:www.steamwatch.io)",
+      "mcp__Claude_Code_Remote__subscribe_pr_activity"
     ]
   }
 }

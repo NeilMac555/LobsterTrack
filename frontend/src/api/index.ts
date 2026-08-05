@@ -1,4 +1,4 @@
-import type { MatchSummary, MatchDetail, LeagueSummary, Stats, BiggestMover, MatchTotals, SyndicateMove, MatchSpreads, SteamResultsData, ClosingLinesResponse, MatchClosingLinesResponse, XGDataResponse, TeamPLResponse, InPlayJumpsResponse, LateSteamResponse, LeagueConstantsResponse } from '../types';
+import type { MatchSummary, MatchDetail, LeagueSummary, Stats, BiggestMover, MatchTotals, SyndicateMove, MatchSpreads, SteamResultsData, ClosingLinesResponse, MatchClosingLinesResponse, XGDataResponse, TeamPLResponse, InPlayJumpsResponse, LateSteamResponse, LeagueConstantsResponse, ForecastRegistry, ForecastResponse, RecentForecastsResponse } from '../types';
 
 const API_BASE = '/api';
 
@@ -191,4 +191,26 @@ export async function getTeamPnL(params?: {
   if (params?.opponents) searchParams.set('opponents', params.opponents);
   const query = searchParams.toString();
   return fetchJson<TeamPLResponse>(`${API_BASE}/team-pnl${query ? `?${query}` : ''}`);
+}
+
+// ===== Forecast Engine =====
+
+export async function getForecastRegistry(): Promise<ForecastRegistry> {
+  return fetchJson<ForecastRegistry>(`${API_BASE}/forecast/registry`);
+}
+
+export async function createForecast(question: string): Promise<ForecastResponse> {
+  const response = await fetch(`${API_BASE}/forecast`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question }),
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function getRecentForecasts(limit: number = 6): Promise<RecentForecastsResponse> {
+  return fetchJson<RecentForecastsResponse>(`${API_BASE}/forecast/recent?limit=${limit}`);
 }

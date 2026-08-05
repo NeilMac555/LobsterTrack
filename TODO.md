@@ -5,11 +5,90 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 ## Now
 
+- Forecast engine: SEVER-then-refit rho and drawInflation on our own
+  window — external review flags a likely double-correction (negative
+  rho already boosts the draw-adjacent cells; multiplying the diagonal
+  by 1.08 on top is the same fix applied twice, and rho is probably
+  small BECAUSE the inflation is doing its job for it). Reviewer
+  guidance: drop DRAW_INFLATION first, refit rho alone (expect larger
+  |rho| than -0.03), harness gates held.
+- Forecast engine: JOINT out-of-sample grid over (HALF_LIFE_DAYS,
+  K_SHRINK) through the harness — coarse 4x4 first, plus a coarse
+  third axis over the promoted-team priors (three pairs around the
+  asserted 0.85/1.15), or at minimum a published sensitivity line for
+  relegation probabilities across plausible prior values. Rationale:
+  relegation odds — the most product-visible, most-argued output —
+  sit at the intersection of the two least-validated parameters,
+  coupled (K sets how much relegation probability promoted sides shed
+  onto weak incumbents, and the promoted strengths themselves are
+  asserted priors). OBJECTIVE, pinned: out-of-sample log loss on
+  match 1X2, walk-forward folds, selection by mean across folds — NOT
+  outright calibration, which resolves too rarely to select on.
+  Must be joint, not sequential: the ablation measured a -0.054
+  interaction term (decay slashes effective counts so shrinkage bites
+  harder), so tuning half-life first and K second inherits the
+  first's bias. Caption for the observed profile asymmetry (MC/ARS
+  cell): shrinkage compresses ALL strengths toward 1.0 symmetrically;
+  the asymmetric cost between attack-led and defence-led profiles
+  lives in the Poisson map's nonlinearity — the win-probability
+  response to a lambda shift differs between suppressing opponent
+  goals and adding your own (measured via per-fixture xPts deltas).
+  N_DRAWS=500 Dirichlet draws is the remaining provisional constant
+  (cheap to raise post-vectorisation).
+- Forecast engine: opponent-adjusted npxG form — the last-6 window is
+  schedule-blind (six easy fixtures mark a team up). Needs an
+  xg_data<->historical_matches join to identify each match's opponent
+  (xg_data has no opponent column): match on (league, team, match_date),
+  then divide each match npxG by opponent fitted defence. Verify the
+  date alignment against real Understat rows before trusting it.
+- Forecast engine: cache the strength fit per league (~1h TTL, keyed
+  on league + latest historical row) — fit + bootstrap is ~0.9s and
+  the draw-aware sim ~5.7s; the fit is question-independent so repeat
+  forecasts on the same league shouldn't repay it. Also vectorise
+  _fit_core with numpy if the request path needs to get back under 2s.
 - Team name normalizer gaps: Bielefeld, Greuther Fürth, Holstein Kiel,
   Ajaccio unmapped (flagged during backfill).
 
 ## Next
 
+- Forecast engine: register an outright market source (Polymarket
+  league-winner / top-4 / relegation markets via the Gamma API) so
+  league-level forecasts get a real model-vs-market comparison.
+  Per external review: capture ORDER-BOOK DEPTH at snapshot time,
+  not just midpoint — thin-venue performance is only scoreable as
+  realised paper P/L at executable size. Edge Screen presentation
+  must be neutral divergence ("model above/below market" + magnitude
+  + liquidity), NO directional BACK/FADE calls — tipster-territory
+  regulatory constraint, not a naming preference.
+- Forecast engine: scoring pass over the forecasts ledger — revised
+  per external review, three arenas with different scoreboards:
+  (1) liquid markets: LOG-LOSS skill delta vs de-vigged Pinnacle
+  close with CIs, per segment (not raw Brier — conflates skill with
+  slate difficulty); (2) thin venues: realised paper P/L at
+  executable prices; (3) unpriced questions: calibration curves on
+  resolution. Headline statistic: out-of-sample alpha in
+  alpha*model + (1-alpha)*close — alpha reliably > 0 means the model
+  predicts closing-line error. Independent engine stays the
+  published/scored ledger; any anchored blend that drives
+  market-facing output publishes its alpha.
+  Mechanics locked after review two: (a) de-vig method must be NAMED
+  and VERSIONED in the spec — current engine code is proportional
+  (1/odds normalised); evaluate Shin/power, which diverge on
+  longshots; (b) "closing line" = last pre-KO snapshot at 15-min
+  Odds API cadence — a stale close is easier to beat and the bias
+  runs in our favour, so the ledger DISCLOSES the capture rule;
+  (c) skill-score CIs bootstrap by MATCHDAY CLUSTER, not per
+  forecast (same-slate forecasts aren't independent); (d) alpha:
+  blend in log-odds space, walk-forward OOS max-likelihood, pooled
+  first, per-segment via hierarchical shrinkage only past ~150
+  resolved per segment, publish pooled from ~150-200 resolved with
+  a provisional label; (e) thin-venue P&L: content-addressed raw
+  CLOB snapshots (hash in ledger entry, snapshots published),
+  fills computed by walking resting depth, taker fees included,
+  stated adverse-selection haircut — reproducibility over prose;
+  (f) outright interim credibility = inheritance from match-level
+  calibration (same probability field), convergence-vs-market plots
+  are DIAGNOSTICS ONLY, never a scoreboard.
 - Duplicate match rows from fixture reschedules: DB sweep found ~20
   pairs of matches (same two teams, commence_time <48h apart) across
   Ligue 1, Serie A, La Liga and Bundesliga — early-season fixtures
@@ -25,6 +104,13 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 ## Later
 
+- Forecast engine: LLM question parser in front of the closed grammar
+  (ParsedQuestion is the seam — engine untouched). Also injury-news
+  ingestion as a registered source to drive the absence adjustment.
+- Forecast engine: La Liga head-to-head tie-break is approximated by
+  goal difference in the season simulator; Bundesliga/Ligue 1
+  relegation playoff counted as survival. Revisit if forecasts get
+  quoted seriously.
 - Re-fit rho/drawInflation in xG mode once 2026/27 accumulates enough
   matches (fallback fit was rejected — see fit-v1.md).
 - CL/UEL restoration: needs Elo-based cross-league strengths +
@@ -36,6 +122,17 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Forecast Engine v1 (/tools/forecast): FutureSearch-style question box
+  over the Top 5 leagues built on a closed source registry (own-DB
+  tables + Poisson strength fit + 10k-season Dixon-Coles Monte Carlo) —
+  no open web search, no LLM. Rules-based question grammar (winner /
+  top 4 / relegation / team outcome / A vs B), forecasts persisted to a
+  new `forecasts` ledger table, research-swarm UI that replays the
+  recorded stage timeline as the audit trail. Match questions compare
+  model vs de-vigged Pinnacle; league questions state that no outright
+  market source is registered yet. Verified end-to-end on seeded data
+  (distributions sum correctly, ~0.4s/run) + Playwright screenshots of
+  all three flows — `8af47da`
 - Biggest Movers now measures movement over the trailing 48h instead
   of all-time since first-tracked: previously compared current odds
   to the very first snapshot ever recorded (often a month before
