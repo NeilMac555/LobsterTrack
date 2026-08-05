@@ -30,7 +30,9 @@ const tools: Array<{
     external: true,
     isNew: true,
   },
-  { name: 'Forecast Engine', path: '/tools/forecast', icon: '🔮', isNew: true },
+  // Forecast Engine hidden from nav 2026-08-05 while the player-level
+  // (top-scorer) work is in progress — route redirects to home. Re-add
+  // this entry and the App.tsx route to bring it back.
   { name: 'Bet Calculator', path: '/tools/bet-calculator', icon: '🎫' },
   { name: 'Hedging Calculator', path: '/tools/hedge-calculator', icon: '🧮' },
   { name: 'Match Model', path: '/tools/match-predictor', icon: '⚽' },
