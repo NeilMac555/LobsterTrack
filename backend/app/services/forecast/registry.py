@@ -52,7 +52,7 @@ SOURCES: list[dict] = [
         "id": "polymarket",
         "name": "Polymarket prices",
         "tier": 1,
-        "detail": "Latest matched-market prices and liquidity from polymarket_snapshots",
+        "detail": "Match markets (polymarket_snapshots) + season-outright winner book (outright_snapshots, hourly Gamma fetch)",
     },
     {
         "id": "steam",

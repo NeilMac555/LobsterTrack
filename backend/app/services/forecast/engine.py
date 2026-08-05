@@ -13,11 +13,13 @@ decoration. A collector failure downgrades that source to status
 'error' and the run continues; only parse failures and a missing team
 list abort a forecast.
 
-No source outside registry.py is consulted anywhere in this package —
-notably there is no outright (title/top-4) market feed registered yet,
-so league-level forecasts say so instead of quietly comparing against
-nothing. Match-level questions DO get a market comparison (Pinnacle
-de-vig + Polymarket where matched).
+No source outside registry.py is consulted anywhere in this package.
+Match-level questions get a market comparison from Pinnacle (de-vig)
+plus Polymarket where matched; league-winner questions get one from
+the Polymarket season-outright book (outright_snapshots, fed hourly by
+outright_fetcher) — folded into the same 'polymarket' source card.
+Top-4/relegation outrights aren't listed on Polymarket yet, so those
+forecasts still say so instead of quietly comparing against nothing.
 """
 
 import json
@@ -32,6 +34,7 @@ from app.models import (
     LeagueConstants,
     Match,
     OddsSnapshot,
+    OutrightSnapshot,
     PolymarketSnapshot,
     SteamMove,
 )
@@ -337,15 +340,27 @@ def _forecast_league(run, parsed, cfg, standings, fit, mu, ratio) -> dict:
     else:
         dist, label = sim.p_title, "champions"
 
-    entries = [
-        {
+    # The winner book is the only outright Polymarket lists today, so
+    # market prices attach to "champions" questions only — top-4 and
+    # relegation entries stay market-free rather than borrowing an
+    # unrelated price.
+    outright = (run.evidence.get("polymarket") or {}).get("outright") \
+        if label == "champions" else None
+    market_teams = (outright or {}).get("teams") or {}
+
+    entries = []
+    for t, p in sorted(dist.items(), key=lambda kv: -kv[1]):
+        entry = {
             "team": t, "probability": round(p, 4),
             "current_points": sim.current_points[t],
             "played": sim.played[t],
             "mean_points": round(sim.mean_points[t], 1),
         }
-        for t, p in sorted(dist.items(), key=lambda kv: -kv[1])
-    ]
+        mk = market_teams.get(t)
+        if mk and mk.get("implied") is not None:
+            entry["market_implied"] = mk["implied"]
+            entry["market_yes"] = mk["yes"]
+        entries.append(entry)
 
     result: dict = {
         "type": "distribution", "outcome_label": label, "entries": entries,
@@ -354,6 +369,15 @@ def _forecast_league(run, parsed, cfg, standings, fit, mu, ratio) -> dict:
             "season": standings["season"],
         },
     }
+    if outright:
+        result["meta"]["outright_market"] = {
+            "venue": "polymarket",
+            "event_slug": outright["event_slug"],
+            "fetched_at": outright["fetched_at"],
+            "age_hours": outright["age_hours"],
+            "book_sum": outright["book_sum"],
+            "event_volume": outright["event_volume"],
+        }
     if parsed.kind == "team_outcome":
         team = parsed.teams[0]
         result["type"] = "binary"
@@ -361,6 +385,10 @@ def _forecast_league(run, parsed, cfg, standings, fit, mu, ratio) -> dict:
             "team": team, "outcome_label": label,
             "probability": round(dist.get(team, 0.0), 4),
         }
+        mk = market_teams.get(team)
+        if mk and mk.get("implied") is not None:
+            result["binary"]["market_implied"] = mk["implied"]
+            result["binary"]["market_yes"] = mk["yes"]
 
     rationale = _league_rationale(parsed, cfg, standings, fit, sim, dist, label, run)
     return {"result": result, "rationale": rationale}
@@ -422,14 +450,58 @@ def _league_rationale(parsed, cfg, standings, fit, sim, dist, label, run) -> lis
             "sources": ["strength_fit"],
         })
 
-    paras.append({
-        "text": (
-            "No outright (title/top-4) market source is registered in the "
-            "engine yet, so there is deliberately no market comparison here — "
-            "match-level questions get one from Pinnacle/Polymarket."
-        ),
-        "sources": [],
-    })
+    outright = (run.evidence.get("polymarket") or {}).get("outright") \
+        if label == "champions" else None
+    if outright:
+        market_teams = outright.get("teams") or {}
+        diffs = sorted(
+            (
+                (t, p, market_teams[t]["implied"])
+                for t, p in dist.items()
+                if t in market_teams and market_teams[t].get("implied") is not None
+            ),
+            key=lambda x: -abs(x[1] - x[2]),
+        )
+        vol = outright.get("event_volume") or 0
+        text = (
+            f"Polymarket's {name} winner book (${vol / 1e6:.1f}M traded, raw "
+            f"prices sum to {outright['book_sum'] * 100:.1f}¢ — probabilities "
+            "de-vigged proportionally) gives a live market to compare against."
+        )
+        if diffs:
+            listed = ", ".join(
+                f"{t} model {p:.1%} vs market {q:.1%} ({(p - q) * 100:+.1f}pp)"
+                for t, p, q in diffs[:3]
+            )
+            text += f" Largest model-market gaps: {listed}."
+        text += (
+            " Divergence is reported, not interpreted — it can mean model "
+            "edge, market information the model lacks, or thin-book noise."
+        )
+        paras.append({"text": text, "sources": ["polymarket"]})
+        if outright.get("age_hours", 0) > 26:
+            run.warnings.append(
+                f"Outright market prices are {outright['age_hours']:.0f}h old "
+                "— the hourly fetch has missed at least one cycle."
+            )
+    elif label == "champions":
+        paras.append({
+            "text": (
+                "The Polymarket outright winner book is registered as a source "
+                "but returned no prices for this league yet, so there is "
+                "deliberately no market comparison rather than a stale one."
+            ),
+            "sources": ["polymarket"],
+        })
+    else:
+        paras.append({
+            "text": (
+                f"Polymarket lists no {label} outright for this season yet — "
+                "league-winner questions get a market comparison from its "
+                "winner book; this one deliberately has none."
+            ),
+            "sources": [],
+        })
 
     if label == "relegated" and cfg["relegation_spots"] == 2:
         paras.append({
@@ -601,8 +673,6 @@ def _polymarket_card(db: Session, league: str, focus_teams: list[str] | None) ->
             (s, m) for s, m in rows
             if m.home_team in focus_teams or m.away_team in focus_teams
         ]
-    if not rows:
-        return None
     latest_by_match: dict[str, tuple] = {}
     for s, m in rows:
         latest_by_match.setdefault(m.id, (s, m))
@@ -614,13 +684,79 @@ def _polymarket_card(db: Session, league: str, focus_teams: list[str] | None) ->
         }
         for s, m in latest_by_match.values()
     ]
-    card = {
-        "headline": f"{len(markets)} matched Polymarket market(s)",
-        "markets": markets,
-    }
+
+    outright = _latest_outrights(db, league, "winner")
+
+    if not markets and not outright:
+        return None
+
+    parts = []
+    if markets:
+        parts.append(f"{len(markets)} matched match market(s)")
+    if outright:
+        vol = outright.get("event_volume") or 0
+        parts.append(
+            f"outright winner book · {len(outright['teams'])} clubs · "
+            f"${vol / 1e6:.1f}M lifetime volume"
+        )
+    card: dict = {"headline": " · ".join(parts), "markets": markets}
+    if outright:
+        card["outright"] = outright
     if focus_teams and len(focus_teams) == 2 and markets:
         card["prices"] = markets[0]
     return card
+
+
+def _latest_outrights(db: Session, league: str, market: str) -> dict | None:
+    """Latest snapshot batch for a league's outright book, reassembled
+    from the rows sharing the newest fetched_at. Raw yes-prices sum to
+    slightly over 1 (the book's overround), so a proportionally
+    de-vigged `implied` is attached next to each raw price — same
+    de-vig convention as the Pinnacle match card."""
+    latest_at = (
+        db.query(OutrightSnapshot.fetched_at)
+        .filter(OutrightSnapshot.league == league, OutrightSnapshot.market == market)
+        .order_by(OutrightSnapshot.fetched_at.desc())
+        .limit(1)
+        .scalar()
+    )
+    if latest_at is None:
+        return None
+    rows = (
+        db.query(OutrightSnapshot)
+        .filter(
+            OutrightSnapshot.league == league,
+            OutrightSnapshot.market == market,
+            OutrightSnapshot.fetched_at == latest_at,
+        )
+        .all()
+    )
+    priced = [r for r in rows if r.yes_price is not None]
+    if not priced:
+        return None
+    book_sum = sum(r.yes_price for r in priced)
+    age_hours = (datetime.utcnow() - latest_at).total_seconds() / 3600
+    return {
+        "market": market,
+        "event_slug": rows[0].event_slug,
+        "season": rows[0].season,
+        "fetched_at": latest_at.isoformat(),
+        "age_hours": round(age_hours, 1),
+        "book_sum": round(book_sum, 4),
+        "event_volume": rows[0].event_volume,
+        "capture_sha256": rows[0].capture_sha256,
+        "unresolved": [r.team_name_raw for r in rows if r.team_name is None],
+        "teams": {
+            r.team_name: {
+                "yes": r.yes_price,
+                "implied": round(r.yes_price / book_sum, 4) if book_sum else None,
+                "bid": r.best_bid,
+                "ask": r.best_ask,
+                "volume_24h": r.volume_24h,
+            }
+            for r in priced if r.team_name is not None
+        },
+    }
 
 
 def _steam_card(db: Session, league: str, focus_teams: list[str] | None) -> dict | None:

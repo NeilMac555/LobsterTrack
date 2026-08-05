@@ -422,6 +422,17 @@ class OddsScheduler:
         except Exception as e:
             logger.error("polymarket fetch failed", error=str(e))
 
+    async def outright_fetch_job(self):
+        """Polymarket season-outright fetch (league winner books for the
+        Forecast Engine's market comparison). Hourly — outright prices
+        move on news cycles, not minutes, and every fetch appends ~100
+        snapshot rows across the five leagues."""
+        try:
+            from app.services.outright_fetcher import outright_fetcher
+            await outright_fetcher.fetch_and_store()
+        except Exception as e:
+            logger.error("outright fetch failed", error=str(e))
+
     async def tweet_check_job(self):
         """
         Every minute, sweep recently-kicked-off matches for the in-play
@@ -573,6 +584,26 @@ class OddsScheduler:
             coalesce=True,
         )
 
+        # Polymarket outrights — hourly, plus one run shortly after boot
+        # so a fresh deploy doesn't wait an hour for its first prices.
+        self.scheduler.add_job(
+            self.outright_fetch_job,
+            trigger=IntervalTrigger(hours=1),
+            id="outright_fetch",
+            name="Polymarket season-outright fetch",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
+        self.scheduler.add_job(
+            self.outright_fetch_job,
+            trigger=DateTrigger(run_date=datetime.now(timezone.utc) + timedelta(seconds=90)),
+            id="outright_fetch_boot",
+            name="Polymarket outright fetch (startup one-shot)",
+            replace_existing=True,
+            max_instances=1,
+        )
+
         # Tweet check — every minute. Each pass walks through upcoming +
         # recently-kicked-off matches and posts any tweet types that
         # haven't gone out yet (closing-line at T-15, in-play recap at
@@ -695,6 +726,9 @@ class OddsScheduler:
                 "summary": self._fdata_last_summary,
                 "schedule": "Mondays 09:00 UTC",
             },
+            # Polymarket season-outright fetch — hourly, feeds the
+            # Forecast Engine's league-level market comparison
+            "outright_fetch": self._outright_health(),
             # Weekly league constants refresh — avgGoalsPerTeam/homeAwayRatio per league
             "league_constants_refresh": {
                 "last_run_at": iso(league_constants_refresher.last_run_at),
@@ -703,6 +737,19 @@ class OddsScheduler:
                 "summary": league_constants_refresher.last_run_summary,
                 "schedule": "Mondays 10:00 UTC",
             },
+        }
+
+    def _outright_health(self) -> dict:
+        from app.services.outright_fetcher import outright_fetcher
+
+        now = datetime.utcnow()
+        last = outright_fetcher.last_run_at
+        return {
+            "last_run_at": (last.isoformat() + "Z") if last else None,
+            "seconds_since_last_run": int((now - last).total_seconds()) if last else None,
+            "last_error": outright_fetcher.last_error,
+            "summary": outright_fetcher.last_summary,
+            "schedule": "Hourly (+90s after boot)",
         }
 
     def stop(self):

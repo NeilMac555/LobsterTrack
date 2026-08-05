@@ -51,15 +51,18 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 ## Next
 
-- Forecast engine: register an outright market source (Polymarket
-  league-winner / top-4 / relegation markets via the Gamma API) so
-  league-level forecasts get a real model-vs-market comparison.
-  Per external review: capture ORDER-BOOK DEPTH at snapshot time,
-  not just midpoint — thin-venue performance is only scoreable as
-  realised paper P/L at executable size. Edge Screen presentation
-  must be neutral divergence ("model above/below market" + magnitude
-  + liquidity), NO directional BACK/FADE calls — tipster-territory
-  regulatory constraint, not a naming preference.
+- Outrights follow-ups: (1) Polymarket top-4 / relegation books
+  usually appear mid-season — add slugs to OUTRIGHT_EVENTS when
+  listed (schema already carries the `market` discriminator);
+  (2) full order-book depth via the CLOB API (current capture is
+  bestBid/bestAsk/spread from Gamma — enough for divergence display,
+  NOT enough for the walk-the-book executable-price P/L the scoring
+  spec requires on thin venues); (3) Betfair Exchange API-NG as a
+  second outright venue; (4) outright_captures growth is ~120
+  rows/day (~600KB) — add a TTL sweep if it ever matters; (5) new
+  season = update OUTRIGHT_EVENTS slugs by hand (timestamped, not
+  derivable) and check _PM_ALIASES promoted-club guesses against
+  the canonical names the normalizer adopts for 27/28.
 - Forecast engine: scoring pass over the forecasts ledger — revised
   per external review, three arenas with different scoreboards:
   (1) liquid markets: LOG-LOSS skill delta vs de-vigged Pinnacle
@@ -122,6 +125,21 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Polymarket season-outright source: hourly Gamma fetch of the five
+  whitelisted "2027 Champion" events ($4.4M on EPL alone) into new
+  outright_snapshots + content-addressed outright_captures (sha256 of
+  the canonicalized price payload, deduped across fetches). Team
+  labels resolve through the normalizer's names + a de-accenting
+  alias layer — all 96 live club labels across the 5 leagues resolve,
+  promoted-club guesses are harmless-if-wrong (non-joining), raw
+  label always kept. Folded into the existing 'polymarket' registry
+  source (swarm stays 8 nodes): league-winner forecasts now attach
+  proportionally de-vigged market prices per club, a neutral
+  divergence rationale paragraph (largest model-market gaps, no
+  directional calls), and a staleness warning past 26h; top-4/
+  relegation stay honestly market-free. Admin: /admin/outrights-health
+  + POST /admin/fetch-outrights; scheduler hourly + 90s-after-boot
+  one-shot. Verified with a LIVE Gamma fetch end-to-end.
 - Forecast Engine v1 (/tools/forecast): FutureSearch-style question box
   over the Top 5 leagues built on a closed source registry (own-DB
   tables + Poisson strength fit + 10k-season Dixon-Coles Monte Carlo) —
