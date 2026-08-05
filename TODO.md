@@ -13,16 +13,28 @@ session; update before finishing (move cards, add new ones, trim Done).
   guidance: drop DRAW_INFLATION first, refit rho alone (expect larger
   |rho| than -0.03), harness gates held.
 - Forecast engine: JOINT out-of-sample grid over (HALF_LIFE_DAYS,
-  K_SHRINK) through the harness — coarse 4x4 first. Must be joint,
-  not sequential: the ablation measured a -0.054 interaction term
-  (decay slashes effective counts so shrinkage bites harder), so
-  tuning half-life first and K second inherits the first's bias.
-  Note K also governs how hard low-history clubs (promoted sides)
-  get pulled toward average — the ablation showed shrinkage
-  redistributing ~34pp of relegation probability from two thin-history
-  clubs onto full-history cellar rivals, so K is a product-visible
-  parameter, not just a regulariser. N_DRAWS=500 Dirichlet draws is
-  the third provisional constant (cheap to raise post-vectorisation).
+  K_SHRINK) through the harness — coarse 4x4 first, plus a coarse
+  third axis over the promoted-team priors (three pairs around the
+  asserted 0.85/1.15), or at minimum a published sensitivity line for
+  relegation probabilities across plausible prior values. Rationale:
+  relegation odds — the most product-visible, most-argued output —
+  sit at the intersection of the two least-validated parameters,
+  coupled (K sets how much relegation probability promoted sides shed
+  onto weak incumbents, and the promoted strengths themselves are
+  asserted priors). OBJECTIVE, pinned: out-of-sample log loss on
+  match 1X2, walk-forward folds, selection by mean across folds — NOT
+  outright calibration, which resolves too rarely to select on.
+  Must be joint, not sequential: the ablation measured a -0.054
+  interaction term (decay slashes effective counts so shrinkage bites
+  harder), so tuning half-life first and K second inherits the
+  first's bias. Caption for the observed profile asymmetry (MC/ARS
+  cell): shrinkage compresses ALL strengths toward 1.0 symmetrically;
+  the asymmetric cost between attack-led and defence-led profiles
+  lives in the Poisson map's nonlinearity — the win-probability
+  response to a lambda shift differs between suppressing opponent
+  goals and adding your own (measured via per-fixture xPts deltas).
+  N_DRAWS=500 Dirichlet draws is the remaining provisional constant
+  (cheap to raise post-vectorisation).
 - Forecast engine: opponent-adjusted npxG form — the last-6 window is
   schedule-blind (six easy fixtures mark a team up). Needs an
   xg_data<->historical_matches join to identify each match's opponent
