@@ -20,7 +20,7 @@ import BlogPostPage from './pages/BlogPostPage';
 import RollingXGPage from './pages/RollingXGPage';
 import TeamPLPage from './pages/TeamPLPage';
 import InPlayJumpsPage from './pages/InPlayJumpsPage';
-import ForecastPage from './pages/ForecastPage';
+// ForecastPage is temporarily hidden (see the redirected route below).
 
 function App() {
   return (
@@ -42,7 +42,11 @@ function App() {
               <Route path="tools/bet-calculator" element={<BetCalculatorPage />} />
               <Route path="tools/match-predictor" element={<MatchPredictorPage />} />
               <Route path="tools/rolling-xg" element={<RollingXGPage />} />
-              <Route path="tools/forecast" element={<ForecastPage />} />
+              {/* Forecast Engine hidden 2026-08-05 while player-level
+                  (top-scorer) forecasting is built out — redirect to home
+                  so existing links don't dead-end. Restore the
+                  <ForecastPage/> import + this route to re-enable. */}
+              <Route path="tools/forecast" element={<Navigate to="/" replace />} />
               {/* The WC hub was removed once the tournament ended — old
                   bookmarks/shared links should land on the homepage
                   instead of a blank page. */}

@@ -5,6 +5,36 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 ## Now
 
+- Top-scorer forecasting (EPL first) — NEW player-level model, biggest
+  feature since v1. Data chain VALIDATED end-to-end 2026-08-05:
+  * Rates: Understat getLeagueData `players` key (same endpoint xg_
+    refresher uses, different key) gives per-player minutes/goals/npg/
+    npxG/position — 537 EPL players, Haaland tops npxG/90 at 0.78, board
+    is credible. Use LAST completed season (2025/26) as the rate; the
+    current season endpoint (2026) is empty at season start.
+  * Roster truth: Transfermarkt squad pages reachable via HTTP with a
+    browser UA (no browser automation needed) — 20 EPL club verein-ids
+    scraped from the league page, 36 players/club with stable TM ids.
+    This is the spine that catches summer transfers Understat still
+    mis-attributes (it tags players by last season's club, comma-joins
+    mid-season movers like "Bournemouth,Manchester City").
+  * NOTE: pull 2026/27 squads (saison_id/2026) not 2025/26 — promoted
+    set differs (Coventry/Hull/etc. per the Polymarket outright list).
+  Build plan: (1) player_stats + squad_membership models + snapshot
+    (Understat player fetch, all 5 leagues; TM squad fetch); (2) player-
+    name crosswalk (accent-folded, TM id as spine — nastier than teams:
+    accents, initials, single-name players like "Gabriel", dup names) +
+    a freshness gate (never forecast a player not on a current squad);
+    (3) projection = npxG/90 × projected minutes × team-goals scaling
+    (from our strength fit) + penalties to the designated taker; Monte
+    Carlo top-scorer distribution reusing the season sim's team goals;
+    (4) parser `top_scorer` shape, engine path, registry source node,
+    frontend. Market comparison (Polymarket golden-boot / Ballon d'Or)
+    optional + patchy; Oddschecker still rejected (no API, ToS).
+    Hard parts: the crosswalk, expected-minutes model, and refreshing
+    squads hard around both transfer windows.
+
+
 - Forecast engine: SEVER-then-refit rho and drawInflation on our own
   window — external review flags a likely double-correction (negative
   rho already boosts the draw-adjacent cells; multiplying the diagonal
