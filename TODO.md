@@ -12,12 +12,17 @@ session; update before finishing (move cards, add new ones, trim Done).
   small BECAUSE the inflation is doing its job for it). Reviewer
   guidance: drop DRAW_INFLATION first, refit rho alone (expect larger
   |rho| than -0.03), harness gates held.
-- Forecast engine: out-of-sample tuning of the three provisional
-  constants introduced by the review-two fixes — HALF_LIFE_DAYS=365
-  (exponential day-decay, replaced season buckets), K_SHRINK=15
-  (shrinkage prior), N_DRAWS=100 / BOOTSTRAP_ITERATIONS=8. All
-  mechanisms are live; the values are placeholders until the harness
-  says otherwise.
+- Forecast engine: JOINT out-of-sample grid over (HALF_LIFE_DAYS,
+  K_SHRINK) through the harness — coarse 4x4 first. Must be joint,
+  not sequential: the ablation measured a -0.054 interaction term
+  (decay slashes effective counts so shrinkage bites harder), so
+  tuning half-life first and K second inherits the first's bias.
+  Note K also governs how hard low-history clubs (promoted sides)
+  get pulled toward average — the ablation showed shrinkage
+  redistributing ~34pp of relegation probability from two thin-history
+  clubs onto full-history cellar rivals, so K is a product-visible
+  parameter, not just a regulariser. N_DRAWS=500 Dirichlet draws is
+  the third provisional constant (cheap to raise post-vectorisation).
 - Forecast engine: opponent-adjusted npxG form — the last-6 window is
   schedule-blind (six easy fixtures mark a team up). Needs an
   xg_data<->historical_matches join to identify each match's opponent
