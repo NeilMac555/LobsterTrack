@@ -389,6 +389,22 @@ const player = {
 
 const enemies = [], corpses = [], bullets = [], gems = [], effects = [], texts = [], pickups = [];
 
+// ---------- kill burst particles ----------
+// pixel-square debris with velocity + gravity; every 4th particle is a white spark
+const particles = [];
+function burstParticles(x, y, color, n) {
+  if (particles.length > 500) n = Math.min(n, 3); // stay light during mass purges
+  for (let i = 0; i < n; i++) {
+    const a = rand(0, TAU), sp = rand(40, 190);
+    particles.push({
+      x: x + rand(-4, 4), y: y + rand(-4, 4),
+      vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - rand(40, 130), // upward bias
+      size: rand(2, 4.5), color: i % 4 === 3 ? '#ffffff' : color,
+      life: rand(0.35, 0.6), maxLife: 0.6,
+    });
+  }
+}
+
 // ---------- weapons ----------
 const WEAPON_DEFS = {
   optic: {
@@ -743,8 +759,7 @@ function killEnemy(e) {
   trackStreak();
   corpses.push({ sprite: e.sprite, scale: e.scale, tint: e.tint,
     x: e.x, y: e.y, groundY: groundYOf(e), flip: player.x < e.x, animT: 0 });
-  effects.push({ type: 'pop', x: e.x, y: e.y - e.r * 0.5, color: e.pop || '#c08a5a',
-    r: e.r, life: 0.3, maxLife: 0.3 });
+  burstParticles(e.x, e.y - e.r * 0.5, e.pop || '#c08a5a', e.boss ? 26 : e.elite ? 16 : 8);
   if (e.boss || e.elite) {
     state.hitstop = Math.max(state.hitstop, 0.12); // big kill, big freeze-frame
     for (let g = 0; g < 8; g++) {
@@ -1174,6 +1189,16 @@ function update(dt) {
     if (corpses[i].animT > 1.15) corpses.splice(i, 1);
   }
 
+  // kill burst debris: fly, fall, expire
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const pt = particles[i];
+    pt.vy += 500 * dt;
+    pt.x += pt.vx * dt;
+    pt.y += pt.vy * dt;
+    pt.life -= dt;
+    if (pt.life <= 0) { particles[i] = particles[particles.length - 1]; particles.pop(); }
+  }
+
   // gems
   for (let i = gems.length - 1; i >= 0; i--) {
     const g = gems[i];
@@ -1354,6 +1379,15 @@ function render() {
   drawables.sort((a, b) => a.y - b.y);
   for (const d of drawables) d.draw();
 
+  // kill burst debris (over the bodies, under the projectiles)
+  for (const pt of particles) {
+    ctx.globalAlpha = clamp(pt.life / 0.25, 0, 1);
+    ctx.fillStyle = pt.color;
+    const s = pt.size * (0.5 + (pt.life / pt.maxLife) * 0.7);
+    ctx.fillRect(pt.x - s / 2, pt.y - s / 2, s, s);
+  }
+  ctx.globalAlpha = 1;
+
   // bullets
   for (const b of bullets) {
     ctx.fillStyle = b.color;
@@ -1412,17 +1446,6 @@ function render() {
     } else if (fx.type === 'boom') {
       ctx.fillStyle = `rgba(255, 170, 60, ${0.5 * p})`;
       ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius * (1 - p * 0.5), 0, TAU); ctx.fill();
-    } else if (fx.type === 'pop') {
-      ctx.fillStyle = fx.color;
-      ctx.globalAlpha = p;
-      for (let s = 0; s < 6; s++) {
-        const a = (TAU * s) / 6 + fx.x; // vary spread per position
-        const d = fx.r * (1.8 - p * 1.2);
-        ctx.beginPath();
-        ctx.arc(fx.x + Math.cos(a) * d, fx.y + Math.sin(a) * d * 0.7, 2.5 * p + 1, 0, TAU);
-        ctx.fill();
-      }
-      ctx.globalAlpha = 1;
     }
   }
 
