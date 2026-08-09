@@ -36,6 +36,9 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Kill burst particles done properly: velocity+gravity pixel-square
+  debris in per-enemy colours with white sparks, 8/16/26 per kill/
+  elite/boss, 500-particle cap, 3.8ms/frame profiled — `8092b27`
 - Dopamine pass (8 quick wins from VS review): first level-up in
   seconds (xpNeed 10->5, gentler curve) + LEVEL UP! popup, gem-pickup
   pitch combo (rising arpeggio), hit-stop freeze-frames on crit/elite/
