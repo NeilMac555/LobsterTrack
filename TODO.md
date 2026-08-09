@@ -36,6 +36,13 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Dopamine pass (8 quick wins from VS review): first level-up in
+  seconds (xpNeed 10->5, gentler curve) + LEVEL UP! popup, gem-pickup
+  pitch combo (rising arpeggio), hit-stop freeze-frames on crit/elite/
+  boss kills, per-enemy-colour kill burst particles, live COMBO x<n>
+  wobble counter, tweened gold counter, low-HP red pulse + heartbeat,
+  staggered spring-in level-up/chest cards, value-scaled gems —
+  `cd61c24`
 - Biski black-cat polish: fur recoloured to true black in the asset
   (eyes/ears keep colour), grey-making 1.5x tint dropped to 1.15,
   per-hero drawScale renders her 25% bigger — `3a79d00`
