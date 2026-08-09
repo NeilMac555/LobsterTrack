@@ -27,6 +27,12 @@
     text-align: left;
   }
   .card:hover { transform: translateY(-4px); border-color: #ffd23e; }
+  #levelup-cards .card, #chest-rewards .card {
+    animation: cardIn 0.28s cubic-bezier(0.2, 1.4, 0.4, 1) backwards;
+  }
+  @keyframes cardIn {
+    from { transform: translateY(22px) scale(0.85); opacity: 0; }
+  }
   .card .icon { font-size: 34px; }
   .card h3 { color: #ffd23e; margin: 6px 0 4px; font-size: 17px; }
   .card .tag { font-size: 11px; color: #7fd4ff; text-transform: uppercase; letter-spacing: 1px; }

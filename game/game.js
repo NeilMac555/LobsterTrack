@@ -347,9 +347,10 @@ const MAX_WEAPONS = 4, MAX_PASSIVES = 4, MAX_LEVEL = 5;
 // ---------- state ----------
 const state = {
   running: false, paused: false, over: false,
-  time: 0, kills: 0, level: 1, xp: 0, xpNeed: 10, gold: 0,
+  time: 0, kills: 0, level: 1, xp: 0, xpNeed: 5, gold: 0, goldShown: 0,
   spawnTimer: 0, bossesSpawned: 0, eventsFired: 0, elitesSpawned: 0,
   shake: 0, flash: 0, killTimes: [], streakTier: 0,
+  hitstop: 0, lastGemT: -9, gemCombo: 0, heartT: 0,
 };
 
 // VS-style wave table: one entry per minute. `min` is the enemy-count quota —
@@ -573,15 +574,15 @@ function nearestEnemies(n) {
 // move: hop = pulsing lunges, zigzag = weaving, charge = windup then rush,
 //       orbit = circles you at mid range, then bleeds inward
 const ENEMY_TYPES = {
-  slime:    { sprite: 'slime',    name: 'TRAINING OOZE', hp: 8,   speed: 60,  dmg: 8,  r: 10, xp: 1, move: 'hop' },
-  skeleton: { sprite: 'skeleton', name: 'BONE WALKER',   hp: 26,  speed: 68,  dmg: 12, r: 11, xp: 2, move: 'zigzag' },
-  goblin:   { sprite: 'goblin',   name: 'GREMLIN',       hp: 18,  speed: 92,  dmg: 10, r: 10, xp: 2, move: 'straight' },
-  blueslime:{ sprite: 'slimeB',   name: 'FROST OOZE',    hp: 45,  speed: 66,  dmg: 14, r: 11, xp: 3, move: 'hop' },
-  brute:    { sprite: 'orcA',     name: 'PIT BRUTE',     hp: 110, speed: 52,  dmg: 20, r: 13, xp: 5, move: 'charge' },
-  redslime: { sprite: 'slimeR',   name: 'MAGMA OOZE',    hp: 75,  speed: 62,  dmg: 18, r: 11, xp: 4, move: 'hop' },
-  raider:   { sprite: 'goblinB',  name: 'NIGHT RAIDER',  hp: 70,  speed: 108, dmg: 16, r: 10, xp: 5, move: 'orbit' },
-  orc:      { sprite: 'orc',      name: 'WAR CHIEF',     hp: 180, speed: 50,  dmg: 26, r: 13, xp: 7, move: 'charge' },
-  voltslime:{ sprite: 'slimeY',   name: 'VOLT OOZE',     hp: 60,  speed: 95,  dmg: 18, r: 11, xp: 6, move: 'hop' },
+  slime:    { sprite: 'slime',    name: 'TRAINING OOZE', hp: 8,   speed: 60,  dmg: 8,  r: 10, xp: 1, move: 'hop', pop: '#5fd47f' },
+  skeleton: { sprite: 'skeleton', name: 'BONE WALKER',   hp: 26,  speed: 68,  dmg: 12, r: 11, xp: 2, move: 'zigzag', pop: '#e8e8e8' },
+  goblin:   { sprite: 'goblin',   name: 'GREMLIN',       hp: 18,  speed: 92,  dmg: 10, r: 10, xp: 2, move: 'straight', pop: '#8fbf5f' },
+  blueslime:{ sprite: 'slimeB',   name: 'FROST OOZE',    hp: 45,  speed: 66,  dmg: 14, r: 11, xp: 3, move: 'hop', pop: '#7fd4ff' },
+  brute:    { sprite: 'orcA',     name: 'PIT BRUTE',     hp: 110, speed: 52,  dmg: 20, r: 13, xp: 5, move: 'charge', pop: '#9adf6a' },
+  redslime: { sprite: 'slimeR',   name: 'MAGMA OOZE',    hp: 75,  speed: 62,  dmg: 18, r: 11, xp: 4, move: 'hop', pop: '#ff6a6a' },
+  raider:   { sprite: 'goblinB',  name: 'NIGHT RAIDER',  hp: 70,  speed: 108, dmg: 16, r: 10, xp: 5, move: 'orbit', pop: '#b09aff' },
+  orc:      { sprite: 'orc',      name: 'WAR CHIEF',     hp: 180, speed: 50,  dmg: 26, r: 13, xp: 7, move: 'charge', pop: '#9adf6a' },
+  voltslime:{ sprite: 'slimeY',   name: 'VOLT OOZE',     hp: 60,  speed: 95,  dmg: 18, r: 11, xp: 6, move: 'hop', pop: '#ffe45a' },
 };
 const BOSSES = [
   { at: 300, name: 'MINOTAUR PROTOCOL MK-I', hp: 900, speed: 50, dmg: 25, r: 26,
@@ -611,7 +612,7 @@ function makeEnemy(kind, x, y, opts = {}) {
     dmg: t.dmg * dmgScale(), r: t.r, xp: Math.ceil(t.xp * (opts.xpMul ?? 1)),
     sprite: t.sprite, scale: (opts.scale ?? SCALE), tint: opts.tint ?? null,
     move: t.move, boss: false, elite: !!opts.elite, sweep: opts.sweep ?? null,
-    flash: 0, animT: rand(0, 10), chargeT: rand(0, 4),
+    flash: 0, animT: rand(0, 10), chargeT: rand(0, 4), pop: t.pop,
     orbitSign: Math.random() < 0.5 ? 1 : -1,
   };
 }
@@ -712,7 +713,10 @@ function damageEnemy(e, dmg) {
     lastHitSnd = now;
     if (crit) sndCrit(); else sndHit();
   }
-  if (e.hp <= 0) killEnemy(e);
+  if (e.hp <= 0) {
+    if (crit) state.hitstop = Math.max(state.hitstop, 0.035); // crit kills snap
+    killEnemy(e);
+  }
 }
 
 function trackStreak() {
@@ -739,7 +743,10 @@ function killEnemy(e) {
   trackStreak();
   corpses.push({ sprite: e.sprite, scale: e.scale, tint: e.tint,
     x: e.x, y: e.y, groundY: groundYOf(e), flip: player.x < e.x, animT: 0 });
+  effects.push({ type: 'pop', x: e.x, y: e.y - e.r * 0.5, color: e.pop || '#c08a5a',
+    r: e.r, life: 0.3, maxLife: 0.3 });
   if (e.boss || e.elite) {
+    state.hitstop = Math.max(state.hitstop, 0.12); // big kill, big freeze-frame
     for (let g = 0; g < 8; g++) {
       const a = rand(0, TAU), d = rand(10, 60);
       gems.push({ x: e.x + Math.cos(a) * d, y: e.y + Math.sin(a) * d, v: Math.ceil(e.xp / 8) });
@@ -776,7 +783,10 @@ function gainXp(v) {
   while (state.xp >= state.xpNeed) {
     state.xp -= state.xpNeed;
     state.level++;
-    state.xpNeed = Math.floor(10 + state.level * 7 + state.level * state.level * 0.5);
+    // fast first levels (VS hands you level 2 in seconds), steeper later
+    state.xpNeed = Math.floor(5 + state.level * 6 + state.level * state.level * 0.55);
+    texts.push({ x: player.x, y: player.y - 60, str: 'LEVEL UP!', color: '#ffd23e',
+      life: 1.2, vy: -35, big: true });
     sndLevel();
     showLevelUp();
   }
@@ -889,9 +899,11 @@ function showLevelUp() {
   state.paused = true;
   state.flash = Math.max(state.flash, 0.35);
   levelupCards.innerHTML = '';
+  let ci = 0;
   for (const opt of upgradeChoices()) {
     const card = document.createElement('div');
     card.className = 'card';
+    card.style.animationDelay = `${ci++ * 0.09}s`;
     card.innerHTML = `<div class="icon">${opt.icon}</div><div class="tag">${opt.tag}</div>
       <h3>${opt.title}</h3><p>${opt.desc}</p>`;
     card.onclick = () => {
@@ -989,9 +1001,16 @@ function endGame(won) {
 
 // ---------- update ----------
 function update(dt) {
+  if (state.hitstop > 0) { state.hitstop -= dt; return; } // freeze-frame
   state.time += dt;
   if (state.time >= WIN_TIME) { endGame(true); return; }
   scanEnv();
+  state.goldShown += (state.gold - state.goldShown) * Math.min(1, dt * 10);
+  // low-HP heartbeat
+  if (player.hp / player.maxHp < 0.3) {
+    state.heartT -= dt;
+    if (state.heartT <= 0) { state.heartT = 0.75; sfx(58, 0.13, 'sine', 0.1); }
+  }
 
   // VS-style wave spawner: keep the quota filled, then trickle one of each type
   const wave = currentWave();
@@ -1172,7 +1191,11 @@ function update(dt) {
     }
     if (d2 < (player.r + 10) ** 2) {
       gainXp(g.v);
-      sndGem();
+      // rapid pickups climb the scale — a gem field becomes an arpeggio
+      if (state.time - state.lastGemT < 0.6) state.gemCombo = Math.min(state.gemCombo + 1, 24);
+      else state.gemCombo = 0;
+      state.lastGemT = state.time;
+      sfx(520 * Math.pow(2, state.gemCombo / 12), 0.07, 'sine', 0.05, 150);
       gems[i] = gems[gems.length - 1]; gems.pop();
     }
   }
@@ -1242,8 +1265,9 @@ function render() {
     ctx.fillStyle = g.v >= 5 ? 'rgba(255,210,62,0.25)' : g.v >= 3 ? 'rgba(127,212,255,0.25)' : 'rgba(95,212,127,0.25)';
     ctx.beginPath(); ctx.arc(g.x, g.y, 9 * pulse, 0, TAU); ctx.fill();
     ctx.fillStyle = g.v >= 5 ? '#ffd23e' : g.v >= 3 ? '#7fd4ff' : '#5fd47f';
+    const gs = g.v >= 8 ? 8 : g.v >= 3 ? 6.5 : 5; // fat gems for fat XP
     ctx.beginPath();
-    ctx.moveTo(g.x, g.y - 6); ctx.lineTo(g.x + 5, g.y); ctx.lineTo(g.x, g.y + 6); ctx.lineTo(g.x - 5, g.y);
+    ctx.moveTo(g.x, g.y - gs - 1); ctx.lineTo(g.x + gs * 0.8, g.y); ctx.lineTo(g.x, g.y + gs + 1); ctx.lineTo(g.x - gs * 0.8, g.y);
     ctx.closePath(); ctx.fill();
   }
 
@@ -1388,6 +1412,17 @@ function render() {
     } else if (fx.type === 'boom') {
       ctx.fillStyle = `rgba(255, 170, 60, ${0.5 * p})`;
       ctx.beginPath(); ctx.arc(fx.x, fx.y, fx.radius * (1 - p * 0.5), 0, TAU); ctx.fill();
+    } else if (fx.type === 'pop') {
+      ctx.fillStyle = fx.color;
+      ctx.globalAlpha = p;
+      for (let s = 0; s < 6; s++) {
+        const a = (TAU * s) / 6 + fx.x; // vary spread per position
+        const d = fx.r * (1.8 - p * 1.2);
+        ctx.beginPath();
+        ctx.arc(fx.x + Math.cos(a) * d, fx.y + Math.sin(a) * d * 0.7, 2.5 * p + 1, 0, TAU);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
     }
   }
 
@@ -1416,6 +1451,16 @@ function render() {
   ctx.fillStyle = vg;
   ctx.fillRect(0, 0, w, h);
 
+  // low-HP danger pulse
+  if (state.running && player.hp / player.maxHp < 0.3) {
+    const pulse = 0.12 + Math.sin(state.time * 8) * 0.07;
+    const rg = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.3, w / 2, h / 2, Math.max(w, h) * 0.7);
+    rg.addColorStop(0, 'rgba(255,40,40,0)');
+    rg.addColorStop(1, `rgba(255,40,40,${pulse})`);
+    ctx.fillStyle = rg;
+    ctx.fillRect(0, 0, w, h);
+  }
+
   // ---------- HUD ----------
   const hpw = Math.min(320, w * 0.4);
   ctx.fillStyle = 'rgba(0,0,0,0.55)';
@@ -1439,11 +1484,25 @@ function render() {
   ctx.fillStyle = '#aab';
   ctx.fillText(`LV ${state.level}   ⚔ ${state.kills}`, w / 2, 66);
 
-  // gold counter + music state, top right
+  // live combo counter during a frenzy
+  const comboN = state.killTimes.length;
+  if (comboN >= 10 && !state.over) {
+    const tier = state.streakTier;
+    ctx.font = `bold ${20 + tier * 4}px sans-serif`;
+    ctx.fillStyle = ['#ffe28a', '#ffd23e', '#ff9030', '#ff5050'][tier];
+    const wob = 1 + Math.sin(state.time * 14) * 0.04;
+    ctx.save();
+    ctx.translate(w / 2, 96);
+    ctx.scale(wob, wob);
+    ctx.fillText(`COMBO ×${comboN}`, 0, 0);
+    ctx.restore();
+  }
+
+  // gold counter (ticks up) + music state, top right
   ctx.textAlign = 'right';
   ctx.font = 'bold 16px sans-serif';
   ctx.fillStyle = '#ffd23e';
-  ctx.fillText(`\u{1FA99} ${state.gold}`, w - 20, 32);
+  ctx.fillText(`\u{1FA99} ${Math.round(state.goldShown)}`, w - 20, 32);
 
   if (touch.active) {
     ctx.strokeStyle = 'rgba(255,255,255,0.25)';
