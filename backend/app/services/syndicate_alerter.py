@@ -91,7 +91,10 @@ class SyndicateAlerter:
     async def check_and_alert(self) -> dict:
         """
         Check all matches within the configured pre-KO window (12h by
-        default — see SYNDICATE_ALERT_WINDOW_MINUTES) for syndicate moves.
+        default — see SYNDICATE_ALERT_WINDOW_MINUTES) for syndicate moves
+        on the 1X2 market only (Totals/Spreads checks disabled 2026-08-14
+        per Neil's call — see _check_totals_market/_check_spreads_market,
+        left in place but no longer called, in case they're wanted back).
         Send alerts for qualifying moves that haven't been alerted yet.
         """
         if not telegram_notifier.is_configured():
@@ -154,18 +157,9 @@ class SyndicateAlerter:
                 # earlier matches this cycle; the final db.commit()
                 # below persists whatever succeeded.
                 try:
-                    # Check 1X2 market
+                    # 1X2 only — Totals/Spreads checks disabled per Neil's
+                    # call (see check_and_alert's docstring).
                     alerts_sent += await self._check_1x2_market(
-                        db, match, window_start, minutes_to_ko, league_threshold
-                    )
-
-                    # Check Totals market (only same-line comparisons)
-                    alerts_sent += await self._check_totals_market(
-                        db, match, window_start, minutes_to_ko, league_threshold
-                    )
-
-                    # Check Spreads / Asian Handicap market (only same-line comparisons)
-                    alerts_sent += await self._check_spreads_market(
                         db, match, window_start, minutes_to_ko, league_threshold
                     )
                 except Exception as e:

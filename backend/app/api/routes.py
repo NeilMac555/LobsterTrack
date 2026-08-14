@@ -4031,7 +4031,9 @@ async def get_alert_diagnostics(
                         "current_odds": round(c_odds, 3),
                         "prob_move_pp": round(prob_move, 2),
                         "line_changed": not line_same,
-                        "would_alert": prob_move >= SYNDICATE_THRESHOLD_PROB_POINTS and line_same
+                        # Totals alerts are disabled (1X2 only, 2026-08-14) —
+                        # shown for visibility, never actually fires.
+                        "would_alert": False,
                     }
 
         # Spreads / Asian Handicap moves
@@ -4063,7 +4065,9 @@ async def get_alert_diagnostics(
                         "current_odds": round(c_odds, 3),
                         "prob_move_pp": round(prob_move, 2),
                         "line_changed": not line_same,
-                        "would_alert": prob_move >= SYNDICATE_THRESHOLD_PROB_POINTS and line_same
+                        # Spreads alerts are disabled (1X2 only, 2026-08-14) —
+                        # shown for visibility, never actually fires.
+                        "would_alert": False,
                     }
 
         time_to_ko = match.commence_time - now
