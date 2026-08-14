@@ -172,6 +172,14 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Syndicate alerts restricted to 1X2 market only — check_and_alert()
+  no longer calls _check_totals_market/_check_spreads_market (left
+  in place, just unused, in case they're wanted back). Telegram +
+  tweet posting share one choke point so this disables both for
+  Totals/Spreads at once. /admin/alert-diagnostics still shows
+  Totals/Spreads move data for visibility but would_alert is now
+  hardcoded false for those two rather than computing a value that
+  no longer matches reality — `20f3a31`
 - Wired up EFL Championship (soccer_efl_champ) + widened syndicate
   alert window from 3h to 12h pre-kickoff, both ahead of the domestic
   season restarting. Championship probed clean (11/11 events full
