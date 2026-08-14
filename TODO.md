@@ -172,6 +172,20 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Wired up EFL Championship (soccer_efl_champ) + widened syndicate
+  alert window from 3h to 12h pre-kickoff, both ahead of the domestic
+  season restarting. Championship probed clean (11/11 events full
+  Pinnacle coverage) before adding to backend leagues dict + frontend
+  LEAGUE_CONFIG — nav/pickers all pull from VISIBLE_LEAGUES so no
+  other wiring needed; reuses the England flag asset already used for
+  EPL. SYNDICATE_ALERT_WINDOW_MINUTES: 180 -> 720; also fixed
+  /admin/alert-diagnostics, which had its own separate hardcoded "3
+  hours" + 3.0pp literals instead of importing the real constants —
+  now imports SYNDICATE_ALERT_WINDOW_MINUTES/SYNDICATE_THRESHOLD_
+  PROB_POINTS directly. Verified live: 11 leagues now fetch cleanly
+  (was 10), Championship matches tracking on Pinnacle, diagnostics
+  window boundary confirmed exact (12h cutoff sits 46min before the
+  earliest Championship kickoff right now) — `db4103f`
 - Club wage-bill source (`wages`) + top-scorer parser fix. Snapshotted
   valuball.co's club_season_financial_summary (ENG1) — figures derive
   from Companies House filings — into a committed JSON (660 PL rows,
