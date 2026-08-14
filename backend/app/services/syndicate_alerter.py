@@ -21,8 +21,11 @@ logger = structlog.get_logger()
 SYNDICATE_THRESHOLD_PROB_POINTS = 3.0
 
 # Time-to-kickoff window for alerts. Only fire alerts when the match is
-# within this many minutes of KO. 180 = three hours before kickoff.
-SYNDICATE_ALERT_WINDOW_MINUTES = 180
+# within this many minutes of KO. 720 = twelve hours before kickoff
+# (widened from 180/3h on 2026-08-14 per Neil's call, so genuine sharp
+# moves earlier in the day aren't missed just because they land outside
+# a narrow pre-KO window).
+SYNDICATE_ALERT_WINDOW_MINUTES = 720
 
 # Odds threshold above which an alert is tagged as 'high conviction' with
 # a 🔥 emoji in the Telegram message. Cohort analysis showed steam moves
@@ -87,7 +90,8 @@ class SyndicateAlerter:
 
     async def check_and_alert(self) -> dict:
         """
-        Check all matches within 3 hours of kickoff for syndicate moves.
+        Check all matches within the configured pre-KO window (12h by
+        default — see SYNDICATE_ALERT_WINDOW_MINUTES) for syndicate moves.
         Send alerts for qualifying moves that haven't been alerted yet.
         """
         if not telegram_notifier.is_configured():

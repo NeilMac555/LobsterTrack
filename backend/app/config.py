@@ -43,6 +43,7 @@ class Settings(BaseSettings):
     # this dict only affects backend fetch/scheduling iteration order.
     leagues: dict = {
         "soccer_epl": "English Premier League",
+        "soccer_efl_champ": "EFL Championship",
         "soccer_spain_la_liga": "La Liga",
         "soccer_germany_bundesliga": "Bundesliga",
         "soccer_france_ligue_one": "Ligue 1",

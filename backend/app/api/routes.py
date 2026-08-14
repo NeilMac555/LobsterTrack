@@ -3936,7 +3936,11 @@ async def get_alert_diagnostics(
     if password != ADMIN_PASSWORD:
         raise HTTPException(status_code=401, detail="Invalid password")
 
-    from app.services.syndicate_alerter import SYNDICATE_THRESHOLD_PROB_POINTS, LEAGUE_OVERRIDES
+    from app.services.syndicate_alerter import (
+        SYNDICATE_THRESHOLD_PROB_POINTS,
+        SYNDICATE_ALERT_WINDOW_MINUTES,
+        LEAGUE_OVERRIDES,
+    )
 
     from datetime import timedelta
     now = datetime.utcnow()
@@ -3951,19 +3955,22 @@ async def get_alert_diagnostics(
         .all()
     )
 
-    # Upcoming matches within 3 hours (what the alerter checks)
-    three_hours = now + timedelta(hours=3)
+    # Upcoming matches within the alert window (what the alerter actually
+    # checks — this diagnostic doesn't apply per-league LEAGUE_OVERRIDES,
+    # so it can differ slightly for an overridden league, but matches the
+    # global default used by everything else).
+    alert_window_end = now + timedelta(minutes=SYNDICATE_ALERT_WINDOW_MINUTES)
     upcoming_matches = (
         db.query(Match)
         .filter(Match.commence_time > now)
-        .filter(Match.commence_time <= three_hours)
+        .filter(Match.commence_time <= alert_window_end)
         .all()
     )
 
-    # For each upcoming match, check biggest prob move in last 3h
+    # For each upcoming match, check biggest prob move within the alert window
     match_moves = []
     for match in upcoming_matches:
-        window_start = match.commence_time - timedelta(hours=3)
+        window_start = match.commence_time - timedelta(minutes=SYNDICATE_ALERT_WINDOW_MINUTES)
 
         baseline = (
             db.query(OddsSnapshot)
@@ -3993,7 +4000,7 @@ async def get_alert_diagnostics(
                         "baseline_odds": round(b_odds, 3),
                         "current_odds": round(c_odds, 3),
                         "prob_move_pp": round(prob_move, 2),
-                        "would_alert": prob_move >= 3.0
+                        "would_alert": prob_move >= SYNDICATE_THRESHOLD_PROB_POINTS
                     }
 
         # Totals moves
@@ -4024,7 +4031,7 @@ async def get_alert_diagnostics(
                         "current_odds": round(c_odds, 3),
                         "prob_move_pp": round(prob_move, 2),
                         "line_changed": not line_same,
-                        "would_alert": prob_move >= 3.0 and line_same
+                        "would_alert": prob_move >= SYNDICATE_THRESHOLD_PROB_POINTS and line_same
                     }
 
         # Spreads / Asian Handicap moves
@@ -4056,7 +4063,7 @@ async def get_alert_diagnostics(
                         "current_odds": round(c_odds, 3),
                         "prob_move_pp": round(prob_move, 2),
                         "line_changed": not line_same,
-                        "would_alert": prob_move >= 3.0 and line_same
+                        "would_alert": prob_move >= SYNDICATE_THRESHOLD_PROB_POINTS and line_same
                     }
 
         time_to_ko = match.commence_time - now

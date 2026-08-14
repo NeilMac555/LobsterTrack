@@ -382,6 +382,7 @@ export interface TeamPLResponse {
 // deliberately ignores this flag since it's the retrospective view.
 export const LEAGUE_CONFIG: Record<string, { name: string; shortName: string; color: string; hidden?: boolean }> = {
   soccer_epl: { name: 'Premier League', shortName: 'EPL', color: '#3D195B' },
+  soccer_efl_champ: { name: 'EFL Championship', shortName: 'CHA', color: '#0093B7' },
   soccer_spain_la_liga: { name: 'La Liga', shortName: 'LAL', color: '#EE8707' },
   soccer_germany_bundesliga: { name: 'Bundesliga', shortName: 'BUN', color: '#D20515' },
   soccer_france_ligue_one: { name: 'Ligue 1', shortName: 'L1', color: '#091C3E' },

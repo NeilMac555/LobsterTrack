@@ -15,6 +15,7 @@ const sizes = {
 const images: Record<string, string> = {
   soccer_fifa_world_cup: '/flags/fifa-world-cup-2026.png',
   soccer_epl: '/flags/uk-en-circle-01.png',
+  soccer_efl_champ: '/flags/uk-en-circle-01.png',
   soccer_spain_la_liga: '/flags/es-circle-01.png',
   soccer_germany_bundesliga: '/flags/de-circle-01.png',
   soccer_france_ligue_one: '/flags/fr-circle-01.png',
