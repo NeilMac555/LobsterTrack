@@ -2854,6 +2854,65 @@ async def admin_list_odds_api_sports(
     }
 
 
+@router.get("/admin/probe-event-odds-api")
+async def admin_probe_event_odds_api(
+    password: str = Query(..., description="Admin password"),
+    sport_key: str = Query(..., description="e.g. soccer_epl"),
+    event_id: str = Query(..., description="The Odds API event id — our Match.id values already ARE these"),
+    markets: str = Query("player_goal_scorer_anytime", description="Comma-separated additional-market keys"),
+    bookmakers: str = Query("", description="Comma-separated bookmaker keys, or empty for the default set"),
+    regions: str = Query("eu,uk", description="e.g. eu, uk, eu,uk"),
+):
+    """
+    Research-only probe against the PER-EVENT odds endpoint
+    (/sports/{sport}/events/{eventId}/odds), which is what "additional
+    markets" (player props, corners, cards, btts, etc.) actually live
+    on — the bulk /sports/{sport}/odds endpoint 422s on these market
+    keys even though they're real. Read-only, ~1 API unit per call.
+    """
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid password")
+    from app.config import get_settings
+    import httpx
+    s = get_settings()
+    url = f"{s.odds_api_base_url}/sports/{sport_key}/events/{event_id}/odds"
+    params = {
+        "apiKey": s.odds_api_key,
+        "regions": regions,
+        "markets": markets,
+        "oddsFormat": "decimal",
+    }
+    if bookmakers:
+        params["bookmakers"] = bookmakers
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        resp = await client.get(url, params=params)
+    bookmakers_seen: dict = {}
+    outcomes_sample = []
+    try:
+        data = resp.json() if resp.status_code == 200 else None
+        if isinstance(data, dict):
+            for b in (data.get("bookmakers") or []):
+                key = b.get("key")
+                if key:
+                    bookmakers_seen[key] = bookmakers_seen.get(key, 0) + 1
+                if len(outcomes_sample) < 10:
+                    for m in (b.get("markets") or []):
+                        for o in (m.get("outcomes") or [])[:5]:
+                            outcomes_sample.append({"bookmaker": key, "market": m.get("key"), **o})
+                            if len(outcomes_sample) >= 10:
+                                break
+    except Exception:
+        pass
+    return {
+        "status": resp.status_code,
+        "quota_remaining": resp.headers.get("x-requests-remaining"),
+        "quota_used": resp.headers.get("x-requests-used"),
+        "bookmakers_seen": bookmakers_seen,
+        "outcomes_sample": outcomes_sample,
+        "response_preview": (resp.text[:800] if resp.status_code != 200 else None),
+    }
+
+
 @router.get("/admin/fetcher-health")
 async def get_fetcher_health(
     password: str = Query(..., description="Admin password"),
