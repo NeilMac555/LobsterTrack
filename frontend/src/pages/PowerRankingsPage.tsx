@@ -28,8 +28,9 @@ const MAX_COMPARE = 4;
 // PowerRatingItem's squad_value_eur field.
 function formatSquadValue(eur: number | null): string {
   if (eur == null) return '—';
-  if (eur >= 1_000_000_000) return `€${(eur / 1_000_000_000).toFixed(2)}bn`;
-  return `€${Math.round(eur / 1_000_000)}m`;
+  const millions = Math.round(eur / 1_000_000);
+  if (millions >= 1000) return `€${(millions / 1000).toFixed(2)}bn`;
+  return `€${millions}m`;
 }
 
 export default function PowerRankingsPage() {
