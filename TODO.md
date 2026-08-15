@@ -172,6 +172,38 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Power Rankings: mean-center ClubElo + squad value within league
+  before blending (acbee12, 2026-08-15) — fix for a real bug an
+  external quant review caught and fully verified against production:
+  blending either signal in uncentered doesn't just reorder teams
+  within a league, it drags the whole league's ratings toward that
+  signal's own cross-league level (mean EPL squad value ~€689m vs
+  ~€340m in Serie A). Confirmed before the fix: corr(log squad value,
+  rating) = 0.965, EPL's Stage 2 offset (+0.210) was ~3x the combined
+  spread of the other four leagues, every one of 31 teams missing a
+  squad-value figure ranked 50th+. Root cause: domestic covariate data
+  (ClubElo, squad value, and domestic AH lines/outrights) mathematically
+  CANNOT identify a league's overall level — adding a constant to every
+  team in a league leaves every within-league match probability
+  unchanged — so any code path where it moves the league-level offset
+  is a bug by construction (see the module's new IDENTIFICATION
+  PRINCIPLE docstring section). Fix: ClubElo/squad value are now
+  centered within league (_center_within_league, unit-tested against
+  synthetic data) and blended into Stage 1's own mean-zero-within-league
+  output BEFORE the Stage 2 offset (informed only by European bridge
+  fixtures + the UEFA coefficient) is added back on. Verified: the
+  spec's own flagship example, Bournemouth vs Napoli, went from
+  Bournemouth clearly above to essentially tied. Honestly flagged
+  in-commit: the aggregate within-league correlation barely moved
+  (0.965 -> 0.957 overall) since a lot of that correlation is a
+  legitimate within-league relationship, not the bug — properly fixing
+  how HEAVILY a thin-sample league leans on money before real
+  performance data accumulates needs estimated (not hand-picked) blend
+  weights from a cross-validated backtest, which is a separate,
+  larger follow-up (season simulator + outright-market ingestion +
+  Shin's-method devig + validation harness — full spec on file,
+  build order followed sequentially from here).
+
 - Power Rankings UEFA country coefficient blend (70a653e, 2026-08-15):
   follow-up to a "for another day" idea floated during the UCL-blend
   discussion — triangulate Stage 2's cross-league bridge against UEFA's
