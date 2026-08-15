@@ -24,8 +24,8 @@ const CHART_COLORS = ['#22d3ee', '#34d399', '#fbbf24', '#f87171'];
 
 const MAX_COMPARE = 4;
 
-// Informational only — squad value is never part of `rating`. See
-// PowerRatingItem's squad_value_eur field.
+// Shown as its own column AND blended into `rating` as a fading prior
+// (see PowerRatingItem's squad_value_eur field / power_ranking_fitter.py).
 function formatSquadValue(eur: number | null): string {
   if (eur == null) return '—';
   const millions = Math.round(eur / 1_000_000);
@@ -115,8 +115,8 @@ export default function PowerRankingsPage() {
           <p className="text-slate-400 text-xs sm:text-sm mt-0.5">
             One shared strength scale across every league — a two-stage fit over Pinnacle Asian
             Handicap closing lines, bridged across leagues via Champions League &amp; Europa League
-            fixtures, then blended with a fading ClubElo prior to steady thin early-season samples.
-            Full methodology below.
+            fixtures, then blended with fading ClubElo and squad-value priors to steady thin
+            early-season samples. Full methodology below.
           </p>
         </div>
       </div>
@@ -267,7 +267,7 @@ export default function PowerRankingsPage() {
           </li>
           <li className="flex items-start gap-2">
             <span className="text-cyan-400 mt-0.5">•</span>
-            <span>"Squad Value" is reference only — a spending/valuation figure, not a performance one, entered by hand periodically and never blended into the rating itself. Shown where we have it; a dash means no figure is on file for that team.</span>
+            <span>"Squad Value" (entered by hand periodically — Transfermarkt has no API) is also blended in as a fading prior, since squad spend correlates with on-pitch success. It's weighted less than the ClubElo prior, since it measures what a squad cost rather than how it's actually performing, and it only affects teams we have a figure on file for — a dash means none is available and that team's rating is untouched by this step.</span>
           </li>
         </ul>
       </div>

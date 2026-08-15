@@ -13,11 +13,13 @@ class SquadMarketValue(Base):
     hand periodically from a table paste — reload via
     /admin/load-squad-values after refreshing the snapshot.
 
-    Purely informational / reference data: shown alongside Power
-    Rankings but never fed into the rating calculation itself, unlike
-    the ClubElo blend in power_ranking_fitter.py. team is NULL for
-    Transfermarkt clubs outside our tracked leagues (kept via
-    team_raw), never guessed.
+    Shown as its own column on the Power Rankings page AND blended into
+    the rating itself as a fading prior (see power_ranking_fitter.py —
+    SQUAD_VALUE_PRIOR_K, weighted lower than the ClubElo blend since
+    this is a valuation metric rather than an observed-performance
+    one). team is NULL for Transfermarkt clubs outside our tracked
+    leagues (kept via team_raw), never guessed, and never enters the
+    blend.
     """
     __tablename__ = "squad_market_values"
 

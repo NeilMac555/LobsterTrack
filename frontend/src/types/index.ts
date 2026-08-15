@@ -232,8 +232,9 @@ export interface PowerRatingItem {
   rating: number;
   weighted_matches: number;
   computed_at: string;
-  // Informational only, from a manually-updated Transfermarkt snapshot —
-  // never fed into `rating`. null where we have no entry for the team.
+  // From a manually-updated Transfermarkt snapshot. Shown as its own
+  // column AND blended into `rating` as a fading prior. null where we
+  // have no entry for the team.
   squad_value_eur: number | null;
 }
 

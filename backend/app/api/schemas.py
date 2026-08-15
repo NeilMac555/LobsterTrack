@@ -341,9 +341,10 @@ class PowerRatingItem(BaseModel):
     rating: float
     weighted_matches: float
     computed_at: datetime
-    # Informational only, from a manually-updated Transfermarkt snapshot —
-    # never fed into `rating` itself. None where we have no squad-value
-    # entry for the team (see squad_value_importer.py).
+    # From a manually-updated Transfermarkt snapshot (see
+    # squad_value_importer.py). Shown as its own column AND blended into
+    # `rating` as a fading prior (see power_ranking_fitter.py). None
+    # where we have no squad-value entry for the team.
     squad_value_eur: int | None = None
 
     class Config:

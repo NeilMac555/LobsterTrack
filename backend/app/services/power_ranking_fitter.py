@@ -59,6 +59,24 @@ assumed conversion formula) — see _fit_clubelo_scale. Deliberately NOT
 tuned to produce any particular team ordering; if the blend doesn't
 move a team the way someone expects, that's the honest answer, not a
 bug to "fix" by reweighting until it agrees with a prior belief.
+
+SQUAD VALUE BLEND (added 2026-08-15): a third fading prior, applied
+after ClubElo, toward each team's squad market value (see
+squad_value_importer.py — Transfermarkt has no API, so this is a
+manually-entered snapshot covering a subset of tracked teams). There's
+a well-documented correlation between squad spend/value and on-pitch
+success in the football-analytics literature (the "money league"
+wage-spend studies), so this is a legitimate independent signal, not
+noise. But it's a VALUATION metric, not an observed-performance one
+the way ClubElo or the AH lines themselves are — a team can carry a
+big-money squad while underperforming — so it's given proportionally
+less trust (SQUAD_VALUE_PRIOR_K < CLUBELO_PRIOR_K) and only applies to
+teams we have a value on file for. Market value spans nearly three
+orders of magnitude, so the scale conversion (_fit_squad_value_scale)
+fits against ln(value), not raw value — otherwise the handful of
+superclubs would dominate the fit. Same "not tuned toward a particular
+ordering" principle as the ClubElo blend: this is fit from the data,
+not adjusted until any specific team lands where someone expects.
 """
 
 from __future__ import annotations
@@ -72,7 +90,7 @@ import structlog
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
-from app.models import ClosingLine, LeagueConstants, MarketType, PowerRating, PowerRatingHistory
+from app.models import ClosingLine, LeagueConstants, MarketType, PowerRating, PowerRatingHistory, SquadMarketValue
 from app.models.database import SessionLocal
 from app.services.clubelo_name_map import to_clubelo_name
 
@@ -127,6 +145,12 @@ _DEFAULT_HOME_ADV_GOALS = 0.30
 CLUBELO_PRIOR_K = 20.0
 
 CLUBELO_API_BASE = "http://api.clubelo.com"
+
+# Squad value blend strength — same shrinkage shape as CLUBELO_PRIOR_K,
+# but deliberately lower: squad value is a valuation metric (what a
+# squad cost), not an observed-performance one like ClubElo or the AH
+# lines themselves, so it earns less trust at any given sample size.
+SQUAD_VALUE_PRIOR_K = 8.0
 
 
 def _home_advantage_goals(db: Session, league: str, cache: dict[str, float]) -> float:
@@ -355,6 +379,29 @@ def _fit_clubelo_scale(
     return float(a), float(b)
 
 
+def _fit_squad_value_scale(
+    our_ratings: dict[str, float], value_by_team: dict[str, float],
+) -> tuple[float, float]:
+    """
+    OLS fit of our_rating ~ a + b * ln(market_value_eur) over whichever
+    teams we have both for. Market value spans nearly three orders of
+    magnitude (~€130m to ~€1.5bn as of the 2026-08-15 snapshot), so this
+    fits against the log rather than the raw value — otherwise a
+    handful of superclubs would dominate the fit. Falls back to
+    (0.0, 0.0) — the blend contributes nothing — if fewer than 10 teams
+    overlap (too few points to trust a linear fit).
+    """
+    teams = [t for t in our_ratings if t in value_by_team]
+    if len(teams) < 10:
+        logger.warning("Squad value blend: too few overlapping teams to fit a scale", n=len(teams))
+        return 0.0, 0.0
+
+    x = np.array([np.log(value_by_team[t]) for t in teams])
+    y = np.array([our_ratings[t] for t in teams])
+    b, a = np.polyfit(x, y, 1)
+    return float(a), float(b)
+
+
 class PowerRankingFitter:
     """Runs the two-stage fit + upsert. Tracks last-run health state, same
     shape as LeagueConstantsRefresher for a consistent admin-diagnostics
@@ -435,6 +482,33 @@ class PowerRankingFitter:
             summary["clubelo_teams_matched"] = len(clubelo_by_team)
             summary["clubelo_teams_blended"] = blended_count
             summary["clubelo_scale"] = {"a": round(scale_a, 4), "b": round(scale_b, 6)}
+
+            # Squad value blend — a second fading prior, applied after
+            # ClubElo, toward each team's squad market value (see
+            # module docstring). Only covers the subset of teams with a
+            # manually-entered value on file; everyone else is
+            # untouched by this step.
+            squad_values = {
+                sv.team: sv.market_value_eur
+                for sv in db.query(SquadMarketValue).filter(SquadMarketValue.team.isnot(None)).all()
+            }
+            sv_scale_a, sv_scale_b = _fit_squad_value_scale(
+                {row["team"]: row["rating"] for row in all_rows}, squad_values
+            )
+            sv_blended_count = 0
+            if squad_values and (sv_scale_a, sv_scale_b) != (0.0, 0.0):
+                for row in all_rows:
+                    value = squad_values.get(row["team"])
+                    if value is None:
+                        continue
+                    scaled_value = float(sv_scale_a + sv_scale_b * np.log(value))
+                    blend_weight = SQUAD_VALUE_PRIOR_K / (SQUAD_VALUE_PRIOR_K + row["weighted_matches"])
+                    row["rating"] = (1 - blend_weight) * row["rating"] + blend_weight * scaled_value
+                    sv_blended_count += 1
+
+            summary["squad_value_teams_matched"] = len(squad_values)
+            summary["squad_value_teams_blended"] = sv_blended_count
+            summary["squad_value_scale"] = {"a": round(sv_scale_a, 4), "b": round(sv_scale_b, 6)}
 
             for row in all_rows:
                 stmt = pg_insert(PowerRating).values(
