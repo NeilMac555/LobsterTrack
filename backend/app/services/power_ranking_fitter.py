@@ -77,6 +77,26 @@ fits against ln(value), not raw value — otherwise the handful of
 superclubs would dominate the fit. Same "not tuned toward a particular
 ordering" principle as the ClubElo blend: this is fit from the data,
 not adjusted until any specific team lands where someone expects.
+
+UCL OUTRIGHT BLEND (added 2026-08-15): a fourth fading prior, applied
+after squad value, toward each team's Champions League outright-winner
+probability — Polymarket's live "UEFA Champions League: 2027 Champion"
+market (see outright_fetcher.py; $7.8M+ real volume, verified before
+building against it). The Odds API has no outright market for this
+competition at all, so Polymarket is the only ToS-clean source, same
+as the domestic-league outrights already used by the Forecast Engine.
+Given a DECENT weight (UCL_WINNER_PRIOR_K, comparable to
+CLUBELO_PRIOR_K) — unlike squad value, this is a genuine forward-
+looking market price on the exact question of who's best positioned to
+go all the way, already pricing in current form, squad depth and
+fixture difficulty, so it earns more trust than a valuation metric.
+Only 29 teams have a market at all, and only the ~20 from our 5
+tracked domestic leagues resolve to one of our team names — everyone
+else is untouched by this step. Probabilities are fit on the logit
+scale (_fit_ucl_scale), not raw probability — the standard transform
+for a heavily skewed 0-1 signal (a few favourites near 0.15, a long
+tail near 0.001), avoiding compression at either end. Same principle
+as every blend above: fit from the data, not tuned toward an outcome.
 """
 
 from __future__ import annotations
@@ -87,10 +107,11 @@ from typing import Any
 import httpx
 import numpy as np
 import structlog
+from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
-from app.models import ClosingLine, LeagueConstants, MarketType, PowerRating, PowerRatingHistory, SquadMarketValue
+from app.models import ClosingLine, LeagueConstants, MarketType, OutrightSnapshot, PowerRating, PowerRatingHistory, SquadMarketValue
 from app.models.database import SessionLocal
 from app.services.clubelo_name_map import to_clubelo_name
 
@@ -154,6 +175,17 @@ CLUBELO_API_BASE = "http://api.clubelo.com"
 # weight on squad value) to lean it a little further away from the
 # valuation signal.
 SQUAD_VALUE_PRIOR_K = 6.0
+
+# UCL outright blend strength — given a DECENT weight per explicit
+# request, comparable to CLUBELO_PRIOR_K rather than SQUAD_VALUE_PRIOR_K:
+# this is a genuine forward-looking market price (Polymarket, real
+# money) on the specific question of who's best positioned to win the
+# competition, not a valuation proxy, so it earns more trust than
+# squad value at any given sample size.
+UCL_WINNER_PRIOR_K = 20.0
+
+_UEFA_CL_LEAGUE = "soccer_uefa_champs_league"
+_UEFA_CL_WINNER_MARKET = "winner"
 
 
 def _home_advantage_goals(db: Session, league: str, cache: dict[str, float]) -> float:
@@ -405,6 +437,64 @@ def _fit_squad_value_scale(
     return float(a), float(b)
 
 
+def _fetch_ucl_outright_probs(db: Session) -> dict[str, float]:
+    """
+    Latest Champions League outright-winner probabilities from
+    OutrightSnapshot (Polymarket, see outright_fetcher.py) — normalised
+    to sum to 1 across whichever teams have a live market, since
+    Polymarket negRisk pricing isn't guaranteed to sum exactly to 1
+    itself. Returns {} if no snapshot has been captured yet (the
+    fetcher runs on its own schedule; this blend degrades gracefully,
+    same as a ClubElo fetch failure).
+    """
+    latest = (
+        db.query(func.max(OutrightSnapshot.fetched_at))
+        .filter(OutrightSnapshot.league == _UEFA_CL_LEAGUE)
+        .filter(OutrightSnapshot.market == _UEFA_CL_WINNER_MARKET)
+        .scalar()
+    )
+    if latest is None:
+        return {}
+
+    rows = (
+        db.query(OutrightSnapshot)
+        .filter(OutrightSnapshot.league == _UEFA_CL_LEAGUE)
+        .filter(OutrightSnapshot.market == _UEFA_CL_WINNER_MARKET)
+        .filter(OutrightSnapshot.fetched_at == latest)
+        .filter(OutrightSnapshot.team_name.isnot(None))
+        .filter(OutrightSnapshot.yes_price.isnot(None))
+        .filter(OutrightSnapshot.yes_price > 0)
+        .all()
+    )
+    total = sum(r.yes_price for r in rows)
+    if total <= 0:
+        return {}
+    return {r.team_name: r.yes_price / total for r in rows}
+
+
+def _fit_ucl_scale(
+    our_ratings: dict[str, float], prob_by_team: dict[str, float],
+) -> tuple[float, float]:
+    """
+    OLS fit of our_rating ~ a + b * logit(probability) over whichever
+    teams we have both for. Probability is fit on the logit scale, not
+    raw — the standard transform for a heavily skewed 0-1 signal (a
+    few favourites near 0.15, a long tail near 0.001), avoiding
+    compression at either end. Falls back to (0.0, 0.0) if fewer than
+    10 teams overlap — expected to bind less often here since the
+    field is small (~20-29 teams total), not a sign of something broken.
+    """
+    teams = [t for t in our_ratings if t in prob_by_team]
+    if len(teams) < 10:
+        logger.warning("UCL outright blend: too few overlapping teams to fit a scale", n=len(teams))
+        return 0.0, 0.0
+
+    x = np.array([np.log(prob_by_team[t] / (1 - prob_by_team[t])) for t in teams])
+    y = np.array([our_ratings[t] for t in teams])
+    b, a = np.polyfit(x, y, 1)
+    return float(a), float(b)
+
+
 class PowerRankingFitter:
     """Runs the two-stage fit + upsert. Tracks last-run health state, same
     shape as LeagueConstantsRefresher for a consistent admin-diagnostics
@@ -512,6 +602,31 @@ class PowerRankingFitter:
             summary["squad_value_teams_matched"] = len(squad_values)
             summary["squad_value_teams_blended"] = sv_blended_count
             summary["squad_value_scale"] = {"a": round(sv_scale_a, 4), "b": round(sv_scale_b, 6)}
+
+            # UCL outright blend — a fourth fading prior, applied last,
+            # toward each team's Champions League outright-winner
+            # probability (see module docstring). Given a decent weight
+            # (UCL_WINNER_PRIOR_K) since this is a genuine forward-
+            # looking market price, not a valuation proxy. Only the
+            # subset of teams with a live Polymarket price are touched.
+            ucl_probs = _fetch_ucl_outright_probs(db)
+            ucl_scale_a, ucl_scale_b = _fit_ucl_scale(
+                {row["team"]: row["rating"] for row in all_rows}, ucl_probs
+            )
+            ucl_blended_count = 0
+            if ucl_probs and (ucl_scale_a, ucl_scale_b) != (0.0, 0.0):
+                for row in all_rows:
+                    prob = ucl_probs.get(row["team"])
+                    if prob is None:
+                        continue
+                    scaled_prob = float(ucl_scale_a + ucl_scale_b * np.log(prob / (1 - prob)))
+                    blend_weight = UCL_WINNER_PRIOR_K / (UCL_WINNER_PRIOR_K + row["weighted_matches"])
+                    row["rating"] = (1 - blend_weight) * row["rating"] + blend_weight * scaled_prob
+                    ucl_blended_count += 1
+
+            summary["ucl_outright_teams_matched"] = len(ucl_probs)
+            summary["ucl_outright_teams_blended"] = ucl_blended_count
+            summary["ucl_outright_scale"] = {"a": round(ucl_scale_a, 4), "b": round(ucl_scale_b, 6)}
 
             for row in all_rows:
                 stmt = pg_insert(PowerRating).values(

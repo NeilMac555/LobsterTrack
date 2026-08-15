@@ -115,8 +115,8 @@ export default function PowerRankingsPage() {
           <p className="text-slate-400 text-xs sm:text-sm mt-0.5">
             One shared strength scale across every league — a two-stage fit over Pinnacle Asian
             Handicap closing lines, bridged across leagues via Champions League &amp; Europa League
-            fixtures, then blended with fading ClubElo and squad-value priors to steady thin
-            early-season samples. Full methodology below.
+            fixtures, then blended with fading ClubElo, squad-value and UCL outright-market priors
+            to steady thin early-season samples. Full methodology below.
           </p>
         </div>
       </div>
@@ -268,6 +268,10 @@ export default function PowerRankingsPage() {
           <li className="flex items-start gap-2">
             <span className="text-cyan-400 mt-0.5">•</span>
             <span>"Squad Value" (entered by hand periodically — Transfermarkt has no API) is also blended in as a fading prior, since squad spend correlates with on-pitch success. It's weighted less than the ClubElo prior, since it measures what a squad cost rather than how it's actually performing, and it only affects teams we have a figure on file for — a dash means none is available and that team's rating is untouched by this step.</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-cyan-400 mt-0.5">•</span>
+            <span>A fourth prior blends in Polymarket's live Champions League outright-winner market — a real-money forecast of who's best positioned to go all the way this season, given a decent weight since it's a genuine market price rather than a proxy. Only the ~20 teams with an active market are affected; everyone else is untouched by this step.</span>
           </li>
         </ul>
       </div>

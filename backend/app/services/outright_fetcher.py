@@ -18,6 +18,18 @@ slugs carry a creation timestamp, so they can't be derived).
 Polymarket lists winner markets at season start; top-4 / relegation
 books usually appear mid-season — add them to OUTRIGHT_EVENTS when
 they exist. The schema already carries a `market` discriminator.
+
+UEFA CHAMPIONS LEAGUE (added 2026-08-15): same idea, one more event —
+Polymarket's live "UEFA Champions League: 2027 Champion" market
+(verified $7.8M+ volume, real money). The Odds API has no outright
+market for this competition at all (checked its /v4/sports listing;
+only "soccer_uefa_champs_league_qualification" exists, a match-odds
+sport, not a winner market), so Polymarket is the only ToS-clean
+source, same as the domestic leagues above. Unlike the domestic
+events, its 29 teams span every UEFA nation, not just our 5 tracked
+leagues, so it resolves against a MERGED name index across all five
+domestic NAME_MAP_BY_LEAGUE tables rather than one league's — see
+_build_name_index. Feeds power_ranking_fitter.py's UCL outright blend.
 """
 import json
 import hashlib
@@ -48,7 +60,12 @@ OUTRIGHT_EVENTS: list[dict] = [
     {"league": "soccer_italy_serie_a",       "market": "winner", "slug": "serie-a-2027-champion-20260701200118390"},
     {"league": "soccer_germany_bundesliga",  "market": "winner", "slug": "bundesliga-2027-champion-20260708164840303"},
     {"league": "soccer_france_ligue_one",    "market": "winner", "slug": "ligue-1-2027-champion-20260701201053335"},
+    {"league": "soccer_uefa_champs_league",  "market": "winner", "slug": "uefa-champions-league-2027-champion-20260701202025549"},
 ]
+
+# league key used for the merged (all-domestic-leagues) name index —
+# the UCL field spans every UEFA nation, not one tracked league.
+_UEFA_CL_LEAGUE = "soccer_uefa_champs_league"
 
 # Polymarket labels that don't resolve through the normalizer's names
 # even after de-accenting. Two kinds live here:
@@ -97,8 +114,14 @@ def _norm_key(name: str) -> str:
 
 def _build_name_index() -> dict[str, dict[str, str]]:
     """Per-league: normalized alias -> canonical name, built from the
-    normalizer's source spellings + canonical names + _PM_ALIASES."""
+    normalizer's source spellings + canonical names + _PM_ALIASES. Also
+    builds one merged index (under _UEFA_CL_LEAGUE) spanning all five
+    domestic leagues, since the Champions League field isn't confined
+    to one of them — a team from a league we don't track (Porto,
+    Sporting, etc.) simply won't resolve, same as any other unmatched
+    label (kept via team_name_raw, never guessed)."""
     index: dict[str, dict[str, str]] = {}
+    merged: dict[str, str] = {}
     for league, name_map in NAME_MAP_BY_LEAGUE.items():
         idx: dict[str, str] = {}
         for source_name, canonical in name_map.items():
@@ -107,6 +130,10 @@ def _build_name_index() -> dict[str, dict[str, str]]:
         for alias, canonical in _PM_ALIASES.get(league, {}).items():
             idx[_norm_key(alias)] = canonical
         index[league] = idx
+        merged.update(idx)
+    for alias, canonical in _PM_ALIASES.get(_UEFA_CL_LEAGUE, {}).items():
+        merged[_norm_key(alias)] = canonical
+    index[_UEFA_CL_LEAGUE] = merged
     return index
 
 

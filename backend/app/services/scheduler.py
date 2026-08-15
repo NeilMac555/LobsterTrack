@@ -438,10 +438,10 @@ class OddsScheduler:
             logger.error("polymarket fetch failed", error=str(e))
 
     async def outright_fetch_job(self):
-        """Polymarket season-outright fetch (league winner books for the
-        Forecast Engine's market comparison). Hourly — outright prices
-        move on news cycles, not minutes, and every fetch appends ~100
-        snapshot rows across the five leagues."""
+        """Polymarket season-outright fetch (five domestic league-winner
+        books for the Forecast Engine's market comparison, plus the UCL
+        winner book that feeds Power Rankings' UCL outright blend).
+        Hourly — outright prices move on news cycles, not minutes."""
         try:
             from app.services.outright_fetcher import outright_fetcher
             await outright_fetcher.fetch_and_store()
