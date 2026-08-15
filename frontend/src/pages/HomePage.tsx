@@ -585,6 +585,113 @@ export default function HomePage() {
         </div>
       )}
 
+      {/* Free vs Pro comparison — placed AFTER Biggest Movers deliberately
+          (2026-08-15 brief follow-up): by this point the visitor has seen
+          real data, so the pitch lands, and a CTA down here saves scrolling
+          back to the hero. Explains the tiers rather than re-asking — the
+          hero already carries the primary CTAs. Feature lists mirror the
+          ACTUAL paywall: PaywallOverlay gates Match Predictor, Rolling xG,
+          Steam Results, Drifters and Closing Lines; Team P/L and the live
+          odds/movers views are free. Keep this list in sync if gating
+          changes. Same language rules as the hero: no "syndicates", no
+          "sharp money", no claiming to know why a move happened. */}
+      {!league && !isSubscribed && (
+        <div className="mb-6 sm:mb-10 rounded-xl border border-slate-700/60 bg-slate-800/80 overflow-hidden card-shadow">
+          <div className="px-4 sm:px-6 py-3.5 border-b border-slate-700/50">
+            <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">Free vs Pro</h2>
+            <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em] font-semibold">What's included</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2">
+            {/* FREE column */}
+            <div className="relative p-4 sm:p-5 border-b sm:border-b-0 sm:border-r border-slate-700/50">
+              <div className="absolute left-0 top-4 bottom-4 w-[3px] rounded-r-full bg-emerald-500/60" />
+              <div className="pl-3">
+                <span className="px-1.5 py-0.5 rounded font-mono text-[10px] font-bold uppercase tracking-[0.12em] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                  Free
+                </span>
+                <ul className="text-slate-400 text-xs sm:text-sm mt-3 space-y-1.5 font-mono">
+                  <li className="flex items-center gap-2">
+                    <span className="text-emerald-400 text-[10px] font-bold">▸</span>
+                    <span className="tracking-tight">Real-time steam alerts on Telegram</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-emerald-400 text-[10px] font-bold">▸</span>
+                    <span className="tracking-tight">Live odds &amp; biggest movers</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-emerald-400 text-[10px] font-bold">▸</span>
+                    <span className="tracking-tight">Team P/L — back &amp; fade records</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-emerald-400 text-[10px] font-bold">▸</span>
+                    <span className="tracking-tight">Bet &amp; hedge calculators</span>
+                  </li>
+                </ul>
+                <a
+                  href="https://t.me/steamwatchalerts"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-4 inline-flex items-center gap-1.5 text-[#2AABEE] font-mono text-[11px] font-bold uppercase tracking-[0.12em] hover:gap-2.5 transition-all duration-200"
+                >
+                  Join the Channel
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </a>
+              </div>
+            </div>
+
+            {/* PRO column */}
+            <div className="relative p-4 sm:p-5">
+              <div className="absolute left-0 top-4 bottom-4 w-[3px] rounded-r-full bg-cyan-400/70" />
+              <div className="pl-3">
+                <span className="px-1.5 py-0.5 rounded font-mono text-[10px] font-bold uppercase tracking-[0.12em] bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                  Pro
+                </span>
+                <ul className="text-slate-400 text-xs sm:text-sm mt-3 space-y-1.5 font-mono">
+                  <li className="flex items-center gap-2">
+                    <span className="text-cyan-400 text-[10px] font-bold">▸</span>
+                    <span className="tracking-tight">Dixon-Coles Match Predictor</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-cyan-400 text-[10px] font-bold">▸</span>
+                    <span className="tracking-tight">Rolling xG tables · 5 leagues</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-cyan-400 text-[10px] font-bold">▸</span>
+                    <span className="tracking-tight">Steam Results — historical P/L of every move</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-cyan-400 text-[10px] font-bold">▸</span>
+                    <span className="tracking-tight">Drifters — the moves going the other way</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-cyan-400 text-[10px] font-bold">▸</span>
+                    <span className="tracking-tight">Closing line analysis</span>
+                  </li>
+                </ul>
+                <button
+                  onClick={async () => {
+                    if (!user) {
+                      setShowLoginFromCTA(true);
+                    } else {
+                      setSubscribing(true);
+                      try { await subscribe(); } catch { setSubscribing(false); }
+                    }
+                  }}
+                  className="mt-4 inline-flex items-center gap-1.5 text-cyan-300 font-mono text-[11px] font-bold uppercase tracking-[0.12em] hover:gap-2.5 transition-all duration-200"
+                >
+                  {subscribing ? 'Redirecting to Stripe…' : 'Go Pro'}
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Syndicate Moves - Late Sharp Action */}
       {!league && (
         <div className="bg-slate-800/80 rounded-2xl border border-amber-500/30 overflow-hidden mb-6 sm:mb-10 card-shadow"
