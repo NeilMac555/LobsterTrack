@@ -584,18 +584,22 @@ class OddsScheduler:
             coalesce=True,
         )
 
-        # Weekly cross-league power ranking refresh — Monday 10:30 UTC, half
-        # an hour after league_constants_refresh_job so its home-advantage
-        # inputs are that week's freshest.
-        self.scheduler.add_job(
-            self.power_ranking_refresh_job,
-            trigger=CronTrigger(day_of_week="mon", hour=10, minute=30),
-            id="power_ranking_refresh_weekly",
-            name="Weekly cross-league power ranking refresh",
-            replace_existing=True,
-            max_instances=1,
-            coalesce=True,
-        )
+        # Weekly cross-league power ranking refresh — PAUSED 2026-08-15
+        # per Neil, alongside hiding the /power-rankings page after the
+        # deploy outage (the ratings weren't the cause — see TODO.md —
+        # but everything ratings-related is parked until wanted again).
+        # The fitter, admin trigger endpoint and data all remain; to
+        # re-enable, uncomment this block and restore the frontend
+        # route/nav (see App.tsx).
+        # self.scheduler.add_job(
+        #     self.power_ranking_refresh_job,
+        #     trigger=CronTrigger(day_of_week="mon", hour=10, minute=30),
+        #     id="power_ranking_refresh_weekly",
+        #     name="Weekly cross-league power ranking refresh",
+        #     replace_existing=True,
+        #     max_instances=1,
+        #     coalesce=True,
+        # )
 
         # Polymarket WC fetcher — every minute during the WC. Polymarket
         # is free to poll (no auth, no usage cap) and live in-play prices
@@ -771,7 +775,7 @@ class OddsScheduler:
                 "seconds_since_last_run": seconds_ago(power_ranking_fitter.last_run_at),
                 "last_error": power_ranking_fitter.last_error,
                 "summary": power_ranking_fitter.last_run_summary,
-                "schedule": "Mondays 10:30 UTC",
+                "schedule": "PAUSED 2026-08-15 (was Mondays 10:30 UTC) — see the commented-out add_job",
             },
         }
 

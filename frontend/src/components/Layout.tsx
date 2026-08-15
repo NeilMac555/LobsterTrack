@@ -119,7 +119,10 @@ export default function Layout() {
               <Link to="/drifters" className={navItemClass(isDriftersPage)}>Drifters</Link>
               <Link to="/closing-lines" className={navItemClass(isClosingLinesPage)}>Closing Lines</Link>
               <Link to="/team-pnl" className={navItemClass(isTeamPLPage)}>Team P/L</Link>
-              <Link to="/power-rankings" className={navItemClass(isPowerRankingsPage)}>Power Rankings</Link>
+              {/* Power Rankings hidden 2026-08-15 per Neil after the deploy
+                  outage (the page itself wasn't the cause — see TODO.md — but
+                  it's parked until wanted again). Restore this Link + the
+                  mobile-menu entry below + the route in App.tsx to re-enable. */}
 
               {/* Tools dropdown */}
               <div className="relative" ref={dropdownRef}>
@@ -525,17 +528,8 @@ export default function Layout() {
                     <span className="text-lg">&#163;</span>
                     <span className="font-medium">Team P/L</span>
                   </Link>
-                  <Link
-                    to="/power-rankings"
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors ${
-                      isPowerRankingsPage
-                        ? 'bg-indigo-600/20 text-indigo-400'
-                        : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700 hover:text-white'
-                    }`}
-                  >
-                    <span className="text-lg">&#127942;</span>
-                    <span className="font-medium">Power Rankings</span>
-                  </Link>
+                  {/* Power Rankings mobile entry hidden 2026-08-15 —
+                      see the desktop-nav comment above. */}
                 </div>
               </div>
 

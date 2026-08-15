@@ -19,7 +19,7 @@ import BlogIndexPage from './pages/BlogIndexPage';
 import BlogPostPage from './pages/BlogPostPage';
 import RollingXGPage from './pages/RollingXGPage';
 import TeamPLPage from './pages/TeamPLPage';
-import PowerRankingsPage from './pages/PowerRankingsPage';
+// PowerRankingsPage is temporarily hidden (see the redirected route below).
 import InPlayJumpsPage from './pages/InPlayJumpsPage';
 // ForecastPage is temporarily hidden (see the redirected route below).
 
@@ -38,7 +38,12 @@ function App() {
               <Route path="closing-lines" element={<ClosingLinesPage />} />
               <Route path="cl-closing-lines" element={<CLClosingLinesPage />} />
               <Route path="team-pnl" element={<TeamPLPage />} />
-              <Route path="power-rankings" element={<PowerRankingsPage />} />
+              {/* Power Rankings hidden 2026-08-15 per Neil after the deploy
+                  outage — parked, not deleted (the fitter, API routes and
+                  data all remain; the weekly refresh job is paused in
+                  scheduler.py). Restore the PowerRankingsPage import + this
+                  route + the Layout.tsx nav entries to re-enable. */}
+              <Route path="power-rankings" element={<Navigate to="/" replace />} />
               <Route path="in-play-jumps" element={<InPlayJumpsPage />} />
               <Route path="tools/hedge-calculator" element={<HedgeCalculatorPage />} />
               <Route path="tools/bet-calculator" element={<BetCalculatorPage />} />
