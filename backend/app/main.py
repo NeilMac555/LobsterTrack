@@ -46,29 +46,17 @@ async def _initial_fetch():
         logger.warning("initial odds fetch failed (non-fatal)", error=str(e))
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
+async def _run_startup_migrations():
     """
-    Manage application startup and shutdown.
+    All the idempotent ADD COLUMN IF NOT EXISTS / CREATE INDEX IF NOT
+    EXISTS steps, plus the club-finance snapshot load, run as a
+    background task rather than inline in the lifespan — see the
+    2026-08-15 note on `lifespan` for why. Every step here already had
+    its own individual try/except (a broken migration shouldn't crash
+    boot), so moving the whole block behind create_task changes nothing
+    about failure handling, only about whether IT can block the
+    healthcheck.
     """
-    # Startup
-    logger.info("Starting LobsterTrack API")
-
-    # Create database tables
-    logger.info("Creating database tables")
-    Base.metadata.create_all(bind=engine)
-
-    # Additive schema migration: ensure the OddsSnapshot.in_play column
-    # exists on the live odds_snapshots table. Idempotent ADD COLUMN
-    # IF NOT EXISTS — safe to run on every cold start.
-    #
-    # NOTE 2026-06-30: the historical backfill UPDATE that used to live
-    # here has been removed. odds_snapshots is now >100k rows; the full
-    # JOIN-and-UPDATE was taking >5 min on cold start, blocking the
-    # FastAPI lifespan, failing Railway's healthcheck and rolling back
-    # every backend deploy. The backfill was a one-shot migration; it
-    # has long since run to completion and new snapshots are written
-    # with in_play set correctly by the fetcher.
     try:
         with engine.begin() as conn:
             conn.execute(text(
@@ -79,12 +67,6 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning("in_play migration step failed (non-fatal)", error=str(e))
 
-    # Additive migration for Match.early_goal_minute — same idempotent
-    # ADD COLUMN IF NOT EXISTS pattern. Populated at T+5 by the
-    # scheduler's in-play one-shot when the scores endpoint shows a
-    # goal has been scored. /in-play-jumps filters on this so the
-    # price swings we surface aren't contaminated by obvious-info
-    # reactions to early goals.
     try:
         with engine.begin() as conn:
             conn.execute(text(
@@ -94,8 +76,6 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning("early_goal_minute migration failed (non-fatal)", error=str(e))
 
-    # Polymarket: cache the matched Polymarket event slug on Match so the
-    # fetcher doesn't have to re-run the fuzzy team-name match on every poll.
     try:
         with engine.begin() as conn:
             conn.execute(text(
@@ -109,9 +89,6 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning("polymarket_event_slug migration failed (non-fatal)", error=str(e))
 
-    # Polymarket snapshots table — created in full via SQLAlchemy
-    # metadata.create_all at startup, but we add the indexes idempotently
-    # here in case the table existed from an earlier schema iteration.
     try:
         with engine.begin() as conn:
             conn.execute(text(
@@ -125,9 +102,6 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning("polymarket index migration failed (non-fatal)", error=str(e))
 
-    # Posted tweets table — created in full by metadata.create_all (the model
-    # is registered via app.models). We add indexes idempotently here in case
-    # the table existed from a prior schema attempt.
     try:
         with engine.begin() as conn:
             conn.execute(text(
@@ -141,10 +115,6 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning("posted_tweets index migration failed (non-fatal)", error=str(e))
 
-    # Club-finance snapshot (Premier League wage bills for the Forecast
-    # Engine's `wages` source) — load the committed JSON into club_finances.
-    # Idempotent wipe+reload of ~660 rows; non-fatal so a bad file can't
-    # block boot.
     try:
         from app.models.database import SessionLocal
         from app.services.club_finance_importer import load_snapshot
@@ -156,6 +126,48 @@ async def lifespan(app: FastAPI):
             _fin_db.close()
     except Exception as e:
         logger.warning("club finance snapshot load failed (non-fatal)", error=str(e))
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Manage application startup and shutdown.
+    """
+    # Startup
+    logger.info("Starting LobsterTrack API")
+
+    # Create database tables
+    logger.info("Creating database tables")
+    Base.metadata.create_all(bind=engine)
+
+    # NOTE 2026-08-15: the additive-migration block that used to run
+    # synchronously here (ADD COLUMN IF NOT EXISTS on odds_snapshots/
+    # matches, CREATE INDEX IF NOT EXISTS on polymarket_snapshots/
+    # posted_tweets, the club-finance snapshot load) took the whole
+    # site down for ~40 minutes: Postgres needs an ACCESS EXCLUSIVE
+    # lock to even EVALUATE "IF NOT EXISTS" on an ALTER TABLE, even
+    # when the column already exists and the statement is a true
+    # no-op. A handful of leaked idle-in-transaction sessions
+    # (unrelated app bug, holding only ordinary read locks on
+    # odds_snapshots) were enough to queue that ALTER behind them
+    # indefinitely — Postgres has no default lock_timeout, so every
+    # deploy attempt hung at "Waiting for application startup" forever,
+    # never reaching Railway's healthcheck, until the deploy was killed
+    # after 5 minutes and the NEXT attempt hit the exact same queue.
+    # Reverting the code that shipped alongside this incident did
+    # nothing, because the code was never the variable — this migration
+    # block was exactly as vulnerable to lock contention months ago as
+    # it was today; today is just the day something happened to be
+    # holding a lock at the wrong moment. This is the same failure
+    # shape the in_play backfill caused in 2026-06-30 (see
+    # _run_startup_migrations' docstring) — that fix removed the slow
+    # backfill but left this ALTER on the blocking path, which is what
+    # let this recur. Now runs as a background task, same
+    # non-blocking pattern as _initial_fetch below: none of these
+    # migrations are needed for the app to serve traffic (they're
+    # idempotent safety nets for schema that's existed for a long
+    # time), so none of them should be able to block boot ever again.
+    asyncio.create_task(_run_startup_migrations())
 
     # Start the scheduler
     logger.info("Starting odds scheduler")
