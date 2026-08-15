@@ -202,7 +202,7 @@ export default function PowerRankingsPage() {
                 <Tooltip
                   contentStyle={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 8, fontFamily: MONO_STACK, fontSize: 12 }}
                   labelFormatter={(v) => format(new Date(v as string), 'MMM d, yyyy')}
-                  formatter={(value: number) => value.toFixed(3)}
+                  formatter={(value?: number) => (typeof value === 'number' ? value.toFixed(3) : value)}
                 />
                 <Legend wrapperStyle={{ fontFamily: MONO_STACK, fontSize: 11 }} />
                 {selected.map((team, i) => (
