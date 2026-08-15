@@ -172,6 +172,25 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Power Rankings squad value now blended into the rating (6dad86c,
+  2026-08-15) — supersedes the "informational only, not blended" design
+  from the entry directly below, at explicit user request ("there is a
+  correllation between squad value and success"). Added as a THIRD
+  fading prior after the ClubElo blend (SQUAD_VALUE_PRIOR_K=8.0, lower
+  than CLUBELO_PRIOR_K=20.0, since it's a valuation metric rather than
+  an observed-performance one). Market value spans ~3 orders of
+  magnitude, so the scale conversion fits against ln(value) rather than
+  the raw figure so a handful of superclubs don't dominate the OLS fit.
+  Only applies to the 67/98 tracked teams with a value on file. Caught
+  and fixed a real bug during local verification: np.log(value)
+  promotes the blended rating to np.float64, which psycopg2 can't adapt
+  for the insert — wrapped in float(). Verified locally against
+  production data, then confirmed live: 67/67 matched teams blended,
+  0 errors. Result is an honest shift, not a forced one — Man City,
+  PSG, Real Madrid and Chelsea all moved up (consistent with their
+  squad values), but Arsenal held #1 and PSG did NOT become #1, since
+  nothing was tuned toward any particular ordering.
+
 - Power Rankings squad market value column (05f5607 + fb480f8,
   2026-08-15): a "Squad Value" column shown alongside the rating table,
   sourced from Transfermarkt (no public API, terms prohibit scraping —
