@@ -18,5 +18,6 @@ from .club_finance import ClubFinance
 from .posted_tweet import PostedTweet
 from .league_constants import LeagueConstants, LeagueConstantsHistory
 from .forecast import Forecast
+from .power_rating import PowerRating, PowerRatingHistory
 
-__all__ = ["Base", "get_db", "engine", "Match", "OddsSnapshot", "SteamMove", "EmailSubscriber", "TotalsSnapshot", "SpreadsSnapshot", "SyndicateAlert", "ClosingLine", "MarketType", "User", "Subscription", "MagicLink", "XGData", "HistoricalMatch", "PolymarketSnapshot", "OutrightSnapshot", "OutrightCapture", "ClubFinance", "PostedTweet", "LeagueConstants", "LeagueConstantsHistory", "Forecast"]
+__all__ = ["Base", "get_db", "engine", "Match", "OddsSnapshot", "SteamMove", "EmailSubscriber", "TotalsSnapshot", "SpreadsSnapshot", "SyndicateAlert", "ClosingLine", "MarketType", "User", "Subscription", "MagicLink", "XGData", "HistoricalMatch", "PolymarketSnapshot", "OutrightSnapshot", "OutrightCapture", "ClubFinance", "PostedTweet", "LeagueConstants", "LeagueConstantsHistory", "Forecast", "PowerRating", "PowerRatingHistory"]

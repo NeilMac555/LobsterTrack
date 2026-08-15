@@ -334,6 +334,44 @@ class LeagueConstantsResponse(BaseModel):
     constants: list[LeagueConstantsItem]
 
 
+class PowerRatingItem(BaseModel):
+    """One team's current cross-league power rating."""
+    team: str
+    league: str
+    rating: float
+    weighted_matches: float
+    computed_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class PowerRatingsResponse(BaseModel):
+    """
+    Current power_ratings rows, cross-league comparable (unlike
+    league_constants, ratings here are on ONE shared scale — see
+    app/services/power_ranking_fitter.py).
+    """
+    ratings: list[PowerRatingItem]
+    computed_at: datetime | None = None
+
+
+class PowerRatingHistoryPoint(BaseModel):
+    """One weekly snapshot of a team's rating, for the trend chart."""
+    rating: float
+    weighted_matches: float
+    computed_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class PowerRatingHistoryResponse(BaseModel):
+    team: str
+    league: str
+    history: list[PowerRatingHistoryPoint]
+
+
 class TeamPLViewStats(BaseModel):
     """
     P/L numbers for one venue (home / away / overall) of a single

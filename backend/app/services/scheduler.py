@@ -11,6 +11,7 @@ from app.services.results_fetcher import results_fetcher
 from app.services.closing_line_capturer import closing_line_capturer
 from app.services.xg_refresher import xg_refresher
 from app.services.league_constants_refresher import league_constants_refresher
+from app.services.power_ranking_fitter import power_ranking_fitter
 from app.services.email_sender import email_sender
 from app.services.stripe_reconciler import stripe_reconciler
 
@@ -355,6 +356,20 @@ class OddsScheduler:
         except Exception as e:
             logger.error("League constants refresh failed", error=str(e))
 
+    async def power_ranking_refresh_job(self):
+        """
+        Weekly recompute of cross-league team power ratings from Pinnacle
+        Asian Handicap closing lines. Scheduled after
+        league_constants_refresh_job (10:00) so its home-advantage inputs
+        are fresh. Failures are logged but don't propagate — worst case
+        power_ratings keeps last week's numbers until the next run.
+        """
+        try:
+            logger.info("Starting weekly power ranking refresh")
+            await power_ranking_fitter.refresh()
+        except Exception as e:
+            logger.error("Power ranking refresh failed", error=str(e))
+
     async def football_data_refresh_job(self):
         """
         Weekly refresh of historical_matches (current season only) from
@@ -569,6 +584,19 @@ class OddsScheduler:
             coalesce=True,
         )
 
+        # Weekly cross-league power ranking refresh — Monday 10:30 UTC, half
+        # an hour after league_constants_refresh_job so its home-advantage
+        # inputs are that week's freshest.
+        self.scheduler.add_job(
+            self.power_ranking_refresh_job,
+            trigger=CronTrigger(day_of_week="mon", hour=10, minute=30),
+            id="power_ranking_refresh_weekly",
+            name="Weekly cross-league power ranking refresh",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
+
         # Polymarket WC fetcher — every minute during the WC. Polymarket
         # is free to poll (no auth, no usage cap) and live in-play prices
         # move fast, so 1m gives us a usable per-match time series without
@@ -736,6 +764,14 @@ class OddsScheduler:
                 "last_error": league_constants_refresher.last_error,
                 "summary": league_constants_refresher.last_run_summary,
                 "schedule": "Mondays 10:00 UTC",
+            },
+            # Weekly cross-league power ranking refresh — Pinnacle AH closing lines
+            "power_ranking_refresh": {
+                "last_run_at": iso(power_ranking_fitter.last_run_at),
+                "seconds_since_last_run": seconds_ago(power_ranking_fitter.last_run_at),
+                "last_error": power_ranking_fitter.last_error,
+                "summary": power_ranking_fitter.last_run_summary,
+                "schedule": "Mondays 10:30 UTC",
             },
         }
 

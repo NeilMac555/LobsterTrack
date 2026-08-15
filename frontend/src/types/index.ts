@@ -226,6 +226,31 @@ export interface LeagueConstantsResponse {
   constants: LeagueConstantsItem[];
 }
 
+export interface PowerRatingItem {
+  team: string;
+  league: string;
+  rating: number;
+  weighted_matches: number;
+  computed_at: string;
+}
+
+export interface PowerRatingsResponse {
+  ratings: PowerRatingItem[];
+  computed_at: string | null;
+}
+
+export interface PowerRatingHistoryPoint {
+  rating: number;
+  weighted_matches: number;
+  computed_at: string;
+}
+
+export interface PowerRatingHistoryResponse {
+  team: string;
+  league: string;
+  history: PowerRatingHistoryPoint[];
+}
+
 export interface TeamPLViewStats {
   matches: number;
   wins: number;

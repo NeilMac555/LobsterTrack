@@ -19,6 +19,7 @@ import BlogIndexPage from './pages/BlogIndexPage';
 import BlogPostPage from './pages/BlogPostPage';
 import RollingXGPage from './pages/RollingXGPage';
 import TeamPLPage from './pages/TeamPLPage';
+import PowerRankingsPage from './pages/PowerRankingsPage';
 import InPlayJumpsPage from './pages/InPlayJumpsPage';
 // ForecastPage is temporarily hidden (see the redirected route below).
 
@@ -37,6 +38,7 @@ function App() {
               <Route path="closing-lines" element={<ClosingLinesPage />} />
               <Route path="cl-closing-lines" element={<CLClosingLinesPage />} />
               <Route path="team-pnl" element={<TeamPLPage />} />
+              <Route path="power-rankings" element={<PowerRankingsPage />} />
               <Route path="in-play-jumps" element={<InPlayJumpsPage />} />
               <Route path="tools/hedge-calculator" element={<HedgeCalculatorPage />} />
               <Route path="tools/bet-calculator" element={<BetCalculatorPage />} />

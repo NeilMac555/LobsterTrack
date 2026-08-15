@@ -4,7 +4,7 @@ from sqlalchemy import func, desc, text
 from datetime import datetime, timedelta
 from typing import Optional
 
-from app.models import get_db, Match, OddsSnapshot, SteamMove, EmailSubscriber, TotalsSnapshot, SpreadsSnapshot, ClosingLine, SyndicateAlert, XGData, HistoricalMatch, LeagueConstants
+from app.models import get_db, Match, OddsSnapshot, SteamMove, EmailSubscriber, TotalsSnapshot, SpreadsSnapshot, ClosingLine, SyndicateAlert, XGData, HistoricalMatch, LeagueConstants, PowerRating, PowerRatingHistory
 from app.config import get_settings
 from app.services.scheduler import odds_scheduler
 from .schemas import (
@@ -41,6 +41,10 @@ from .schemas import (
     TeamPLViewStats,
     LeagueConstantsItem,
     LeagueConstantsResponse,
+    PowerRatingItem,
+    PowerRatingsResponse,
+    PowerRatingHistoryPoint,
+    PowerRatingHistoryResponse,
 )
 
 # Simple admin password
@@ -112,6 +116,43 @@ async def get_league_constants(db: Session = Depends(get_db)):
     rows = db.query(LeagueConstants).all()
     return LeagueConstantsResponse(
         constants=[LeagueConstantsItem.model_validate(r) for r in rows]
+    )
+
+
+@router.get("/power-rankings", response_model=PowerRatingsResponse)
+async def get_power_rankings(db: Session = Depends(get_db)):
+    """
+    Cross-league team power ratings (see
+    app/services/power_ranking_fitter.py, refreshed weekly Mondays
+    10:30 UTC). Unlike league_constants, ratings here are on ONE shared
+    scale across every league — that's the entire point of this fit,
+    bridged via UEFA competition fixtures.
+    """
+    rows = db.query(PowerRating).order_by(PowerRating.rating.desc()).all()
+    computed_at = rows[0].computed_at if rows else None
+    return PowerRatingsResponse(
+        ratings=[PowerRatingItem.model_validate(r) for r in rows],
+        computed_at=computed_at,
+    )
+
+
+@router.get("/power-rankings/{team}/history", response_model=PowerRatingHistoryResponse)
+async def get_power_ranking_history(team: str, db: Session = Depends(get_db)):
+    """Weekly rating history for one team, for the trend chart."""
+    current = db.query(PowerRating).filter(PowerRating.team == team).first()
+    if not current:
+        raise HTTPException(status_code=404, detail="Team not found in power rankings")
+
+    rows = (
+        db.query(PowerRatingHistory)
+        .filter(PowerRatingHistory.team == team)
+        .order_by(PowerRatingHistory.computed_at.asc())
+        .all()
+    )
+    return PowerRatingHistoryResponse(
+        team=team,
+        league=current.league,
+        history=[PowerRatingHistoryPoint.model_validate(r) for r in rows],
     )
 
 
@@ -3065,6 +3106,21 @@ async def admin_refresh_league_constants(password: str = Query(..., description=
         raise HTTPException(status_code=403, detail="Invalid admin password")
 
     summary = await league_constants_refresher.refresh()
+    return summary
+
+
+@router.post("/admin/refresh-power-rankings")
+async def admin_refresh_power_rankings(password: str = Query(..., description="Admin password")):
+    """
+    Manually trigger the weekly cross-league power ranking recompute
+    (useful on demand — the scheduled run happens every Monday 10:30 UTC).
+    """
+    from app.services.power_ranking_fitter import power_ranking_fitter
+
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=403, detail="Invalid admin password")
+
+    summary = await power_ranking_fitter.refresh()
     return summary
 
 

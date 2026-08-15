@@ -1,4 +1,4 @@
-import type { MatchSummary, MatchDetail, LeagueSummary, Stats, BiggestMover, MatchTotals, SyndicateMove, MatchSpreads, SteamResultsData, ClosingLinesResponse, MatchClosingLinesResponse, XGDataResponse, TeamPLResponse, InPlayJumpsResponse, LateSteamResponse, LeagueConstantsResponse, ForecastRegistry, ForecastResponse, RecentForecastsResponse } from '../types';
+import type { MatchSummary, MatchDetail, LeagueSummary, Stats, BiggestMover, MatchTotals, SyndicateMove, MatchSpreads, SteamResultsData, ClosingLinesResponse, MatchClosingLinesResponse, XGDataResponse, TeamPLResponse, InPlayJumpsResponse, LateSteamResponse, LeagueConstantsResponse, ForecastRegistry, ForecastResponse, RecentForecastsResponse, PowerRatingsResponse, PowerRatingHistoryResponse } from '../types';
 
 const API_BASE = '/api';
 
@@ -16,6 +16,14 @@ export async function getLeagues(): Promise<LeagueSummary[]> {
 
 export async function getLeagueConstants(): Promise<LeagueConstantsResponse> {
   return fetchJson<LeagueConstantsResponse>(`${API_BASE}/league-constants`);
+}
+
+export async function getPowerRankings(): Promise<PowerRatingsResponse> {
+  return fetchJson<PowerRatingsResponse>(`${API_BASE}/power-rankings`);
+}
+
+export async function getPowerRankingHistory(team: string): Promise<PowerRatingHistoryResponse> {
+  return fetchJson<PowerRatingHistoryResponse>(`${API_BASE}/power-rankings/${encodeURIComponent(team)}/history`);
 }
 
 export async function getMatches(params?: {
