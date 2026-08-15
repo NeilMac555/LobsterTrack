@@ -172,6 +172,36 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Power Rankings: fix two compression bugs flattening every rating
+  toward the mean (7d41a4a, 2026-08-15) — second external quant work
+  order, verified against production data AND a from-scratch synthetic
+  reproduction (prove_compression.py) before any code changed; every
+  line number and diagnostic in the work order matched the live file
+  exactly. Bug 1: WITHIN_LEAGUE_RIDGE_LAMBDA was 15.0 against Stage 1's
+  actual sample (~9.8 weighted matches/team in the EPL) — ridge
+  shrinkage scales ~n/(n+λ), so a perfect noiseless synthetic signal
+  came back at only ~34% of its true spread. Split into
+  WITHIN_LEAGUE_RIDGE_LAMBDA=2.0 (fixed) and
+  CROSS_LEAGUE_RIDGE_LAMBDA=15.0 (Stage 2, left alone — not part of
+  this diagnosis). Bug 2: all three team-level priors (ClubElo, squad
+  value, UCL outright) were put on scale via np.polyfit(prior,
+  our_ratings) then blended toward the fitted values — OLS fitted
+  values have variance r²·Var(y), so this can only ever compress a
+  rating's spread, at any blend weight, arithmetically incapable of
+  ever widening it. Replaced with _scale_prior_to_target: a z-score
+  rescale onto a target mean/SD instead of a regression against our
+  own (possibly too flat) ratings; target is an interim stand-in read
+  from the current ratings' own spread each time (properly-estimated
+  target needs inverting each league's outright market via a season
+  simulator this codebase doesn't have yet — flagged, not built).
+  Verified locally before shipping, then live: PSG moved to 1st (was
+  4th two sessions ago), Bayern 2nd, Barcelona 3rd, Arsenal 6th —
+  matching the market pricing the work order cited — and overall
+  rating spread nearly doubled (SD 0.18 → 0.36). Bug 3 (five domestic
+  outright books already fetched hourly but never read by the fitter,
+  plus a dead-book guard for when markets resolve) is documented in
+  the module docstring but not implemented this pass.
+
 - Power Rankings: mean-center ClubElo + squad value within league
   before blending (acbee12, 2026-08-15) — fix for a real bug an
   external quant review caught and fully verified against production:
