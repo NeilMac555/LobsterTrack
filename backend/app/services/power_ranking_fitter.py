@@ -187,16 +187,26 @@ reproduction, prove_compression.py, before any code changed):
   probabilities), which needs a season simulator this codebase doesn't
   have yet. That's the next piece of this work, not done here.
 
-  Bug 3 (partial — domestic wiring not yet done) — outright_fetcher.py
-  already polls FIVE domestic league-winner books hourly alongside the
-  UCL one (EPL, La Liga, Serie A, Bundesliga, Ligue 1 — all in
+  Bug 3a (fixed 2026-08-15, same day) — outright_fetcher.py already
+  polls FIVE domestic league-winner books hourly alongside the UCL one
+  (EPL, La Liga, Serie A, Bundesliga, Ligue 1 — all in
   outright_snapshots with excellent book-sum quality, e.g. La Liga at
-  1.009), but _fetch_ucl_outright_probs only ever reads the UCL market.
-  Wiring the domestic five in (and inverting them for Bug 2's proper
-  target_sd) is flagged but not implemented in this pass — needs the
-  same season-simulator dependency as Bug 2's real fix, plus a guard
-  against reading a since-resolved market as if it were still live
-  (a negRisk event can report `active` after settling).
+  1.009), but the fitter only ever read the UCL market. Caught in the
+  wild within hours of Bug 1/2 shipping: Juventus (Serie A's own market
+  has them at 13.5%, tied 2nd behind Inter Milan's 49.5%) was
+  outranking Arsenal (the EPL's own market has them at 39.5%, the
+  clear favourite) — the exact shape of a domestic-outright-market miss
+  this bug predicts. Fixed by generalising _fetch_ucl_outright_probs
+  into _fetch_outright_probs(db, league, market) and adding a DOMESTIC
+  OUTRIGHT BLEND (DOMESTIC_OUTRIGHT_PRIOR_K) — same centered-within-
+  league + _scale_prior_to_target pattern as ClubElo/squad value, since
+  each domestic market only ever lists teams from its own league.
+
+  Bug 3b (still open) — inverting these markets for Bug 2's PROPER
+  target_sd, and a guard against reading a since-resolved market as if
+  it were still live (a negRisk event can report `active` after
+  settling), both still need the season-simulator dependency Bug 2's
+  real fix needs. Not done here.
 """
 
 from __future__ import annotations
@@ -309,6 +319,17 @@ SQUAD_VALUE_PRIOR_K = 6.0
 # competition, not a valuation proxy, so it earns more trust than
 # squad value at any given sample size.
 UCL_WINNER_PRIOR_K = 20.0
+
+# Domestic outright (own-league title race) blend strength — same
+# weight as the UCL blend: real market money on the exact question of
+# who wins THIS team's own league, not a proxy. Added 2026-08-15 after
+# a concrete, verified miss: Juventus (Serie A's own market has them
+# at 13.5%, tied for 2nd behind Inter Milan's 49.5%) was outranking
+# Arsenal (the EPL's own market has them at 39.5%, the clear
+# favourite) — exactly Bug 3 from the compression-bugs review (five
+# domestic outright books already fetched hourly, never read by the
+# fitter) producing a wrong answer in a way anyone could spot.
+DOMESTIC_OUTRIGHT_PRIOR_K = 20.0
 
 _UEFA_CL_LEAGUE = "soccer_uefa_champs_league"
 _UEFA_CL_WINNER_MARKET = "winner"
@@ -650,20 +671,26 @@ def _uefa_coefficient_prior_offsets(
     return {lg: our_mean + (coefficients[lg] - coeff_mean) * scale for lg in leagues}
 
 
-def _fetch_ucl_outright_probs(db: Session) -> dict[str, float]:
+def _fetch_outright_probs(db: Session, league: str, market: str = "winner") -> dict[str, float]:
     """
-    Latest Champions League outright-winner probabilities from
+    Latest outright-winner probabilities for one competition from
     OutrightSnapshot (Polymarket, see outright_fetcher.py) — normalised
     to sum to 1 across whichever teams have a live market, since
     Polymarket negRisk pricing isn't guaranteed to sum exactly to 1
     itself. Returns {} if no snapshot has been captured yet (the
     fetcher runs on its own schedule; this blend degrades gracefully,
     same as a ClubElo fetch failure).
+
+    NOTE (2026-08-15, external quant review, Bug 3): this does NOT yet
+    guard against a since-resolved market that still reports `active`
+    (a settled Polymarket negRisk event can do that) — fine for now
+    since none of the 2026-27 season books resolve before ~May 2027,
+    but a real gap to close before then. Flagged, not fixed here.
     """
     latest = (
         db.query(func.max(OutrightSnapshot.fetched_at))
-        .filter(OutrightSnapshot.league == _UEFA_CL_LEAGUE)
-        .filter(OutrightSnapshot.market == _UEFA_CL_WINNER_MARKET)
+        .filter(OutrightSnapshot.league == league)
+        .filter(OutrightSnapshot.market == market)
         .scalar()
     )
     if latest is None:
@@ -671,8 +698,8 @@ def _fetch_ucl_outright_probs(db: Session) -> dict[str, float]:
 
     rows = (
         db.query(OutrightSnapshot)
-        .filter(OutrightSnapshot.league == _UEFA_CL_LEAGUE)
-        .filter(OutrightSnapshot.market == _UEFA_CL_WINNER_MARKET)
+        .filter(OutrightSnapshot.league == league)
+        .filter(OutrightSnapshot.market == market)
         .filter(OutrightSnapshot.fetched_at == latest)
         .filter(OutrightSnapshot.team_name.isnot(None))
         .filter(OutrightSnapshot.yes_price.isnot(None))
@@ -683,6 +710,11 @@ def _fetch_ucl_outright_probs(db: Session) -> dict[str, float]:
     if total <= 0:
         return {}
     return {r.team_name: r.yes_price / total for r in rows}
+
+
+def _fetch_ucl_outright_probs(db: Session) -> dict[str, float]:
+    """Thin wrapper kept so the existing UCL blend call site is untouched."""
+    return _fetch_outright_probs(db, _UEFA_CL_LEAGUE, _UEFA_CL_WINNER_MARKET)
 
 
 class PowerRankingFitter:
@@ -854,6 +886,46 @@ class PowerRankingFitter:
             summary["squad_value_teams_matched"] = len(squad_values)
             summary["squad_value_teams_blended"] = sv_blended_count
             summary["squad_value_target"] = {"mean": round(target_mean, 4), "sd": round(target_sd, 4)}
+
+            # Domestic outright (own-league title race) blend — a third
+            # δ-level fading prior, applied after squad value, toward
+            # each team's OWN league's title-winner market (see module
+            # docstring, DOMESTIC_OUTRIGHT_PRIOR_K). Each domestic
+            # market only ever lists teams from that one league, so
+            # centering within league here can only reorder a league's
+            # own teams — same identification guarantee as ClubElo/
+            # squad value above. Target re-read fresh, same interim
+            # reasoning as the other two.
+            current_arr = np.array([row["rating"] for row in all_rows])
+            target_mean, target_sd = float(current_arr.mean()), float(current_arr.std())
+
+            domestic_outright_probs_raw: dict[str, float] = {}
+            for league in DOMESTIC_LEAGUES:
+                domestic_outright_probs_raw.update(_fetch_outright_probs(db, league))
+            logit_domestic_raw = {
+                team: float(np.log(p / (1 - p))) for team, p in domestic_outright_probs_raw.items()
+            }
+            logit_domestic = _center_within_league(logit_domestic_raw, team_league)
+            domestic_blended_count = 0
+            if len(logit_domestic) >= MIN_TEAMS_FOR_PRIOR_SCALE:
+                teams_with_domestic = list(logit_domestic.keys())
+                scaled_arr = _scale_prior_to_target(
+                    np.array([logit_domestic[t] for t in teams_with_domestic]), target_sd, target_mean,
+                )
+                scaled_domestic_by_team = dict(zip(teams_with_domestic, scaled_arr))
+                for row in all_rows:
+                    scaled_prob = scaled_domestic_by_team.get(row["team"])
+                    if scaled_prob is None:
+                        continue
+                    blend_weight = DOMESTIC_OUTRIGHT_PRIOR_K / (DOMESTIC_OUTRIGHT_PRIOR_K + row["weighted_matches"])
+                    row["rating"] = (1 - blend_weight) * row["rating"] + blend_weight * float(scaled_prob)
+                    domestic_blended_count += 1
+            elif logit_domestic:
+                logger.warning("Domestic outright blend: too few overlapping teams to scale", n=len(logit_domestic))
+
+            summary["domestic_outright_teams_matched"] = len(domestic_outright_probs_raw)
+            summary["domestic_outright_teams_blended"] = domestic_blended_count
+            summary["domestic_outright_target"] = {"mean": round(target_mean, 4), "sd": round(target_sd, 4)}
 
             # Add the Stage 2 offset now — the only step allowed to move
             # a league's overall level. Everything above this point only
