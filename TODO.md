@@ -172,6 +172,51 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- INCIDENT 2026-08-15 evening: site-wide outage (~75 min), resolved
+  (e4d7036, 3cbf962, 80dc6b1), then Power Rankings hidden per Neil
+  (0db9f0c). Root cause — NOT the ratings code, despite the outage
+  starting right after a ratings deploy: main.py's startup block ran a
+  no-op "ALTER TABLE odds_snapshots ADD COLUMN IF NOT EXISTS" on every
+  boot, which needs an ACCESS EXCLUSIVE lock just to evaluate the IF
+  NOT EXISTS. A separate, pre-existing connection leak (sessions left
+  "idle in transaction" holding read locks on odds_snapshots — still
+  unfixed, tracked below) collided with it: the deploy's ALTER queued
+  behind the leaked locks, and because Postgres queues every NEW query
+  behind a waiting exclusive lock, the whole site's odds_snapshots
+  queries froze — active container included. Every retry re-armed the
+  trap (each failed deploy's container also left an eternal queued
+  ALTER as a zombie), which is why reverting the ratings commit
+  changed nothing — confirmed empirically mid-incident. Same failure
+  shape as the 2026-06-30 in_play-backfill incident; that fix removed
+  the slow backfill but left the ALTER on the blocking path.
+  Fixes shipped: (1) every startup ALTER/CREATE INDEX now runs with
+  SET LOCAL lock_timeout='5s' so it aborts cleanly instead of
+  poisoning the lock queue; (2) the migration block runs in a real
+  thread (asyncio.to_thread), never on the event loop — the first
+  emergency fix used create_task with sync DB calls, which still
+  blocked the healthcheck and taught us the difference; (3) DB pool
+  widened (10/20) with pool_timeout=10 so exhaustion fails visibly.
+  Diagnosis trail: pg_stat_activity lock-chain queries + the Railway
+  dashboard's per-phase deploy view (CLI logs were silent because
+  INFO-level records had no handler until startup completed).
+  Follow-ups open: fix the idle-in-transaction leak (root cause,
+  likely sessions held across awaited network I/O e.g.
+  syndicate_alerter's Telegram/Twitter calls); DATABASE_URL currently
+  points at the public proxy from mid-incident debugging — switch
+  back to the internal hostname (postgres-qqax.railway.internal) in a
+  calm moment, it was ruled out as a cause and internal is free/faster.
+
+- Power Rankings hidden + weekly job paused (0db9f0c, 2026-08-15):
+  per Neil after the outage above. /power-rankings redirects home,
+  nav entries removed (desktop + mobile), the Monday 10:30 UTC
+  refresh job is commented out in scheduler.py (admin diagnostics
+  label it PAUSED). Everything else remains intact — fitter, admin
+  trigger, API routes, tables, history. To restore: uncomment the
+  scheduler add_job block, restore the App.tsx import + route and
+  the two Layout.tsx nav entries. NOTE: the domestic-outright blend
+  (Arsenal-above-Juventus fix) was reverted during firefighting and
+  is preserved at bf7325c — re-apply when the feature comes back.
+
 - Power Rankings: fix two compression bugs flattening every rating
   toward the mean (7d41a4a, 2026-08-15) — second external quant work
   order, verified against production data AND a from-scratch synthetic
