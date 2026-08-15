@@ -4,7 +4,7 @@ from sqlalchemy import func, desc, text
 from datetime import datetime, timedelta
 from typing import Optional
 
-from app.models import get_db, Match, OddsSnapshot, SteamMove, EmailSubscriber, TotalsSnapshot, SpreadsSnapshot, ClosingLine, SyndicateAlert, XGData, HistoricalMatch, LeagueConstants, PowerRating, PowerRatingHistory
+from app.models import get_db, Match, OddsSnapshot, SteamMove, EmailSubscriber, TotalsSnapshot, SpreadsSnapshot, ClosingLine, SyndicateAlert, XGData, HistoricalMatch, LeagueConstants, PowerRating, PowerRatingHistory, SquadMarketValue
 from app.config import get_settings
 from app.services.scheduler import odds_scheduler
 from .schemas import (
@@ -130,8 +130,19 @@ async def get_power_rankings(db: Session = Depends(get_db)):
     """
     rows = db.query(PowerRating).order_by(PowerRating.rating.desc()).all()
     computed_at = rows[0].computed_at if rows else None
+
+    squad_values = {
+        sv.team: sv.market_value_eur
+        for sv in db.query(SquadMarketValue).filter(SquadMarketValue.team.isnot(None)).all()
+    }
+    items = []
+    for r in rows:
+        item = PowerRatingItem.model_validate(r)
+        item.squad_value_eur = squad_values.get(r.team)
+        items.append(item)
+
     return PowerRatingsResponse(
-        ratings=[PowerRatingItem.model_validate(r) for r in rows],
+        ratings=items,
         computed_at=computed_at,
     )
 
@@ -2272,6 +2283,21 @@ async def admin_load_club_finances(
     """Reload the committed club-finance snapshot (PL wage bills) into
     club_finances. Run after refreshing the snapshot for a new season."""
     from app.services.club_finance_importer import load_snapshot
+
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid password")
+    return load_snapshot(db)
+
+
+@router.post("/admin/load-squad-values")
+async def admin_load_squad_values(
+    password: str = Query(..., description="Admin password"),
+    db: Session = Depends(get_db),
+):
+    """Reload the committed squad-market-value snapshot (Transfermarkt,
+    manually transcribed — no API) into squad_market_values. Run after
+    regenerating the snapshot with scripts/refresh_squad_values.py."""
+    from app.services.squad_value_importer import load_snapshot
 
     if password != ADMIN_PASSWORD:
         raise HTTPException(status_code=401, detail="Invalid password")

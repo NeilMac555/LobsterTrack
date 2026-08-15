@@ -1,0 +1,608 @@
+{
+ "source": "Transfermarkt (transfermarkt.com), 'most valuable clubs' ranking — manually transcribed, no API available",
+ "unit": "EUR",
+ "note": "Informational only — squad market value is a spending/valuation metric, not a performance signal, so it is displayed alongside Power Rankings but never blended into the rating itself (unlike the ClubElo prior in power_ranking_fitter.py).",
+ "captured_at_hint": "2026-08-15",
+ "rows": [
+  {
+   "team_raw": "Manchester City",
+   "team": "Manchester City",
+   "competition_label": "Premier League",
+   "market_value_eur": 1470000000
+  },
+  {
+   "team_raw": "Real Madrid",
+   "team": "Real Madrid",
+   "competition_label": "LaLiga",
+   "market_value_eur": 1450000000
+  },
+  {
+   "team_raw": "Arsenal FC",
+   "team": "Arsenal",
+   "competition_label": "Premier League",
+   "market_value_eur": 1410000000
+  },
+  {
+   "team_raw": "Paris Saint-Germain",
+   "team": "Paris Saint Germain",
+   "competition_label": "Ligue 1",
+   "market_value_eur": 1390000000
+  },
+  {
+   "team_raw": "Chelsea FC",
+   "team": "Chelsea",
+   "competition_label": "Premier League",
+   "market_value_eur": 1360000000
+  },
+  {
+   "team_raw": "FC Barcelona",
+   "team": "Barcelona",
+   "competition_label": "LaLiga",
+   "market_value_eur": 1280000000
+  },
+  {
+   "team_raw": "Bayern Munich",
+   "team": "Bayern Munich",
+   "competition_label": "Bundesliga",
+   "market_value_eur": 1070000000
+  },
+  {
+   "team_raw": "Liverpool FC",
+   "team": "Liverpool",
+   "competition_label": "Premier League",
+   "market_value_eur": 999500000
+  },
+  {
+   "team_raw": "Tottenham Hotspur",
+   "team": "Tottenham Hotspur",
+   "competition_label": "Premier League",
+   "market_value_eur": 909500000
+  },
+  {
+   "team_raw": "Manchester United",
+   "team": "Manchester United",
+   "competition_label": "Premier League",
+   "market_value_eur": 874300000
+  },
+  {
+   "team_raw": "Inter Milan",
+   "team": "Inter Milan",
+   "competition_label": "Serie A",
+   "market_value_eur": 671800000
+  },
+  {
+   "team_raw": "Atlético de Madrid",
+   "team": "Atlético Madrid",
+   "competition_label": "LaLiga",
+   "market_value_eur": 629300000
+  },
+  {
+   "team_raw": "Brighton & Hove Albion",
+   "team": "Brighton and Hove Albion",
+   "competition_label": "Premier League",
+   "market_value_eur": 619500000
+  },
+  {
+   "team_raw": "Newcastle United",
+   "team": "Newcastle United",
+   "competition_label": "Premier League",
+   "market_value_eur": 566300000
+  },
+  {
+   "team_raw": "AFC Bournemouth",
+   "team": "Bournemouth",
+   "competition_label": "Premier League",
+   "market_value_eur": 565880000
+  },
+  {
+   "team_raw": "Brentford FC",
+   "team": "Brentford",
+   "competition_label": "Premier League",
+   "market_value_eur": 565300000
+  },
+  {
+   "team_raw": "AC Milan",
+   "team": "AC Milan",
+   "competition_label": "Serie A",
+   "market_value_eur": 562200000
+  },
+  {
+   "team_raw": "Nottingham Forest",
+   "team": "Nottingham Forest",
+   "competition_label": "Premier League",
+   "market_value_eur": 559800000
+  },
+  {
+   "team_raw": "Juventus FC",
+   "team": "Juventus",
+   "competition_label": "Serie A",
+   "market_value_eur": 542700000
+  },
+  {
+   "team_raw": "Bayer 04 Leverkusen",
+   "team": "Bayer Leverkusen",
+   "competition_label": "Bundesliga",
+   "market_value_eur": 516950000
+  },
+  {
+   "team_raw": "Crystal Palace",
+   "team": "Crystal Palace",
+   "competition_label": "Premier League",
+   "market_value_eur": 516400000
+  },
+  {
+   "team_raw": "RB Leipzig",
+   "team": "RB Leipzig",
+   "competition_label": "Bundesliga",
+   "market_value_eur": 514600000
+  },
+  {
+   "team_raw": "Aston Villa",
+   "team": "Aston Villa",
+   "competition_label": "Premier League",
+   "market_value_eur": 499300000
+  },
+  {
+   "team_raw": "Como 1907",
+   "team": "Como",
+   "competition_label": "Serie A",
+   "market_value_eur": 498000000
+  },
+  {
+   "team_raw": "AS Roma",
+   "team": "AS Roma",
+   "competition_label": "Serie A",
+   "market_value_eur": 490450000
+  },
+  {
+   "team_raw": "Borussia Dortmund",
+   "team": "Borussia Dortmund",
+   "competition_label": "Bundesliga",
+   "market_value_eur": 489200000
+  },
+  {
+   "team_raw": "Everton FC",
+   "team": "Everton",
+   "competition_label": "Premier League",
+   "market_value_eur": 471100000
+  },
+  {
+   "team_raw": "FC Porto",
+   "team": null,
+   "competition_label": "Portuguese League",
+   "market_value_eur": 466300000
+  },
+  {
+   "team_raw": "SSC Napoli",
+   "team": "Napoli",
+   "competition_label": "Serie A",
+   "market_value_eur": 441650000
+  },
+  {
+   "team_raw": "VfB Stuttgart",
+   "team": "VfB Stuttgart",
+   "competition_label": "Bundesliga",
+   "market_value_eur": 433950000
+  },
+  {
+   "team_raw": "Atalanta BC",
+   "team": "Atalanta BC",
+   "competition_label": "Serie A",
+   "market_value_eur": 429300000
+  },
+  {
+   "team_raw": "Leeds United",
+   "team": "Leeds United",
+   "competition_label": "Premier League",
+   "market_value_eur": 426950000
+  },
+  {
+   "team_raw": "Sporting CP",
+   "team": null,
+   "competition_label": "Portuguese League",
+   "market_value_eur": 407500000
+  },
+  {
+   "team_raw": "Sunderland AFC",
+   "team": "Sunderland",
+   "competition_label": "Premier League",
+   "market_value_eur": 380580000
+  },
+  {
+   "team_raw": "SL Benfica",
+   "team": null,
+   "competition_label": "Portuguese League",
+   "market_value_eur": 365550000
+  },
+  {
+   "team_raw": "Eintracht Frankfurt",
+   "team": "Eintracht Frankfurt",
+   "competition_label": "Bundesliga",
+   "market_value_eur": 355850000
+  },
+  {
+   "team_raw": "Fulham FC",
+   "team": "Fulham",
+   "competition_label": "Premier League",
+   "market_value_eur": 343800000
+  },
+  {
+   "team_raw": "ACF Fiorentina",
+   "team": "Fiorentina",
+   "competition_label": "Serie A",
+   "market_value_eur": 337050000
+  },
+  {
+   "team_raw": "RC Strasbourg Alsace",
+   "team": "Strasbourg",
+   "competition_label": "Ligue 1",
+   "market_value_eur": 335250000
+  },
+  {
+   "team_raw": "Fenerbahce",
+   "team": null,
+   "competition_label": "Süper Lig",
+   "market_value_eur": 332450000
+  },
+  {
+   "team_raw": "AS Monaco",
+   "team": "AS Monaco",
+   "competition_label": "Ligue 1",
+   "market_value_eur": 327300000
+  },
+  {
+   "team_raw": "Villarreal CF",
+   "team": "Villarreal",
+   "competition_label": "LaLiga",
+   "market_value_eur": 324600000
+  },
+  {
+   "team_raw": "Galatasaray",
+   "team": null,
+   "competition_label": "Süper Lig",
+   "market_value_eur": 323750000
+  },
+  {
+   "team_raw": "LOSC Lille",
+   "team": "Lille",
+   "competition_label": "Ligue 1",
+   "market_value_eur": 317100000
+  },
+  {
+   "team_raw": "TSG 1899 Hoffenheim",
+   "team": "TSG Hoffenheim",
+   "competition_label": "Bundesliga",
+   "market_value_eur": 294950000
+  },
+  {
+   "team_raw": "Olympique Lyon",
+   "team": "Lyon",
+   "competition_label": "Ligue 1",
+   "market_value_eur": 293450000
+  },
+  {
+   "team_raw": "PSV Eindhoven",
+   "team": null,
+   "competition_label": "Eredivisie",
+   "market_value_eur": 285100000
+  },
+  {
+   "team_raw": "West Ham United",
+   "team": "West Ham United",
+   "competition_label": "Championship",
+   "market_value_eur": 282200000
+  },
+  {
+   "team_raw": "Ipswich Town",
+   "team": null,
+   "competition_label": "Premier League",
+   "market_value_eur": 277650000
+  },
+  {
+   "team_raw": "Stade Rennais FC",
+   "team": "Rennes",
+   "competition_label": "Ligue 1",
+   "market_value_eur": 275600000
+  },
+  {
+   "team_raw": "Coventry City",
+   "team": null,
+   "competition_label": "Premier League",
+   "market_value_eur": 265350000
+  },
+  {
+   "team_raw": "Wolverhampton Wanderers",
+   "team": "Wolverhampton Wanderers",
+   "competition_label": "Championship",
+   "market_value_eur": 264850000
+  },
+  {
+   "team_raw": "Real Sociedad",
+   "team": "Real Sociedad",
+   "competition_label": "LaLiga",
+   "market_value_eur": 252300000
+  },
+  {
+   "team_raw": "Bologna FC 1909",
+   "team": "Bologna",
+   "competition_label": "Serie A",
+   "market_value_eur": 249250000
+  },
+  {
+   "team_raw": "SC Freiburg",
+   "team": "SC Freiburg",
+   "competition_label": "Bundesliga",
+   "market_value_eur": 242550000
+  },
+  {
+   "team_raw": "Athletic Bilbao",
+   "team": "Athletic Bilbao",
+   "competition_label": "LaLiga",
+   "market_value_eur": 240700000
+  },
+  {
+   "team_raw": "Besiktas JK",
+   "team": null,
+   "competition_label": "Süper Lig",
+   "market_value_eur": 237400000
+  },
+  {
+   "team_raw": "Ajax Amsterdam",
+   "team": null,
+   "competition_label": "Eredivisie",
+   "market_value_eur": 234900000
+  },
+  {
+   "team_raw": "Real Betis Balompié",
+   "team": "Real Betis",
+   "competition_label": "LaLiga",
+   "market_value_eur": 234600000
+  },
+  {
+   "team_raw": "Feyenoord Rotterdam",
+   "team": null,
+   "competition_label": "Eredivisie",
+   "market_value_eur": 234050000
+  },
+  {
+   "team_raw": "Sociedade Esportiva Palmeiras",
+   "team": null,
+   "competition_label": "Series A",
+   "market_value_eur": 232780000
+  },
+  {
+   "team_raw": "SS Lazio",
+   "team": "Lazio",
+   "competition_label": "Serie A",
+   "market_value_eur": 227850000
+  },
+  {
+   "team_raw": "Olympique Marseille",
+   "team": "Marseille",
+   "competition_label": "Ligue 1",
+   "market_value_eur": 224850000
+  },
+  {
+   "team_raw": "Al-Hilal SFC",
+   "team": null,
+   "competition_label": "Saudi Pro League",
+   "market_value_eur": 221730000
+  },
+  {
+   "team_raw": "Al-Ahli SFC",
+   "team": null,
+   "competition_label": "Saudi Pro League",
+   "market_value_eur": 220230000
+  },
+  {
+   "team_raw": "CR Flamengo",
+   "team": null,
+   "competition_label": "Series A",
+   "market_value_eur": 217950000
+  },
+  {
+   "team_raw": "US Sassuolo",
+   "team": "Sassuolo",
+   "competition_label": "Serie A",
+   "market_value_eur": 194250000
+  },
+  {
+   "team_raw": "Club Brugge KV",
+   "team": null,
+   "competition_label": "Jupiler Pro League",
+   "market_value_eur": 193100000
+  },
+  {
+   "team_raw": "Parma Calcio 1913",
+   "team": "Parma",
+   "competition_label": "Serie A",
+   "market_value_eur": 189450000
+  },
+  {
+   "team_raw": "Southampton FC",
+   "team": null,
+   "competition_label": "Championship",
+   "market_value_eur": 187850000
+  },
+  {
+   "team_raw": "RC Lens",
+   "team": "RC Lens",
+   "competition_label": "Ligue 1",
+   "market_value_eur": 187450000
+  },
+  {
+   "team_raw": "Genoa CFC",
+   "team": "Genoa",
+   "competition_label": "Serie A",
+   "market_value_eur": 179000000
+  },
+  {
+   "team_raw": "Shakhtar Donetsk",
+   "team": null,
+   "competition_label": "Premier League",
+   "market_value_eur": 177250000
+  },
+  {
+   "team_raw": "Zenit St. Petersburg",
+   "team": null,
+   "competition_label": "Premier League",
+   "market_value_eur": 176100000
+  },
+  {
+   "team_raw": "1.FSV Mainz 05",
+   "team": "FSV Mainz 05",
+   "competition_label": "Bundesliga",
+   "market_value_eur": 175200000
+  },
+  {
+   "team_raw": "Paris FC",
+   "team": "Paris FC",
+   "competition_label": "Ligue 1",
+   "market_value_eur": 173600000
+  },
+  {
+   "team_raw": "Cruzeiro Esporte Clube",
+   "team": null,
+   "competition_label": "Series A",
+   "market_value_eur": 166900000
+  },
+  {
+   "team_raw": "Celta de Vigo",
+   "team": "Celta Vigo",
+   "competition_label": "LaLiga",
+   "market_value_eur": 165300000
+  },
+  {
+   "team_raw": "Udinese Calcio",
+   "team": "Udinese",
+   "competition_label": "Serie A",
+   "market_value_eur": 162830000
+  },
+  {
+   "team_raw": "Olympiacos Piraeus",
+   "team": null,
+   "competition_label": "Super League 1",
+   "market_value_eur": 160600000
+  },
+  {
+   "team_raw": "AZ Alkmaar",
+   "team": null,
+   "competition_label": "Eredivisie",
+   "market_value_eur": 160400000
+  },
+  {
+   "team_raw": "FC Augsburg",
+   "team": "Augsburg",
+   "competition_label": "Bundesliga",
+   "market_value_eur": 159900000
+  },
+  {
+   "team_raw": "Trabzonspor",
+   "team": null,
+   "competition_label": "Süper Lig",
+   "market_value_eur": 155900000
+  },
+  {
+   "team_raw": "SC Braga",
+   "team": null,
+   "competition_label": "Portuguese League",
+   "market_value_eur": 154800000
+  },
+  {
+   "team_raw": "VfL Wolfsburg",
+   "team": "VfL Wolfsburg",
+   "competition_label": "2nd Bundesliga",
+   "market_value_eur": 151150000
+  },
+  {
+   "team_raw": "CA River Plate",
+   "team": null,
+   "competition_label": "Torneo Clausura",
+   "market_value_eur": 148250000
+  },
+  {
+   "team_raw": "Al-Ittihad Club",
+   "team": null,
+   "competition_label": "Saudi Pro League",
+   "market_value_eur": 148100000
+  },
+  {
+   "team_raw": "Al-Qadsiah FC",
+   "team": null,
+   "competition_label": "Saudi Pro League",
+   "market_value_eur": 143300000
+  },
+  {
+   "team_raw": "Sport Club Corinthians Paulista",
+   "team": null,
+   "competition_label": "Series A",
+   "market_value_eur": 142800000
+  },
+  {
+   "team_raw": "Union Saint-Gilloise",
+   "team": null,
+   "competition_label": "Jupiler Pro League",
+   "market_value_eur": 141200000
+  },
+  {
+   "team_raw": "Middlesbrough FC",
+   "team": null,
+   "competition_label": "Championship",
+   "market_value_eur": 139000000
+  },
+  {
+   "team_raw": "SV Werder Bremen",
+   "team": "Werder Bremen",
+   "competition_label": "Bundesliga",
+   "market_value_eur": 137830000
+  },
+  {
+   "team_raw": "Al-Nassr FC",
+   "team": null,
+   "competition_label": "Saudi Pro League",
+   "market_value_eur": 136930000
+  },
+  {
+   "team_raw": "Celtic FC",
+   "team": null,
+   "competition_label": "Premiership",
+   "market_value_eur": 136500000
+  },
+  {
+   "team_raw": "Torino FC",
+   "team": "Torino",
+   "competition_label": "Serie A",
+   "market_value_eur": 134100000
+  },
+  {
+   "team_raw": "Borussia Mönchengladbach",
+   "team": "Borussia Monchengladbach",
+   "competition_label": "Bundesliga",
+   "market_value_eur": 132550000
+  },
+  {
+   "team_raw": "Cagliari Calcio",
+   "team": "Cagliari",
+   "competition_label": "Serie A",
+   "market_value_eur": 132000000
+  },
+  {
+   "team_raw": "OGC Nice",
+   "team": "Nice",
+   "competition_label": "Ligue 1",
+   "market_value_eur": 131900000
+  },
+  {
+   "team_raw": "Spartak Moscow",
+   "team": null,
+   "competition_label": "Premier League",
+   "market_value_eur": 129400000
+  },
+  {
+   "team_raw": "Sevilla FC",
+   "team": "Sevilla",
+   "competition_label": "LaLiga",
+   "market_value_eur": 128900000
+  }
+ ]
+}

@@ -24,6 +24,14 @@ const CHART_COLORS = ['#22d3ee', '#34d399', '#fbbf24', '#f87171'];
 
 const MAX_COMPARE = 4;
 
+// Informational only — squad value is never part of `rating`. See
+// PowerRatingItem's squad_value_eur field.
+function formatSquadValue(eur: number | null): string {
+  if (eur == null) return '—';
+  if (eur >= 1_000_000_000) return `€${(eur / 1_000_000_000).toFixed(2)}bn`;
+  return `€${Math.round(eur / 1_000_000)}m`;
+}
+
 export default function PowerRankingsPage() {
   const [ratings, setRatings] = useState<PowerRatingItem[]>([]);
   const [computedAt, setComputedAt] = useState<string | null>(null);
@@ -132,6 +140,7 @@ export default function PowerRankingsPage() {
                   <th className="px-3 sm:px-4 py-2 text-[10px] font-mono uppercase tracking-wider text-slate-500">Team</th>
                   <th className="px-3 sm:px-4 py-2 text-[10px] font-mono uppercase tracking-wider text-slate-500 text-right">Rating</th>
                   <th className="px-3 sm:px-4 py-2 text-[10px] font-mono uppercase tracking-wider text-slate-500 text-right hidden sm:table-cell">Matches</th>
+                  <th className="px-3 sm:px-4 py-2 text-[10px] font-mono uppercase tracking-wider text-slate-500 text-right hidden md:table-cell" title="Informational only — not part of the rating">Squad Value</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/40">
@@ -161,6 +170,9 @@ export default function PowerRankingsPage() {
                       </td>
                       <td className="px-3 sm:px-4 py-2 text-right font-mono text-slate-500 tabular-nums hidden sm:table-cell">
                         {r.weighted_matches.toFixed(1)}
+                      </td>
+                      <td className="px-3 sm:px-4 py-2 text-right font-mono text-slate-500 tabular-nums hidden md:table-cell">
+                        {formatSquadValue(r.squad_value_eur)}
                       </td>
                     </tr>
                   );
@@ -241,6 +253,10 @@ export default function PowerRankingsPage() {
           <li className="flex items-start gap-2">
             <span className="text-cyan-400 mt-0.5">•</span>
             <span>Each rating is also nudged toward a ClubElo prior (a separate, results-based Elo system) to steady it while our own sample is thin — that nudge fades out automatically as a team accumulates more tracked matches, so it never overrides what the market lines themselves say.</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-cyan-400 mt-0.5">•</span>
+            <span>"Squad Value" is reference only — a spending/valuation figure, not a performance one, entered by hand periodically and never blended into the rating itself. Shown where we have it; a dash means no figure is on file for that team.</span>
           </li>
         </ul>
       </div>
