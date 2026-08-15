@@ -186,7 +186,7 @@ export default function HomePage() {
             See what happened next.
           </h1>
           <p className="text-slate-400 text-sm sm:text-base mt-3 sm:mt-4 max-w-2xl mx-auto leading-relaxed">
-            Real-time steam alerts, historical ROI, closing-line data and betting-market analysis for serious bettors.
+            See major market moves in real time — then analyse how similar moves have performed historically.
           </p>
           <div className="mt-5 sm:mt-7 flex flex-col sm:flex-row items-center justify-center gap-3">
             <a
