@@ -46,74 +46,57 @@ async def _initial_fetch():
         logger.warning("initial odds fetch failed (non-fatal)", error=str(e))
 
 
-async def _run_startup_migrations():
+def _run_startup_migrations_sync():
     """
     All the idempotent ADD COLUMN IF NOT EXISTS / CREATE INDEX IF NOT
-    EXISTS steps, plus the club-finance snapshot load, run as a
-    background task rather than inline in the lifespan — see the
-    2026-08-15 note on `lifespan` for why. Every step here already had
-    its own individual try/except (a broken migration shouldn't crash
-    boot), so moving the whole block behind create_task changes nothing
-    about failure handling, only about whether IT can block the
-    healthcheck.
+    EXISTS steps, plus the club-finance snapshot load. Deliberately a
+    PLAIN SYNC function, invoked via asyncio.to_thread — the 2026-08-15
+    outage's second lesson (the first is on `lifespan`): wrapping this
+    in `async def` and create_task still ran every blocking DB call ON
+    the event loop, so when an ALTER queued on a lock, the new
+    container couldn't even answer its healthcheck. In a real thread,
+    a stuck migration can never stall request serving.
+
+    Every ALTER/CREATE INDEX runs with a 5s lock_timeout — third
+    lesson: Postgres needs ACCESS EXCLUSIVE to even evaluate
+    "IF NOT EXISTS", it queues indefinitely by default, and every NEW
+    query on that table then queues BEHIND the waiting ALTER. That's
+    the mechanism that took the whole site down: leaked
+    idle-in-transaction sessions from the still-routing old container
+    held read locks on odds_snapshots, each deploy attempt's ALTER
+    queued behind them, and the moment it queued, every ordinary
+    SELECT on odds_snapshots site-wide queued behind IT. With a
+    lock_timeout the ALTER aborts cleanly instead (these are no-op
+    safety nets for months-old schema; skipping one on a busy boot is
+    harmless — it'll succeed on a future quiet boot).
     """
-    try:
-        with engine.begin() as conn:
-            conn.execute(text(
-                "ALTER TABLE odds_snapshots "
-                "ADD COLUMN IF NOT EXISTS in_play BOOLEAN "
-                "NOT NULL DEFAULT FALSE"
-            ))
-    except Exception as e:
-        logger.warning("in_play migration step failed (non-fatal)", error=str(e))
+    def _locked_step(name: str, statements: list[str]):
+        try:
+            with engine.begin() as conn:
+                conn.execute(text("SET LOCAL lock_timeout = '5s'"))
+                for s in statements:
+                    conn.execute(text(s))
+        except Exception as e:
+            logger.warning(f"{name} migration step failed (non-fatal)", error=str(e))
 
-    try:
-        with engine.begin() as conn:
-            conn.execute(text(
-                "ALTER TABLE matches "
-                "ADD COLUMN IF NOT EXISTS early_goal_minute INTEGER"
-            ))
-    except Exception as e:
-        logger.warning("early_goal_minute migration failed (non-fatal)", error=str(e))
-
-    try:
-        with engine.begin() as conn:
-            conn.execute(text(
-                "ALTER TABLE matches "
-                "ADD COLUMN IF NOT EXISTS polymarket_event_slug VARCHAR(128)"
-            ))
-            conn.execute(text(
-                "CREATE INDEX IF NOT EXISTS idx_matches_pm_slug "
-                "ON matches (polymarket_event_slug)"
-            ))
-    except Exception as e:
-        logger.warning("polymarket_event_slug migration failed (non-fatal)", error=str(e))
-
-    try:
-        with engine.begin() as conn:
-            conn.execute(text(
-                "CREATE INDEX IF NOT EXISTS idx_pm_match_time "
-                "ON polymarket_snapshots (match_id, fetched_at)"
-            ))
-            conn.execute(text(
-                "CREATE INDEX IF NOT EXISTS idx_pm_match_inplay "
-                "ON polymarket_snapshots (match_id, in_play)"
-            ))
-    except Exception as e:
-        logger.warning("polymarket index migration failed (non-fatal)", error=str(e))
-
-    try:
-        with engine.begin() as conn:
-            conn.execute(text(
-                "CREATE INDEX IF NOT EXISTS idx_posted_match_type "
-                "ON posted_tweets (match_id, tweet_type)"
-            ))
-            conn.execute(text(
-                "CREATE INDEX IF NOT EXISTS idx_posted_day_type "
-                "ON posted_tweets (day_key, tweet_type)"
-            ))
-    except Exception as e:
-        logger.warning("posted_tweets index migration failed (non-fatal)", error=str(e))
+    _locked_step("in_play", [
+        "ALTER TABLE odds_snapshots ADD COLUMN IF NOT EXISTS in_play BOOLEAN NOT NULL DEFAULT FALSE",
+    ])
+    _locked_step("early_goal_minute", [
+        "ALTER TABLE matches ADD COLUMN IF NOT EXISTS early_goal_minute INTEGER",
+    ])
+    _locked_step("polymarket_event_slug", [
+        "ALTER TABLE matches ADD COLUMN IF NOT EXISTS polymarket_event_slug VARCHAR(128)",
+        "CREATE INDEX IF NOT EXISTS idx_matches_pm_slug ON matches (polymarket_event_slug)",
+    ])
+    _locked_step("polymarket_indexes", [
+        "CREATE INDEX IF NOT EXISTS idx_pm_match_time ON polymarket_snapshots (match_id, fetched_at)",
+        "CREATE INDEX IF NOT EXISTS idx_pm_match_inplay ON polymarket_snapshots (match_id, in_play)",
+    ])
+    _locked_step("posted_tweets_indexes", [
+        "CREATE INDEX IF NOT EXISTS idx_posted_match_type ON posted_tweets (match_id, tweet_type)",
+        "CREATE INDEX IF NOT EXISTS idx_posted_day_type ON posted_tweets (day_key, tweet_type)",
+    ])
 
     try:
         from app.models.database import SessionLocal
@@ -167,7 +150,7 @@ async def lifespan(app: FastAPI):
     # migrations are needed for the app to serve traffic (they're
     # idempotent safety nets for schema that's existed for a long
     # time), so none of them should be able to block boot ever again.
-    asyncio.create_task(_run_startup_migrations())
+    asyncio.create_task(asyncio.to_thread(_run_startup_migrations_sync))
 
     # Start the scheduler
     logger.info("Starting odds scheduler")
