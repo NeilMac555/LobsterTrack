@@ -75,12 +75,13 @@ K_SHRINK/PROMOTED_ATTACK elsewhere in this codebase, not a permanent
 50/50 average. ClubElo is a results-based Elo system (not market-
 derived), so this is a genuinely independent stabilising signal while
 our own sample is thin, not a duplicate of what Stage 1/2 already do.
-ClubElo's rating scale is converted onto ours via an OLS fit against
-our OWN already-computed ratings for the overlapping team set (not an
-assumed conversion formula) — see _fit_clubelo_scale. Deliberately NOT
-tuned to produce any particular team ordering; if the blend doesn't
-move a team the way someone expects, that's the honest answer, not a
-bug to "fix" by reweighting until it agrees with a prior belief.
+ClubElo's rating scale is converted onto ours using our OWN
+already-computed ratings as the calibration target, not an assumed
+conversion formula. Deliberately NOT tuned to produce any particular
+team ordering; if the blend doesn't move a team the way someone
+expects, that's the honest answer, not a bug to "fix" by reweighting
+until it agrees with a prior belief. (Scale-fitting mechanism rewritten
+2026-08-15 — see the COMPRESSION BUGS section below.)
 
 SQUAD VALUE BLEND (added 2026-08-15): a third fading prior, applied
 after ClubElo, toward each team's squad market value (see
@@ -94,11 +95,12 @@ the way ClubElo or the AH lines themselves are — a team can carry a
 big-money squad while underperforming — so it's given proportionally
 less trust (SQUAD_VALUE_PRIOR_K < CLUBELO_PRIOR_K) and only applies to
 teams we have a value on file for. Market value spans nearly three
-orders of magnitude, so the scale conversion (_fit_squad_value_scale)
-fits against ln(value), not raw value — otherwise the handful of
-superclubs would dominate the fit. Same "not tuned toward a particular
-ordering" principle as the ClubElo blend: this is fit from the data,
-not adjusted until any specific team lands where someone expects.
+orders of magnitude, so the scale conversion fits against ln(value),
+not raw value — otherwise the handful of superclubs would dominate.
+Same "not tuned toward a particular ordering" principle as the ClubElo
+blend: this is fit from the data, not adjusted until any specific team
+lands where someone expects. (Scale-fitting mechanism rewritten
+2026-08-15 — see the COMPRESSION BUGS section below.)
 
 UCL OUTRIGHT BLEND (added 2026-08-15): a fourth fading prior, applied
 after squad value, toward each team's Champions League outright-winner
@@ -115,10 +117,10 @@ fixture difficulty, so it earns more trust than a valuation metric.
 Only 29 teams have a market at all, and only the ~20 from our 5
 tracked domestic leagues resolve to one of our team names — everyone
 else is untouched by this step. Probabilities are fit on the logit
-scale (_fit_ucl_scale), not raw probability — the standard transform
-for a heavily skewed 0-1 signal (a few favourites near 0.15, a long
-tail near 0.001), avoiding compression at either end. Same principle
-as every blend above: fit from the data, not tuned toward an outcome.
+scale, not raw probability — the standard transform for a heavily
+skewed 0-1 signal (a few favourites near 0.15, a long tail near
+0.001), avoiding compression at either end. Same principle as every
+blend above: fit from the data, not tuned toward an outcome.
 
 UEFA COUNTRY COEFFICIENT BLEND (added 2026-08-15): unlike the four
 blends above, which nudge TEAM ratings, this one nudges Stage 2's
@@ -140,6 +142,61 @@ rather than fitting OLS — with only 5 leagues, a 2-parameter
 least-squares fit would overfit to noise. Same fading-prior shape as
 every other blend, weighted by each league's own bridge-fixture sample
 size (LEAGUE_COEFF_PRIOR_K), not tuned toward a particular ordering.
+
+COMPRESSION BUGS (fixed 2026-08-15, external quant review — verified
+both against production data AND against a from-scratch synthetic
+reproduction, prove_compression.py, before any code changed):
+
+  Bug 1 — WITHIN_LEAGUE_RIDGE_LAMBDA was 15.0 against a Stage 1 design-
+  matrix diagonal of only ~9.8 (the EPL's own weighted-match count).
+  Ridge shrinkage toward zero scales roughly as n/(n+λ) — at n≈9.8,
+  λ=15 recovers only ~34% of a team's true rating spread, verified
+  by fitting a synthetic 20-team league with KNOWN strengths and
+  PERFECT noiseless AH lines back through the exact production code
+  path: not noise, not mis-ordering, systematic flattening before any
+  prior even runs. Explains why the EPL — the tracked league with the
+  FEWEST weighted matches — showed the most compressed rating spread.
+  Fixed by splitting the single shared RIDGE_LAMBDA into
+  WITHIN_LEAGUE_RIDGE_LAMBDA=2.0 (Stage 1 only) and
+  CROSS_LEAGUE_RIDGE_LAMBDA=15.0 (Stage 2, unchanged — that usage
+  wasn't part of this diagnosis). Still a stopgap: the properly-
+  estimated value is λ = σ²_line_noise / σ²_team_strength from a real
+  backtest harness, not a hand-picked constant.
+
+  Bug 2 — every prior (ClubElo, squad value, UCL outright) used to be
+  put on our scale via np.polyfit(prior, our_ratings, 1), then blended
+  toward the FITTED VALUES of that regression. The fitted values of an
+  OLS regression have variance r² · Var(y) — strictly ≤ Var(y) — so
+  this construction can only ever compress a rating's spread, at ANY
+  blend weight, for ANY prior. It is arithmetically incapable of
+  telling the model it's too flat, which is exactly the shape of the
+  failure this review found (every league's favourites under-rated
+  versus Pinnacle/Polymarket outright pricing, by a similar relative
+  amount, sign never flipping). It's also most of the mechanism behind
+  the high correlation between ratings and Transfermarkt squad value:
+  three regressions in a row, each one projecting the ratings further
+  onto its own prior's axis. Fixed with _scale_prior_to_target: a pure
+  z-score rescale (center and standardize the prior, then re-expand to
+  a target mean/SD) instead of a regression against our own — possibly
+  already too flat — ratings. The target itself is still an interim
+  stand-in (read from the current ratings' own spread just before each
+  blend runs, so priors can no longer compress further, but aren't yet
+  told to be WIDER either) — the properly-estimated target comes from
+  inverting each league's outright market (back out the strength
+  spread whose simulated season reproduces the market's title
+  probabilities), which needs a season simulator this codebase doesn't
+  have yet. That's the next piece of this work, not done here.
+
+  Bug 3 (partial — domestic wiring not yet done) — outright_fetcher.py
+  already polls FIVE domestic league-winner books hourly alongside the
+  UCL one (EPL, La Liga, Serie A, Bundesliga, Ligue 1 — all in
+  outright_snapshots with excellent book-sum quality, e.g. La Liga at
+  1.009), but _fetch_ucl_outright_probs only ever reads the UCL market.
+  Wiring the domestic five in (and inverting them for Bug 2's proper
+  target_sd) is flagged but not implemented in this pass — needs the
+  same season-simulator dependency as Bug 2's real fix, plus a guard
+  against reading a since-resolved market as if it were still live
+  (a negRisk event can report `active` after settling).
 """
 
 from __future__ import annotations
@@ -186,12 +243,32 @@ BRIDGE_LEAGUES: list[str] = [
 # forward unchanged as more seasons accumulate.
 HALF_LIFE_DAYS = 365.0
 
-# Ridge shrinkage strength, in the same "effective weighted matches"
-# spirit as strength_model.py's K_SHRINK — deliberately reused at the
-# same value for interpretability, not independently tuned (provisional,
-# like every other constant in this fit family; no backtest harness for
-# this specific model yet).
-RIDGE_LAMBDA = 15.0
+# Ridge shrinkage strength for Stage 1 (within-league, _fit_within_league).
+# Was 15.0, reused from strength_model.py's K_SHRINK "for interpretability" —
+# but K_SHRINK's 15 was calibrated against a different model with a
+# different sample size, and the EPL's own weighted-match diagonal here
+# is only ~9.8. Fixed 2026-08-15 (external quant review, verified with
+# prove_compression.py against a synthetic league of KNOWN strengths and
+# PERFECT noiseless AH lines): at λ=15 with ~9.8 matches/team, a flawless
+# signal comes back at ~34% of its true spread — not noisy, not
+# mis-ordered, systematically flattened before any prior is even applied.
+# 2.0 recovers ~76% of true spread at the same sample size (verified via
+# the same script). Still provisional — the PROPER fix is
+# λ = σ²_line_noise / σ²_team_strength, estimated from data via a real
+# backtest harness, not chosen by hand; this is a stopgap, not the final
+# answer. Left renamed (was shared with Stage 2's cross-league offset
+# fit) because that usage wasn't part of this diagnosis or this
+# script's reproduction — CROSS_LEAGUE_RIDGE_LAMBDA below is unchanged.
+WITHIN_LEAGUE_RIDGE_LAMBDA = 2.0
+
+# Ridge shrinkage for Stage 2 (cross-league bridge offsets). Was the
+# same constant as Stage 1 (RIDGE_LAMBDA=15.0) before the 2026-08-15
+# split above — kept at its original value since the bridge-fixture
+# diagnosis above was specific to Stage 1's much larger per-team
+# diagonal; this one hasn't been separately verified against a
+# synthetic reproduction and shouldn't be changed on the strength of
+# that unrelated finding.
+CROSS_LEAGUE_RIDGE_LAMBDA = 15.0
 
 # Fallback home-advantage-in-goals for leagues with no LeagueConstants
 # row (UEFA competitions are deliberately excluded from that table — see
@@ -199,6 +276,12 @@ RIDGE_LAMBDA = 15.0
 # fitted home advantage as of the 2026-08-15 build, used only when a
 # league-specific figure isn't available.
 _DEFAULT_HOME_ADV_GOALS = 0.30
+
+# Minimum overlapping teams before trusting a prior's own std()/mean()
+# enough to rescale it onto our target (_scale_prior_to_target) — same
+# conservative threshold the old OLS-based fits used, though a simple
+# moment estimate needs less data than a 2-parameter regression did.
+MIN_TEAMS_FOR_PRIOR_SCALE = 10
 
 # ClubElo blend strength, in "effective weighted matches" units — a team
 # with weighted_matches == CLUBELO_PRIOR_K gets roughly a 50/50 blend
@@ -352,7 +435,7 @@ def _fit_within_league(
     # Ridge WLS normal equations: (X'WX + λI) r = X'Wy. Small system
     # (n_teams is at most a few dozen per league), direct solve is exact
     # and fast — no iterative convergence loop needed here.
-    A = Xw.T @ Xw + RIDGE_LAMBDA * np.eye(n_teams)
+    A = Xw.T @ Xw + WITHIN_LEAGUE_RIDGE_LAMBDA * np.eye(n_teams)
     b = Xw.T @ yw
     ratings = np.linalg.solve(A, b)
 
@@ -428,7 +511,7 @@ def _fit_cross_league_offsets(
     # Light ridge here too (bridge sample is much thinner than within-
     # league) so a league with few/no European ties this window doesn't
     # get an unconstrained, wildly-extrapolated offset.
-    A = Zw.T @ Zw + RIDGE_LAMBDA * np.eye(n_leagues)
+    A = Zw.T @ Zw + CROSS_LEAGUE_RIDGE_LAMBDA * np.eye(n_leagues)
     b = Zw.T @ residw
     offsets = np.linalg.solve(A, b)
 
@@ -508,62 +591,34 @@ def _center_within_league(
     }
 
 
-def _fit_clubelo_scale(
-    our_ratings: dict[str, float], clubelo_by_team: dict[str, float],
-) -> tuple[float, float]:
+def _scale_prior_to_target(
+    prior: np.ndarray, target_sd: float, target_mean: float = 0.0,
+) -> np.ndarray:
     """
-    OLS fit of our_rating ~ a + b * clubelo_elo over whichever teams we
-    have both for — puts ClubElo's ~1000-2100 Elo scale onto our
-    goal-margin-ish scale using our OWN data as the calibration target,
-    rather than assuming a fixed conversion formula. Falls back to
-    (0.0, 0.0) — i.e. the blend contributes nothing — if fewer than 10
-    teams overlap (too few points to trust a linear fit).
+    Put a prior on our scale WITHOUT inheriting our own spread — fix for
+    a second real, verified bug (2026-08-15, external quant review,
+    reproduced empirically in prove_compression.py): the previous
+    approach (np.polyfit(prior, our_ratings, 1), then blend toward the
+    fitted values) can ONLY ever compress. The fitted values of an OLS
+    regression have variance r² · Var(y), strictly ≤ Var(y) — so
+    blending toward them can shrink a rating's spread but is
+    ARITHMETICALLY INCAPABLE of ever telling the model it's too flat,
+    at any blend weight, for any prior. Verified: with the market
+    wanting ratings 2.4x wider, every blend weight from 0.5 to 0.9 left
+    the spread at 99-100% of its original (unwidened) value.
 
-    Callers MUST pass values already centered within league (see
-    _center_within_league) — both `our_ratings` (Stage 1's own output is
-    mean-zero within league by construction) and `clubelo_by_team`, so
-    the fit and the resulting blend can only affect within-league
-    ordering, never a league's overall level.
+    This does a pure z-score rescale instead: center and standardize
+    the prior, then re-expand it to `target_sd` around `target_mean`.
+    The prior's spread is now decided by `target_sd`, not by how well
+    it happened to correlate with our own (possibly already-too-flat)
+    ratings. Returns an array of exactly `target_mean` if the prior has
+    ~zero spread itself (nothing to rescale from).
     """
-    teams = [t for t in our_ratings if t in clubelo_by_team]
-    if len(teams) < 10:
-        logger.warning("ClubElo blend: too few overlapping teams to fit a scale", n=len(teams))
-        return 0.0, 0.0
-
-    x = np.array([clubelo_by_team[t] for t in teams])
-    y = np.array([our_ratings[t] for t in teams])
-    b, a = np.polyfit(x, y, 1)
-    return float(a), float(b)
-
-
-def _fit_squad_value_scale(
-    our_ratings: dict[str, float], log_value_by_team: dict[str, float],
-) -> tuple[float, float]:
-    """
-    OLS fit of our_rating ~ a + b * ln(market_value_eur) over whichever
-    teams we have both for. Market value spans nearly three orders of
-    magnitude (~€130m to ~€1.5bn as of the 2026-08-15 snapshot), so this
-    fits against the log rather than the raw value — otherwise a
-    handful of superclubs would dominate the fit. Falls back to
-    (0.0, 0.0) — the blend contributes nothing — if fewer than 10 teams
-    overlap (too few points to trust a linear fit).
-
-    Callers MUST pass `log_value_by_team` already log-transformed AND
-    centered within league (see _center_within_league), same as
-    `our_ratings` — Stage 1's own output is mean-zero within league by
-    construction. Centering first means this can only reorder teams
-    inside their own league, never lift a whole league (see
-    _center_within_league's docstring for the bug this fixes).
-    """
-    teams = [t for t in our_ratings if t in log_value_by_team]
-    if len(teams) < 10:
-        logger.warning("Squad value blend: too few overlapping teams to fit a scale", n=len(teams))
-        return 0.0, 0.0
-
-    x = np.array([log_value_by_team[t] for t in teams])
-    y = np.array([our_ratings[t] for t in teams])
-    b, a = np.polyfit(x, y, 1)
-    return float(a), float(b)
+    p = np.asarray(prior, dtype=float)
+    sd = float(p.std())
+    if sd < 1e-9:
+        return np.full_like(p, target_mean)
+    return target_mean + (p - p.mean()) / sd * target_sd
 
 
 def _uefa_coefficient_prior_offsets(
@@ -628,29 +683,6 @@ def _fetch_ucl_outright_probs(db: Session) -> dict[str, float]:
     if total <= 0:
         return {}
     return {r.team_name: r.yes_price / total for r in rows}
-
-
-def _fit_ucl_scale(
-    our_ratings: dict[str, float], prob_by_team: dict[str, float],
-) -> tuple[float, float]:
-    """
-    OLS fit of our_rating ~ a + b * logit(probability) over whichever
-    teams we have both for. Probability is fit on the logit scale, not
-    raw — the standard transform for a heavily skewed 0-1 signal (a
-    few favourites near 0.15, a long tail near 0.001), avoiding
-    compression at either end. Falls back to (0.0, 0.0) if fewer than
-    10 teams overlap — expected to bind less often here since the
-    field is small (~20-29 teams total), not a sign of something broken.
-    """
-    teams = [t for t in our_ratings if t in prob_by_team]
-    if len(teams) < 10:
-        logger.warning("UCL outright blend: too few overlapping teams to fit a scale", n=len(teams))
-        return 0.0, 0.0
-
-    x = np.array([np.log(prob_by_team[t] / (1 - prob_by_team[t])) for t in teams])
-    y = np.array([our_ratings[t] for t in teams])
-    b, a = np.polyfit(x, y, 1)
-    return float(a), float(b)
 
 
 class PowerRankingFitter:
@@ -744,6 +776,21 @@ class PowerRankingFitter:
             # module docstring). Failure anywhere in here (network, too
             # few overlapping teams) just leaves ratings as the
             # Stage 1 fit alone; never blocks the core result.
+            #
+            # target_sd/target_mean are read from the CURRENT ratings
+            # right before this blend runs — an interim stand-in for a
+            # properly-estimated target (2026-08-15 external quant
+            # review, part 3/5 of the fix: the real target should come
+            # from inverting each league's outright market, i.e.
+            # backing out the strength spread whose simulated season
+            # reproduces the market's title probabilities — that needs
+            # a season simulator this codebase doesn't have yet, so this
+            # interim version just asks the prior not to compress what
+            # Stage 1 already shows, rather than pretending to know the
+            # "true" wider spread the market implies).
+            current_arr = np.array([row["rating"] for row in all_rows])
+            target_mean, target_sd = float(current_arr.mean()), float(current_arr.std())
+
             clubelo_ratings = await _fetch_clubelo_ratings()
             clubelo_by_team_raw = {
                 row["team"]: clubelo_ratings[to_clubelo_name(row["team"])]
@@ -751,52 +798,62 @@ class PowerRankingFitter:
                 if to_clubelo_name(row["team"]) in clubelo_ratings
             }
             clubelo_by_team = _center_within_league(clubelo_by_team_raw, team_league)
-            scale_a, scale_b = _fit_clubelo_scale(
-                {row["team"]: row["rating"] for row in all_rows}, clubelo_by_team
-            )
             blended_count = 0
-            if clubelo_by_team and (scale_a, scale_b) != (0.0, 0.0):
+            if len(clubelo_by_team) >= MIN_TEAMS_FOR_PRIOR_SCALE:
+                teams_with_elo = list(clubelo_by_team.keys())
+                scaled_arr = _scale_prior_to_target(
+                    np.array([clubelo_by_team[t] for t in teams_with_elo]), target_sd, target_mean,
+                )
+                scaled_clubelo_by_team = dict(zip(teams_with_elo, scaled_arr))
                 for row in all_rows:
-                    elo = clubelo_by_team.get(row["team"])
-                    if elo is None:
+                    scaled_clubelo = scaled_clubelo_by_team.get(row["team"])
+                    if scaled_clubelo is None:
                         continue
-                    scaled_clubelo = scale_a + scale_b * elo
                     blend_weight = CLUBELO_PRIOR_K / (CLUBELO_PRIOR_K + row["weighted_matches"])
-                    row["rating"] = (1 - blend_weight) * row["rating"] + blend_weight * scaled_clubelo
+                    row["rating"] = (1 - blend_weight) * row["rating"] + blend_weight * float(scaled_clubelo)
                     blended_count += 1
+            elif clubelo_by_team:
+                logger.warning("ClubElo blend: too few overlapping teams to scale", n=len(clubelo_by_team))
 
             summary["clubelo_teams_matched"] = len(clubelo_by_team)
             summary["clubelo_teams_blended"] = blended_count
-            summary["clubelo_scale"] = {"a": round(scale_a, 4), "b": round(scale_b, 6)}
+            summary["clubelo_target"] = {"mean": round(target_mean, 4), "sd": round(target_sd, 4)}
 
             # Squad value blend — a second fading prior, applied after
             # ClubElo, toward each team's squad market value (see
             # module docstring). Only covers the subset of teams with a
             # manually-entered value on file; everyone else is
-            # untouched by this step.
+            # untouched by this step. Target re-read fresh from the
+            # current (post-ClubElo) ratings, same interim reasoning.
+            current_arr = np.array([row["rating"] for row in all_rows])
+            target_mean, target_sd = float(current_arr.mean()), float(current_arr.std())
+
             squad_values = {
                 sv.team: sv.market_value_eur
                 for sv in db.query(SquadMarketValue).filter(SquadMarketValue.team.isnot(None)).all()
             }
             log_squad_values_raw = {team: np.log(v) for team, v in squad_values.items()}
             log_squad_values = _center_within_league(log_squad_values_raw, team_league)
-            sv_scale_a, sv_scale_b = _fit_squad_value_scale(
-                {row["team"]: row["rating"] for row in all_rows}, log_squad_values
-            )
             sv_blended_count = 0
-            if log_squad_values and (sv_scale_a, sv_scale_b) != (0.0, 0.0):
+            if len(log_squad_values) >= MIN_TEAMS_FOR_PRIOR_SCALE:
+                teams_with_sv = list(log_squad_values.keys())
+                scaled_arr = _scale_prior_to_target(
+                    np.array([log_squad_values[t] for t in teams_with_sv]), target_sd, target_mean,
+                )
+                scaled_sv_by_team = dict(zip(teams_with_sv, scaled_arr))
                 for row in all_rows:
-                    log_value = log_squad_values.get(row["team"])
-                    if log_value is None:
+                    scaled_value = scaled_sv_by_team.get(row["team"])
+                    if scaled_value is None:
                         continue
-                    scaled_value = float(sv_scale_a + sv_scale_b * log_value)
                     blend_weight = SQUAD_VALUE_PRIOR_K / (SQUAD_VALUE_PRIOR_K + row["weighted_matches"])
-                    row["rating"] = (1 - blend_weight) * row["rating"] + blend_weight * scaled_value
+                    row["rating"] = (1 - blend_weight) * row["rating"] + blend_weight * float(scaled_value)
                     sv_blended_count += 1
+            elif log_squad_values:
+                logger.warning("Squad value blend: too few overlapping teams to scale", n=len(log_squad_values))
 
             summary["squad_value_teams_matched"] = len(squad_values)
             summary["squad_value_teams_blended"] = sv_blended_count
-            summary["squad_value_scale"] = {"a": round(sv_scale_a, 4), "b": round(sv_scale_b, 6)}
+            summary["squad_value_target"] = {"mean": round(target_mean, 4), "sd": round(target_sd, 4)}
 
             # Add the Stage 2 offset now — the only step allowed to move
             # a league's overall level. Everything above this point only
@@ -810,24 +867,35 @@ class PowerRankingFitter:
             # (UCL_WINNER_PRIOR_K) since this is a genuine forward-
             # looking market price, not a valuation proxy. Only the
             # subset of teams with a live Polymarket price are touched.
+            # Operates on the FULL post-offset rating (not centered
+            # within league) — European market data is allowed to
+            # inform both delta and the league level, unlike ClubElo/
+            # squad value above (see the module docstring's
+            # identification note). Target re-read fresh again, now
+            # from the post-offset scale.
+            current_arr = np.array([row["rating"] for row in all_rows])
+            target_mean, target_sd = float(current_arr.mean()), float(current_arr.std())
+
             ucl_probs = _fetch_ucl_outright_probs(db)
-            ucl_scale_a, ucl_scale_b = _fit_ucl_scale(
-                {row["team"]: row["rating"] for row in all_rows}, ucl_probs
-            )
             ucl_blended_count = 0
-            if ucl_probs and (ucl_scale_a, ucl_scale_b) != (0.0, 0.0):
+            if len(ucl_probs) >= MIN_TEAMS_FOR_PRIOR_SCALE:
+                teams_with_ucl = list(ucl_probs.keys())
+                logit_arr = np.array([np.log(ucl_probs[t] / (1 - ucl_probs[t])) for t in teams_with_ucl])
+                scaled_arr = _scale_prior_to_target(logit_arr, target_sd, target_mean)
+                scaled_ucl_by_team = dict(zip(teams_with_ucl, scaled_arr))
                 for row in all_rows:
-                    prob = ucl_probs.get(row["team"])
-                    if prob is None:
+                    scaled_prob = scaled_ucl_by_team.get(row["team"])
+                    if scaled_prob is None:
                         continue
-                    scaled_prob = float(ucl_scale_a + ucl_scale_b * np.log(prob / (1 - prob)))
                     blend_weight = UCL_WINNER_PRIOR_K / (UCL_WINNER_PRIOR_K + row["weighted_matches"])
-                    row["rating"] = (1 - blend_weight) * row["rating"] + blend_weight * scaled_prob
+                    row["rating"] = (1 - blend_weight) * row["rating"] + blend_weight * float(scaled_prob)
                     ucl_blended_count += 1
+            elif ucl_probs:
+                logger.warning("UCL outright blend: too few overlapping teams to scale", n=len(ucl_probs))
 
             summary["ucl_outright_teams_matched"] = len(ucl_probs)
             summary["ucl_outright_teams_blended"] = ucl_blended_count
-            summary["ucl_outright_scale"] = {"a": round(ucl_scale_a, 4), "b": round(ucl_scale_b, 6)}
+            summary["ucl_outright_target"] = {"mean": round(target_mean, 4), "sd": round(target_sd, 4)}
 
             for row in all_rows:
                 stmt = pg_insert(PowerRating).values(
