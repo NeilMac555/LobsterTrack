@@ -150,7 +150,10 @@ CLUBELO_API_BASE = "http://api.clubelo.com"
 # but deliberately lower: squad value is a valuation metric (what a
 # squad cost), not an observed-performance one like ClubElo or the AH
 # lines themselves, so it earns less trust at any given sample size.
-SQUAD_VALUE_PRIOR_K = 8.0
+# Trimmed 8.0 -> 6.0 on 2026-08-15 (user asked for slightly less
+# weight on squad value) to lean it a little further away from the
+# valuation signal.
+SQUAD_VALUE_PRIOR_K = 6.0
 
 
 def _home_advantage_goals(db: Session, league: str, cache: dict[str, float]) -> float:
