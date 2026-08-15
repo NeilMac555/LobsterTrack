@@ -97,6 +97,27 @@ scale (_fit_ucl_scale), not raw probability — the standard transform
 for a heavily skewed 0-1 signal (a few favourites near 0.15, a long
 tail near 0.001), avoiding compression at either end. Same principle
 as every blend above: fit from the data, not tuned toward an outcome.
+
+UEFA COUNTRY COEFFICIENT BLEND (added 2026-08-15): unlike the four
+blends above, which nudge TEAM ratings, this one nudges Stage 2's
+per-LEAGUE offsets — the part of the whole fit with by far the
+thinnest sample (a few dozen UEFA fixtures split across 5 leagues,
+vs. dozens of AH-line matches per team within a league). UEFA
+publishes an official "association coefficient" per country — an
+aggregate 5-season European-competition scoring record, used by UEFA
+itself to allocate access lists — which is exactly the same
+cross-league-strength question Stage 2 is trying to answer from a
+much smaller sample. Hardcoded (UEFA_COUNTRY_COEFFICIENTS) rather than
+fetched: the two scrapeable mirrors were both ruled out (kassiesa.net's
+robots.txt explicitly disallows bots; uefa.com blocks automated
+fetches outright) and the values are static enough within a season to
+refresh by hand occasionally, sourced from Wikipedia's "UEFA country
+coefficient" article (CC-BY-SA, robots.txt-permitted). Scale conversion
+(_uefa_coefficient_prior_offsets) matches mean and standard deviation
+rather than fitting OLS — with only 5 leagues, a 2-parameter
+least-squares fit would overfit to noise. Same fading-prior shape as
+every other blend, weighted by each league's own bridge-fixture sample
+size (LEAGUE_COEFF_PRIOR_K), not tuned toward a particular ordering.
 """
 
 from __future__ import annotations
@@ -186,6 +207,31 @@ UCL_WINNER_PRIOR_K = 20.0
 
 _UEFA_CL_LEAGUE = "soccer_uefa_champs_league"
 _UEFA_CL_WINNER_MARKET = "winner"
+
+# UEFA's published association ("country") coefficient — aggregate
+# 5-season European-competition performance per nation, used league-
+# wide by UEFA itself to allocate CL/UEL access lists. Source: Wikipedia
+# ("UEFA country coefficient"; CC-BY-SA, robots.txt-permitted) as of
+# 2026-08-15 — the two more granular sources checked first were both
+# ruled out: kassiesa.net's own community mirror explicitly disallows
+# bots via robots.txt ("Disallow: /"), and uefa.com itself blocks
+# automated fetches outright. Small and static enough (5 leagues) to
+# hardcode and refresh by hand occasionally rather than build a fetcher
+# for — see the module docstring for how this blend is used.
+UEFA_COUNTRY_COEFFICIENTS: dict[str, float] = {
+    "soccer_epl": 101.852,
+    "soccer_italy_serie_a": 87.660,
+    "soccer_spain_la_liga": 82.368,
+    "soccer_germany_bundesliga": 80.116,
+    "soccer_france_ligue_one": 67.796,
+}
+
+# League-coefficient blend strength, in "weighted bridge-fixture
+# involvement" units (see _fit_cross_league_offsets's second return
+# value) — the bridge sample is thin (a few dozen European fixtures
+# split across 5 leagues most seasons), so this prior can matter even
+# at a moderate K. Provisional, same status as every other *_PRIOR_K.
+LEAGUE_COEFF_PRIOR_K = 10.0
 
 
 def _home_advantage_goals(db: Session, league: str, cache: dict[str, float]) -> float:
@@ -303,13 +349,18 @@ def _fit_cross_league_offsets(
     now: datetime,
     within_league: dict[str, dict[str, tuple[float, float]]],
     home_adv_cache: dict[str, float],
-) -> dict[str, float]:
+) -> tuple[dict[str, float], dict[str, float]]:
     """
     Solve for a per-league offset that best reconciles every UEFA
     competition closing AH line against Stage 1's within-league ratings.
     Bridge matches involving a team with no Stage 1 rating (its domestic
     league isn't one of the 5 tracked, or it never cleared a closing-line
     sample) are skipped — nothing to bridge for those.
+
+    Returns (offsets, weighted_bridge_involvement) — the second dict is
+    each league's total decay-weighted bridge-fixture involvement (used
+    by the UEFA-coefficient blend below to fade its prior in/out per
+    league, the same role weighted_matches plays for team-level blends).
     """
     team_league: dict[str, str] = {}
     team_rating: dict[str, float] = {}
@@ -328,7 +379,7 @@ def _fit_cross_league_offsets(
 
     if not bridge_rows:
         logger.warning("Power ranking fit: no usable cross-league bridge fixtures found")
-        return {league: 0.0 for league in DOMESTIC_LEAGUES}
+        return {league: 0.0 for league in DOMESTIC_LEAGUES}, {league: 0.0 for league in DOMESTIC_LEAGUES}
 
     leagues = DOMESTIC_LEAGUES
     l_index = {lg: i for i, lg in enumerate(leagues)}
@@ -359,7 +410,15 @@ def _fit_cross_league_offsets(
     b = Zw.T @ residw
     offsets = np.linalg.solve(A, b)
 
-    return {lg: float(offsets[l_index[lg]]) for lg in leagues}
+    bridge_weight = np.zeros(n_leagues)
+    for i, (_, lh, la) in enumerate(bridge_rows):
+        bridge_weight[l_index[lh]] += w[i]
+        bridge_weight[l_index[la]] += w[i]
+
+    return (
+        {lg: float(offsets[l_index[lg]]) for lg in leagues},
+        {lg: float(bridge_weight[l_index[lg]]) for lg in leagues},
+    )
 
 
 async def _fetch_clubelo_ratings() -> dict[str, float]:
@@ -435,6 +494,35 @@ def _fit_squad_value_scale(
     y = np.array([our_ratings[t] for t in teams])
     b, a = np.polyfit(x, y, 1)
     return float(a), float(b)
+
+
+def _uefa_coefficient_prior_offsets(
+    our_offsets: dict[str, float], coefficients: dict[str, float],
+) -> dict[str, float]:
+    """
+    Rescale UEFA's published country coefficients onto our own Stage-2
+    offset scale by matching mean and standard deviation, not an OLS
+    fit — with only 5 domestic leagues, a 2-parameter least-squares fit
+    would overfit to noise; matching the first two moments is the more
+    stable way to align two small, fully-overlapping sets. Returns {}
+    if fewer than 2 leagues overlap (can't compute a spread) or our own
+    offsets have zero spread (nothing to scale onto).
+    """
+    leagues = [lg for lg in our_offsets if lg in coefficients]
+    if len(leagues) < 2:
+        return {}
+
+    our_vals = np.array([our_offsets[lg] for lg in leagues])
+    coeff_vals = np.array([coefficients[lg] for lg in leagues])
+
+    our_std = float(our_vals.std())
+    coeff_std = float(coeff_vals.std())
+    if our_std == 0 or coeff_std == 0:
+        return {}
+
+    scale = our_std / coeff_std
+    our_mean, coeff_mean = float(our_vals.mean()), float(coeff_vals.mean())
+    return {lg: our_mean + (coefficients[lg] - coeff_mean) * scale for lg in leagues}
 
 
 def _fetch_ucl_outright_probs(db: Session) -> dict[str, float]:
@@ -531,11 +619,32 @@ class PowerRankingFitter:
                     summary["errors"].append(f"{league}: {e}")
                     within_league[league] = {}
 
-            offsets = _fit_cross_league_offsets(db, now, within_league, home_adv_cache)
-            summary["league_offsets"] = {lg: round(v, 4) for lg, v in offsets.items()}
+            offsets, league_bridge_weight = _fit_cross_league_offsets(db, now, within_league, home_adv_cache)
+            summary["league_offsets_raw"] = {lg: round(v, 4) for lg, v in offsets.items()}
             summary["bridge_fixtures_used"] = len(
                 _load_closing_ah_rows(db, BRIDGE_LEAGUES)
             )
+
+            # UEFA country coefficient blend — a fading prior on Stage
+            # 2's per-league offsets (see module docstring), targeting
+            # the thinnest-sample part of the whole fit: a handful of
+            # UEFA fixtures split across 5 leagues, vs. dozens of
+            # AH-line matches per team within a league.
+            coeff_prior = _uefa_coefficient_prior_offsets(offsets, UEFA_COUNTRY_COEFFICIENTS)
+            league_coeff_blended = []
+            if coeff_prior:
+                for lg in offsets:
+                    prior = coeff_prior.get(lg)
+                    if prior is None:
+                        continue
+                    bw = league_bridge_weight.get(lg, 0.0)
+                    blend_weight = LEAGUE_COEFF_PRIOR_K / (LEAGUE_COEFF_PRIOR_K + bw)
+                    offsets[lg] = (1 - blend_weight) * offsets[lg] + blend_weight * prior
+                    league_coeff_blended.append(lg)
+
+            summary["league_offsets"] = {lg: round(v, 4) for lg, v in offsets.items()}
+            summary["league_bridge_weight"] = {lg: round(v, 2) for lg, v in league_bridge_weight.items()}
+            summary["league_coeff_blended"] = league_coeff_blended
 
             all_rows = []
             for league, teams in within_league.items():

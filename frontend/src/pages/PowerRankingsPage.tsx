@@ -115,8 +115,9 @@ export default function PowerRankingsPage() {
           <p className="text-slate-400 text-xs sm:text-sm mt-0.5">
             One shared strength scale across every league — a two-stage fit over Pinnacle Asian
             Handicap closing lines, bridged across leagues via Champions League &amp; Europa League
-            fixtures, then blended with fading ClubElo, squad-value and UCL outright-market priors
-            to steady thin early-season samples. Full methodology below.
+            fixtures and steadied with UEFA's own country coefficient, then blended with fading
+            ClubElo, squad-value and UCL outright-market priors at the team level. Full methodology
+            below.
           </p>
         </div>
       </div>
@@ -256,6 +257,10 @@ export default function PowerRankingsPage() {
           <li className="flex items-start gap-2">
             <span className="text-cyan-400 mt-0.5">•</span>
             <span>Ratings are fitted independently within each domestic league, then bridged onto one shared scale using Champions League and Europa League fixtures — the only matches where teams from different leagues actually meet.</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-cyan-400 mt-0.5">•</span>
+            <span>That cross-league bridge is the thinnest part of the whole fit (a few dozen European fixtures split across 5 leagues), so it's also steadied toward UEFA's own published country coefficient — an official ranking of each nation's recent European record, used by UEFA itself to allocate competition access. This nudges the LEAGUE-level offset, not individual teams directly.</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-cyan-400 mt-0.5">•</span>
