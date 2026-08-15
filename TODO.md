@@ -172,6 +172,28 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Power Rankings UCL outright-winner blend (6a247d9, 2026-08-15): a
+  FOURTH fading prior, added after user pushback on PSG sitting 4th
+  despite being back-to-back UCL winners and market favourites. Rather
+  than tuning existing weights to force them up, wired in a genuinely
+  new independent signal: Polymarket's live "UEFA Champions League:
+  2027 Champion" market ($7.8M+ real volume), extending
+  outright_fetcher.py (The Odds API has no outright market for this
+  competition at all — checked its /v4/sports listing — so Polymarket
+  is the only ToS-clean source, same as the domestic-league outrights
+  already used elsewhere). Needed a merged all-five-domestic-leagues
+  name index since the UCL field spans every UEFA nation; 21/29 team
+  labels resolve to a tracked team, the rest (Porto, Sporting, PSV,
+  etc.) are genuinely outside our tracked leagues. Given a DECENT
+  weight per explicit request (UCL_WINNER_PRIOR_K=20.0, matching
+  ClubElo rather than the lighter squad-value weight) since it's a real
+  forward-looking market forecast, not a valuation proxy. Probabilities
+  fit on the logit scale (heavily skewed 0-1 signal). Verified locally
+  against production data before shipping, then confirmed live: 21/21
+  matched teams blended, 0 errors. Result is genuinely market-driven —
+  PSG moved from 4th to 2nd (Polymarket has them co-favourites at
+  14.5%, tied with Barcelona), Arsenal still holds 1st.
+
 - Power Rankings squad value now blended into the rating (6dad86c,
   2026-08-15) — supersedes the "informational only, not blended" design
   from the entry directly below, at explicit user request ("there is a
