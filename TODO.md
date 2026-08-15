@@ -172,6 +172,25 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Power Rankings squad market value column (05f5607 + fb480f8,
+  2026-08-15): a "Squad Value" column shown alongside the rating table,
+  sourced from Transfermarkt (no public API, terms prohibit scraping —
+  so entered by hand from a table paste via
+  scripts/refresh_squad_values.py + the committed
+  app/data/transfermarkt_squad_values.json snapshot, reloaded via
+  POST /admin/load-squad-values; same pattern as the existing
+  club_finance.py/valuball wage-bill snapshot). Deliberately kept
+  informational-only and NOT blended into the rating: squad value is a
+  spending/valuation metric (transfer fees, wages), not a performance
+  signal the way the ClubElo prior below is — a team can carry a huge
+  squad while underperforming, so folding it into `rating` would
+  measure something other than what the page claims to. Name matching
+  (transfermarkt_name_map.py) covers 67/98 tracked teams against a
+  top-100-by-value snapshot; the other 31 simply fall outside that top
+  100. EuroClubIndex was also considered as a second blend candidate
+  earlier and remains parked (no API, no visible ToS) pending explicit
+  risk-acceptance.
+
 - Power Rankings ClubElo blend (e378250, 2026-08-15): after the
   two-stage Pinnacle-AH fit below, each team's rating is nudged toward
   a ClubElo-derived prior (api.clubelo.com — genuine free, no-key CSV
