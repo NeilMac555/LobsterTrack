@@ -172,6 +172,29 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Power Rankings UEFA country coefficient blend (70a653e, 2026-08-15):
+  follow-up to a "for another day" idea floated during the UCL-blend
+  discussion — triangulate Stage 2's cross-league bridge against UEFA's
+  own published country coefficient, since that bridge is by far the
+  thinnest-sample part of the whole fit (a few dozen European fixtures
+  split across 5 leagues, vs. dozens of AH-line matches per team within
+  a league). Unlike the four team-level blends, this nudges Stage 2's
+  per-LEAGUE offsets directly, faded in/out via each league's own
+  weighted bridge-fixture involvement (LEAGUE_COEFF_PRIOR_K=10.0).
+  Sourcing: ruled out two scrapeable mirrors first — kassiesa.net's
+  robots.txt explicitly disallows bots ("Disallow: /"), uefa.com blocks
+  automated fetches outright (403 via Cloudflare) — landed on
+  Wikipedia's "UEFA country coefficient" article (CC-BY-SA, robots.txt-
+  permitted); hardcoded the 5 current values rather than build a
+  fetcher, since they're static enough within a season to refresh by
+  hand. Scale conversion matches mean/stddev rather than OLS (only 5
+  leagues — a 2-parameter least-squares fit would overfit to noise).
+  Verified locally against production data before shipping, then
+  confirmed live: all 5 leagues blended, 0 errors. Effect is subtle,
+  not a top-table reshuffle — Serie A's offset firmed up the most (its
+  bridge sample was thinnest, Italy has the 2nd-highest coefficient),
+  France eased down slightly (lowest coefficient of the 5).
+
 - Power Rankings UCL outright-winner blend (6a247d9, 2026-08-15): a
   FOURTH fading prior, added after user pushback on PSG sitting 4th
   despite being back-to-back UCL winners and market favourites. Rather
