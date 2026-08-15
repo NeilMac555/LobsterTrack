@@ -37,6 +37,28 @@ Two-stage fit, mirroring PitchRank's own described approach:
   least-squares system across however many league pairs the season's
   European fixtures happened to connect.
 
+IDENTIFICATION PRINCIPLE (added 2026-08-15, external quant review):
+domestic-only data — AH lines, domestic outright markets, ClubElo,
+squad value — mathematically CANNOT identify a league's overall level.
+Adding a constant to every team in a league leaves every within-league
+match probability, and therefore every domestic outright probability,
+unchanged. Only data where teams from DIFFERENT leagues are compared —
+European fixtures, European outright markets, UEFA's own coefficient —
+can inform the per-league offset (Stage 2). Verified live against
+production: correlation between log squad value and rating had reached
+0.965 (0.98+ within some leagues), and the EPL's Stage 2 offset
+(+0.210) was nearly 3x the spread of the other four leagues combined
+(0.083) — a thin EPL sample (fewest weighted_matches of the five
+leagues) getting the heaviest shrinkage toward a structurally
+money-inflated prior (mean EPL squad value ~€689m vs ~€340m in Serie
+A). The fix: ClubElo and squad value are now mean-centered within each
+team's own league (_center_within_league) BEFORE their scale-fit and
+blend, and blended into Stage 1's own output — mean-zero within league
+by construction — strictly BEFORE the Stage 2 offset is added. Centered
+signals can only reorder teams inside their own league; they are
+structurally incapable of lifting a whole league, however money-
+inflated that league's prior is.
+
 DATA REALITY (verified 2026-08-15 against production): this dataset only
 spans since Feb 2026, when ClosingLine started capturing Asian Handicap
 rows — nowhere near PitchRank's own 2012-present depth. Ratings will be
@@ -451,6 +473,41 @@ async def _fetch_clubelo_ratings() -> dict[str, float]:
         return {}
 
 
+def _center_within_league(
+    values: dict[str, float], team_league: dict[str, str],
+) -> dict[str, float]:
+    """
+    Subtract each team's OWN league's mean from `values`, computing that
+    mean only from the teams actually present in `values` (not the full
+    98-team universe) — so a signal that only covers a subset of teams
+    per league is still centered correctly on that subset.
+
+    This is the fix for a real, verified bug (2026-08-15, external quant
+    review): ClubElo and squad value both run structurally higher in the
+    EPL than the other four leagues (mean squad value ~€689m vs ~€340m
+    in Serie A), and blending either signal in WITHOUT centering doesn't
+    just reorder teams within a league — it drags the whole league's
+    ratings upward, contaminating Stage 2's job (the league-level
+    offset) with domestic covariate data that mathematically cannot
+    identify a league's level (adding a constant to every team in a
+    league leaves every within-league match probability unchanged — see
+    the module docstring's identification note). Centering first means
+    these signals can only reorder teams inside their own league, never
+    lift the league itself.
+    """
+    by_league: dict[str, list[float]] = {}
+    for team, v in values.items():
+        lg = team_league.get(team)
+        if lg is not None:
+            by_league.setdefault(lg, []).append(v)
+    league_mean = {lg: sum(vv) / len(vv) for lg, vv in by_league.items()}
+    return {
+        team: v - league_mean[team_league[team]]
+        for team, v in values.items()
+        if team_league.get(team) in league_mean
+    }
+
+
 def _fit_clubelo_scale(
     our_ratings: dict[str, float], clubelo_by_team: dict[str, float],
 ) -> tuple[float, float]:
@@ -461,6 +518,12 @@ def _fit_clubelo_scale(
     rather than assuming a fixed conversion formula. Falls back to
     (0.0, 0.0) — i.e. the blend contributes nothing — if fewer than 10
     teams overlap (too few points to trust a linear fit).
+
+    Callers MUST pass values already centered within league (see
+    _center_within_league) — both `our_ratings` (Stage 1's own output is
+    mean-zero within league by construction) and `clubelo_by_team`, so
+    the fit and the resulting blend can only affect within-league
+    ordering, never a league's overall level.
     """
     teams = [t for t in our_ratings if t in clubelo_by_team]
     if len(teams) < 10:
@@ -474,7 +537,7 @@ def _fit_clubelo_scale(
 
 
 def _fit_squad_value_scale(
-    our_ratings: dict[str, float], value_by_team: dict[str, float],
+    our_ratings: dict[str, float], log_value_by_team: dict[str, float],
 ) -> tuple[float, float]:
     """
     OLS fit of our_rating ~ a + b * ln(market_value_eur) over whichever
@@ -484,13 +547,20 @@ def _fit_squad_value_scale(
     handful of superclubs would dominate the fit. Falls back to
     (0.0, 0.0) — the blend contributes nothing — if fewer than 10 teams
     overlap (too few points to trust a linear fit).
+
+    Callers MUST pass `log_value_by_team` already log-transformed AND
+    centered within league (see _center_within_league), same as
+    `our_ratings` — Stage 1's own output is mean-zero within league by
+    construction. Centering first means this can only reorder teams
+    inside their own league, never lift a whole league (see
+    _center_within_league's docstring for the bug this fixes).
     """
-    teams = [t for t in our_ratings if t in value_by_team]
+    teams = [t for t in our_ratings if t in log_value_by_team]
     if len(teams) < 10:
         logger.warning("Squad value blend: too few overlapping teams to fit a scale", n=len(teams))
         return 0.0, 0.0
 
-    x = np.array([np.log(value_by_team[t]) for t in teams])
+    x = np.array([log_value_by_team[t] for t in teams])
     y = np.array([our_ratings[t] for t in teams])
     b, a = np.polyfit(x, y, 1)
     return float(a), float(b)
@@ -646,27 +716,41 @@ class PowerRankingFitter:
             summary["league_bridge_weight"] = {lg: round(v, 2) for lg, v in league_bridge_weight.items()}
             summary["league_coeff_blended"] = league_coeff_blended
 
+            # NOTE: no offset added yet — all_rows carries pure Stage 1
+            # ratings here (mean-zero within each league by construction
+            # of the ridge WLS solve). The ClubElo and squad-value blends
+            # below run on THIS, not on the final theta, and are
+            # themselves centered within league — see _center_within_
+            # league's docstring for why (verified bug, 2026-08-15
+            # external quant review: blending either signal in
+            # uncentered doesn't just reorder teams within a league, it
+            # drags the whole league's ratings toward that signal's own
+            # cross-league level, e.g. the EPL's money-inflated squad
+            # values). The Stage 2 offset — the only thing allowed to
+            # move a league's overall level, per the module docstring's
+            # identification note — is added back in afterward.
             all_rows = []
             for league, teams in within_league.items():
-                offset = offsets.get(league, 0.0)
                 for team, (rating, weighted_matches) in teams.items():
                     all_rows.append({
                         "team": team,
                         "league": league,
-                        "rating": rating + offset,
+                        "rating": rating,
                         "weighted_matches": weighted_matches,
                     })
+            team_league = {row["team"]: row["league"] for row in all_rows}
 
             # ClubElo blend — fades out as weighted_matches grows (see
             # module docstring). Failure anywhere in here (network, too
             # few overlapping teams) just leaves ratings as the
-            # Stage 1 + Stage 2 fit alone; never blocks the core result.
+            # Stage 1 fit alone; never blocks the core result.
             clubelo_ratings = await _fetch_clubelo_ratings()
-            clubelo_by_team = {
+            clubelo_by_team_raw = {
                 row["team"]: clubelo_ratings[to_clubelo_name(row["team"])]
                 for row in all_rows
                 if to_clubelo_name(row["team"]) in clubelo_ratings
             }
+            clubelo_by_team = _center_within_league(clubelo_by_team_raw, team_league)
             scale_a, scale_b = _fit_clubelo_scale(
                 {row["team"]: row["rating"] for row in all_rows}, clubelo_by_team
             )
@@ -694,16 +778,18 @@ class PowerRankingFitter:
                 sv.team: sv.market_value_eur
                 for sv in db.query(SquadMarketValue).filter(SquadMarketValue.team.isnot(None)).all()
             }
+            log_squad_values_raw = {team: np.log(v) for team, v in squad_values.items()}
+            log_squad_values = _center_within_league(log_squad_values_raw, team_league)
             sv_scale_a, sv_scale_b = _fit_squad_value_scale(
-                {row["team"]: row["rating"] for row in all_rows}, squad_values
+                {row["team"]: row["rating"] for row in all_rows}, log_squad_values
             )
             sv_blended_count = 0
-            if squad_values and (sv_scale_a, sv_scale_b) != (0.0, 0.0):
+            if log_squad_values and (sv_scale_a, sv_scale_b) != (0.0, 0.0):
                 for row in all_rows:
-                    value = squad_values.get(row["team"])
-                    if value is None:
+                    log_value = log_squad_values.get(row["team"])
+                    if log_value is None:
                         continue
-                    scaled_value = float(sv_scale_a + sv_scale_b * np.log(value))
+                    scaled_value = float(sv_scale_a + sv_scale_b * log_value)
                     blend_weight = SQUAD_VALUE_PRIOR_K / (SQUAD_VALUE_PRIOR_K + row["weighted_matches"])
                     row["rating"] = (1 - blend_weight) * row["rating"] + blend_weight * scaled_value
                     sv_blended_count += 1
@@ -711,6 +797,12 @@ class PowerRankingFitter:
             summary["squad_value_teams_matched"] = len(squad_values)
             summary["squad_value_teams_blended"] = sv_blended_count
             summary["squad_value_scale"] = {"a": round(sv_scale_a, 4), "b": round(sv_scale_b, 6)}
+
+            # Add the Stage 2 offset now — the only step allowed to move
+            # a league's overall level. Everything above this point only
+            # ever reordered teams within their own league.
+            for row in all_rows:
+                row["rating"] += offsets.get(row["league"], 0.0)
 
             # UCL outright blend — a fourth fading prior, applied last,
             # toward each team's Champions League outright-winner
