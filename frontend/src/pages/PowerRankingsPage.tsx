@@ -238,6 +238,10 @@ export default function PowerRankingsPage() {
             <span className="text-cyan-400 mt-0.5">•</span>
             <span>Tracking started February 2026, so early ratings carry a thinner sample than a mature system — shown as "Matches" in the table. They'll firm up as more matchdays are captured automatically each week.</span>
           </li>
+          <li className="flex items-start gap-2">
+            <span className="text-cyan-400 mt-0.5">•</span>
+            <span>Each rating is also nudged toward a ClubElo prior (a separate, results-based Elo system) to steady it while our own sample is thin — that nudge fades out automatically as a team accumulates more tracked matches, so it never overrides what the market lines themselves say.</span>
+          </li>
         </ul>
       </div>
     </div>

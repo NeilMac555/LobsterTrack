@@ -43,13 +43,30 @@ rows — nowhere near PitchRank's own 2012-present depth. Ratings will be
 noisier early on and firm up as more matchdays get captured automatically
 by the existing closing_line_capturer.py job. No new data collection
 required to run this — see TODO.md for the full readout.
+
+ClubElo BLEND (added 2026-08-15): after the two-stage fit above, every
+team's rating is blended toward a ClubElo-derived prior
+(api.clubelo.com — a genuine free, no-key CSV API; verified live before
+building against it), weighted so the blend FADES OUT as our own
+weighted_matches grows — the same shrinkage-toward-a-prior shape as
+K_SHRINK/PROMOTED_ATTACK elsewhere in this codebase, not a permanent
+50/50 average. ClubElo is a results-based Elo system (not market-
+derived), so this is a genuinely independent stabilising signal while
+our own sample is thin, not a duplicate of what Stage 1/2 already do.
+ClubElo's rating scale is converted onto ours via an OLS fit against
+our OWN already-computed ratings for the overlapping team set (not an
+assumed conversion formula) — see _fit_clubelo_scale. Deliberately NOT
+tuned to produce any particular team ordering; if the blend doesn't
+move a team the way someone expects, that's the honest answer, not a
+bug to "fix" by reweighting until it agrees with a prior belief.
 """
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 
+import httpx
 import numpy as np
 import structlog
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -57,6 +74,7 @@ from sqlalchemy.orm import Session
 
 from app.models import ClosingLine, LeagueConstants, MarketType, PowerRating, PowerRatingHistory
 from app.models.database import SessionLocal
+from app.services.clubelo_name_map import to_clubelo_name
 
 logger = structlog.get_logger()
 
@@ -99,6 +117,16 @@ RIDGE_LAMBDA = 15.0
 # fitted home advantage as of the 2026-08-15 build, used only when a
 # league-specific figure isn't available.
 _DEFAULT_HOME_ADV_GOALS = 0.30
+
+# ClubElo blend strength, in "effective weighted matches" units — a team
+# with weighted_matches == CLUBELO_PRIOR_K gets roughly a 50/50 blend
+# toward the ClubElo-derived prior; a team with far more matches barely
+# moves; a brand-new team (0 matches, shouldn't happen here since it'd
+# have no rating at all) would sit almost entirely on the prior.
+# Provisional, same status as RIDGE_LAMBDA/HALF_LIFE_DAYS.
+CLUBELO_PRIOR_K = 20.0
+
+CLUBELO_API_BASE = "http://api.clubelo.com"
 
 
 def _home_advantage_goals(db: Session, league: str, cache: dict[str, float]) -> float:
@@ -275,6 +303,58 @@ def _fit_cross_league_offsets(
     return {lg: float(offsets[l_index[lg]]) for lg in leagues}
 
 
+async def _fetch_clubelo_ratings() -> dict[str, float]:
+    """
+    Today's global Elo snapshot from ClubElo's free, no-key CSV API —
+    one request, ~600 clubs worldwide. Returns clubelo_name -> elo.
+    Network/parse failures return {} so the blend step degrades to
+    "no prior available" rather than failing the whole fit — this is
+    an enhancement layer, not a dependency the core fit needs.
+    """
+    today = date.today().isoformat()
+    url = f"{CLUBELO_API_BASE}/{today}"
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.get(url)
+        resp.raise_for_status()
+        ratings: dict[str, float] = {}
+        lines = resp.text.strip().splitlines()
+        header = lines[0].split(",")
+        club_i, elo_i = header.index("Club"), header.index("Elo")
+        for line in lines[1:]:
+            parts = line.split(",")
+            try:
+                ratings[parts[club_i]] = float(parts[elo_i])
+            except (ValueError, IndexError):
+                continue
+        return ratings
+    except Exception as e:
+        logger.warning("ClubElo fetch failed, proceeding without the blend", error=str(e))
+        return {}
+
+
+def _fit_clubelo_scale(
+    our_ratings: dict[str, float], clubelo_by_team: dict[str, float],
+) -> tuple[float, float]:
+    """
+    OLS fit of our_rating ~ a + b * clubelo_elo over whichever teams we
+    have both for — puts ClubElo's ~1000-2100 Elo scale onto our
+    goal-margin-ish scale using our OWN data as the calibration target,
+    rather than assuming a fixed conversion formula. Falls back to
+    (0.0, 0.0) — i.e. the blend contributes nothing — if fewer than 10
+    teams overlap (too few points to trust a linear fit).
+    """
+    teams = [t for t in our_ratings if t in clubelo_by_team]
+    if len(teams) < 10:
+        logger.warning("ClubElo blend: too few overlapping teams to fit a scale", n=len(teams))
+        return 0.0, 0.0
+
+    x = np.array([clubelo_by_team[t] for t in teams])
+    y = np.array([our_ratings[t] for t in teams])
+    b, a = np.polyfit(x, y, 1)
+    return float(a), float(b)
+
+
 class PowerRankingFitter:
     """Runs the two-stage fit + upsert. Tracks last-run health state, same
     shape as LeagueConstantsRefresher for a consistent admin-diagnostics
@@ -327,6 +407,34 @@ class PowerRankingFitter:
                         "rating": rating + offset,
                         "weighted_matches": weighted_matches,
                     })
+
+            # ClubElo blend — fades out as weighted_matches grows (see
+            # module docstring). Failure anywhere in here (network, too
+            # few overlapping teams) just leaves ratings as the
+            # Stage 1 + Stage 2 fit alone; never blocks the core result.
+            clubelo_ratings = await _fetch_clubelo_ratings()
+            clubelo_by_team = {
+                row["team"]: clubelo_ratings[to_clubelo_name(row["team"])]
+                for row in all_rows
+                if to_clubelo_name(row["team"]) in clubelo_ratings
+            }
+            scale_a, scale_b = _fit_clubelo_scale(
+                {row["team"]: row["rating"] for row in all_rows}, clubelo_by_team
+            )
+            blended_count = 0
+            if clubelo_by_team and (scale_a, scale_b) != (0.0, 0.0):
+                for row in all_rows:
+                    elo = clubelo_by_team.get(row["team"])
+                    if elo is None:
+                        continue
+                    scaled_clubelo = scale_a + scale_b * elo
+                    blend_weight = CLUBELO_PRIOR_K / (CLUBELO_PRIOR_K + row["weighted_matches"])
+                    row["rating"] = (1 - blend_weight) * row["rating"] + blend_weight * scaled_clubelo
+                    blended_count += 1
+
+            summary["clubelo_teams_matched"] = len(clubelo_by_team)
+            summary["clubelo_teams_blended"] = blended_count
+            summary["clubelo_scale"] = {"a": round(scale_a, 4), "b": round(scale_b, 6)}
 
             for row in all_rows:
                 stmt = pg_insert(PowerRating).values(
