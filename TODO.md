@@ -172,6 +172,30 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Power Rankings ClubElo blend (e378250, 2026-08-15): after the
+  two-stage Pinnacle-AH fit below, each team's rating is nudged toward
+  a ClubElo-derived prior (api.clubelo.com — genuine free, no-key CSV
+  API, verified live before building against it; no visible ToS page
+  found, flagged but user approved proceeding). Blend weight fades as
+  weighted_matches grows (CLUBELO_PRIOR_K / (CLUBELO_PRIOR_K +
+  weighted_matches)), same shrinkage-toward-prior shape as
+  K_SHRINK/PROMOTED_ATTACK — steadies thin early-season samples without
+  overriding a well-established market-derived rating. ClubElo's Elo
+  scale (~1000-2100) is converted onto ours via an OLS fit against our
+  own already-computed ratings for the overlapping team set
+  (_fit_clubelo_scale), not an assumed formula. Name mapping
+  (clubelo_name_map.py) covers 45/98 tracked teams whose naming
+  differs from ours; 3 teams (Girona, Mallorca, Oviedo) are confirmed
+  absent from ClubElo entirely and are simply left unblended. Verified
+  locally against production data before shipping, then confirmed live
+  in prod after deploy: 95/98 teams matched and blended, 0 errors.
+  Deliberately not tuned toward any particular ordering — PSG stayed
+  4th (behind Arsenal/Bayern/Man City) both before and after the
+  blend. EuroClubIndex was considered as a second blend source but has
+  no API (HTML table only) and no visible ToS — same risk category as
+  the previously-rejected Oddschecker — parked pending explicit
+  risk-acceptance.
+
 - Power Rankings (new /power-rankings page): cross-league team power
   ratings derived in-house from Pinnacle Asian Handicap closing lines
   (closing_lines, market_type=ASIAN_HANDICAP — already captured for
