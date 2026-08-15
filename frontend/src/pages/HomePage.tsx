@@ -168,9 +168,54 @@ export default function HomePage() {
   return (
     <div>
       <Helmet>
-        <title>SteamWatch - Track Sharp Money Movement in Football Betting</title>
+        <title>SteamWatch - Track the Biggest Odds Moves in Football Betting</title>
         <link rel="canonical" href="https://www.steamwatch.io/" />
       </Helmet>
+
+      {/* Hero — conversion messaging per the 2026-08-15 homepage brief.
+          Copy is deliberately descriptive, not explanatory: SteamWatch
+          reports odds moves and what happened next — it does NOT claim to
+          know WHY a move happened (no "syndicates", no "sharp money", no
+          market mind-reading). Keep that constraint if editing this copy. */}
+      {!league && !isSubscribed && (
+        <div className="mb-4 sm:mb-6 rounded-xl border border-slate-700/60 bg-slate-800/80 px-4 sm:px-8 py-7 sm:py-10 text-center card-shadow">
+          <h1 className="text-2xl sm:text-4xl font-bold text-white tracking-tight leading-tight">
+            Track the biggest odds moves.
+            <br className="hidden sm:block" />
+            <span className="sm:hidden"> </span>
+            See what happened next.
+          </h1>
+          <p className="text-slate-400 text-sm sm:text-base mt-3 sm:mt-4 max-w-2xl mx-auto leading-relaxed">
+            Real-time steam alerts, historical ROI, closing-line data and betting-market analysis for serious bettors.
+          </p>
+          <div className="mt-5 sm:mt-7 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <a
+              href="https://t.me/steamwatchalerts"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-[#2AABEE] hover:bg-[#229ED9] text-white font-mono text-xs sm:text-sm font-bold uppercase tracking-[0.12em] transition-colors"
+            >
+              Get Free Steam Alerts
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </a>
+            <button
+              onClick={async () => {
+                if (!user) {
+                  setShowLoginFromCTA(true);
+                } else {
+                  setSubscribing(true);
+                  try { await subscribe(); } catch { setSubscribing(false); }
+                }
+              }}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/10 font-mono text-xs sm:text-sm font-bold uppercase tracking-[0.12em] transition-colors"
+            >
+              {subscribing ? 'Redirecting to Stripe…' : 'Explore SteamWatch Pro'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Terminal-style stat strip — live snapshot of what SteamWatch is tracking.
           Only shown on the main (unfiltered) homepage view. */}
@@ -326,10 +371,10 @@ export default function HomePage() {
                   </span>
                 </div>
                 <h3 className="text-base sm:text-lg font-bold text-white tracking-tight mb-1.5">
-                  Real-time syndicate alerts, instantly
+                  Real-time steam alerts, instantly
                 </h3>
                 <p className="text-slate-400 text-xs sm:text-sm mb-3 leading-relaxed">
-                  Sharp money detected — you get pinged on whatever device you're using. No login required, just join the channel.
+                  When a big move hits a market we track, you get pinged on whatever device you're using. No login required, just join the channel.
                 </p>
                 <span className="inline-flex items-center gap-1.5 text-[#2AABEE] font-mono text-[11px] font-bold uppercase tracking-[0.12em] group-hover:gap-2.5 transition-all duration-200">
                   Join Channel
@@ -364,7 +409,7 @@ export default function HomePage() {
                   </span>
                 </div>
                 <h3 className="text-base sm:text-lg font-bold text-white tracking-tight mb-1.5">
-                  Every tool the sharps use
+                  The full toolkit for serious bettors
                 </h3>
                 <ul className="text-slate-400 text-xs sm:text-sm mb-3 space-y-1 font-mono">
                   <li className="flex items-center gap-2">
