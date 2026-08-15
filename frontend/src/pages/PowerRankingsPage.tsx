@@ -103,10 +103,20 @@ export default function PowerRankingsPage() {
       <div className="mb-4 sm:mb-6 flex items-center gap-3">
         <div className="w-1 h-9 sm:h-10 rounded-full bg-gradient-to-b from-cyan-400 to-cyan-600 flex-shrink-0" />
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Power Rankings</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Power Rankings</h1>
+            <span
+              className="px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.12em] bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded"
+              title="New methodology, still settling — sample sizes are thin and the fit will firm up as more matchdays are captured."
+            >
+              Beta
+            </span>
+          </div>
           <p className="text-slate-400 text-xs sm:text-sm mt-0.5">
-            One shared strength scale across every league — derived from Pinnacle Asian Handicap
-            closing lines, bridged across leagues via Champions League &amp; Europa League fixtures.
+            One shared strength scale across every league — a two-stage fit over Pinnacle Asian
+            Handicap closing lines, bridged across leagues via Champions League &amp; Europa League
+            fixtures, then blended with a fading ClubElo prior to steady thin early-season samples.
+            Full methodology below.
           </p>
         </div>
       </div>
