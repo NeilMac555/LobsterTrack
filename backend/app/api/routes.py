@@ -53,6 +53,42 @@ ADMIN_PASSWORD = "SoccerMatics33"
 router = APIRouter()
 settings = get_settings()
 
+# ---------------------------------------------------------------------------
+# Tiny in-process TTL cache for the two heaviest homepage endpoints
+# (/matches, /biggest-movers). Their window-function scans over the
+# 1M+-row snapshot tables cost seconds, but the underlying data only
+# changes when the odds fetcher runs (~every 15 min) — so a 60s cache
+# is invisible staleness-wise and makes every load after the first
+# instant. Single-replica, single-process deployment, so a module dict
+# is all the cache infrastructure this needs. The LATERAL-join query
+# rewrite (the proper fix — verified 2x+ faster with identical results
+# against production data, 2026-08-15) is tracked in TODO.md.
+# ---------------------------------------------------------------------------
+_RESPONSE_CACHE: dict[str, tuple[float, object]] = {}
+_RESPONSE_CACHE_TTL_SECONDS = 60.0
+
+
+def _cache_get(key: str):
+    import time as _time
+    entry = _RESPONSE_CACHE.get(key)
+    if entry is None:
+        return None
+    stored_at, value = entry
+    if _time.monotonic() - stored_at > _RESPONSE_CACHE_TTL_SECONDS:
+        _RESPONSE_CACHE.pop(key, None)
+        return None
+    return value
+
+
+def _cache_put(key: str, value) -> None:
+    import time as _time
+    # Unbounded growth guard: the key space here is tiny (a handful of
+    # league filters x 2 endpoints), but cap it anyway so a crafted
+    # query-param flood can't balloon memory.
+    if len(_RESPONSE_CACHE) > 200:
+        _RESPONSE_CACHE.clear()
+    _RESPONSE_CACHE[key] = (_time.monotonic(), value)
+
 
 @router.get("/health", response_model=HealthResponse)
 async def health_check(db: Session = Depends(get_db)):
@@ -179,6 +215,11 @@ async def get_matches(
     Get list of matches with current odds.
     Optimized to use batch queries instead of N+1 (was 343 queries, now 4).
     """
+    cache_key = f"matches:{league}:{upcoming_only}:{limit}:{offset}"
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
+
     query = db.query(Match)
 
     if league:
@@ -339,6 +380,7 @@ async def get_matches(
             current_odds_bookmaker=latest.get('bookmaker'),
         ))
 
+    _cache_put(cache_key, result)
     return result
 
 
@@ -852,6 +894,11 @@ async def get_biggest_movers(
     Get matches with the biggest odds movements across all markets (1X2, Totals, Asian Handicap)
     over the trailing 48 hours. Returns one move per match (the biggest across all markets).
     """
+    cache_key = f"biggest-movers:{limit}:{sport_key}"
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
+
     now = datetime.utcnow()
     cutoff_48h = now - timedelta(hours=48)
 
@@ -1139,7 +1186,7 @@ async def get_biggest_movers(
             series = [round((1.0 / r[0]) * 100, 2) for r in reversed(rows)]
         m['sparkline'] = series if len(series) >= 2 else None
 
-    return [
+    response = [
         BiggestMover(
             match_id=m['match'].id,
             home_team=m['match'].home_team,
@@ -1158,6 +1205,8 @@ async def get_biggest_movers(
         )
         for m in top_movers
     ]
+    _cache_put(cache_key, response)
+    return response
 
 
 @router.get("/syndicate-moves", response_model=list[SyndicateMove])
