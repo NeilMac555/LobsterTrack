@@ -228,7 +228,7 @@ class SyndicateAlerter:
                 if prob_move >= threshold:
                     sent = await self._send_alert_if_new(
                         db, match, '1x2', outcome, label, name,
-                        curr_odds, prob_move, minutes_to_ko
+                        baseline_odds, curr_odds, prob_move, minutes_to_ko
                     )
                     if sent:
                         alerts_sent += 1
@@ -294,7 +294,7 @@ class SyndicateAlerter:
                 if prob_move >= threshold:
                     sent = await self._send_alert_if_new(
                         db, match, 'totals', outcome, label, name,
-                        curr_odds, prob_move, minutes_to_ko,
+                        baseline_odds, curr_odds, prob_move, minutes_to_ko,
                         line=line,
                     )
                     if sent:
@@ -356,7 +356,7 @@ class SyndicateAlerter:
                 if prob_move >= threshold:
                     sent = await self._send_alert_if_new(
                         db, match, 'spreads', outcome, label, name,
-                        curr_odds, prob_move, minutes_to_ko,
+                        baseline_odds, curr_odds, prob_move, minutes_to_ko,
                         line=line,
                     )
                     if sent:
@@ -372,6 +372,7 @@ class SyndicateAlerter:
         outcome: str,
         outcome_label: str,
         outcome_name: str,
+        opening_odds: float,
         current_odds: float,
         prob_change: float,
         minutes_to_ko: int,
@@ -453,7 +454,7 @@ class SyndicateAlerter:
             try:
                 from app.services.tweet_generator import post_late_steam_tweet
                 post_late_steam_tweet(
-                    db, match, outcome_name, current_odds, prob_change, minutes_to_ko
+                    db, match, outcome_name, opening_odds, current_odds, prob_change, minutes_to_ko
                 )
             except Exception as e:
                 logger.warning(

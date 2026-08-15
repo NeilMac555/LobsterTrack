@@ -198,6 +198,7 @@ def post_once(
 def render_late_steam_tweet(
     match: Match,
     outcome_name: str,
+    opening_odds: float,
     current_odds: float,
     prob_change_pp: float,
     minutes_to_ko: int,
@@ -208,8 +209,17 @@ def render_late_steam_tweet(
     🇩🇪 Germany 🆚 🇨🇮 Ivory Coast
     KO in 25 min
 
-    Germany 1.45 (+4.9pp implied since open)
+    Germany 1.68 → 1.45 (+4.9pp implied)
     Sharp money piling in.
+
+    Shows the actual opening → current price, not just the current
+    price + a pp delta — a reader shouldn't have to do implied-
+    probability math in their head to see the price shortened rather
+    than drifted (Neil flagged a tweet where "7.28 (+3.2pp implied
+    since open)" read as ambiguous/self-contradictory next to "sharp
+    money piling in" even though the pp figure was directionally
+    correct — prob_movement() in syndicate_alerter.py already only
+    ever fires this alert on a positive/shortening move).
     """
     hf = flag(match.home_team)
     af = flag(match.away_team)
@@ -221,7 +231,7 @@ def render_late_steam_tweet(
         f"{hf} {match.home_team} 🆚 {af} {match.away_team}\n"
         f"{ko_str}\n"
         "\n"
-        f"{outcome_name} {current_odds:.2f} ({sign}{prob_change_pp:.1f}pp implied since open)\n"
+        f"{outcome_name} {opening_odds:.2f} → {current_odds:.2f} ({sign}{prob_change_pp:.1f}pp implied)\n"
         "Sharp money piling in."
     )
 
@@ -292,6 +302,7 @@ def post_late_steam_tweet(
     db: Session,
     match: Match,
     outcome_name: str,
+    opening_odds: float,
     current_odds: float,
     prob_change_pp: float,
     minutes_to_ko: int,
@@ -300,7 +311,7 @@ def post_late_steam_tweet(
     One tweet per match max — subsequent steam alerts on the same match
     add Telegram messages but no new tweet."""
     text = render_late_steam_tweet(
-        match, outcome_name, current_odds, prob_change_pp, minutes_to_ko
+        match, outcome_name, opening_odds, current_odds, prob_change_pp, minutes_to_ko
     )
     return post_once(db, "late_steam", text, match_id=match.id)
 
