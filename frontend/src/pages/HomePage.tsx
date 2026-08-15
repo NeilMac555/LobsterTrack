@@ -7,7 +7,6 @@ import type { MatchSummary, BiggestMover, SyndicateMove, Stats } from '../types'
 import { LEAGUE_CONFIG } from '../types';
 import MatchCard from '../components/MatchCard';
 import Sparkline from '../components/Sparkline';
-import AmIUpCTA from '../components/AmIUpCTA';
 import WorldCupMatchCard from '../components/WorldCupMatchCard';
 import LeagueLogo from '../components/LeagueLogo';
 import { countryFlagImgUrl } from '../utils/countryFlags';
@@ -341,12 +340,8 @@ export default function HomePage() {
       {/* Steam Guide Modal */}
       <SteamGuideModal isOpen={showSteamGuide} onClose={() => setShowSteamGuide(false)} />
 
-      {/* AmIUp cross-promo — calm card (no pulse/badge spam), placed near
-          the top so it's actually seen without scrolling to the footer,
-          but styled quietly enough not to read as an ad. */}
-      <div className="mb-4 sm:mb-6">
-        <AmIUpCTA placement="home" />
-      </div>
+      {/* The AmIUp cross-promo card that sat here was removed 2026-08-15
+          per Neil — the footer placement (Layout.tsx) remains site-wide. */}
 
       {/* Biggest Movers - Mobile Card / Desktop Table */}
       {biggestMovers.length > 0 && (
