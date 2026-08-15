@@ -172,6 +172,38 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Power Rankings (new /power-rankings page): cross-league team power
+  ratings derived in-house from Pinnacle Asian Handicap closing lines
+  (closing_lines, market_type=ASIAN_HANDICAP — already captured for
+  every finished match by the existing closing_line_capturer.py job,
+  zero new data collection needed). Two-stage ridge-regularised
+  weighted least squares: Stage 1 fits each domestic league
+  independently (paired-comparison regression over closing AH lines,
+  Colley/Massey-style — closed-form, matches strength_model.py's
+  numerical style rather than an order-dependent sequential Elo
+  update); Stage 2 bridges the 5 league blocks onto ONE shared scale
+  using Champions League/Europa League/Conference League fixtures as
+  cross-league observations. This is the "Elo-based cross-league
+  strengths" TODO.md has flagged for years as blocking CL/UEL
+  restoration — nothing in the codebase put two teams from different
+  leagues on a comparable scale before this. New power_ratings +
+  power_rating_history tables, weekly Monday 10:30 UTC job (mirrors
+  league_constants_refresher.py's exact pattern), admin trigger,
+  GET /power-rankings + /power-rankings/{team}/history. Verified
+  locally against production data before deploying (98 teams, 66
+  bridge fixtures, 0 errors) — output is well-calibrated: Man City/
+  Bayern/Arsenal/PSG/Barcelona at the top, freshly-promoted/
+  relegation-threatened sides (Pisa, Cremonese, Metz, Oviedo) at the
+  bottom, Bayern correctly slotting between City and Arsenal
+  cross-league. One deploy hiccup: local `tsc --noEmit` missed a
+  recharts Tooltip typing error that the real `npm run build` (tsc -b)
+  caught — fixed, and switched to running the actual build script for
+  verification going forward, not a hand-assembled tsc+vite check.
+  Deliberately NOT wired into strength_model.py, season_simulator.py,
+  or Match Predictor — ships as an independent feature; the other half
+  of "CL/UEL restoration" (competition-specific avgGoalsPerTeam/
+  homeAwayRatio constants) needs a NEW results-collection job and is a
+  separate, deferred follow-up — `c77cd1f`, `56ba3c7`
 - Syndicate alerts restricted to 1X2 market only — check_and_alert()
   no longer calls _check_totals_market/_check_spreads_market (left
   in place, just unused, in case they're wanted back). Telegram +
