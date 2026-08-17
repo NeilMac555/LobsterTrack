@@ -16,6 +16,8 @@ import { countryFlagImgUrl } from '../utils/countryFlags';
 import Bet105Button from '../components/Bet105Button';
 import { parseUtc, formatKickoff } from '../utils/time';
 import { useTimePreference } from '../contexts/TimePreferenceContext';
+import { useOddsFormat } from '../contexts/OddsFormatContext';
+import { formatOdds } from '../utils/odds';
 
 // Format ms-until-kickoff as a readable T-minus string, or a T-plus if the
 // match has already kicked off. Kept inside this module because match detail
@@ -86,6 +88,7 @@ function LineHistoryStrip({ segments, formatLine }: LineHistoryStripProps) {
 
 export default function MatchDetailPage() {
   const { mode: timeMode } = useTimePreference();
+  const { format: oddsFormat } = useOddsFormat();
   const { matchId } = useParams<{ matchId: string }>();
   const [match, setMatch] = useState<MatchDetail | null>(null);
   const [totals, setTotals] = useState<MatchTotals | null>(null);
@@ -289,10 +292,10 @@ export default function MatchDetailPage() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <div className="text-2xl sm:text-3xl font-mono font-bold tabular-nums tracking-tight text-white leading-none">
-                        {cur != null ? cur.toFixed(2) : '—'}
+                        {cur != null ? formatOdds(cur, oddsFormat) : '—'}
                       </div>
                       <div className="text-[9px] sm:text-[10px] font-mono text-slate-500 mt-1.5 tabular-nums whitespace-nowrap">
-                        <span className="hidden sm:inline">Open </span>{open != null ? open.toFixed(2) : '—'}
+                        <span className="hidden sm:inline">Open </span>{open != null ? formatOdds(open, oddsFormat) : '—'}
                         <span className="text-slate-600 mx-1">·</span>
                         {cur ? `${((1 / cur) * 100).toFixed(1)}%` : '—'}
                       </div>
@@ -379,6 +382,7 @@ interface OddsHistoryTableProps {
 }
 
 function OddsHistoryTable({ oddsHistory, showChangesOnly, onToggleShowChanges }: OddsHistoryTableProps) {
+  const { format: oddsFormat } = useOddsFormat();
   // Filter to only rows where odds changed from previous
   const filteredHistory = showChangesOnly
     ? oddsHistory.filter((point, index) => {
@@ -468,7 +472,7 @@ function OddsHistoryTable({ oddsHistory, showChangesOnly, onToggleShowChanges }:
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
                     <span className={`font-mono font-bold ${homeChanged ? 'text-white bg-slate-600/40 px-2 py-0.5 rounded' : 'text-white'}`}>
-                      {point.home_odds?.toFixed(2) ?? '-'}
+                      {formatOdds(point.home_odds, oddsFormat)}
                     </span>
                     {homeChanged && prevPoint?.home_odds && (
                       <span className={`ml-2 text-xs ${point.home_odds! < prevPoint.home_odds ? 'text-emerald-400' : 'text-red-400'}`}>
@@ -478,7 +482,7 @@ function OddsHistoryTable({ oddsHistory, showChangesOnly, onToggleShowChanges }:
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
                     <span className={`font-mono font-bold ${drawChanged ? 'text-white bg-slate-600/40 px-2 py-0.5 rounded' : 'text-white'}`}>
-                      {point.draw_odds?.toFixed(2) ?? '-'}
+                      {formatOdds(point.draw_odds, oddsFormat)}
                     </span>
                     {drawChanged && prevPoint?.draw_odds && (
                       <span className={`ml-2 text-xs ${point.draw_odds! < prevPoint.draw_odds ? 'text-emerald-400' : 'text-red-400'}`}>
@@ -488,7 +492,7 @@ function OddsHistoryTable({ oddsHistory, showChangesOnly, onToggleShowChanges }:
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
                     <span className={`font-mono font-bold ${awayChanged ? 'text-white bg-slate-600/40 px-2 py-0.5 rounded' : 'text-white'}`}>
-                      {point.away_odds?.toFixed(2) ?? '-'}
+                      {formatOdds(point.away_odds, oddsFormat)}
                     </span>
                     {awayChanged && prevPoint?.away_odds && (
                       <span className={`ml-2 text-xs ${point.away_odds! < prevPoint.away_odds ? 'text-emerald-400' : 'text-red-400'}`}>
@@ -527,7 +531,7 @@ function OddsHistoryTable({ oddsHistory, showChangesOnly, onToggleShowChanges }:
                 <div className="text-center">
                   <div className="text-[10px] text-slate-500 uppercase mb-1">Home</div>
                   <div className={`font-mono font-bold text-sm ${homeChanged ? 'text-white bg-slate-600/40 px-1 py-0.5 rounded' : 'text-white'}`}>
-                    {point.home_odds?.toFixed(2) ?? '-'}
+                    {formatOdds(point.home_odds, oddsFormat)}
                     {homeChanged && prevPoint?.home_odds && (
                       <span className={`ml-1 text-xs ${point.home_odds! < prevPoint.home_odds ? 'text-emerald-400' : 'text-red-400'}`}>
                         {point.home_odds! > prevPoint.home_odds ? '↑' : '↓'}
@@ -538,7 +542,7 @@ function OddsHistoryTable({ oddsHistory, showChangesOnly, onToggleShowChanges }:
                 <div className="text-center">
                   <div className="text-[10px] text-slate-500 uppercase mb-1">Draw</div>
                   <div className={`font-mono font-bold text-sm ${drawChanged ? 'text-white bg-slate-600/40 px-1 py-0.5 rounded' : 'text-white'}`}>
-                    {point.draw_odds?.toFixed(2) ?? '-'}
+                    {formatOdds(point.draw_odds, oddsFormat)}
                     {drawChanged && prevPoint?.draw_odds && (
                       <span className={`ml-1 text-xs ${point.draw_odds! < prevPoint.draw_odds ? 'text-emerald-400' : 'text-red-400'}`}>
                         {point.draw_odds! > prevPoint.draw_odds ? '↑' : '↓'}
@@ -549,7 +553,7 @@ function OddsHistoryTable({ oddsHistory, showChangesOnly, onToggleShowChanges }:
                 <div className="text-center">
                   <div className="text-[10px] text-slate-500 uppercase mb-1">Away</div>
                   <div className={`font-mono font-bold text-sm ${awayChanged ? 'text-white bg-slate-600/40 px-1 py-0.5 rounded' : 'text-white'}`}>
-                    {point.away_odds?.toFixed(2) ?? '-'}
+                    {formatOdds(point.away_odds, oddsFormat)}
                     {awayChanged && prevPoint?.away_odds && (
                       <span className={`ml-1 text-xs ${point.away_odds! < prevPoint.away_odds ? 'text-emerald-400' : 'text-red-400'}`}>
                         {point.away_odds! > prevPoint.away_odds ? '↑' : '↓'}
@@ -579,6 +583,7 @@ interface TotalsSectionProps {
 }
 
 function TotalsSection({ totals, timeFrame, onTimeFrameChange }: TotalsSectionProps) {
+  const { format: oddsFormat } = useOddsFormat();
   const latestTotals = totals.totals_history[totals.totals_history.length - 1];
   const openingTotals = totals.totals_history[0];
 
@@ -620,7 +625,7 @@ function TotalsSection({ totals, timeFrame, onTimeFrameChange }: TotalsSectionPr
           <div className="bg-slate-900/50 rounded-xl p-3 sm:p-4 text-center">
             <div className="text-xs sm:text-sm text-emerald-400 font-medium mb-1">Over</div>
             <div className="text-2xl sm:text-3xl font-bold text-white font-mono">
-              {latestTotals.over_odds?.toFixed(2) ?? '-'}
+              {formatOdds(latestTotals.over_odds, oddsFormat)}
             </div>
             {overChange !== null && Math.abs(overChange) >= 0.1 && (
               <div className={`text-xs mt-1 font-medium ${overChange < 0 ? 'text-emerald-400' : 'text-red-400'}`}>
@@ -633,7 +638,7 @@ function TotalsSection({ totals, timeFrame, onTimeFrameChange }: TotalsSectionPr
           <div className="bg-slate-900/50 rounded-xl p-3 sm:p-4 text-center">
             <div className="text-xs sm:text-sm text-orange-400 font-medium mb-1">Under</div>
             <div className="text-2xl sm:text-3xl font-bold text-white font-mono">
-              {latestTotals.under_odds?.toFixed(2) ?? '-'}
+              {formatOdds(latestTotals.under_odds, oddsFormat)}
             </div>
             {underChange !== null && Math.abs(underChange) >= 0.1 && (
               <div className={`text-xs mt-1 font-medium ${underChange < 0 ? 'text-emerald-400' : 'text-red-400'}`}>
@@ -649,8 +654,8 @@ function TotalsSection({ totals, timeFrame, onTimeFrameChange }: TotalsSectionPr
             <span className="text-slate-400">Opening</span>
             <div className="flex gap-4 font-mono font-medium text-slate-300">
               <span>Line: {openingTotals.line ?? '-'}</span>
-              <span className="text-emerald-400">O: {openingTotals.over_odds?.toFixed(2) ?? '-'}</span>
-              <span className="text-orange-400">U: {openingTotals.under_odds?.toFixed(2) ?? '-'}</span>
+              <span className="text-emerald-400">O: {formatOdds(openingTotals.over_odds, oddsFormat)}</span>
+              <span className="text-orange-400">U: {formatOdds(openingTotals.under_odds, oddsFormat)}</span>
             </div>
           </div>
         </div>
@@ -696,6 +701,7 @@ interface SpreadsSectionProps {
 }
 
 function SpreadsSection({ spreads, homeTeam, awayTeam, timeFrame, onTimeFrameChange }: SpreadsSectionProps) {
+  const { format: oddsFormat } = useOddsFormat();
   const latestSpreads = spreads.spreads_history[spreads.spreads_history.length - 1];
   const openingSpreads = spreads.spreads_history[0];
 
@@ -745,7 +751,7 @@ function SpreadsSection({ spreads, homeTeam, awayTeam, timeFrame, onTimeFrameCha
               {homeTeam.length > 12 ? homeTeam.substring(0, 10) + '...' : homeTeam}
             </div>
             <div className="text-2xl sm:text-3xl font-bold text-white font-mono">
-              {latestSpreads.home_odds?.toFixed(2) ?? '-'}
+              {formatOdds(latestSpreads.home_odds, oddsFormat)}
             </div>
             {homeChange !== null && Math.abs(homeChange) >= 0.1 && (
               <div className={`text-xs mt-1 font-medium ${homeChange < 0 ? 'text-emerald-400' : 'text-red-400'}`}>
@@ -760,7 +766,7 @@ function SpreadsSection({ spreads, homeTeam, awayTeam, timeFrame, onTimeFrameCha
               {awayTeam.length > 12 ? awayTeam.substring(0, 10) + '...' : awayTeam}
             </div>
             <div className="text-2xl sm:text-3xl font-bold text-white font-mono">
-              {latestSpreads.away_odds?.toFixed(2) ?? '-'}
+              {formatOdds(latestSpreads.away_odds, oddsFormat)}
             </div>
             {awayChange !== null && Math.abs(awayChange) >= 0.1 && (
               <div className={`text-xs mt-1 font-medium ${awayChange < 0 ? 'text-emerald-400' : 'text-red-400'}`}>
@@ -776,8 +782,8 @@ function SpreadsSection({ spreads, homeTeam, awayTeam, timeFrame, onTimeFrameCha
             <span className="text-slate-400">Opening</span>
             <div className="flex gap-4 font-mono font-medium text-slate-300">
               <span>Line: {formatLine(openingSpreads.line)}</span>
-              <span className="text-emerald-400">H: {openingSpreads.home_odds?.toFixed(2) ?? '-'}</span>
-              <span className="text-orange-400">A: {openingSpreads.away_odds?.toFixed(2) ?? '-'}</span>
+              <span className="text-emerald-400">H: {formatOdds(openingSpreads.home_odds, oddsFormat)}</span>
+              <span className="text-orange-400">A: {formatOdds(openingSpreads.away_odds, oddsFormat)}</span>
             </div>
           </div>
         </div>

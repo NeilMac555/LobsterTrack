@@ -15,6 +15,8 @@ import { useAuth } from '../contexts/AuthContext';
 import LoginModal from '../components/LoginModal';
 import { toDisplayDate, dayGroupLabel, formatKickoff, type TimeMode } from '../utils/time';
 import { useTimePreference } from '../contexts/TimePreferenceContext';
+import { useOddsFormat } from '../contexts/OddsFormatContext';
+import { formatOdds } from '../utils/odds';
 
 interface GroupedMatches {
   label: string;
@@ -62,6 +64,7 @@ export default function HomePage() {
 
   const { user, isSubscribed, subscribe } = useAuth();
   const { mode: timeMode } = useTimePreference();
+  const { format: oddsFormat } = useOddsFormat();
   const [showLoginFromCTA, setShowLoginFromCTA] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
 
@@ -479,12 +482,12 @@ export default function HomePage() {
                       </td>
                       <td className="px-4 py-4 text-center">
                         <span className="font-mono text-slate-500 tabular-nums text-sm">
-                          {mover.opening_odds.toFixed(2)}
+                          {formatOdds(mover.opening_odds, oddsFormat)}
                         </span>
                       </td>
                       <td className="px-4 py-4 text-center">
                         <span className="font-mono font-bold text-white tabular-nums text-lg tracking-tight">
-                          {mover.current_odds.toFixed(2)}
+                          {formatOdds(mover.current_odds, oddsFormat)}
                         </span>
                       </td>
                       <td className="px-4 py-4">
@@ -567,9 +570,9 @@ export default function HomePage() {
                       </div>
                       {/* Ticker-style opening → current */}
                       <div className="text-[11px] font-mono mt-1.5 tabular-nums">
-                        <span className="text-slate-500">{mover.opening_odds.toFixed(2)}</span>
+                        <span className="text-slate-500">{formatOdds(mover.opening_odds, oddsFormat)}</span>
                         <span className="text-slate-600 mx-1">→</span>
-                        <span className="text-white font-bold">{mover.current_odds.toFixed(2)}</span>
+                        <span className="text-white font-bold">{formatOdds(mover.current_odds, oddsFormat)}</span>
                       </div>
                       {mover.sparkline && (
                         <div className="mt-1.5">
@@ -813,7 +816,7 @@ export default function HomePage() {
                           </td>
                           <td className="px-4 py-4 text-center">
                             <span className="font-mono font-bold text-white tabular-nums text-lg tracking-tight">
-                              {move.current_odds.toFixed(2)}
+                              {formatOdds(move.current_odds, oddsFormat)}
                             </span>
                           </td>
                         </tr>
@@ -884,7 +887,7 @@ export default function HomePage() {
                           <div className="text-[11px] font-mono mt-1.5 tabular-nums">
                             <span className="text-slate-500">Now</span>
                             <span className="text-slate-600 mx-1">·</span>
-                            <span className="text-white font-bold">{move.current_odds.toFixed(2)}</span>
+                            <span className="text-white font-bold">{formatOdds(move.current_odds, oddsFormat)}</span>
                           </div>
                         </div>
                       </div>

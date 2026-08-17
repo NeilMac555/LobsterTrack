@@ -4,6 +4,7 @@ import { VISIBLE_LEAGUES } from '../types';
 import LeagueLogo from './LeagueLogo';
 import { useAuth } from '../contexts/AuthContext';
 import { useTimePreference } from '../contexts/TimePreferenceContext';
+import { useOddsFormat } from '../contexts/OddsFormatContext';
 import LoginModal from './LoginModal';
 import CheckoutSuccessBanner from './CheckoutSuccessBanner';
 import LiveTicker from './LiveTicker';
@@ -43,6 +44,7 @@ export default function Layout() {
   const location = useLocation();
   const { user, logout, manageSubscription, isSubscribed, subscribe } = useAuth();
   const { mode: timeMode, toggle: toggleTimeMode } = useTimePreference();
+  const { format: oddsFormat, toggle: toggleOddsFormat } = useOddsFormat();
   const [subscribing, setSubscribing] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [loginMode, setLoginMode] = useState<'signin' | 'subscribe'>('signin');
@@ -199,6 +201,19 @@ export default function Layout() {
               >
                 <span className={`px-2 py-1 transition-colors ${timeMode === 'local' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}>Local</span>
                 <span className={`px-2 py-1 transition-colors ${timeMode === 'utc' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}>UTC</span>
+              </button>
+
+              {/* Decimal/American odds-format toggle — same pattern as the
+                  time toggle above; persisted via useOddsFormat(). Every
+                  odds price on the site reads this; chart axes stay
+                  decimal by design (see utils/odds.ts). */}
+              <button
+                onClick={toggleOddsFormat}
+                title={oddsFormat === 'decimal' ? 'Showing decimal odds — click for American' : 'Showing American odds — click for decimal'}
+                className="flex items-center rounded-full border border-slate-700/60 text-[10px] font-mono font-bold uppercase tracking-[0.1em] overflow-hidden"
+              >
+                <span className={`px-2 py-1 transition-colors ${oddsFormat === 'decimal' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}>Dec</span>
+                <span className={`px-2 py-1 transition-colors ${oddsFormat === 'american' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}>US</span>
               </button>
 
               <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full border border-slate-700/60 text-[10px] font-mono uppercase tracking-[0.12em] text-slate-400">
@@ -363,6 +378,26 @@ export default function Layout() {
                     className={`px-4 py-3 rounded-xl text-sm font-semibold uppercase tracking-wider transition-colors ${timeMode === 'utc' ? 'bg-slate-700 text-white' : 'bg-slate-700/50 text-slate-400 hover:text-white'}`}
                   >
                     UTC
+                  </button>
+                </div>
+              </div>
+
+              {/* Odds format toggle — same control as the desktop Dec/US
+                  pill, styled for the mobile menu's stacked layout. */}
+              <div>
+                <p className="text-xs text-slate-400 font-medium mb-2 uppercase tracking-wider">Odds Format</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => { if (oddsFormat !== 'decimal') toggleOddsFormat(); }}
+                    className={`px-4 py-3 rounded-xl text-sm font-semibold uppercase tracking-wider transition-colors ${oddsFormat === 'decimal' ? 'bg-slate-700 text-white' : 'bg-slate-700/50 text-slate-400 hover:text-white'}`}
+                  >
+                    Decimal
+                  </button>
+                  <button
+                    onClick={() => { if (oddsFormat !== 'american') toggleOddsFormat(); }}
+                    className={`px-4 py-3 rounded-xl text-sm font-semibold uppercase tracking-wider transition-colors ${oddsFormat === 'american' ? 'bg-slate-700 text-white' : 'bg-slate-700/50 text-slate-400 hover:text-white'}`}
+                  >
+                    US
                   </button>
                 </div>
               </div>

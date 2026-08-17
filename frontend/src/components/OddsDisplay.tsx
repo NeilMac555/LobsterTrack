@@ -1,3 +1,6 @@
+import { useOddsFormat } from '../contexts/OddsFormatContext';
+import { formatOdds as formatOddsUtil } from '../utils/odds';
+
 interface OddsDisplayProps {
   home: number | null;
   draw: number | null;
@@ -6,16 +9,14 @@ interface OddsDisplayProps {
 }
 
 export default function OddsDisplay({ home, draw, away, size = 'md' }: OddsDisplayProps) {
+  const { format } = useOddsFormat();
   const sizeClasses = {
     sm: 'text-xs px-2 py-1',
     md: 'text-sm px-3 py-1.5',
     lg: 'text-base px-4 py-2',
   };
 
-  const formatOdds = (odds: number | null) => {
-    if (odds === null) return '-';
-    return odds.toFixed(2);
-  };
+  const formatOdds = (odds: number | null) => formatOddsUtil(odds, format);
 
   return (
     <div className="flex gap-1">

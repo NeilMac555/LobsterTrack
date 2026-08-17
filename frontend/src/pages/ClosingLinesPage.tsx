@@ -10,6 +10,8 @@ import { useAuth } from '../contexts/AuthContext';
 import PaywallOverlay from '../components/PaywallOverlay';
 import { toDisplayDate, formatKickoff, type TimeMode } from '../utils/time';
 import { useTimePreference } from '../contexts/TimePreferenceContext';
+import { useOddsFormat } from '../contexts/OddsFormatContext';
+import { formatOdds as formatOddsUtil, type OddsFormat } from '../utils/odds';
 
 // How many records to pull from the API in one go. Pagination by week
 // happens client-side so users can drill into older matchweeks too.
@@ -43,9 +45,8 @@ function groupByWeek(matches: MatchClosingLines[], timeMode: TimeMode): WeekGrou
   return [...buckets.values()].sort((a, b) => b.weekStart.getTime() - a.weekStart.getTime());
 }
 
-function fmtOdds(v: number | null | undefined): string {
-  if (v === null || v === undefined) return '—';
-  return v.toFixed(2);
+function fmtOdds(v: number | null | undefined, format: OddsFormat): string {
+  return formatOddsUtil(v ?? null, format);
 }
 
 function fmtLine(v: number | null | undefined): string {
@@ -54,6 +55,7 @@ function fmtLine(v: number | null | undefined): string {
 }
 
 export default function ClosingLinesPage() {
+  const { format: oddsFormat } = useOddsFormat();
   const { isSubscribed } = useAuth();
   const { mode: timeMode } = useTimePreference();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -304,13 +306,13 @@ export default function ClosingLinesPage() {
                                 <div className="flex items-center gap-1.5">
                                   <span className="text-[9px] text-slate-500 uppercase tracking-wider">1X2</span>
                                   <span className="px-1.5 py-0.5 rounded bg-emerald-500/15 text-white tabular-nums">
-                                    {fmtOdds(m.h2h.close_home)}
+                                    {fmtOdds(m.h2h.close_home, oddsFormat)}
                                   </span>
                                   <span className="px-1.5 py-0.5 rounded bg-amber-500/15 text-white tabular-nums">
-                                    {fmtOdds(m.h2h.close_draw)}
+                                    {fmtOdds(m.h2h.close_draw, oddsFormat)}
                                   </span>
                                   <span className="px-1.5 py-0.5 rounded bg-red-500/15 text-white tabular-nums">
-                                    {fmtOdds(m.h2h.close_away)}
+                                    {fmtOdds(m.h2h.close_away, oddsFormat)}
                                   </span>
                                 </div>
                               ) : (
@@ -324,10 +326,10 @@ export default function ClosingLinesPage() {
                                     {fmtLine(m.asian_handicap.close_line)}
                                   </span>
                                   <span className="px-1.5 py-0.5 rounded bg-emerald-500/15 text-white tabular-nums">
-                                    {fmtOdds(m.asian_handicap.close_home_price)}
+                                    {fmtOdds(m.asian_handicap.close_home_price, oddsFormat)}
                                   </span>
                                   <span className="px-1.5 py-0.5 rounded bg-red-500/15 text-white tabular-nums">
-                                    {fmtOdds(m.asian_handicap.close_away_price)}
+                                    {fmtOdds(m.asian_handicap.close_away_price, oddsFormat)}
                                   </span>
                                 </div>
                               ) : null}
@@ -339,10 +341,10 @@ export default function ClosingLinesPage() {
                                     {m.totals.close_line ?? '—'}
                                   </span>
                                   <span className="px-1.5 py-0.5 rounded bg-emerald-500/15 text-white tabular-nums">
-                                    {fmtOdds(m.totals.close_over_price)}
+                                    {fmtOdds(m.totals.close_over_price, oddsFormat)}
                                   </span>
                                   <span className="px-1.5 py-0.5 rounded bg-orange-500/15 text-white tabular-nums">
-                                    {fmtOdds(m.totals.close_under_price)}
+                                    {fmtOdds(m.totals.close_under_price, oddsFormat)}
                                   </span>
                                 </div>
                               ) : null}

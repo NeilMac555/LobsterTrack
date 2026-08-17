@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from './contexts/AuthContext';
 import { TimePreferenceProvider } from './contexts/TimePreferenceContext';
+import { OddsFormatProvider } from './contexts/OddsFormatContext';
 import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import MatchDetailPage from './pages/MatchDetailPage';
@@ -29,6 +30,7 @@ function App() {
       <BrowserRouter>
         <AuthProvider>
         <TimePreferenceProvider>
+        <OddsFormatProvider>
           <Routes>
             <Route path="/" element={<Layout />}>
               <Route index element={<HomePage />} />
@@ -65,6 +67,7 @@ function App() {
               <Route path="blog/:slug" element={<BlogPostPage />} />
             </Route>
           </Routes>
+        </OddsFormatProvider>
         </TimePreferenceProvider>
         </AuthProvider>
       </BrowserRouter>

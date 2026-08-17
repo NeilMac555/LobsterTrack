@@ -1,3 +1,6 @@
+import { useOddsFormat } from '../contexts/OddsFormatContext';
+import { formatOdds as formatOddsUtil } from '../utils/odds';
+
 interface OddsWithMovementProps {
   current: number | null;
   opening: number | null;
@@ -31,10 +34,8 @@ export default function OddsWithMovement({
   label,
   bgClass
 }: OddsWithMovementProps) {
-  const formatOdds = (odds: number | null) => {
-    if (odds === null) return '-';
-    return odds.toFixed(2);
-  };
+  const { format } = useOddsFormat();
+  const formatOdds = (odds: number | null) => formatOddsUtil(odds, format);
 
   const movement = calculateMovement(current, opening);
   const isSignificant = Math.abs(movement.percentage) >= 5;
@@ -87,10 +88,8 @@ export function OddsDisplayWithMovement({
   openingAway,
   size = 'md'
 }: OddsDisplayWithMovementProps) {
-  const formatOdds = (odds: number | null) => {
-    if (odds === null) return '-';
-    return odds.toFixed(2);
-  };
+  const { format } = useOddsFormat();
+  const formatOdds = (odds: number | null) => formatOddsUtil(odds, format);
 
   const homeMovement = calculateMovement(home, openingHome);
   const drawMovement = calculateMovement(draw, openingDraw);

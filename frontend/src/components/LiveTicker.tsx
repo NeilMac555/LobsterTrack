@@ -4,6 +4,8 @@ import { getBiggestMovers } from '../api';
 import type { BiggestMover } from '../types';
 import { LEAGUE_CONFIG } from '../types';
 import { countryFlagImgUrl } from '../utils/countryFlags';
+import { useOddsFormat } from '../contexts/OddsFormatContext';
+import { formatOdds } from '../utils/odds';
 
 /**
  * Live ticker — a thin, always-scrolling horizontal bar showing the
@@ -14,6 +16,7 @@ import { countryFlagImgUrl } from '../utils/countryFlags';
  * empty bar.
  */
 export default function LiveTicker() {
+  const { format } = useOddsFormat();
   const [movers, setMovers] = useState<BiggestMover[]>([]);
 
   useEffect(() => {
@@ -130,7 +133,7 @@ export default function LiveTicker() {
                     {outcomeLabel(m)}
                   </span>
                   <span className="text-xs font-mono font-bold tabular-nums text-white">
-                    {m.current_odds.toFixed(2)}
+                    {formatOdds(m.current_odds, format)}
                   </span>
                   <span className={`text-xs font-mono font-bold tabular-nums ${moveColor}`}>
                     {arrow}

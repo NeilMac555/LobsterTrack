@@ -7,6 +7,8 @@ import { countryFlagImgUrl } from '../utils/countryFlags';
 import Bet105Button from '../components/Bet105Button';
 import { parseUtc, formatKickoff } from '../utils/time';
 import { useTimePreference } from '../contexts/TimePreferenceContext';
+import { useOddsFormat } from '../contexts/OddsFormatContext';
+import { formatOdds as formatOddsUtil, type OddsFormat } from '../utils/odds';
 
 type SortField = 'gap' | 'commence_time';
 
@@ -30,9 +32,8 @@ function fmtPct(p: number | null | undefined): string {
   return `${(p * 100).toFixed(1)}%`;
 }
 
-function fmtOdds(v: number | null | undefined): string {
-  if (v === null || v === undefined) return '—';
-  return v.toFixed(2);
+function fmtOdds(v: number | null | undefined, format: OddsFormat): string {
+  return formatOddsUtil(v ?? null, format);
 }
 
 function outcomeLabel(outcome: InPlayJumpOutcome, m: InPlayJump): string {
@@ -386,12 +387,13 @@ function MatchHeading({ m }: { m: InPlayJump }) {
 }
 
 function PinnacleColumn({ m }: { m: InPlayJump }) {
+  const { format: oddsFormat } = useOddsFormat();
   const c = m.pinnacle_close;
   return (
     <div className="font-mono text-[11px] leading-tight text-slate-400 text-right tabular-nums">
-      <div>H {fmtPct(c.home_implied)} <span className="text-slate-600">({fmtOdds(c.home_odds)})</span></div>
-      <div>D {fmtPct(c.draw_implied)} <span className="text-slate-600">({fmtOdds(c.draw_odds)})</span></div>
-      <div>A {fmtPct(c.away_implied)} <span className="text-slate-600">({fmtOdds(c.away_odds)})</span></div>
+      <div>H {fmtPct(c.home_implied)} <span className="text-slate-600">({fmtOdds(c.home_odds, oddsFormat)})</span></div>
+      <div>D {fmtPct(c.draw_implied)} <span className="text-slate-600">({fmtOdds(c.draw_odds, oddsFormat)})</span></div>
+      <div>A {fmtPct(c.away_implied)} <span className="text-slate-600">({fmtOdds(c.away_odds, oddsFormat)})</span></div>
     </div>
   );
 }

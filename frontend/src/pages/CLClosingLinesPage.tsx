@@ -6,10 +6,11 @@ import { getClosingLinesGrouped } from '../api';
 import type { MatchClosingLinesResponse, MatchClosingLines, ClosingLine } from '../types';
 import { toDisplayDate, dayGroupLabel, formatKickoff, type TimeMode } from '../utils/time';
 import { useTimePreference } from '../contexts/TimePreferenceContext';
+import { useOddsFormat } from '../contexts/OddsFormatContext';
+import { formatOdds as formatOddsUtil, type OddsFormat } from '../utils/odds';
 
-function formatOdds(odds: number | null): string {
-  if (odds === null) return '-';
-  return odds.toFixed(2);
+function formatOdds(v: number | null | undefined, format: OddsFormat): string {
+  return formatOddsUtil(v ?? null, format);
 }
 
 function formatLine(line: number | null): string {
@@ -18,6 +19,7 @@ function formatLine(line: number | null): string {
 }
 
 function MarketSection({ title, badge, cl }: { title: string; badge: React.ReactNode; cl: ClosingLine | null }) {
+  const { format: oddsFormat } = useOddsFormat();
   if (!cl) {
     return (
       <div className="flex items-center justify-between py-3 px-4 bg-slate-800/40 rounded-lg">
@@ -45,19 +47,19 @@ function MarketSection({ title, badge, cl }: { title: string; badge: React.React
             <div className="text-center">
               <div className="text-[10px] text-slate-500 uppercase mb-1">Home</div>
               <div className="font-mono text-sm font-semibold px-2 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
-                {formatOdds(cl.close_home)}
+                {formatOdds(cl.close_home, oddsFormat)}
               </div>
             </div>
             <div className="text-center">
               <div className="text-[10px] text-slate-500 uppercase mb-1">Draw</div>
               <div className="font-mono text-sm font-semibold px-2 py-1.5 rounded-lg bg-yellow-500/10 text-yellow-300 border border-yellow-500/20">
-                {formatOdds(cl.close_draw)}
+                {formatOdds(cl.close_draw, oddsFormat)}
               </div>
             </div>
             <div className="text-center">
               <div className="text-[10px] text-slate-500 uppercase mb-1">Away</div>
               <div className="font-mono text-sm font-semibold px-2 py-1.5 rounded-lg bg-red-500/10 text-red-300 border border-red-500/20">
-                {formatOdds(cl.close_away)}
+                {formatOdds(cl.close_away, oddsFormat)}
               </div>
             </div>
           </div>
@@ -74,13 +76,13 @@ function MarketSection({ title, badge, cl }: { title: string; badge: React.React
               <div className="text-center">
                 <div className="text-[10px] text-slate-500 uppercase mb-1">Home</div>
                 <div className="font-mono text-sm font-semibold px-2 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
-                  {formatOdds(cl.close_home_price)}
+                  {formatOdds(cl.close_home_price, oddsFormat)}
                 </div>
               </div>
               <div className="text-center">
                 <div className="text-[10px] text-slate-500 uppercase mb-1">Away</div>
                 <div className="font-mono text-sm font-semibold px-2 py-1.5 rounded-lg bg-red-500/10 text-red-300 border border-red-500/20">
-                  {formatOdds(cl.close_away_price)}
+                  {formatOdds(cl.close_away_price, oddsFormat)}
                 </div>
               </div>
             </div>
@@ -98,13 +100,13 @@ function MarketSection({ title, badge, cl }: { title: string; badge: React.React
               <div className="text-center">
                 <div className="text-[10px] text-slate-500 uppercase mb-1">Over</div>
                 <div className="font-mono text-sm font-semibold px-2 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
-                  {formatOdds(cl.close_over_price)}
+                  {formatOdds(cl.close_over_price, oddsFormat)}
                 </div>
               </div>
               <div className="text-center">
                 <div className="text-[10px] text-slate-500 uppercase mb-1">Under</div>
                 <div className="font-mono text-sm font-semibold px-2 py-1.5 rounded-lg bg-red-500/10 text-red-300 border border-red-500/20">
-                  {formatOdds(cl.close_under_price)}
+                  {formatOdds(cl.close_under_price, oddsFormat)}
                 </div>
               </div>
             </div>
@@ -116,6 +118,7 @@ function MarketSection({ title, badge, cl }: { title: string; badge: React.React
 }
 
 function MatchAccordion({ match }: { match: MatchClosingLines }) {
+  const { format: oddsFormat } = useOddsFormat();
   const [open, setOpen] = useState(false);
   const { mode: timeMode } = useTimePreference();
   const marketsAvailable = [match.h2h, match.asian_handicap, match.totals].filter(Boolean).length;
@@ -148,9 +151,9 @@ function MatchAccordion({ match }: { match: MatchClosingLines }) {
           {/* Quick odds preview when closed */}
           {!open && match.h2h && (
             <div className="hidden sm:flex items-center gap-1 font-mono text-xs">
-              <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400">{formatOdds(match.h2h.close_home)}</span>
-              <span className="px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-400">{formatOdds(match.h2h.close_draw)}</span>
-              <span className="px-1.5 py-0.5 rounded bg-red-500/10 text-red-400">{formatOdds(match.h2h.close_away)}</span>
+              <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400">{formatOdds(match.h2h.close_home, oddsFormat)}</span>
+              <span className="px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-400">{formatOdds(match.h2h.close_draw, oddsFormat)}</span>
+              <span className="px-1.5 py-0.5 rounded bg-red-500/10 text-red-400">{formatOdds(match.h2h.close_away, oddsFormat)}</span>
             </div>
           )}
           <svg
