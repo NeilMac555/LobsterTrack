@@ -93,6 +93,12 @@ session; update before finishing (move cards, add new ones, trim Done).
   exist pre-season for promoted clubs, correlate with finish as
   strongly as wages). Wage bills stay as established-club context/
   display. Do this inside the joint grid (it's the third axis).
+- Championship on Team P/L: the league is live for odds/steam
+  (db4103f) but has no historical results — needs E1 added to
+  LEAGUE_FILE_CODES, a 24-club Championship map in
+  team_name_normalizer.NAME_MAP_BY_LEAGUE, and a Team P/L
+  LEAGUE_OPTIONS entry. Neil flagged 26/27 Championship games are
+  already being played, so data exists on football-data.co.uk now.
 - Cross-league wage/value data if we ever want wages beyond the PL:
   Transfermarkt squad values (free-ish, 5 leagues) or a licensed
   SportMonks/Capology feed. valuball only covers ENG (Companies
@@ -172,6 +178,11 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Season switchover to 2026/27: Team P/L lock, importer DEFAULT_SEASONS,
+  weekly refresh job, Understat season (2026), plus a "no 26/27 matches
+  yet" empty state on Team P/L. Outrights/forecast engine were already
+  on 26/27. New-season rows land via the Monday 09:00 UTC import or the
+  admin import endpoint — `c63859e`
 - INCIDENT 2026-08-15 evening: site-wide outage (~75 min), resolved
   (e4d7036, 3cbf962, 80dc6b1), then Power Rankings hidden per Neil
   (0db9f0c). Root cause — NOT the ratings code, despite the outage
