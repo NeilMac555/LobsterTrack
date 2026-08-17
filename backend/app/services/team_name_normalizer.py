@@ -53,6 +53,12 @@ _EPL_MAP: dict[str, str] = {
     "Sunderland":       "Sunderland",
     "Watford":          "Watford",
     "West Brom":        "West Bromwich Albion",
+
+    # Promoted 26/27 — canonical names verified against the live
+    # /api/matches feed for soccer_epl, football-data keys against
+    # E1.csv (25/26).
+    "Coventry":         "Coventry City",
+    "Hull":             "Hull City",
 }
 
 # Serie A — verified empirically against I1.csv (2025/26) and the
@@ -129,6 +135,14 @@ _LA_LIGA_MAP: dict[str, str] = {
     "Las Palmas":   "Las Palmas",
     "Leganes":      "Leganés",
     "Valladolid":   "Real Valladolid",
+
+    # Promoted 26/27 — canonical names verified against the live
+    # /api/matches feed for soccer_spain_la_liga, football-data keys
+    # against SP2.csv (25/26). Yes, The Odds API really does use the
+    # full "Real Racing Club de Santander".
+    "Santander":    "Real Racing Club de Santander",
+    "La Coruna":    "Deportivo La Coruña",
+    "Malaga":       "Málaga",
 }
 
 
@@ -161,7 +175,20 @@ _BUNDESLIGA_MAP: dict[str, str] = {
     "Bochum":         "VfL Bochum",
     "Darmstadt":      "SV Darmstadt 98",
     "Hertha":         "Hertha Berlin",
-    "Schalke 04":     "Schalke 04",
+
+    # Promoted 26/27 — canonical names verified against the live
+    # /api/matches feed for soccer_germany_bundesliga, football-data
+    # keys against D2.csv (25/26). Schalke's canonical changed from
+    # our old best-effort "Schalke 04": The Odds API serves their
+    # 26/27 fixtures as "FC Schalke 04", and matching the odds side
+    # matters more than matching their old 22/23 rows (which keep the
+    # old name in historical_matches — the UI only shows the current
+    # season, but a manual 2223 re-import would now write duplicate
+    # Schalke rows under the new name; migrate the old rows first if
+    # that backfill is ever re-run).
+    "Schalke 04":     "FC Schalke 04",
+    "Paderborn":      "SC Paderborn",
+    "Elversberg":     "Elversberg",
 }
 
 
@@ -196,6 +223,11 @@ _LIGUE_1_MAP: dict[str, str] = {
     "Reims":        "Reims",
     "St Etienne":   "Saint Etienne",
     "Troyes":       "Troyes",
+
+    # Promoted 26/27 — canonical name verified against the live
+    # /api/matches feed for soccer_france_ligue_one, football-data key
+    # against F2.csv (25/26).
+    "Le Mans":      "Le Mans FC",
 }
 
 

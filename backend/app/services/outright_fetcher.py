@@ -68,20 +68,20 @@ OUTRIGHT_EVENTS: list[dict] = [
 _UEFA_CL_LEAGUE = "soccer_uefa_champs_league"
 
 # Polymarket labels that don't resolve through the normalizer's names
-# even after de-accenting. Two kinds live here:
-#   - formatting differences for established clubs (verified canonical)
-#   - 26/27 promoted clubs with no normalizer entry yet — best-effort
-#     canonical guesses following The Odds API's naming pattern. A
-#     wrong guess is harmless (the engine joins on the model's team
-#     universe, so a non-matching name simply never joins — same as
-#     NULL), and the raw label is always preserved in team_name_raw.
+# even after de-accenting — formatting differences between Polymarket's
+# label and the canonical name. All entries (including the 26/27
+# promoted clubs, which now have normalizer entries too) are verified
+# against the live /api/matches canonicals at the 26/27 switchover.
+# A wrong entry is harmless (the engine joins on the model's team
+# universe, so a non-matching name simply never joins — same as NULL),
+# and the raw label is always preserved in team_name_raw.
 _PM_ALIASES: dict[str, dict[str, str]] = {
     "soccer_epl": {
         "coventry city": "Coventry City",       # promoted 26/27
         "hull city": "Hull City",               # promoted 26/27
     },
     "soccer_spain_la_liga": {
-        "racing santander": "Racing Santander",     # promoted 26/27
+        "racing santander": "Real Racing Club de Santander",  # promoted 26/27
         "deportivo la coruna": "Deportivo La Coruña",  # promoted 26/27
         "malaga": "Málaga",                          # promoted 26/27
     },
@@ -89,10 +89,10 @@ _PM_ALIASES: dict[str, dict[str, str]] = {
         "mainz 05": "FSV Mainz 05",
         "fc augsburg": "Augsburg",
         "sc paderborn": "SC Paderborn",         # promoted 26/27
-        "sv elversberg": "SV Elversberg",       # promoted 26/27
+        "sv elversberg": "Elversberg",          # promoted 26/27
     },
     "soccer_france_ligue_one": {
-        "le mans": "Le Mans",                   # promoted 26/27
+        "le mans": "Le Mans FC",                # promoted 26/27
     },
 }
 

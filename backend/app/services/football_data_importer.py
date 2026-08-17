@@ -114,6 +114,8 @@ def _import_season_rows(league_key: str, season: str, csv_text: str) -> dict:
     Returns a summary dict for logging / admin response:
       {league, season, rows_seen, rows_written, rows_skipped, unmapped_teams[], errors[]}
     """
+    expected_div = LEAGUE_FILE_CODES[league_key]
+
     db = SessionLocal()
     try:
         reader = csv.DictReader(io.StringIO(csv_text))
@@ -124,6 +126,8 @@ def _import_season_rows(league_key: str, season: str, csv_text: str) -> dict:
         rows_close = 0
         rows_open_fallback = 0
         rows_missing_price = 0
+        rows_div_mismatch = 0
+        wrong_divs: set[str] = set()
         unmapped_teams: set[str] = set()
         errors: list[str] = []
 
@@ -133,6 +137,21 @@ def _import_season_rows(league_key: str, season: str, csv_text: str) -> dict:
             # Some season files have trailing blank rows.
             if not (row.get("HomeTeam") or "").strip():
                 rows_skipped += 1
+                continue
+
+            # Guard against football-data.co.uk serving the wrong
+            # competition under a league's file code — observed for
+            # real at the 26/27 switchover, when their fresh season
+            # folder had National League (Div=EC) rows in E0.csv and
+            # Portuguese Liga (Div=P1) rows in SP1.csv. Without this
+            # check, any mislabeled team that happens to share a name
+            # with a mapped one would be silently written into the
+            # wrong league's P/L.
+            div = (row.get("Div") or "").strip()
+            if div and div != expected_div:
+                rows_skipped += 1
+                rows_div_mismatch += 1
+                wrong_divs.add(div)
                 continue
 
             match_date = _parse_date(row.get("Date", ""))
@@ -224,6 +243,19 @@ def _import_season_rows(league_key: str, season: str, csv_text: str) -> dict:
             logger.error("football_data_importer commit failed",
                          league=league_key, season=season, error=str(e))
 
+        if rows_div_mismatch:
+            msg = (
+                f"{league_key} {season}: {rows_div_mismatch} rows carried "
+                f"Div={sorted(wrong_divs)} instead of {expected_div} — "
+                "football-data.co.uk is serving another competition's data "
+                "under this file code; those rows were skipped."
+            )
+            errors.append(msg)
+            logger.warning("football_data_importer wrong-division rows skipped",
+                           league=league_key, season=season,
+                           expected_div=expected_div, found=sorted(wrong_divs),
+                           rows=rows_div_mismatch)
+
         summary = {
             "league": league_key,
             "season": season,
@@ -233,6 +265,7 @@ def _import_season_rows(league_key: str, season: str, csv_text: str) -> dict:
             "rows_close": rows_close,
             "rows_open_fallback": rows_open_fallback,
             "rows_missing_price": rows_missing_price,
+            "rows_div_mismatch": rows_div_mismatch,
             "unmapped_teams": sorted(unmapped_teams),
             "errors": errors,
         }
