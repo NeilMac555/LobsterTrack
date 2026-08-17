@@ -5,6 +5,16 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 ## Now
 
+- Team P/L 26/27 data: BLOCKED UPSTREAM as of 2026-08-17 —
+  football-data.co.uk's 2627 folder has no top-5-league files yet
+  (I1/D1/F1/E1 are HTTP 300) and E0/SP1 contain the WRONG competition
+  (National League and Portuguese Liga rows — mislabeled uploads).
+  Our side is ready: importer has a Div guard (bcd7191), promoted-club
+  names are mapped, Monday 09:00 UTC cron pulls 2627. Check after
+  deploy that rows appear once football-data publishes real files; if
+  the Monday summary still shows div-mismatch errors, their upload is
+  still broken.
+
 - Top-scorer forecasting (EPL first) — NEW player-level model, biggest
   feature since v1. Data chain VALIDATED end-to-end 2026-08-05:
   * Rates: Understat getLeagueData `players` key (same endpoint xg_
@@ -178,6 +188,14 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Team P/L readied for 26/27 data: all promoted clubs added to the
+  name normalizer (football-data keys verified vs E1/SP2/D2/F2 25/26,
+  canonicals vs the live Odds API feed; Schalke canonical is now
+  "FC Schalke 04"), importer got a Div-column guard after
+  football-data's 2627 folder was found serving National League data
+  as E0.csv and Portuguese Liga as SP1.csv (guard tested against the
+  real mislabeled files: 21/21 rows skipped), Polymarket promoted-club
+  aliases corrected to verified canonicals — `bcd7191`
 - Season switchover to 2026/27: Team P/L lock, importer DEFAULT_SEASONS,
   weekly refresh job, Understat season (2026), plus a "no 26/27 matches
   yet" empty state on Team P/L. Outrights/forecast engine were already
