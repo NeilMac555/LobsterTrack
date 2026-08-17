@@ -394,7 +394,7 @@ class OddsScheduler:
             for league_key in LEAGUE_FILE_CODES.keys():
                 try:
                     summary = await import_seasons(
-                        league_key=league_key, seasons=["2526"]
+                        league_key=league_key, seasons=["2627"]
                     )
                     results[league_key] = {
                         "rows_written": summary.get("total_rows_written", 0),
@@ -560,7 +560,7 @@ class OddsScheduler:
         # Pinnacle closes overnight Sunday→Monday, so by 09:00 UTC the
         # file is reliably updated. Mon-night fixtures (Italy / France)
         # land in the following week's pull. Refreshes the current
-        # season ('2526') only — older seasons are static.
+        # season ('2627') only — older seasons are static.
         self.scheduler.add_job(
             self.football_data_refresh_job,
             trigger=CronTrigger(day_of_week="mon", hour=9, minute=0),

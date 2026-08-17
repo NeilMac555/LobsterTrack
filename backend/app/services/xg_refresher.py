@@ -39,11 +39,10 @@ LEAGUES: dict[str, str] = {
     "Ligue_1":    "soccer_france_ligue_one",
 }
 
-# Understat uses the season-start year in URLs (2025 = 2025/26 season).
-# In a real switchover (e.g. Aug 2026) this will need bumping to '2026' —
-# SITE_SEASON below derives automatically from this, so nothing else
-# needs to change.
-SEASON = "2025"
+# Understat uses the season-start year in URLs (2026 = 2026/27 season).
+# Bump at each August switchover — SITE_SEASON below derives
+# automatically from this, so nothing else needs to change.
+SEASON = "2026"
 
 
 def _site_season_code(understat_season: str) -> str:

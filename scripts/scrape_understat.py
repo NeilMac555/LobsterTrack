@@ -25,7 +25,7 @@ LEAGUES = {
     'Ligue_1':    'soccer_france_ligue_one',
 }
 
-SEASON = '2025'  # Understat uses the season-start year — 2025 = 2025/26
+SEASON = '2026'  # Understat uses the season-start year — 2026 = 2026/27
 
 # Any team-name mismatches between Understat and the Rolling xG frontend's
 # dropdown go here. Most teams match 1:1 so this stays small.

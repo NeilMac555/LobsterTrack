@@ -51,7 +51,7 @@ LEAGUE_FILE_CODES: dict[str, str] = {
 FOOTBALL_DATA_URL = "https://www.football-data.co.uk/mmz4281/{season}/{code}.csv"
 
 # Default seasons to pull on a fresh install: last 5 completed + current.
-DEFAULT_SEASONS: list[str] = ["2122", "2223", "2324", "2425", "2526"]
+DEFAULT_SEASONS: list[str] = ["2122", "2223", "2324", "2425", "2526", "2627"]
 
 
 def _parse_date(raw: str) -> Optional[date]:

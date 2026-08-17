@@ -15,11 +15,13 @@ const LEAGUE_OPTIONS = [
   { value: 'soccer_france_ligue_one', label: 'Ligue 1', disabled: false },
 ];
 
-// Hard-locked to 2025/26 per Neil's request — historical seasons sit in
-// the historical_matches table but are hidden from the UI for now. If we
-// want to bring them back later, swap this for a season selector and
-// stop filtering on the row predicate below.
-const CURRENT_SEASON = '2526';
+// Hard-locked to the current season per Neil's request — historical
+// seasons sit in the historical_matches table but are hidden from the
+// UI for now. If we want to bring them back later, swap this for a
+// season selector and stop filtering on the row predicate below.
+// Bump at each August switchover (also bump the importer/scheduler —
+// see backend/app/services/football_data_importer.py DEFAULT_SEASONS).
+const CURRENT_SEASON = '2627';
 
 type Venue = 'overall' | 'home' | 'away';
 type Side = 'back' | 'fade';
@@ -422,6 +424,17 @@ export default function TeamPLPage() {
         <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-8 text-center space-y-2">
           <p className="text-slate-300 font-semibold">No historical data loaded yet.</p>
           <p className="text-slate-500 text-sm">An admin needs to run the football-data.co.uk import.</p>
+        </div>
+      )}
+      {/* Season switched but no matches played (or imported) yet for this
+          league — distinct from the no-data-at-all state above, which
+          only fires when the API returns zero rows across ALL seasons. */}
+      {!loading && !error && data && data.rows.length > 0 && sortedRows.length === 0 && (
+        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-8 text-center space-y-2">
+          <p className="text-slate-300 font-semibold">No {currentSeasonLabel} matches yet for {leagueLabel}.</p>
+          <p className="text-slate-500 text-sm">
+            Numbers appear here after the first round of fixtures is played and the weekly results import runs.
+          </p>
         </div>
       )}
 
