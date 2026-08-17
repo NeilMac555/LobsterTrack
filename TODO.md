@@ -14,6 +14,17 @@ session; update before finishing (move cards, add new ones, trim Done).
   deploy that rows appear once football-data publishes real files; if
   the Monday summary still shows div-mismatch errors, their upload is
   still broken.
+- Rolling xG 26/27: ALSO blocked upstream as of 2026-08-17 — Understat
+  hasn't rolled their season over (league pages still say "season
+  2025/2026"; getLeagueData/*/2026 returns empty for all 5 leagues,
+  verified from prod via /admin/refresh-xg, which safely no-ops on
+  empty payloads). Endpoint itself is unchanged (checked their
+  league.min.js — still getLeagueData/{league}/{season}). No code
+  change needed: refresher is on SEASON=2026, Mon 03:00 UTC cron, and
+  the xg-data API auto-switches to the newest season present, showing
+  25/26 charts until then. Check the xg_refresh block in scheduler
+  diagnostics after Mondays; "empty payload" = Understat still not
+  rolled over.
 
 - Top-scorer forecasting (EPL first) — NEW player-level model, biggest
   feature since v1. Data chain VALIDATED end-to-end 2026-08-05:
