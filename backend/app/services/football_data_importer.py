@@ -100,9 +100,14 @@ async def _fetch_csv(league_key: str, season: str) -> str:
         resp.raise_for_status()
         # The site serves these as windows-1252 in some seasons. Try utf-8
         # first, fall back to cp1252 for the older files where non-ASCII
-        # glyphs appear in team names etc.
+        # glyphs appear in team names etc. utf-8-sig, not plain utf-8:
+        # current-season files open with a BOM, which otherwise ends up
+        # inside the first header name ('﻿Div') and silently breaks
+        # the wrong-division guard's row.get("Div") lookup — observed
+        # live at the 26/27 switchover. (utf-8-sig also decodes BOM-less
+        # files identically to utf-8.)
         try:
-            return resp.content.decode("utf-8")
+            return resp.content.decode("utf-8-sig")
         except UnicodeDecodeError:
             return resp.content.decode("cp1252")
 
