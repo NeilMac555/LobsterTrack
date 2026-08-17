@@ -188,6 +188,14 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- BOM fix for the Div guard (found by verifying the guard LIVE after
+  deploy, not just locally): football-data CSVs open with a UTF-8 BOM,
+  so plain utf-8 decoding hid the Div header and the guard never fired
+  — only the unmapped-team net was rejecting the mislabeled rows,
+  which wouldn't save us once team names overlap (Championship data
+  under E0 would import as EPL). Now decodes utf-8-sig; verified live:
+  E0 12/12 and SP1 9/9 wrong-division rows rejected with loud errors —
+  `15e8652`
 - Team P/L readied for 26/27 data: all promoted clubs added to the
   name normalizer (football-data keys verified vs E1/SP2/D2/F2 25/26,
   canonicals vs the live Odds API feed; Schalke canonical is now
