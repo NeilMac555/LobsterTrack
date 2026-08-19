@@ -78,6 +78,130 @@ const POSTS = [
 <p>Pinnacle takes the highest limits in the world and their lines are shaped by the sharpest bettors. When Pinnacle moves a line, the rest of the market follows. It is the benchmark for identifying genuine sharp action.</p>
 <p><a href="https://www.steamwatch.io/steam-results">View Steam Results on SteamWatch</a></p>`,
   },
+  {
+    slug: 'what-is-closing-line-value-in-football-betting',
+    title: 'What Is Closing Line Value (CLV) in Football Betting?',
+    description:
+      'Closing line value explained: what CLV is, how to calculate it in implied probability, why beating the closing line is the best predictor of long-term betting profit, and how to track it.',
+    author: 'Neil Macdonald',
+    datePublished: '2026-08-15',
+    faq: [
+      {
+        question: 'What is closing line value in betting?',
+        answer:
+          'Closing line value (CLV) is the difference between the odds you took and the final odds available just before kickoff — the closing line. If you backed a team at 2.20 and it closed at 2.00, you beat the close and hold positive CLV on that bet.',
+      },
+      {
+        question: 'Why does the closing line matter so much?',
+        answer:
+          'The closing line is the most informed price the market ever produces — it has absorbed every bet, every team-news drop and every model that fired before kickoff. Beating it consistently means you are getting better prices than the market’s final judgement, which is the strongest known predictor of long-term profit.',
+      },
+      {
+        question: 'How do you calculate CLV?',
+        answer:
+          'Convert both prices to implied probability (1 divided by decimal odds) and take the difference. Backing at 2.20 is a 45.5% implied price; a 2.00 close is 50%. You beat the close by 4.5 percentage points. Measuring in probability, not raw odds, keeps favourites and longshots comparable.',
+      },
+      {
+        question: 'Is beating the closing line proof you are a winning bettor?',
+        answer:
+          'Over a meaningful sample, yes — it is the best evidence available, and it shows up long before profit does. Results in small samples are mostly luck; CLV is not. A bettor who beats the close consistently is expected to win long-term even through losing runs, and a profitable bettor with consistently negative CLV is expected to give it back.',
+      },
+    ],
+    noscriptHtml: `<h1>What Is Closing Line Value (CLV) in Football Betting?</h1>
+<p>By Neil Macdonald — August 15, 2026</p>
+<p>Closing line value (CLV) is the difference between the odds you took and the final odds available just before kickoff — the closing line. Back a team at 2.20 that closes at 2.00 and you beat the close. Do that consistently and you are almost certainly a long-term winner, whatever this month's results say.</p>
+<h2>Why the closing line is the benchmark</h2>
+<p>The closing line is the most informed price the market ever produces. By kickoff it has absorbed every bet, every confirmed team-news drop, and every model that fired. At a high-limit book like Pinnacle, the close is the sharpest single estimate of the true probabilities that exists anywhere.</p>
+<h2>How to calculate CLV</h2>
+<p>Convert both prices to implied probability (1 / decimal odds) and take the difference. 2.20 is 45.5%; a 2.00 close is 50%. You beat the close by 4.5 percentage points. Measure in probability, not raw odds, so favourites and longshots stay comparable.</p>
+<h2>Why CLV predicts profit</h2>
+<p>Short-term results are mostly luck. CLV is not. If your bets consistently beat the closing price, you are systematically buying probability for less than the market's final estimate of what it is worth — and over a large sample that edge must show up as profit. The reverse also holds: a hot streak with negative CLV is borrowed money.</p>
+<h2>How to track it</h2>
+<p>Record the price you took and compare it to the close for every bet. SteamWatch records opening and closing Pinnacle prices for every tracked match across 1X2, Asian Handicap and Totals markets.</p>
+<p><a href="https://www.steamwatch.io/closing-lines">View Closing Lines on SteamWatch</a></p>`,
+  },
+  {
+    slug: 'what-is-a-drifter-in-football-betting',
+    title: 'What Is a Drifter in Football Betting?',
+    description:
+      'Drifters explained: what it means when football odds drift, why prices lengthen before kickoff, how drift relates to steam, and what the data says about backing or fading drifting teams.',
+    author: 'Neil Macdonald',
+    datePublished: '2026-08-15',
+    faq: [
+      {
+        question: 'What is a drifter in football betting?',
+        answer:
+          'A drifter is a selection whose odds lengthen before kickoff — the price "drifts" out, meaning its implied probability falls. A team that opens at 2.00 and closes at 2.30 has drifted: the market’s final estimate of its chances dropped from 50% to about 43.5%.',
+      },
+      {
+        question: 'Why do football odds drift?',
+        answer:
+          'A price drifts when the weight of money and information moves against that outcome — the market is backing the other side, team news has weakened the case, or the opening price was simply set too short. Whatever the cause, drift means the market has revised that outcome’s probability downward.',
+      },
+      {
+        question: 'Is backing drifters profitable?',
+        answer:
+          'Blindly backing every drifter means systematically taking outcomes the market has downgraded — the closing price is the market’s most informed estimate, and drift means that estimate fell. Any strategy involving drifters needs a real reason to believe the drift overshot, and a tracked record to prove it. Judge it with data, not instinct.',
+      },
+      {
+        question: 'What is the opposite of a drifter?',
+        answer:
+          'A steamer — a selection whose odds shorten before kickoff as money arrives on it. Steam and drift are two views of the same repricing: when one outcome in a market steams, the probability has to come from somewhere, and the other outcomes drift.',
+      },
+    ],
+    noscriptHtml: `<h1>What Is a Drifter in Football Betting?</h1>
+<p>By Neil Macdonald — August 15, 2026</p>
+<p>A drifter is a selection whose odds lengthen before kickoff — the price "drifts" out, meaning its implied probability falls. A team that opens at 2.00 and closes at 2.30 has drifted: the market's final estimate of its chances dropped from 50% to roughly 43.5%.</p>
+<h2>Drift is the other half of steam</h2>
+<p>Probability in a market has to add up. When money piles onto one outcome and its price shortens (steam), that probability comes from somewhere — the other outcomes lengthen. Steam and drift are two views of the same repricing. SteamWatch tracks both sides: steam moves on one page, drifters on another, each with the outcome recorded afterwards.</p>
+<h2>Why odds drift</h2>
+<p>A price drifts when the weight of money and information moves against that outcome: the market is backing the other side, confirmed team news weakened the case, or the opening price was simply too short. Whatever the specific cause, drift means the market revised that outcome's probability downward — and kept revising it until kickoff.</p>
+<h2>Backing or fading drifters</h2>
+<p>Blindly backing drifters means systematically taking outcomes the market downgraded. Blindly fading them means laying prices the market has already corrected. Neither is free money — which is why the honest approach is to track what actually happened, match after match, and let the record speak.</p>
+<p><a href="https://www.steamwatch.io/drifters">View Drifters on SteamWatch</a></p>`,
+  },
+  {
+    slug: 'how-to-read-closing-lines-in-football-betting',
+    title: 'How to Read Closing Lines in Football Betting',
+    description:
+      'A practical guide to reading closing lines: converting odds to implied probability, comparing opening and closing prices, what open-to-close movement tells you, and which markets to trust.',
+    author: 'Neil Macdonald',
+    datePublished: '2026-08-15',
+    faq: [
+      {
+        question: 'What is a closing line?',
+        answer:
+          'The closing line is the final odds available on a market just before kickoff. It is the market’s last and most informed price — every bet, lineup announcement and piece of news that arrived before the match is reflected in it.',
+      },
+      {
+        question: 'What does it mean when the closing line is different from the opening line?',
+        answer:
+          'The gap between open and close is the market’s week of learning compressed into one number. A price that shortened from open to close means the market raised that outcome’s probability; a price that lengthened means it lowered it. The bigger the gap, the more the market changed its mind.',
+      },
+      {
+        question: 'How do you convert decimal odds to implied probability?',
+        answer:
+          'Divide 1 by the decimal odds. Odds of 2.50 imply 1 / 2.50 = 40%. Note that a full market’s implied probabilities sum to slightly more than 100% — the excess is the bookmaker’s margin (vig).',
+      },
+      {
+        question: 'Why use Pinnacle closing lines specifically?',
+        answer:
+          'Pinnacle takes the highest limits in the world and welcomes winning players, so its prices are shaped by the sharpest money in the market. Its closing line is widely treated as the cleanest available estimate of true match probabilities, which is why analysts benchmark against it.',
+      },
+    ],
+    noscriptHtml: `<h1>How to Read Closing Lines in Football Betting</h1>
+<p>By Neil Macdonald — August 15, 2026</p>
+<p>The closing line is the final odds available just before kickoff — the market's last and most informed price. Learning to read closes, and the distance between open and close, tells you more about a match's market than any pundit will.</p>
+<h2>Convert to implied probability first</h2>
+<p>Divide 1 by the decimal odds. 2.50 implies 40%. 1.57 implies 63.7%. A full market sums to slightly over 100% — the excess is the bookmaker's margin. Every serious read of a closing line starts in probability space, not odds space.</p>
+<h2>The open-to-close gap is the story</h2>
+<p>The difference between the opening and closing price is the market's week of learning compressed into one number. Shortened from 2.20 to 2.00: the market raised that outcome's probability by 4.5 points. Lengthened from 2.00 to 2.30: it cut the estimate by 6.5 points. The bigger the gap, the more the market changed its mind — and the worse the opener was.</p>
+<h2>Which market's close to trust</h2>
+<p>Asian Handicap closes at high-limit books are the sharpest read on relative team strength — that is where professional volume concentrates. Totals closes are the market's best estimate of goal expectation. 1X2 closes carry more recreational money and slightly more margin, so they are the noisiest of the three.</p>
+<h2>What to do with it</h2>
+<p>Compare every price you take against the eventual close (closing line value), and study open-to-close patterns by league and team. SteamWatch records opening and closing Pinnacle prices for every tracked match across all three markets.</p>
+<p><a href="https://www.steamwatch.io/closing-lines">View Closing Lines on SteamWatch</a></p>`,
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -354,6 +478,50 @@ const PAGES = [
     noscriptHtml: `<h1>Rolling xG — SteamWatch</h1>
 <p>Track rolling expected goals (xG For and xG Against) trends for every team across Europe's top football leagues. Visualise form changes with 5 and 10 game rolling windows.</p>
 <p>Leagues: Premier League, La Liga, Bundesliga, Serie A, Ligue 1.</p>
+<p><a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
+  },
+  {
+    path: 'drifters',
+    title: 'Drifters — SteamWatch',
+    description:
+      'Football odds drifters: selections whose prices lengthened before kickoff, tracked with outcomes recorded. The other side of steam, across major European leagues.',
+    ogType: 'website',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'Dataset',
+      name: 'SteamWatch Football Drifters',
+      description:
+        'Selections whose odds lengthened before kickoff across major European football leagues, with outcomes recorded',
+      url: `${DOMAIN}/drifters`,
+      temporalCoverage: '2025/..',
+      creator: { '@type': 'Organization', name: 'SteamWatch', url: DOMAIN },
+      keywords: ['drifters', 'odds drift', 'football betting', 'line movement'],
+    },
+    noscriptHtml: `<h1>Drifters — SteamWatch</h1>
+<p>A drifter is a selection whose odds lengthened before kickoff — its implied probability fell. SteamWatch tracks every drift across major European leagues and records what happened next: win rates and profit/loss for the moves going the other way.</p>
+<p>Leagues covered: Premier League, La Liga, Bundesliga, Serie A, Ligue 1, Champions League, Europa League.</p>
+<p><a href="https://www.steamwatch.io/blog/what-is-a-drifter-in-football-betting">What is a drifter?</a> · <a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
+  },
+  {
+    path: 'team-pnl',
+    title: 'Team P/L — SteamWatch',
+    description:
+      'What backing or fading every team blindly would have returned, by season and venue. Profit/loss records built from Pinnacle closing prices across major European leagues.',
+    ogType: 'website',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'Dataset',
+      name: 'SteamWatch Team Profit/Loss Records',
+      description:
+        'Blind back and fade profit/loss for every tracked team, computed from Pinnacle closing prices, split by season and venue',
+      url: `${DOMAIN}/team-pnl`,
+      temporalCoverage: '2025/..',
+      creator: { '@type': 'Organization', name: 'SteamWatch', url: DOMAIN },
+      keywords: ['team profit loss', 'back and fade', 'football betting', 'closing prices'],
+    },
+    noscriptHtml: `<h1>Team P/L — SteamWatch</h1>
+<p>What would blindly backing — or blindly fading — each team have returned? SteamWatch computes profit/loss for every tracked team from Pinnacle closing prices, split by season and home/away venue.</p>
+<p>Leagues covered: Premier League, EFL Championship, La Liga, Bundesliga, Serie A, Ligue 1.</p>
 <p><a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
   },
 ];

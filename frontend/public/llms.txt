@@ -23,6 +23,9 @@ SteamWatch reports what moved and what happened next. It does not claim to know 
 - [Rolling xG](https://www.steamwatch.io/tools/rolling-xg): rolling expected-goals tables for the top five leagues.
 - [Bet Calculator](https://www.steamwatch.io/tools/bet-calculator) and [Hedge Calculator](https://www.steamwatch.io/tools/hedge-calculator): free staking tools.
 - [What are steam moves?](https://www.steamwatch.io/blog/what-are-steam-moves-in-football-betting): plain-English explainer.
+- [What is closing line value (CLV)?](https://www.steamwatch.io/blog/what-is-closing-line-value-in-football-betting): how to calculate CLV and why it predicts long-term profit.
+- [What is a drifter?](https://www.steamwatch.io/blog/what-is-a-drifter-in-football-betting): why odds lengthen before kickoff and how drift relates to steam.
+- [How to read closing lines](https://www.steamwatch.io/blog/how-to-read-closing-lines-in-football-betting): implied probability, open-to-close gaps, and which markets to trust.
 - [About](https://www.steamwatch.io/about): who runs SteamWatch (Neil Mac, betting analyst, 7,800+ tracked bets).
 
 ## Access
