@@ -21,6 +21,26 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://www.steamwatch.io/drifters</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.steamwatch.io/team-pnl</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.steamwatch.io/in-play-jumps</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.steamwatch.io/tools/bet-calculator</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
     <loc>https://www.steamwatch.io/tools/match-predictor</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>

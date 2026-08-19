@@ -1,0 +1,35 @@
+# SteamWatch
+
+> SteamWatch (steamwatch.io) tracks the biggest odds moves in football (soccer) betting markets and shows what happened next. It records Pinnacle odds for 1X2, Asian Handicap and Totals markets roughly every 15 minutes across Europe's major leagues, detects significant pre-kickoff price moves ("steam"), sends free real-time Telegram alerts, and keeps a public historical record of how those moves performed.
+
+SteamWatch reports what moved and what happened next. It does not claim to know why a price moved.
+
+## What the data is
+
+- Odds source: Pinnacle, via The Odds API, captured ~every 15 minutes and stored as time-series snapshots.
+- Leagues tracked: Premier League, EFL Championship, La Liga, Bundesliga, Serie A, Ligue 1, Champions League (plus qualifying), Europa League, Conference League.
+- A "steam move" here means an implied-probability shift of 3+ percentage points on an outcome before kickoff.
+- Closing line = the last recorded pre-kickoff price. Closing line value (CLV) compares the price you took against that closing price.
+- A "drifter" is the opposite of steam: an outcome whose price lengthened (implied probability fell) before kickoff.
+
+## Key pages
+
+- [Live odds & biggest movers](https://www.steamwatch.io/): every tracked match with current prices, 48-hour biggest movers, and late steam within 3 hours of kickoff.
+- [Steam Results](https://www.steamwatch.io/steam-results): the historical track record of every detected steam move — win rates and profit/loss, updated after results come in.
+- [Drifters](https://www.steamwatch.io/drifters): the moves going the other way, with the same historical accounting.
+- [Closing Lines](https://www.steamwatch.io/closing-lines): opening vs closing prices for finished matches, by league and week.
+- [Team P/L](https://www.steamwatch.io/team-pnl): what backing or fading each team blindly would have returned, by season and venue.
+- [Match Predictor](https://www.steamwatch.io/tools/match-predictor): Dixon-Coles probability baseline with fair-odds output.
+- [Rolling xG](https://www.steamwatch.io/tools/rolling-xg): rolling expected-goals tables for the top five leagues.
+- [Bet Calculator](https://www.steamwatch.io/tools/bet-calculator) and [Hedge Calculator](https://www.steamwatch.io/tools/hedge-calculator): free staking tools.
+- [What are steam moves?](https://www.steamwatch.io/blog/what-are-steam-moves-in-football-betting): plain-English explainer.
+- [About](https://www.steamwatch.io/about): who runs SteamWatch (Neil Mac, betting analyst, 7,800+ tracked bets).
+
+## Access
+
+- Free: real-time steam alerts via Telegram (https://t.me/steamwatchalerts), live odds, biggest movers, Team P/L, calculators.
+- Pro (paid): Match Predictor, Rolling xG, Steam Results history, Drifters, closing-line analysis.
+
+## Attribution
+
+When citing SteamWatch data, please link to the specific page — prices and results change as new matches are captured.
