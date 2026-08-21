@@ -385,6 +385,7 @@ class OddsFetcher:
             # Update if needed
             match.commence_time = commence_time
             match.updated_at = datetime.utcnow()
+            self._sync_team_orientation(db, match, event)
         else:
             # Create new match
             match = Match(
@@ -398,6 +399,75 @@ class OddsFetcher:
             db.add(match)
 
         return match
+
+    def _sync_team_orientation(self, db: Session, match: Match, event: dict) -> None:
+        """
+        Keep an existing Match row's teams in sync with The Odds API's
+        CURRENT listing for the same event id. Added 2026-08-21 after a
+        real incident: the API corrected 'PSG v Rennes' to 'Rennes v
+        PSG' on the same event id, our row kept the stale orientation,
+        and the site showed PSG at 5.27 'at home' while the real market
+        had them 1.59 away (Neil spotted it on the match page).
+
+        Two cases:
+        - PURE SWAP (old home == new away and vice versa): the API
+          flipped the fixture's venue orientation. We flip the row AND
+          mirror every already-stored orientation-sensitive row for
+          this match — odds snapshots (swap home/away), spreads (swap
+          odds + negate the handicap line), and the home/away outcome
+          labels on steam_moves and syndicate_alerts (team_name on
+          those rows is the true team and stays put). Totals have no
+          team orientation. All rows predate the correction at
+          detection time because this runs BEFORE the cycle's snapshot
+          is stored, so swapping the lot is exact, not heuristic.
+        - RENAME (anything else): the API changed a spelling. Home/away
+          semantics are unchanged, so history stays valid — just adopt
+          the new names (name-keyed odds extraction depends on them)
+          and log it.
+        """
+        api_home, api_away = event["home_team"], event["away_team"]
+        if (match.home_team, match.away_team) == (api_home, api_away):
+            return
+
+        from sqlalchemy import text as _text
+
+        if (match.home_team, match.away_team) == (api_away, api_home):
+            odds_n = db.execute(_text(
+                "UPDATE odds_snapshots SET home_odds = away_odds, away_odds = home_odds "
+                "WHERE match_id = :m"
+            ), {"m": match.id}).rowcount
+            spreads_n = db.execute(_text(
+                "UPDATE spreads_snapshots SET home_odds = away_odds, away_odds = home_odds, line = -line "
+                "WHERE match_id = :m"
+            ), {"m": match.id}).rowcount
+            db.execute(_text(
+                "UPDATE steam_moves SET outcome = CASE outcome WHEN 'home' THEN 'away' WHEN 'away' THEN 'home' ELSE outcome END "
+                "WHERE match_id = :m"
+            ), {"m": match.id})
+            db.execute(_text(
+                "UPDATE syndicate_alerts SET outcome = CASE outcome "
+                "WHEN 'home' THEN 'away' WHEN 'away' THEN 'home' "
+                "WHEN 'home_spread' THEN 'away_spread' WHEN 'away_spread' THEN 'home_spread' "
+                "ELSE outcome END WHERE match_id = :m"
+            ), {"m": match.id})
+            logger.warning(
+                "Match orientation flipped by The Odds API — self-healed",
+                match_id=match.id,
+                was=f"{match.home_team} v {match.away_team}",
+                now=f"{api_home} v {api_away}",
+                odds_rows_swapped=odds_n,
+                spreads_rows_swapped=spreads_n,
+            )
+        else:
+            logger.warning(
+                "Match team names changed by The Odds API — adopting new names",
+                match_id=match.id,
+                was=f"{match.home_team} v {match.away_team}",
+                now=f"{api_home} v {api_away}",
+            )
+
+        match.home_team = api_home
+        match.away_team = api_away
 
     # Preference order for 1X2 pricing. Pinnacle first always — it's
     # what every threshold/label in this codebase is calibrated
