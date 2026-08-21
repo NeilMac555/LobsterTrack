@@ -2353,6 +2353,89 @@ async def admin_load_squad_values(
     return load_snapshot(db)
 
 
+@router.post("/admin/repair-flipped-match")
+async def admin_repair_flipped_match(
+    match_id: str = Query(..., description="Match id whose home/away orientation is inverted vs The Odds API"),
+    boundary: str = Query(..., description="ISO timestamp: snapshots BEFORE this are swapped; at/after are already in the corrected orientation"),
+    password: str = Query(..., description="Admin password"),
+    db: Session = Depends(get_db),
+):
+    """One-shot repair for a match whose home/away teams The Odds API
+    corrected on the SAME event id after we'd stored history under the
+    old orientation (first seen 2026-08-21: PSG v Rennes was really
+    Rennes v PSG, so the site showed PSG at 5.27 'home'). Swaps the
+    match row's team orientation, mirrors home/away odds on snapshots
+    BEFORE the boundary (rows after it were extracted against the
+    API's corrected orientation and are already right), and swaps +
+    negates the handicap line on pre-boundary spreads. Totals have no
+    team orientation and are untouched. Idempotent only in the sense
+    that running it twice un-repairs — check before firing."""
+    from datetime import datetime as _dt
+
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid password")
+
+    try:
+        boundary_ts = _dt.fromisoformat(boundary)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="boundary must be an ISO timestamp")
+
+    match = db.query(Match).filter(Match.id == match_id).first()
+    if not match:
+        raise HTTPException(status_code=404, detail="Match not found")
+
+    old_home, old_away = match.home_team, match.away_team
+    match.home_team, match.away_team = old_away, old_home
+
+    odds_swapped = db.execute(text(
+        "UPDATE odds_snapshots SET home_odds = away_odds, away_odds = home_odds "
+        "WHERE match_id = :m AND fetched_at < :t"
+    ), {"m": match_id, "t": boundary_ts}).rowcount
+    spreads_swapped = db.execute(text(
+        "UPDATE spreads_snapshots SET home_odds = away_odds, away_odds = home_odds, line = -line "
+        "WHERE match_id = :m AND fetched_at < :t"
+    ), {"m": match_id, "t": boundary_ts}).rowcount
+    db.commit()
+
+    return {
+        "match_id": match_id,
+        "orientation": f"{old_home} v {old_away} -> {match.home_team} v {match.away_team}",
+        "odds_snapshots_swapped": odds_swapped,
+        "spreads_swapped_and_line_negated": spreads_swapped,
+    }
+
+
+@router.post("/admin/delete-empty-match")
+async def admin_delete_empty_match(
+    match_id: str = Query(..., description="Match id to delete — refused unless it has zero dependent rows"),
+    password: str = Query(..., description="Admin password"),
+    db: Session = Depends(get_db),
+):
+    """Delete an orphaned match row (e.g. a duplicate event id The Odds
+    API briefly issued then withdrew). Refuses unless the row has zero
+    snapshots/steam/alert/closing-line rows — this is for empty husks
+    that pollute match listings, not a general delete."""
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid password")
+
+    match = db.query(Match).filter(Match.id == match_id).first()
+    if not match:
+        raise HTTPException(status_code=404, detail="Match not found")
+
+    refs = {}
+    for tbl in ("odds_snapshots", "totals_snapshots", "spreads_snapshots",
+                "steam_moves", "syndicate_alerts", "closing_lines", "polymarket_snapshots"):
+        refs[tbl] = db.execute(
+            text(f"SELECT count(*) FROM {tbl} WHERE match_id = :m"), {"m": match_id}
+        ).scalar()
+    if any(refs.values()):
+        raise HTTPException(status_code=409, detail=f"Match has dependent rows, refusing: {refs}")
+
+    db.delete(match)
+    db.commit()
+    return {"deleted": match_id, "teams": f"{match.home_team} v {match.away_team}"}
+
+
 @router.get("/admin/club-finances-health")
 async def get_club_finances_health(
     password: str = Query(..., description="Admin password"),
