@@ -14,7 +14,7 @@ SteamWatch reports what moved and what happened next. It does not claim to know 
 
 ## Key pages
 
-- [Live odds & biggest movers](https://www.steamwatch.io/): every tracked match with current prices, 48-hour biggest movers, and late steam within 3 hours of kickoff.
+- [Live odds & biggest movers](https://www.steamwatch.io/): every tracked match with current prices, 48-hour biggest movers, and late steam within 16 hours of kickoff.
 - [Steam Results](https://www.steamwatch.io/steam-results): the historical track record of every detected steam move — win rates and profit/loss, updated after results come in.
 - [Drifters](https://www.steamwatch.io/drifters): the moves going the other way, with the same historical accounting.
 - [Closing Lines](https://www.steamwatch.io/closing-lines): opening vs closing prices for finished matches, by league and week.

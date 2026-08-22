@@ -1215,28 +1215,36 @@ async def get_syndicate_moves(
     limit: int = Query(4, le=20, description="Number of moves to return")
 ):
     """
-    Get late sharp money moves across all markets (1X2, Totals, Asian Handicap).
-    Criteria:
-    - Match kicks off within 3 hours
-    - 3+ implied probability percentage point shift WITHIN the 3-hour window
+    Get late sharp money moves for the homepage's Syndicate Moves
+    section. Window and threshold are IMPORTED from syndicate_alerter
+    (2026-08-22 fix: this endpoint had its own hardcoded 3-hour window,
+    which silently diverged from the Telegram alerter when the alert
+    window was widened on 2026-08-14 — the site section and the alerts
+    were answering different questions. Single source of truth now.)
+    - Match kicks off within SYNDICATE_ALERT_WINDOW_MINUTES
+    - SYNDICATE_THRESHOLD_PROB_POINTS+ implied probability shift within
+      that window
     - Only SHORTENING odds (being backed)
 
     Uses implied probability movement instead of raw odds percentage change
     to avoid false positives on longshots.
     """
-    PROB_THRESHOLD = 3.0  # Minimum implied probability shift in percentage points
+    from app.services.syndicate_alerter import (
+        SYNDICATE_ALERT_WINDOW_MINUTES,
+        SYNDICATE_THRESHOLD_PROB_POINTS,
+    )
+    PROB_THRESHOLD = SYNDICATE_THRESHOLD_PROB_POINTS
 
     def _prob(odds: float) -> float:
         return (1.0 / odds) * 100
 
     now = datetime.utcnow()
-    three_hours_from_now = now + timedelta(hours=3)
+    window_end = now + timedelta(minutes=SYNDICATE_ALERT_WINDOW_MINUTES)
 
-    # Get matches kicking off within 3 hours
     matches = (
         db.query(Match)
         .filter(Match.commence_time > now)
-        .filter(Match.commence_time <= three_hours_from_now)
+        .filter(Match.commence_time <= window_end)
         .all()
     )
 
@@ -1246,7 +1254,7 @@ async def get_syndicate_moves(
     syndicate_moves = []
 
     for match in matches:
-        window_start = match.commence_time - timedelta(hours=3)
+        window_start = match.commence_time - timedelta(minutes=SYNDICATE_ALERT_WINDOW_MINUTES)
         time_to_ko = match.commence_time - now
         minutes_to_ko = int(time_to_ko.total_seconds() / 60)
 

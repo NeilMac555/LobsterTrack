@@ -21,11 +21,18 @@ logger = structlog.get_logger()
 SYNDICATE_THRESHOLD_PROB_POINTS = 3.0
 
 # Time-to-kickoff window for alerts. Only fire alerts when the match is
-# within this many minutes of KO. 720 = twelve hours before kickoff
-# (widened from 180/3h on 2026-08-14 per Neil's call, so genuine sharp
-# moves earlier in the day aren't missed just because they land outside
-# a narrow pre-KO window).
-SYNDICATE_ALERT_WINDOW_MINUTES = 720
+# within this many minutes of KO. 960 = sixteen hours before kickoff.
+# History: 180 (3h) originally; widened to 720 (12h) 2026-08-14 per
+# Neil; widened to 960 (16h) 2026-08-22 per Neil after Brentford v
+# Spurs steamed 2.39 -> 2.11 between T-12h41 and T-11h53 — the move
+# finished 8 minutes after the 12h window opened, so the baseline
+# (first snapshot INSIDE the window) caught the post-steam price and
+# measured ~0.2pp. NOTE the structural caveat stands at any width: a
+# move completing entirely before the window opens is invisible,
+# because the baseline is anchored to KO-minus-window rather than to
+# a rolling lookback. Widening pushes the cliff earlier into hours
+# where big moves are rarer; it does not remove it.
+SYNDICATE_ALERT_WINDOW_MINUTES = 960
 
 # Odds threshold above which an alert is tagged as 'high conviction' with
 # a 🔥 emoji in the Telegram message. Cohort analysis showed steam moves
@@ -34,7 +41,7 @@ SYNDICATE_ALERT_WINDOW_MINUTES = 720
 # heavy dog without a real informational edge.
 SYNDICATE_FIRE_TIER_ODDS = 4.0
 
-# Per-league override layer. Other leagues use the 3.0pp / 180-min
+# Per-league override layer. Other leagues use the 3.0pp / 960-min
 # defaults above. WC override per Neil 2026-06-26: 24-hour pre-KO
 # window at 3.5pp so we catch anything material that moves in the
 # day before KO, not just the final 3 hours.
@@ -90,7 +97,7 @@ class SyndicateAlerter:
 
     async def check_and_alert(self) -> dict:
         """
-        Check all matches within the configured pre-KO window (12h by
+        Check all matches within the configured pre-KO window (16h by
         default — see SYNDICATE_ALERT_WINDOW_MINUTES) for syndicate moves
         on the 1X2 market only (Totals/Spreads checks disabled 2026-08-14
         per Neil's call — see _check_totals_market/_check_spreads_market,
@@ -131,12 +138,12 @@ class SyndicateAlerter:
                 minutes_to_ko = int(time_to_ko.total_seconds() / 60)
 
                 # Per-league overrides: WC uses a 24-hour window at 3.5pp.
-                # Other leagues stick to the 3.0pp / 180-min defaults.
+                # Other leagues stick to the 3.0pp / 960-min defaults.
                 league_window = window_for(match.sport_key)
                 league_threshold = threshold_for(match.sport_key)
 
                 # Baseline = first snapshot inside the per-league pre-KO
-                # window. WC = 24 hours; everything else = 3 hours.
+                # window. WC = 24 hours; everything else = 16 hours.
                 window_start = match.commence_time - timedelta(minutes=league_window)
 
                 # Skip this match if it sits outside its own league's
