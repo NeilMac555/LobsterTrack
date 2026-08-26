@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import {
   LineChart,
@@ -114,20 +114,12 @@ export default function LongshotBiasPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Everyone starts on the free view; Pro accounts are widened to
-  // All/All once their subscription state resolves (unless they've
-  // already clicked a filter themselves).
+  // Everyone opens on the free sample view (EPL 25/26) — Pro users
+  // included, per Neil 2026-08-23; Pro just means every other chip
+  // works from there. No auto-widening on subscription resolve.
   const [league, setLeague] = useState<string | null>(FREE_LEAGUE);
   const [season, setSeason] = useState<string | null>(FREE_SEASON);
   const [venue, setVenue] = useState<string | null>(null);
-  const interacted = useRef(false);
-
-  useEffect(() => {
-    if (isSubscribed && !interacted.current) {
-      setLeague(null);
-      setSeason(null);
-    }
-  }, [isSubscribed]);
 
   const isFreeView = league === FREE_LEAGUE && season === FREE_SEASON;
   const locked = !isSubscribed && !isFreeView;
@@ -145,13 +137,9 @@ export default function LongshotBiasPage() {
       .finally(() => setLoading(false));
   }, [league, season, venue, locked]);
 
-  const pick = (setter: (v: string | null) => void) => (v: string | null) => {
-    interacted.current = true;
-    setter(v);
-  };
-  const pickLeague = pick(setLeague);
-  const pickSeason = pick(setSeason);
-  const pickVenue = pick(setVenue);
+  const pickLeague = setLeague;
+  const pickSeason = setSeason;
+  const pickVenue = setVenue;
 
   const chipClass = (active: boolean) =>
     `px-3 py-1.5 rounded-md font-mono text-[11px] font-semibold uppercase tracking-[0.1em] transition-colors border ${
