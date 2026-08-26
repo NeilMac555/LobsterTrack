@@ -623,6 +623,10 @@ export default function HomePage() {
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="text-emerald-400 text-[10px] font-bold">▸</span>
+                    <span className="tracking-tight">Closing line archive</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-emerald-400 text-[10px] font-bold">▸</span>
                     <span className="tracking-tight">Team P/L — back &amp; fade records</span>
                   </li>
                   <li className="flex items-center gap-2">
@@ -667,10 +671,6 @@ export default function HomePage() {
                   <li className="flex items-center gap-2">
                     <span className="text-cyan-400 text-[10px] font-bold">▸</span>
                     <span className="tracking-tight">Drifters — the moves going the other way</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="text-cyan-400 text-[10px] font-bold">▸</span>
-                    <span className="tracking-tight">Closing line analysis</span>
                   </li>
                 </ul>
                 <button

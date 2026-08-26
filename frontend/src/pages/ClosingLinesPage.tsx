@@ -6,8 +6,6 @@ import { getClosingLinesGrouped } from '../api';
 import type { MatchClosingLines } from '../types';
 import { LEAGUE_CONFIG, VISIBLE_LEAGUES } from '../types';
 import LeagueLogo from '../components/LeagueLogo';
-import { useAuth } from '../contexts/AuthContext';
-import PaywallOverlay from '../components/PaywallOverlay';
 import { toDisplayDate, formatKickoff, type TimeMode } from '../utils/time';
 import { useTimePreference } from '../contexts/TimePreferenceContext';
 import { useOddsFormat } from '../contexts/OddsFormatContext';
@@ -56,7 +54,6 @@ function fmtLine(v: number | null | undefined): string {
 
 export default function ClosingLinesPage() {
   const { format: oddsFormat } = useOddsFormat();
-  const { isSubscribed } = useAuth();
   const { mode: timeMode } = useTimePreference();
   const [searchParams, setSearchParams] = useSearchParams();
   const league = searchParams.get('league') || '';
@@ -136,20 +133,12 @@ export default function ClosingLinesPage() {
         </div>
       </div>
 
-      {/* Sneak-peek paywall: free users see the entire page rendered with
-          real closing-line data, blurred and non-interactive. The
-          PaywallOverlay sits above the visible portion so the value prop
-          ('there's a ton of data behind here') is immediately obvious.
-          Pro users get the full interactive experience. */}
+      {/* Free for everyone since 2026-08-23 (Neil: "closing lines doesn't
+          need to be behind a paywall") — the blur + PaywallOverlay that
+          used to gate this page is in git history if it's ever wanted
+          back. */}
       <div className="relative">
-        <div
-          className={
-            !isSubscribed
-              ? 'blur-sm opacity-50 pointer-events-none select-none max-h-[680px] overflow-hidden [mask-image:linear-gradient(180deg,black_60%,transparent_100%)] [-webkit-mask-image:linear-gradient(180deg,black_60%,transparent_100%)]'
-              : ''
-          }
-          aria-hidden={!isSubscribed}
-        >
+        <div>
           {/* League filter */}
           <div className="flex flex-wrap gap-1.5 mb-4 sm:mb-6">
             <button
@@ -367,19 +356,6 @@ export default function ClosingLinesPage() {
           )}
         </div>
 
-        {/* Paywall overlay sits on top of the blurred content for free users.
-            Pointer-events: none on the wrapper so it doesn't grab the empty
-            space; the inner card re-enables pointer-events for the CTA. */}
-        {!isSubscribed && (
-          <div className="absolute inset-x-0 top-24 sm:top-32 flex items-start justify-center pointer-events-none px-4">
-            <div className="pointer-events-auto max-w-md w-full">
-              <PaywallOverlay
-                title="Unlock Pinnacle Closing Lines"
-                description="The Pinnacle closing line is the sharpest price in football — beating it is the gold-standard measure of edge. Get the Pinnacle close on 1X2, Asian Handicap and Totals for every tracked match across all five leagues plus UEFA, with full historical archive by matchweek."
-              />
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
