@@ -45,6 +45,9 @@ from .schemas import (
     PowerRatingsResponse,
     PowerRatingHistoryPoint,
     PowerRatingHistoryResponse,
+    FavDogBand,
+    FavDogCumulativePoint,
+    FavDogResponse,
 )
 
 # Simple admin password
@@ -1792,6 +1795,128 @@ async def get_drifter_results(
             for m in limited_moves
         ],
         team_rankings=team_rankings,
+    )
+
+
+@router.get("/fav-dog-results", response_model=FavDogResponse)
+async def get_fav_dog_results(
+    db: Session = Depends(get_db),
+    league: Optional[str] = Query(None, description="Filter by sport_key"),
+    seasons: Optional[str] = Query(None, description="Comma-separated season codes, e.g. '2425,2526'"),
+    venue: Optional[str] = Query(None, description="'fav_home' or 'fav_away' — where the favourite played"),
+):
+    """
+    Favs vs Dogs explorer (2026-08-23, FavOrDog-style): what blindly
+    backing every favourite / underdog / draw at Pinnacle CLOSING
+    prices would have returned, bucketed into data-driven odds bands.
+
+    Runs over historical_matches (football-data.co.uk imports — 5
+    domestic leagues, 2021/22 onward, ~7,900 usable rows with both a
+    Pinnacle close and a result). Bands are terciles of the FILTERED
+    set, mirroring FavOrDog's data-driven ranges rather than hand-
+    picked boundaries. Flat 1u stakes; backing the fav or the dog
+    loses on a draw, which is the honest football-specific difference
+    from the tennis original.
+    """
+    import statistics
+
+    q = (
+        db.query(HistoricalMatch)
+        .filter(HistoricalMatch.psch.isnot(None))
+        .filter(HistoricalMatch.pscd.isnot(None))
+        .filter(HistoricalMatch.psca.isnot(None))
+        .filter(HistoricalMatch.ftr.isnot(None))
+    )
+    if league:
+        q = q.filter(HistoricalMatch.league == league)
+    if seasons:
+        season_list = [s.strip() for s in seasons.split(",") if s.strip()]
+        if season_list:
+            q = q.filter(HistoricalMatch.season.in_(season_list))
+
+    rows = q.order_by(HistoricalMatch.match_date.asc(), HistoricalMatch.id.asc()).all()
+
+    # Per-match: identify the favourite by the shorter closing price.
+    # Ties (identical prices, rare) treat home as the favourite.
+    bets = []  # (fav_odds, dog_odds, draw_odds, fav_won, dog_won, drew, match_date)
+    for m in rows:
+        fav_is_home = m.psch <= m.psca
+        if venue == "fav_home" and not fav_is_home:
+            continue
+        if venue == "fav_away" and fav_is_home:
+            continue
+        fav_odds = m.psch if fav_is_home else m.psca
+        dog_odds = m.psca if fav_is_home else m.psch
+        fav_won = (m.ftr == "H") == fav_is_home and m.ftr != "D"
+        dog_won = (m.ftr != "D") and not fav_won
+        bets.append((fav_odds, dog_odds, m.pscd, fav_won, dog_won, m.ftr == "D", m.match_date))
+
+    def _band(label: str, entries: list[tuple[float, bool]], lo: float, hi: float) -> FavDogBand:
+        n = len(entries)
+        wins = sum(1 for _, won in entries if won)
+        profit = sum((odds - 1) if won else -1 for odds, won in entries)
+        return FavDogBand(
+            label=label,
+            odds_lo=round(lo, 2),
+            odds_hi=round(hi, 2),
+            matches=n,
+            median_odds=round(statistics.median([o for o, _ in entries]), 2) if n else 0.0,
+            wins=wins,
+            yield_pct=round(profit / n * 100, 1) if n else 0.0,
+            profit_units=round(profit, 2),
+        )
+
+    def _tercile_bands(entries: list[tuple[float, bool]], labels: list[str]) -> list[FavDogBand]:
+        """Split (odds, won) entries into three equal-count bands by
+        ascending odds — data-driven boundaries, per the docstring."""
+        if not entries:
+            return [_band(lbl, [], 0.0, 0.0) for lbl in labels]
+        ordered = sorted(entries, key=lambda e: e[0])
+        n = len(ordered)
+        cuts = [0, n // 3, 2 * n // 3, n]
+        out = []
+        for i, lbl in enumerate(labels):
+            chunk = ordered[cuts[i]:cuts[i + 1]]
+            lo = chunk[0][0] if chunk else 0.0
+            hi = chunk[-1][0] if chunk else 0.0
+            out.append(_band(lbl, chunk, lo, hi))
+        return out
+
+    fav_entries = [(b[0], b[3]) for b in bets]
+    dog_entries = [(b[1], b[4]) for b in bets]
+    draw_entries = [(b[2], b[5]) for b in bets]
+
+    # Favourites: ascending odds = Super -> Slight. Dogs: ascending =
+    # Slight -> Super (bigger odds = bigger dog).
+    fav_bands = _tercile_bands(fav_entries, ["Super Fav", "Mid Fav", "Slight Fav"])
+    dog_bands = _tercile_bands(dog_entries, ["Slight Dog", "Mid Dog", "Super Dog"])
+
+    fav_all = _band("ALL", fav_entries, min((o for o, _ in fav_entries), default=0.0), max((o for o, _ in fav_entries), default=0.0))
+    dog_all = _band("ALL", dog_entries, min((o for o, _ in dog_entries), default=0.0), max((o for o, _ in dog_entries), default=0.0))
+    draw_all = _band("Draw", draw_entries, min((o for o, _ in draw_entries), default=0.0), max((o for o, _ in draw_entries), default=0.0))
+
+    # Cumulative flat-stake profit, chronological, downsampled to keep
+    # the payload sane (~400 points regardless of sample size).
+    cumulative: list[FavDogCumulativePoint] = []
+    fav_cum = dog_cum = 0.0
+    step = max(1, len(bets) // 400)
+    for i, (fo, do, _po, fw, dw, _dr, _dt) in enumerate(bets, 1):
+        fav_cum += (fo - 1) if fw else -1
+        dog_cum += (do - 1) if dw else -1
+        if i % step == 0 or i == len(bets):
+            cumulative.append(FavDogCumulativePoint(n=i, fav=round(fav_cum, 2), dog=round(dog_cum, 2)))
+
+    return FavDogResponse(
+        total_matches=len(bets),
+        seasons=sorted({m.season for m in rows}),
+        leagues=sorted({m.league for m in rows}),
+        data_through=max((b[6] for b in bets), default=None).isoformat() if bets else None,
+        fav_bands=fav_bands,
+        fav_all=fav_all,
+        dog_bands=dog_bands,
+        dog_all=dog_all,
+        draw_all=draw_all,
+        cumulative=cumulative,
     )
 
 

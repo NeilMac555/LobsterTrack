@@ -163,6 +163,36 @@ export interface SteamResultsData {
   team_rankings: TeamSteamRanking[];
 }
 
+export interface FavDogBand {
+  label: string;
+  odds_lo: number;
+  odds_hi: number;
+  matches: number;
+  median_odds: number;
+  wins: number;
+  yield_pct: number;
+  profit_units: number;
+}
+
+export interface FavDogCumulativePoint {
+  n: number;
+  fav: number;
+  dog: number;
+}
+
+export interface FavDogData {
+  total_matches: number;
+  seasons: string[];
+  leagues: string[];
+  data_through: string | null;
+  fav_bands: FavDogBand[];
+  fav_all: FavDogBand;
+  dog_bands: FavDogBand[];
+  dog_all: FavDogBand;
+  draw_all: FavDogBand;
+  cumulative: FavDogCumulativePoint[];
+}
+
 export interface ClosingLine {
   id: number;
   match_id: string;

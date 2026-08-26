@@ -1,4 +1,4 @@
-import type { MatchSummary, MatchDetail, LeagueSummary, Stats, BiggestMover, MatchTotals, SyndicateMove, MatchSpreads, SteamResultsData, ClosingLinesResponse, MatchClosingLinesResponse, XGDataResponse, TeamPLResponse, InPlayJumpsResponse, LateSteamResponse, LeagueConstantsResponse, ForecastRegistry, ForecastResponse, RecentForecastsResponse, PowerRatingsResponse, PowerRatingHistoryResponse } from '../types';
+import type { MatchSummary, MatchDetail, LeagueSummary, Stats, BiggestMover, MatchTotals, SyndicateMove, MatchSpreads, SteamResultsData, ClosingLinesResponse, MatchClosingLinesResponse, XGDataResponse, TeamPLResponse, InPlayJumpsResponse, LateSteamResponse, LeagueConstantsResponse, ForecastRegistry, ForecastResponse, RecentForecastsResponse, PowerRatingsResponse, PowerRatingHistoryResponse, FavDogData } from '../types';
 
 const API_BASE = '/api';
 
@@ -76,6 +76,19 @@ export async function getSyndicateMoves(limit: number = 4): Promise<SyndicateMov
 
 export async function getMatchSpreads(matchId: string): Promise<MatchSpreads> {
   return fetchJson<MatchSpreads>(`${API_BASE}/matches/${matchId}/spreads`);
+}
+
+export async function getFavDogResults(params?: {
+  league?: string;
+  seasons?: string;
+  venue?: string;
+}): Promise<FavDogData> {
+  const searchParams = new URLSearchParams();
+  if (params?.league) searchParams.set('league', params.league);
+  if (params?.seasons) searchParams.set('seasons', params.seasons);
+  if (params?.venue) searchParams.set('venue', params.venue);
+  const query = searchParams.toString();
+  return fetchJson<FavDogData>(`${API_BASE}/fav-dog-results${query ? `?${query}` : ''}`);
 }
 
 export async function getSteamResults(params?: {

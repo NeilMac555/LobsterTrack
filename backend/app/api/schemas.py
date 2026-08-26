@@ -148,6 +148,41 @@ class SteamResultsResponse(BaseModel):
     team_rankings: list[TeamSteamRanking]
 
 
+class FavDogBand(BaseModel):
+    """One odds band in the Favs vs Dogs explorer (e.g. 'Super Fav')."""
+    label: str
+    odds_lo: float
+    odds_hi: float
+    matches: int
+    median_odds: float
+    wins: int
+    yield_pct: float          # flat-stake return per bet, %
+    profit_units: float       # cumulative units at 1u flat stakes
+
+
+class FavDogCumulativePoint(BaseModel):
+    """One point on the cumulative-profit chart (downsampled)."""
+    n: int                    # bet number (chronological)
+    fav: float                # cumulative units backing every favourite
+    dog: float                # cumulative units backing every underdog
+
+
+class FavDogResponse(BaseModel):
+    """Favs vs Dogs aggregate view over historical_matches (Pinnacle
+    closing 1X2 + result). Bands are data-driven terciles of the
+    filtered set, mirrored for favourites and underdogs."""
+    total_matches: int
+    seasons: list[str]
+    leagues: list[str]
+    data_through: Optional[str] = None   # ISO date of latest match included
+    fav_bands: list[FavDogBand]
+    fav_all: FavDogBand
+    dog_bands: list[FavDogBand]
+    dog_all: FavDogBand
+    draw_all: FavDogBand                  # backing the draw in every match
+    cumulative: list[FavDogCumulativePoint]
+
+
 class BiggestMover(BaseModel):
     """A match with significant odds movement"""
     match_id: str
