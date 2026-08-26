@@ -84,11 +84,11 @@ export default function Layout() {
   const isOverviewPage = !currentLeague && !isToolsPage && !isSteamResultsPage && !isDriftersPage && !isClosingLinesPage && !isTeamPLPage && !isPowerRankingsPage && !isLongshotBiasPage && location.pathname === '/';
 
   const navItemClass = (active: boolean) =>
-    `relative px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors ${
+    `relative whitespace-nowrap px-2.5 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] transition-colors ${
       active
         ? 'text-white'
         : 'text-slate-400 hover:text-white'
-    } ${active ? "after:content-[''] after:absolute after:left-3 after:right-3 after:-bottom-[13px] after:h-[2px] after:bg-cyan-400 after:rounded-full" : ''}`;
+    } ${active ? "after:content-[''] after:absolute after:left-2.5 after:right-2.5 after:-bottom-[13px] after:h-[2px] after:bg-cyan-400 after:rounded-full" : ''}`;
 
   return (
     <div className="min-h-screen">
@@ -116,7 +116,7 @@ export default function Layout() {
             </Link>
 
             {/* Desktop flat nav */}
-            <nav className="hidden md:flex items-center gap-1 flex-1">
+            <nav className="hidden lg:flex items-center gap-0.5 flex-1 min-w-0">
               <Link to="/" className={navItemClass(isOverviewPage)}>Overview</Link>
               <Link to="/steam-results" className={navItemClass(isSteamResultsPage)}>Steam Results</Link>
               <Link to="/drifters" className={navItemClass(isDriftersPage)}>Drifters</Link>
@@ -190,7 +190,7 @@ export default function Layout() {
             </nav>
 
             {/* Right side: Time toggle + Live pill + Account / Sign In / Upgrade */}
-            <div className="hidden md:flex items-center gap-2.5 flex-shrink-0">
+            <div className="hidden lg:flex items-center gap-2 flex-shrink-0">
               {/* Local/UTC kickoff-time toggle. Defaults to the browser's
                   own local zone (auto-detected — nothing to configure);
                   persisted to localStorage so the choice sticks across
@@ -218,7 +218,7 @@ export default function Layout() {
                 <span className={`px-2 py-1 transition-colors ${oddsFormat === 'american' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}>US</span>
               </button>
 
-              <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full border border-slate-700/60 text-[10px] font-mono uppercase tracking-[0.12em] text-slate-400">
+              <span className="hidden xl:inline-flex items-center gap-1.5 px-2 py-1 rounded-full border border-slate-700/60 text-[10px] font-mono uppercase tracking-[0.12em] text-slate-400 whitespace-nowrap">
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
@@ -303,7 +303,7 @@ export default function Layout() {
             {/* Mobile menu button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-md bg-slate-800/60 border border-slate-700/60 text-slate-300 hover:text-white transition-colors"
+              className="lg:hidden p-2 rounded-md bg-slate-800/60 border border-slate-700/60 text-slate-300 hover:text-white transition-colors"
               aria-label="Toggle menu"
             >
               {mobileMenuOpen ? (
@@ -362,7 +362,7 @@ export default function Layout() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-slate-700/50 bg-slate-800/95 backdrop-blur-md">
+          <div className="lg:hidden border-t border-slate-700/50 bg-slate-800/95 backdrop-blur-md">
             <div className="px-4 py-4 space-y-4">
               {/* Time display toggle — same control as desktop, styled
                   for the mobile menu's stacked-section layout. */}
