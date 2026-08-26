@@ -191,33 +191,6 @@ export default function Layout() {
 
             {/* Right side: Time toggle + Live pill + Account / Sign In / Upgrade */}
             <div className="hidden lg:flex items-center gap-2 flex-shrink-0">
-              {/* Local/UTC kickoff-time toggle. Defaults to the browser's
-                  own local zone (auto-detected — nothing to configure);
-                  persisted to localStorage so the choice sticks across
-                  visits. Every kickoff time on the site reads this via
-                  useTimePreference(). */}
-              <button
-                onClick={toggleTimeMode}
-                title={timeMode === 'local' ? 'Showing times in your local timezone — click for UTC' : 'Showing times in UTC — click for your local timezone'}
-                className="flex items-center rounded-full border border-slate-700/60 text-[10px] font-mono font-bold uppercase tracking-[0.1em] overflow-hidden"
-              >
-                <span className={`px-2 py-1 transition-colors ${timeMode === 'local' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}>Local</span>
-                <span className={`px-2 py-1 transition-colors ${timeMode === 'utc' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}>UTC</span>
-              </button>
-
-              {/* Decimal/American odds-format toggle — same pattern as the
-                  time toggle above; persisted via useOddsFormat(). Every
-                  odds price on the site reads this; chart axes stay
-                  decimal by design (see utils/odds.ts). */}
-              <button
-                onClick={toggleOddsFormat}
-                title={oddsFormat === 'decimal' ? 'Showing decimal odds — click for American' : 'Showing American odds — click for decimal'}
-                className="flex items-center rounded-full border border-slate-700/60 text-[10px] font-mono font-bold uppercase tracking-[0.1em] overflow-hidden"
-              >
-                <span className={`px-2 py-1 transition-colors ${oddsFormat === 'decimal' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}>Dec</span>
-                <span className={`px-2 py-1 transition-colors ${oddsFormat === 'american' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}>US</span>
-              </button>
-
               <span className="hidden xl:inline-flex items-center gap-1.5 px-2 py-1 rounded-full border border-slate-700/60 text-[10px] font-mono uppercase tracking-[0.12em] text-slate-400 whitespace-nowrap">
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -356,6 +329,28 @@ export default function Layout() {
                   </Link>
                 );
               })}
+            </div>
+            {/* Time + odds format toggles — moved here from the main
+                header row 2026-08-23 (Neil: header was cramped). The
+                leagues bar has the spare width; mobile keeps its own
+                menu sections for both. */}
+            <div className="hidden md:flex items-center gap-2 ml-auto flex-shrink-0">
+              <button
+                onClick={toggleTimeMode}
+                title={timeMode === 'local' ? 'Showing times in your local timezone — click for UTC' : 'Showing times in UTC — click for your local timezone'}
+                className="flex items-center rounded-full border border-slate-700/60 text-[10px] font-mono font-bold uppercase tracking-[0.1em] overflow-hidden"
+              >
+                <span className={`px-2 py-1 transition-colors ${timeMode === 'local' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}>Local</span>
+                <span className={`px-2 py-1 transition-colors ${timeMode === 'utc' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}>UTC</span>
+              </button>
+              <button
+                onClick={toggleOddsFormat}
+                title={oddsFormat === 'decimal' ? 'Showing decimal odds — click for American' : 'Showing American odds — click for decimal'}
+                className="flex items-center rounded-full border border-slate-700/60 text-[10px] font-mono font-bold uppercase tracking-[0.1em] overflow-hidden"
+              >
+                <span className={`px-2 py-1 transition-colors ${oddsFormat === 'decimal' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}>Dec</span>
+                <span className={`px-2 py-1 transition-colors ${oddsFormat === 'american' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}>US</span>
+              </button>
             </div>
           </div>
         </div>
