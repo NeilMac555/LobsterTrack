@@ -101,7 +101,7 @@ function BandTable({ title, accent, bands, all }: {
   );
 }
 
-export default function FavsDogsPage() {
+export default function LongshotBiasPage() {
   const { isSubscribed } = useAuth();
   const [data, setData] = useState<FavDogData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -133,16 +133,16 @@ export default function FavsDogsPage() {
   return (
     <div className="max-w-6xl mx-auto">
       <Helmet>
-        <title>Favs vs Dogs — SteamWatch</title>
+        <title>Longshot Bias — SteamWatch</title>
         <meta name="description" content="What blindly backing every football favourite, underdog or draw at Pinnacle closing prices would have returned — by odds band, league and season, since 2021/22." />
-        <link rel="canonical" href="https://www.steamwatch.io/favs-dogs" />
+        <link rel="canonical" href="https://www.steamwatch.io/longshot-bias" />
       </Helmet>
 
       {/* Page Header */}
       <div className="mb-4 sm:mb-6 flex items-center gap-3">
         <div className="w-1 h-9 sm:h-10 rounded-full bg-gradient-to-b from-cyan-400 to-cyan-600 flex-shrink-0" />
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Favs vs Dogs</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Longshot Bias</h1>
           <p className="text-slate-400 text-xs sm:text-sm mt-0.5">
             What blindly backing every favourite, underdog or draw at Pinnacle closing prices
             would have returned — five leagues, since 2021/22.
@@ -153,7 +153,7 @@ export default function FavsDogsPage() {
       {!isSubscribed && (
         <div className="mb-6 sm:mb-8">
           <PaywallOverlay
-            title="Unlock Favs vs Dogs"
+            title="Unlock Longshot Bias"
             description="Five seasons of Pinnacle closing-price ROI by odds band — favourites, underdogs and the draw, filterable by league, season and venue, with SteamWatch Pro."
           />
         </div>

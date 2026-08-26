@@ -80,8 +80,8 @@ export default function Layout() {
   const isClosingLinesPage = location.pathname === '/closing-lines' || location.pathname === '/cl-closing-lines';
   const isTeamPLPage = location.pathname === '/team-pnl';
   const isPowerRankingsPage = location.pathname === '/power-rankings';
-  const isFavsDogsPage = location.pathname === '/favs-dogs';
-  const isOverviewPage = !currentLeague && !isToolsPage && !isSteamResultsPage && !isDriftersPage && !isClosingLinesPage && !isTeamPLPage && !isPowerRankingsPage && !isFavsDogsPage && location.pathname === '/';
+  const isLongshotBiasPage = location.pathname === '/longshot-bias';
+  const isOverviewPage = !currentLeague && !isToolsPage && !isSteamResultsPage && !isDriftersPage && !isClosingLinesPage && !isTeamPLPage && !isPowerRankingsPage && !isLongshotBiasPage && location.pathname === '/';
 
   const navItemClass = (active: boolean) =>
     `relative px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors ${
@@ -122,7 +122,7 @@ export default function Layout() {
               <Link to="/drifters" className={navItemClass(isDriftersPage)}>Drifters</Link>
               <Link to="/closing-lines" className={navItemClass(isClosingLinesPage)}>Closing Lines</Link>
               <Link to="/team-pnl" className={navItemClass(isTeamPLPage)}>Team P/L</Link>
-              <Link to="/favs-dogs" className={navItemClass(isFavsDogsPage)}>Favs v Dogs</Link>
+              <Link to="/longshot-bias" className={navItemClass(isLongshotBiasPage)}>Longshot Bias</Link>
               {/* Power Rankings hidden 2026-08-15 per Neil after the deploy
                   outage (the page itself wasn't the cause — see TODO.md — but
                   it's parked until wanted again). Restore this Link + the
@@ -566,15 +566,15 @@ export default function Layout() {
                     <span className="font-medium">Team P/L</span>
                   </Link>
                   <Link
-                    to="/favs-dogs"
+                    to="/longshot-bias"
                     className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors ${
-                      isFavsDogsPage
+                      isLongshotBiasPage
                         ? 'bg-indigo-600/20 text-indigo-400'
                         : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700 hover:text-white'
                     }`}
                   >
                     <span className="text-lg">&#9878;</span>
-                    <span className="font-medium">Favs v Dogs</span>
+                    <span className="font-medium">Longshot Bias</span>
                   </Link>
                   {/* Power Rankings mobile entry hidden 2026-08-15 —
                       see the desktop-nav comment above. */}

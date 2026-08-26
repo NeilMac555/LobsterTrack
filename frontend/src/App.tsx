@@ -22,7 +22,7 @@ import RollingXGPage from './pages/RollingXGPage';
 import TeamPLPage from './pages/TeamPLPage';
 // PowerRankingsPage is temporarily hidden (see the redirected route below).
 import InPlayJumpsPage from './pages/InPlayJumpsPage';
-import FavsDogsPage from './pages/FavsDogsPage';
+import LongshotBiasPage from './pages/LongshotBiasPage';
 // ForecastPage is temporarily hidden (see the redirected route below).
 
 function App() {
@@ -48,7 +48,9 @@ function App() {
                   route + the Layout.tsx nav entries to re-enable. */}
               <Route path="power-rankings" element={<Navigate to="/" replace />} />
               <Route path="in-play-jumps" element={<InPlayJumpsPage />} />
-              <Route path="favs-dogs" element={<FavsDogsPage />} />
+              <Route path="longshot-bias" element={<LongshotBiasPage />} />
+              {/* Short-lived original URL for this page (renamed same day). */}
+              <Route path="favs-dogs" element={<Navigate to="/longshot-bias" replace />} />
               <Route path="tools/hedge-calculator" element={<HedgeCalculatorPage />} />
               <Route path="tools/bet-calculator" element={<BetCalculatorPage />} />
               <Route path="tools/match-predictor" element={<MatchPredictorPage />} />
