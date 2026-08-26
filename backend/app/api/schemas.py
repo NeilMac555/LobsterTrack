@@ -129,13 +129,21 @@ class TeamSteamRanking(BaseModel):
 
 
 class SteamResultsResponse(BaseModel):
-    """Public steam results with stats and full move history"""
+    """Public steam results with stats and full move history.
+    Scoped to the current season (2026-08-22): season_label says which,
+    and team_rankings only includes teams with at least
+    min_moves_for_rankings finished moves — teams_below_min counts how
+    many are still building a sample (they appear in `moves` but have
+    no rankings row yet)."""
     total_moves: int
     total_wins: int
     total_draws: int
     total_losses: int
     win_rate: Optional[float] = None
     avg_movement_percent: Optional[float] = None
+    season_label: Optional[str] = None
+    min_moves_for_rankings: int = 3
+    teams_below_min: int = 0
     moves: list[SteamMoveResponse]
     team_rankings: list[TeamSteamRanking]
 

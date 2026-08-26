@@ -346,7 +346,7 @@ export default function DriftersPage() {
               Last 30d
             </button>
             <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 ml-auto tabular-nums">
-              {filteredRankings.length} {filteredRankings.length === 1 ? 'team' : 'teams'}
+              {data.season_label ? `${data.season_label} · ` : ''}{filteredRankings.length} {filteredRankings.length === 1 ? 'team' : 'teams'} · {data.min_moves_for_rankings ?? 3}+ moves to rank
             </span>
           </div>
 
@@ -529,9 +529,16 @@ export default function DriftersPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
             </svg>
           </div>
-          <p className="text-slate-400 text-base sm:text-lg">No completed drifter moves yet</p>
+          <p className="text-slate-400 text-base sm:text-lg">
+            No team rankings yet for the {data.season_label ?? 'current'} season
+          </p>
           <p className="text-slate-500 text-sm mt-2">
-            Rankings will appear here once matches with detected drifters have finished
+            Rankings reset each season. A team earns a row once it has{' '}
+            {data.min_moves_for_rankings ?? 3}+ finished drift moves this season — one or two
+            results is noise, not a record.
+            {data.teams_below_min
+              ? ` ${data.teams_below_min} ${data.teams_below_min === 1 ? 'team is' : 'teams are'} building a sample now.`
+              : ''}
           </p>
         </div>
       )}

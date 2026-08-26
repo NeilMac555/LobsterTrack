@@ -1464,6 +1464,29 @@ async def get_steam_moves(db: Session = Depends(get_db)):
     )
 
 
+# Steam/Drifter results season scoping + rankings threshold, per Neil
+# 2026-08-22 at the 26/27 season switchover: both tables reset to THIS
+# season's moves only (a team's steam record from last season says
+# little about a reshaped squad), and a team needs a minimum number of
+# finished moves before it earns a rankings row — one or two results
+# is coin-flip territory presented with the same visual authority as a
+# real sample.
+MIN_MOVES_FOR_TEAM_RANKING = 3
+
+
+def _season_start(now: Optional[datetime] = None) -> datetime:
+    """Current football season's start (July 1), matching the forecast
+    engine's July rollover convention (_current_season_code)."""
+    now = now or datetime.utcnow()
+    start_year = now.year if now.month >= 7 else now.year - 1
+    return datetime(start_year, 7, 1)
+
+
+def _season_label(now: Optional[datetime] = None) -> str:
+    start = _season_start(now)
+    return f"{start.year}/{(start.year + 1) % 100:02d}"
+
+
 @router.get("/steam-results", response_model=SteamResultsResponse)
 async def get_steam_results(
     db: Session = Depends(get_db),
@@ -1475,6 +1498,8 @@ async def get_steam_results(
     Public endpoint: completed steam move results with team rankings.
     Only shows odds that SHORTENED (sharp money backing) — no draws, no drifters.
     Deduplicates by match: each match counts only once per team (using the biggest move).
+    Scoped to the CURRENT season (July 1 rollover) since 2026-08-22, and
+    team rankings require MIN_MOVES_FOR_TEAM_RANKING finished moves.
     """
     # Base query — completed results, odds shortened (positive movement per
     # odds_fetcher.py's SteamMove.movement_percent convention: positive =
@@ -1486,6 +1511,7 @@ async def get_steam_results(
         .filter(SteamMove.result_updated == True)
         .filter(SteamMove.outcome != 'draw')
         .filter(SteamMove.movement_percent > 0)  # Only shortened odds
+        .filter(SteamMove.match_commence_time >= _season_start())
     )
     if league:
         base_query = base_query.filter(SteamMove.sport_key == league)
@@ -1555,8 +1581,15 @@ async def get_steam_results(
             team_stats[key]['losses'] += 1
             team_stats[key]['profit_loss'] -= 1
 
-    # Sort by profit/loss descending
-    ranked_teams = sorted(team_stats.values(), key=lambda x: x['profit_loss'], reverse=True)
+    # Sort by profit/loss descending. Rankings rows require a minimum
+    # sample (see MIN_MOVES_FOR_TEAM_RANKING) — teams below it still
+    # count toward the aggregate stats and appear in the moves list,
+    # they just don't get a rankings row yet.
+    ranked_teams = sorted(
+        (t for t in team_stats.values() if t['total'] >= MIN_MOVES_FOR_TEAM_RANKING),
+        key=lambda x: x['profit_loss'], reverse=True,
+    )
+    teams_below_min = sum(1 for t in team_stats.values() if t['total'] < MIN_MOVES_FOR_TEAM_RANKING)
 
     team_rankings = [
         TeamSteamRanking(
@@ -1583,6 +1616,9 @@ async def get_steam_results(
         total_losses=total_losses,
         win_rate=round(win_rate, 1) if win_rate else None,
         avg_movement_percent=round(avg_movement, 1) if avg_movement else None,
+        season_label=_season_label(),
+        min_moves_for_rankings=MIN_MOVES_FOR_TEAM_RANKING,
+        teams_below_min=teams_below_min,
         moves=[
             SteamMoveResponse(
                 id=m.id,
@@ -1634,6 +1670,7 @@ async def get_drifter_results(
         .filter(SteamMove.result_updated == True)
         .filter(SteamMove.outcome != 'draw')
         .filter(SteamMove.movement_percent < 0)  # Only drifting (lengthening) odds
+        .filter(SteamMove.match_commence_time >= _season_start())  # current season only, per Neil 2026-08-22
     )
     if league:
         base_query = base_query.filter(SteamMove.sport_key == league)
@@ -1699,7 +1736,12 @@ async def get_drifter_results(
 
     # For drifters, sort by P/L ASCENDING (worst first) — these are the
     # teams the market is most right to fade. Frontend can re-sort however.
-    ranked_teams = sorted(team_stats.values(), key=lambda x: x['profit_loss'])
+    # Same minimum-sample gate as /steam-results.
+    ranked_teams = sorted(
+        (t for t in team_stats.values() if t['total'] >= MIN_MOVES_FOR_TEAM_RANKING),
+        key=lambda x: x['profit_loss'],
+    )
+    teams_below_min = sum(1 for t in team_stats.values() if t['total'] < MIN_MOVES_FOR_TEAM_RANKING)
 
     team_rankings = [
         TeamSteamRanking(
@@ -1725,6 +1767,9 @@ async def get_drifter_results(
         total_losses=total_losses,
         win_rate=round(win_rate, 1) if win_rate else None,
         avg_movement_percent=round(avg_movement, 1) if avg_movement else None,
+        season_label=_season_label(),
+        min_moves_for_rankings=MIN_MOVES_FOR_TEAM_RANKING,
+        teams_below_min=teams_below_min,
         moves=[
             SteamMoveResponse(
                 id=m.id,

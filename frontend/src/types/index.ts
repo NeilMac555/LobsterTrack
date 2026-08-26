@@ -153,6 +153,12 @@ export interface SteamResultsData {
   total_losses: number;
   win_rate: number | null;
   avg_movement_percent: number | null;
+  // Season scoping + rankings threshold (2026-08-22): data covers the
+  // current season only, and team_rankings requires min_moves_for_rankings
+  // finished moves per team. teams_below_min are still building a sample.
+  season_label?: string | null;
+  min_moves_for_rankings?: number;
+  teams_below_min?: number;
   moves: SteamMoveRecord[];
   team_rankings: TeamSteamRanking[];
 }
