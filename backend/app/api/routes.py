@@ -4648,12 +4648,15 @@ async def get_xg_teams(
     return XGTeamsResponse(teams=[r[0] for r in rows])
 
 
-# How many of the PREVIOUS season's final matches to prepend to a
-# team's xG series — equals the page's largest rolling window, so the
-# 5/10-game windows stay full from matchday 1 of a new season instead
-# of the chart being empty until enough current-season games exist
-# (Neil, 2026-08-23: "join up this season with last").
-XG_CARRYOVER_PREV_MATCHES = 10
+# The PREVIOUS season is prepended in full to a team's xG series, so
+# the rolling line runs continuously across the boundary (Neil,
+# 2026-08-23: "join up this season with last"). First shipped as a
+# 10-match tail — just enough to fill the largest window — but that
+# yields only (current_games + 1) chartable points at window 10, which
+# rendered as a 2-point "line" on matchday 1 (Villa, same day). The
+# full season costs nothing and gives the continuous trend the feature
+# was meant to show.
+XG_CARRYOVER_PREV_MATCHES = 60  # > any season length; effectively "all"
 
 
 @router.get("/xg-data", response_model=XGDataResponse)
