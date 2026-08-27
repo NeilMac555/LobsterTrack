@@ -243,11 +243,18 @@ export default function RollingXGPage() {
   const stats = useMemo(() => {
     if (chartData.length === 0) return null;
     const last = chartData[chartData.length - 1];
+    // The avg cards describe the LATEST rolling window (which may span
+    // the season boundary — e.g. 1 game this season + 9 carried from
+    // last). GAMES counts THIS SEASON only; the full plotted series
+    // includes last season's carryover and would read misleadingly
+    // large (Neil flagged "39 games" on matchday 1, 2026-08-23).
+    const currentSeason = rawData.length ? rawData[rawData.length - 1].season : null;
+    const gamesThisSeason = rawData.filter((p) => p.season === currentSeason).length;
     return {
       avgFor: last.rollingFor ?? 0,
       avgAgainst: last.rollingAgainst ?? 0,
       diff: (last.rollingFor ?? 0) - (last.rollingAgainst ?? 0),
-      gamesPlayed: rawData.length,
+      gamesPlayed: gamesThisSeason,
     };
   }, [chartData, rawData]);
 
@@ -357,7 +364,7 @@ export default function RollingXGPage() {
             color={stats.diff > 0 ? 'text-emerald-400' : stats.diff < 0 ? 'text-red-400' : 'text-slate-400'}
             borderColor={stats.diff > 0 ? 'border-emerald-500/30' : stats.diff < 0 ? 'border-red-500/30' : 'border-slate-700/60'}
           />
-          <StatCard label="Games" value={String(stats.gamesPlayed)} color="text-white" borderColor="border-slate-700/60" />
+          <StatCard label="Games This Season" value={String(stats.gamesPlayed)} color="text-white" borderColor="border-slate-700/60" />
         </div>
       )}
 
