@@ -4648,6 +4648,14 @@ async def get_xg_teams(
     return XGTeamsResponse(teams=[r[0] for r in rows])
 
 
+# How many of the PREVIOUS season's final matches to prepend to a
+# team's xG series — equals the page's largest rolling window, so the
+# 5/10-game windows stay full from matchday 1 of a new season instead
+# of the chart being empty until enough current-season games exist
+# (Neil, 2026-08-23: "join up this season with last").
+XG_CARRYOVER_PREV_MATCHES = 10
+
+
 @router.get("/xg-data", response_model=XGDataResponse)
 async def get_xg_data(
     db: Session = Depends(get_db),
@@ -4655,20 +4663,38 @@ async def get_xg_data(
     team: str = Query(..., description="Team name"),
     season: Optional[str] = Query(None, description="Season code e.g. '2526'. Default: most recent season for this league."),
 ):
-    """Return all match-level npxG data for a team+season, ordered by match number."""
+    """Return match-level npxG data for a team: the target season's
+    matches PLUS the trailing XG_CARRYOVER_PREV_MATCHES from the season
+    before it (when that data exists — promoted teams simply have none),
+    ordered chronologically. Each point carries its own season code so
+    the frontend can mark the boundary."""
     target_season = season or _latest_xg_season(db, league)
     if target_season is None:
         return XGDataResponse(team_name=team, league=league, data=[])
+
     rows = (
         db.query(XGData)
         .filter(XGData.league == league, XGData.team_name == team, XGData.season == target_season)
         .order_by(XGData.match_number)
         .all()
     )
+
+    # Previous season code: '2627' -> '2526' (start-year arithmetic,
+    # century-safe via mod 100).
+    start_year = int(target_season[:2])
+    prev_season = f"{(start_year - 1) % 100:02d}{start_year % 100:02d}"
+    prev_tail = list(reversed(
+        db.query(XGData)
+        .filter(XGData.league == league, XGData.team_name == team, XGData.season == prev_season)
+        .order_by(XGData.match_number.desc())
+        .limit(XG_CARRYOVER_PREV_MATCHES)
+        .all()
+    ))
+
     return XGDataResponse(
         team_name=team,
         league=league,
-        data=[XGDataPoint.model_validate(r) for r in rows],
+        data=[XGDataPoint.model_validate(r) for r in prev_tail + rows],
     )
 
 

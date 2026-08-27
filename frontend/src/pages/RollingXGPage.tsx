@@ -10,6 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
+  ReferenceLine,
 } from 'recharts';
 import { getXGTeams, getXGData } from '../api';
 import type { XGDataPoint } from '../types';
@@ -67,6 +68,10 @@ function linearRegression(ys: number[]): [number, number] {
 
 interface ChartDataPoint {
   matchNumber: number;
+  /** Category x-axis key — unique across the season boundary: last-season
+   *  games render as "L34", current-season games as plain "5". */
+  label: string;
+  season: string;
   rollingFor: number | null;
   rollingAgainst: number | null;
   trendFor: number | null;
@@ -75,6 +80,11 @@ interface ChartDataPoint {
 
 function computeChartData(raw: XGDataPoint[], windowSize: RollingWindow): ChartDataPoint[] {
   if (raw.length < windowSize) return [];
+
+  // The series may span two seasons (the API prepends last season's
+  // final 10 matches so windows stay full from matchday 1). The
+  // CURRENT season is whatever the final point belongs to.
+  const currentSeason = raw[raw.length - 1].season;
 
   const rollingFor: number[] = [];
   const rollingAgainst: number[] = [];
@@ -88,8 +98,11 @@ function computeChartData(raw: XGDataPoint[], windowSize: RollingWindow): ChartD
     }
     rollingFor.push(sumFor / windowSize);
     rollingAgainst.push(sumAgainst / windowSize);
+    const isPrevSeason = raw[i].season !== currentSeason;
     points.push({
       matchNumber: raw[i].match_number,
+      label: isPrevSeason ? `L${raw[i].match_number}` : String(raw[i].match_number),
+      season: raw[i].season,
       rollingFor: Math.round((sumFor / windowSize) * 100) / 100,
       rollingAgainst: Math.round((sumAgainst / windowSize) * 100) / 100,
       trendFor: null,
@@ -129,7 +142,7 @@ function CustomTooltip({ active, payload, label }: any) {
     >
       <div className="px-3 py-1.5 bg-slate-800/50 border-b border-slate-700/50">
         <p className="text-slate-300 text-[10px] font-mono uppercase tracking-[0.12em] font-semibold">
-          Game {label}
+          {String(label).startsWith('L') ? `Game ${String(label).slice(1)} · last season` : `Game ${label}`}
         </p>
       </div>
       <div className="p-2 space-y-1 min-w-[160px]">
@@ -216,6 +229,16 @@ export default function RollingXGPage() {
   }, [league, team]);
 
   const chartData = useMemo(() => computeChartData(rawData, windowSize), [rawData, windowSize]);
+
+  // Where the current season starts within the (possibly two-season)
+  // series — null when the chart is single-season. Drives the dashed
+  // boundary marker.
+  const seasonBoundaryLabel = useMemo(() => {
+    if (!chartData.length) return null;
+    const cur = chartData[chartData.length - 1].season;
+    if (chartData[0].season === cur) return null;
+    return chartData.find((p) => p.season === cur)?.label ?? null;
+  }, [chartData]);
 
   const stats = useMemo(() => {
     if (chartData.length === 0) return null;
@@ -410,8 +433,16 @@ export default function RollingXGPage() {
                 </defs>
 
                 <CartesianGrid strokeDasharray="2 6" stroke="#475569" strokeOpacity={0.4} vertical={false} />
+                {seasonBoundaryLabel && (
+                  <ReferenceLine
+                    x={seasonBoundaryLabel}
+                    stroke="#64748b"
+                    strokeDasharray="4 4"
+                    label={{ value: 'new season', position: 'insideTopLeft', fill: '#94a3b8', fontSize: 10, fontFamily: '"JetBrains Mono", monospace' }}
+                  />
+                )}
                 <XAxis
-                  dataKey="matchNumber"
+                  dataKey="label"
                   stroke="#475569"
                   tick={AXIS_TICK}
                   tickLine={false}
