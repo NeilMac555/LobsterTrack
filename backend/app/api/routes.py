@@ -2614,6 +2614,45 @@ async def admin_delete_empty_match(
     return {"deleted": match_id, "teams": f"{match.home_team} v {match.away_team}"}
 
 
+@router.post("/admin/purge-junk-snapshots")
+async def admin_purge_junk_snapshots(
+    password: str = Query(..., description="Admin password"),
+    dry_run: bool = Query(True, description="Default true: report what WOULD be deleted without deleting"),
+    db: Session = Depends(get_db),
+):
+    """One-shot cleanup for dead-orderbook odds snapshots (2026-08-30,
+    reported by a Pro user as impossible 'opening odds'): rows whose
+    3-way implied probabilities sum outside [0.90, 1.35] — e.g. a
+    just-listed match's empty Betfair book at 1.06/1.01/1.06 (~280%).
+    These poisoned opening prices and every movement figure derived
+    from them. The ingest gate in odds_fetcher._store_odds now rejects
+    such rows at source; this removes the historical ones. Run with
+    dry_run=true first and eyeball the counts."""
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid password")
+
+    where = (
+        "home_odds > 1 AND draw_odds > 1 AND away_odds > 1 "
+        "AND (1/home_odds + 1/draw_odds + 1/away_odds) NOT BETWEEN 0.90 AND 1.35"
+    )
+    counts = db.execute(text(
+        f"SELECT bookmaker, count(*) FROM odds_snapshots WHERE {where} GROUP BY bookmaker"
+    )).fetchall()
+    total = sum(c for _, c in counts)
+
+    deleted = 0
+    if not dry_run and total:
+        deleted = db.execute(text(f"DELETE FROM odds_snapshots WHERE {where}")).rowcount
+        db.commit()
+
+    return {
+        "dry_run": dry_run,
+        "junk_rows_by_bookmaker": {b: c for b, c in counts},
+        "total_junk_rows": total,
+        "deleted": deleted,
+    }
+
+
 @router.get("/admin/club-finances-health")
 async def get_club_finances_health(
     password: str = Query(..., description="Admin password"),

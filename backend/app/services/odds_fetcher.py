@@ -197,6 +197,37 @@ class OddsFetcher:
                     if ever_had_pinnacle:
                         match_odds = None
 
+                # Overround sanity gate (2026-08-30, after a Pro user
+                # reported "opening odds" of 1.06-1.08 on nearly every
+                # match): a real 3-way book's implied probabilities sum
+                # to ~100-112% (Pinnacle ~102-105%; a liquid exchange
+                # ~101-110%). A DEAD Betfair order book — a match listed
+                # weeks out with no liquidity yet — shows best-available
+                # prices like 1.06/1.01/1.06, summing to ~280%. Those
+                # rows used to be stored and, being the match's FIRST
+                # snapshot, became its "opening odds" everywhere,
+                # turning every movement figure into noise (96 of 118
+                # upcoming matches were affected when audited). Reject
+                # any snapshot whose book doesn't sum sanely; existing
+                # junk was purged via /admin/purge-junk-snapshots.
+                if match_odds:
+                    h, d, a = match_odds.get("home"), match_odds.get("draw"), match_odds.get("away")
+                    if h and d and a and h > 1 and d > 1 and a > 1:
+                        overround = 1 / h + 1 / d + 1 / a
+                        if not (0.90 <= overround <= 1.35):
+                            logger.debug(
+                                "Rejecting insane odds snapshot",
+                                match_id=match.id,
+                                bookmaker=bookmaker_used,
+                                odds=f"{h}/{d}/{a}",
+                                overround=round(overround, 3),
+                            )
+                            match_odds = None
+                    else:
+                        # A 3-way book missing an outcome or quoting 1.00
+                        # is equally unusable.
+                        match_odds = None
+
                 if match_odds:
                     # Compute pre-game vs in-play status for this row.
                     # CAREFUL: match.commence_time can come back from
