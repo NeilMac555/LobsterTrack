@@ -18,7 +18,12 @@ logger = structlog.get_logger()
 #   - Simplified back to 3.0pp + T-180 in June 2026 (Neil's call):
 #     uniform rule for every league, no per-league overrides, no
 #     separate cumulative-drift detector. One simple model.
-SYNDICATE_THRESHOLD_PROB_POINTS = 3.0
+#   - Raised to 4.0pp on 2026-08-24 (Neil's call) — fewer, bigger
+#     alerts. NOTE: steam-move DETECTION (odds_fetcher.py's
+#     STEAM_THRESHOLD_PROB_POINTS, feeding Steam Results/Drifters
+#     history) deliberately stays at 3.0 — this constant only gates
+#     what fires a Telegram alert / tweet / homepage Syndicate row.
+SYNDICATE_THRESHOLD_PROB_POINTS = 4.0
 
 # Time-to-kickoff window for alerts. Only fire alerts when the match is
 # within this many minutes of KO. 960 = sixteen hours before kickoff.
@@ -41,7 +46,7 @@ SYNDICATE_ALERT_WINDOW_MINUTES = 960
 # heavy dog without a real informational edge.
 SYNDICATE_FIRE_TIER_ODDS = 4.0
 
-# Per-league override layer. Other leagues use the 3.0pp / 960-min
+# Per-league override layer. Other leagues use the 4.0pp / 960-min
 # defaults above. WC override per Neil 2026-06-26: 24-hour pre-KO
 # window at 3.5pp so we catch anything material that moves in the
 # day before KO, not just the final 3 hours.
@@ -138,7 +143,7 @@ class SyndicateAlerter:
                 minutes_to_ko = int(time_to_ko.total_seconds() / 60)
 
                 # Per-league overrides: WC uses a 24-hour window at 3.5pp.
-                # Other leagues stick to the 3.0pp / 960-min defaults.
+                # Other leagues stick to the 4.0pp / 960-min defaults.
                 league_window = window_for(match.sport_key)
                 league_threshold = threshold_for(match.sport_key)
 

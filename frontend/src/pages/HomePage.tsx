@@ -711,13 +711,13 @@ export default function HomePage() {
                 <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em] font-semibold">Late sharp action on closing lines</p>
               </div>
             </div>
-            <span className="hidden sm:inline-block text-[10px] font-mono uppercase tracking-[0.12em] text-amber-400/80 font-semibold">Within 16h · 3pp+ move</span>
+            <span className="hidden sm:inline-block text-[10px] font-mono uppercase tracking-[0.12em] text-amber-400/80 font-semibold">Within 16h · 4pp+ move</span>
           </div>
 
           {syndicateMoves.length === 0 ? (
             <div className="px-6 py-8 text-center">
               <p className="text-slate-500 text-sm">No late sharp action detected</p>
-              <p className="text-slate-600 text-xs mt-1 font-mono tracking-tight">Matches within 16 hours with 3pp+ implied probability shift will appear here</p>
+              <p className="text-slate-600 text-xs mt-1 font-mono tracking-tight">Matches within 16 hours with 4pp+ implied probability shift will appear here</p>
             </div>
           ) : (
             <>
