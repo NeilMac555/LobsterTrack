@@ -325,6 +325,64 @@ export default function LongshotTeamsView({
               {data.all.matches} matches{data.data_through ? ` · through ${data.data_through}` : ''} · favourite = shorter Pinnacle closing price
             </div>
           </div>
+
+          {/* Plain-words explainer, filled with this club's own numbers.
+              Added 2026-09-02 after a reader on X asked whether "ROI
+              +25.9%" meant "them to win for every fixture". It does,
+              and the page should say so. */}
+          {(() => {
+            const staked = data.all.matches;
+            const profit = side === 'back' ? data.all.back_pl : data.all.fade_pl;
+            const roi = side === 'back' ? data.all.back_roi_pct : data.all.fade_roi_pct;
+            const sign = (v: number) => `${v > 0 ? '+' : ''}${v.toFixed(1)}`;
+            const seasonWord = season ? SEASON_LABELS[season] ?? season : 'every season since 2021/22';
+            const venueWord = venue === 'home' ? ' at home' : venue === 'away' ? ' away' : '';
+            return (
+              <div className="mt-4 sm:mt-6 rounded-xl border border-slate-700/50 bg-slate-800/50 p-4 sm:p-5">
+                <h3 className="text-xs sm:text-sm font-semibold text-slate-300 mb-2 sm:mb-3">What these numbers mean</h3>
+                <ul className="space-y-2 text-xs sm:text-sm text-slate-400">
+                  <li className="flex items-start gap-2">
+                    <span className="text-cyan-400 mt-0.5">•</span>
+                    <span>
+                      {side === 'back' ? (
+                        <>
+                          <span className="text-slate-200">The bet is {data.team} to win the match</span>, one unit at the Pinnacle closing 1X2 price, in every {leagueName} match they played{venueWord} in {seasonWord}. Yes, every fixture, no picking and choosing. A draw or a defeat loses the unit.
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-slate-200">The bet is {data.team} not to win</span>, one unit on Double Chance (draw or the opponent) at the combined Pinnacle closing price, in every {leagueName} match they played{venueWord} in {seasonWord}. A {data.team} win loses the unit.
+                        </>
+                      )}
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-cyan-400 mt-0.5">•</span>
+                    <span>
+                      <span className="text-slate-200">ROI is profit divided by total stake.</span> Here that is {staked} matches, so {staked} units staked, returning {sign(profit)} units{roi !== null ? `, which is ${sign(roi)}%` : ''}. The record {data.all.wins}–{data.all.draws}–{data.all.losses} is wins, draws, losses from {data.team}'s point of view.
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-cyan-400 mt-0.5">•</span>
+                    <span>
+                      <span className="text-slate-200">"When favourite" and "when underdog"</span> are the same bets split by whether {data.team} closed shorter than the opponent. The favourite is whichever side has the shorter Pinnacle closing price; on identical prices the home side counts as the favourite.
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-cyan-400 mt-0.5">•</span>
+                    <span>
+                      <span className="text-slate-200">Median odds</span> is the middle closing price across those matches. The chart is the running total of units, one point per match: green when that match's bet won, red when it lost.
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-cyan-400 mt-0.5">•</span>
+                    <span>
+                      <span className="text-slate-200">This is a record, not a tip.</span> It shows what the market has priced this club at and how often it was wrong, at flat stakes, with no selection. Prices are Pinnacle closes: football-data.co.uk to January 2026, SteamWatch's own capture from February 2026, with a gap of around 200 matches across the five leagues between mid-January and 12 February 2026. Updated every Monday.
+                    </span>
+                  </li>
+                </ul>
+              </div>
+            );
+          })()}
         </>
       )}
     </div>
