@@ -42,7 +42,7 @@ PRICE_SOURCE = "steamwatch_close"
 # are quoted before commission, so they run marginally better than
 # Pinnacle's — these rows are slightly flattered, never understated.
 # Tagged so provenance stays visible per row.
-EXCHANGE_PRICE_SOURCE = "betfair_exchange_close"
+EXCHANGE_PRICE_SOURCE = "bfex_close"  # <= 16 chars: price_source is String(16)
 
 # Leagues with historical_matches coverage. Europe isn't in
 # historical_matches at all (no public history to seed it), so it's out

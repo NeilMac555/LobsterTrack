@@ -221,7 +221,7 @@ def _import_season_rows(league_key: str, season: str, csv_text: str) -> dict:
                 # own capture (price_source='steamwatch_close'). A CSV
                 # row with no price must not overwrite that — results
                 # still refresh above, the price stays ours.
-                if price_source == "missing" and existing.price_source in ("steamwatch_close", "betfair_exchange_close"):
+                if price_source == "missing" and existing.price_source in ("steamwatch_close", "bfex_close"):
                     pass
                 else:
                     existing.psch = psch
