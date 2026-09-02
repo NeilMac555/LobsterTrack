@@ -19,7 +19,7 @@ SteamWatch reports what moved and what happened next. It does not claim to know 
 - [Drifters](https://www.steamwatch.io/drifters): the moves going the other way, with the same historical accounting.
 - [Closing Lines](https://www.steamwatch.io/closing-lines): opening vs closing prices for finished matches, by league and week.
 - [Team P/L](https://www.steamwatch.io/team-pnl): what backing or fading each team blindly would have returned, by season and venue.
-- [Longshot Bias](https://www.steamwatch.io/longshot-bias): what blindly backing every favourite, underdog or draw at Pinnacle closing prices returned, by odds band, league, season and venue, plus every club in all five leagues on its own. 8,666 matches, 2021/22 onward, updated weekly.
+- [Longshot Bias](https://www.steamwatch.io/longshot-bias): what blindly backing every favourite, underdog or draw at Pinnacle closing prices returned, by odds band, league, season and venue, plus every club in all five leagues on its own. 8,867 matches, 2021/22 onward, updated weekly.
 - [Match Predictor](https://www.steamwatch.io/tools/match-predictor): Dixon-Coles probability baseline with fair-odds output.
 - [Rolling xG](https://www.steamwatch.io/tools/rolling-xg): rolling expected-goals tables for the top five leagues.
 - [Bet Calculator](https://www.steamwatch.io/tools/bet-calculator) and [Hedge Calculator](https://www.steamwatch.io/tools/hedge-calculator): free staking tools.
@@ -27,16 +27,17 @@ SteamWatch reports what moved and what happened next. It does not claim to know 
 - [What is closing line value (CLV)?](https://www.steamwatch.io/blog/what-is-closing-line-value-in-football-betting): how to calculate CLV and why it predicts long-term profit.
 - [What is a drifter?](https://www.steamwatch.io/blog/what-is-a-drifter-in-football-betting): why odds lengthen before kickoff and how drift relates to steam.
 - [How to read closing lines](https://www.steamwatch.io/blog/how-to-read-closing-lines-in-football-betting): implied probability, open-to-close gaps, and which markets to trust.
-- [The favourite-longshot bias in football](https://www.steamwatch.io/blog/favourite-longshot-bias-in-football-betting): the numbers behind blind favourite, underdog and draw backing across 8,666 Pinnacle closes.
+- [The favourite-longshot bias in football](https://www.steamwatch.io/blog/favourite-longshot-bias-in-football-betting): the numbers behind blind favourite, underdog and draw backing across 8,867 Pinnacle closes.
 - [About](https://www.steamwatch.io/about): who runs SteamWatch (Neil Mac, betting analyst, 7,800+ tracked bets).
 
-## Key findings (Longshot Bias: 8,666 top-five-league matches at Pinnacle closing 1X2 prices, 2021/22 to August 2026, flat stakes, updated weekly)
+## Key findings (Longshot Bias: 8,867 top-five-league matches at Pinnacle closing 1X2 prices, 2021/22 to August 2026, flat stakes, updated weekly)
 
-- Backing every favourite returned 0.0%. Backing every underdog returned -10.7%. Backing every draw returned -1.9%.
-- The biggest underdogs (closing 5.29 or longer) returned -14.7%; slight favourites (2.19 to 3.09) returned +3.1%.
-- Favourites playing away returned +3.0% (3,000 matches); favourites at home returned -1.5% (5,666 matches).
-- Serie A underdogs were the worst blind bet at -15.4%; Serie A (+0.9%) and the Bundesliga (+0.7%) were the only leagues where the draw came out ahead.
-- Per-team view (all five leagues): e.g. Arsenal all time +4.9% backing overall, +8.5% as favourite, -26.1% as underdog.
+- Backing every favourite returned +0.2%. Backing every underdog returned -10.5%. Backing every draw returned -2.0%.
+- The biggest underdogs (closing 5.30 or longer) returned -14.0%; slight favourites (2.19 to 3.09) returned +3.7%.
+- Favourites playing away returned +3.2% (3,066 matches); favourites at home returned -1.4% (5,801 matches).
+- Serie A underdogs were the worst blind bet at -15.6%; the Bundesliga (+1.1%) and Serie A (+0.4%) were the only leagues where the draw came out ahead.
+- Per-team view (all five leagues): e.g. Aston Villa all time +25.9% backing overall.
+- Prices: Pinnacle closes (football-data.co.uk to Jan 2026, SteamWatch capture from Feb 2026); Betfair Exchange closes stand in for ~200 matches between the two.
 
 ## Key findings (Steam Results track record, 27 January 2026 to 1 September 2026)
 
