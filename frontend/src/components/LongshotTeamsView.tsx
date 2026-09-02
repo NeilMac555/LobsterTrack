@@ -24,6 +24,7 @@ const TEAM_LEAGUES = [
   { key: 'soccer_epl', label: 'EPL', name: 'Premier League' },
   { key: 'soccer_spain_la_liga', label: 'LAL', name: 'La Liga' },
   { key: 'soccer_italy_serie_a', label: 'SEA', name: 'Serie A' },
+  { key: 'soccer_germany_bundesliga', label: 'BUN', name: 'Bundesliga' },
 ];
 const FREE_LEAGUE = 'soccer_epl';      // same free rule as the overview
 const FREE_SEASON = '2526';            // default landing (fuller sample)
@@ -253,7 +254,7 @@ export default function LongshotTeamsView({
         <div className="mb-6">
           <PaywallOverlay
             title="Unlock every league and season"
-            description="Premier League 25/26 and 26/27 are free per team — SteamWatch Pro opens La Liga and Serie A, every season back to 2021/22 and the all-time view, for every club."
+            description="Premier League 25/26 and 26/27 are free per team — SteamWatch Pro opens La Liga, Serie A and the Bundesliga, every season back to 2021/22 and the all-time view, for every club."
           />
         </div>
       )}
