@@ -49,7 +49,10 @@ class Settings(BaseSettings):
         "soccer_france_ligue_one": "Ligue 1",
         "soccer_italy_serie_a": "Serie A",
         "soccer_uefa_champs_league": "Champions League",
-        "soccer_uefa_champs_league_qualification": "Champions League Qualifying",
+        # UCL qualifying finished 26 Aug 2026 — removed from polling per
+        # Neil (2026-09-02) so an empty sport stops costing Odds API
+        # credits every tick. Restore when qualifying returns in July 2027.
+        # "soccer_uefa_champs_league_qualification": "Champions League Qualifying",
         "soccer_uefa_europa_league": "Europa League",
         "soccer_uefa_europa_conference_league": "Conference League",
         "soccer_fifa_world_cup": "FIFA World Cup",

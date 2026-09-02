@@ -504,7 +504,10 @@ export const LEAGUE_CONFIG: Record<string, { name: string; shortName: string; co
   soccer_france_ligue_one: { name: 'Ligue 1', shortName: 'L1', color: '#091C3E' },
   soccer_italy_serie_a: { name: 'Serie A', shortName: 'SEA', color: '#024494' },
   soccer_uefa_champs_league: { name: 'Champions League', shortName: 'UCL', color: '#071D49' },
-  soccer_uefa_champs_league_qualification: { name: 'Champions League Qualifying', shortName: 'UCLQ', color: '#071D49' },
+  // UCL qualifying finished 26 Aug 2026 — hidden from the picker per Neil
+  // (2026-09-02), kept in the lookup so past UCLQ matches still render.
+  // Flip `hidden` off when qualifying returns in July 2027.
+  soccer_uefa_champs_league_qualification: { name: 'Champions League Qualifying', shortName: 'UCLQ', color: '#071D49', hidden: true },
   soccer_uefa_europa_league: { name: 'Europa League', shortName: 'UEL', color: '#F47B20' },
   soccer_uefa_europa_conference_league: { name: 'Conference League', shortName: 'UECL', color: '#0AC44B' },
   // World Cup '26 has finished — hidden from the picker, kept in the
