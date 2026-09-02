@@ -758,7 +758,7 @@ export const BLOG_POSTS: BlogPost[] = [
 <p>Premier League favs -0.2%, dogs -10.2%, Super Dogs -18.7%.</p>
 <h2>What I'd take from it</h2>
 <p>Blind favourites come out level and blind dogs cost you just under 11%. You can still back a dog, the price just has to be wrong by more than 10% before you're level, and away favs in tight games are the one blind angle that's been paying.</p>
-<p>One hole in the sample: about 200 matches between mid January and mid February 2026, football-data stopped publishing Pinnacle prices in January and our own closing line capture didn't start until the 12th of February. Everything from then on is our own record and it updates every week. Every number above is on the Longshot Bias page with league, season and venue filters, and you can pull up any Premier League club on its own, 25/26 and 26/27 are free to look at.</p>
+<p>One patch in the sample: about 200 matches between mid January and mid February 2026, football-data stopped publishing Pinnacle prices in January and our own closing line capture didn't start until the 12th of February. Those use the Betfair Exchange close instead, which is quoted before commission so it runs a shade better than Pinnacle. Everything from the 12th of February on is our own Pinnacle record and it updates every week. Every number above is on the Longshot Bias page with league, season and venue filters, and you can pull up any Premier League club on its own, 25/26 and 26/27 are free to look at.</p>
 <p><a href="https://www.steamwatch.io/longshot-bias">View Longshot Bias on SteamWatch</a></p>`,
     content: (
       <>

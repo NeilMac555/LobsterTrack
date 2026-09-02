@@ -2820,8 +2820,10 @@ async def admin_fill_historical_prices(
     the manual trigger."""
     if password != ADMIN_PASSWORD:
         raise HTTPException(status_code=401, detail="Invalid password")
-    from app.services.closing_line_backfill import fill_historical_prices
-    return {"summary": fill_historical_prices(db)}
+    from app.services.closing_line_backfill import fill_historical_prices, fill_from_exchange_close
+    pinnacle = fill_historical_prices(db)
+    exchange = await fill_from_exchange_close(db)
+    return {"summary": pinnacle, "exchange_fallback": exchange}
 
 
 @router.get("/admin/club-finances-health")

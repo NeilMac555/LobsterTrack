@@ -376,7 +376,7 @@ export default function LongshotTeamsView({
                   <li className="flex items-start gap-2">
                     <span className="text-cyan-400 mt-0.5">•</span>
                     <span>
-                      <span className="text-slate-200">This is a record, not a tip.</span> It shows what the market has priced this club at and how often it was wrong, at flat stakes, with no selection. Prices are Pinnacle closes: football-data.co.uk to January 2026, SteamWatch's own capture from February 2026, with a gap of around 200 matches across the five leagues between mid-January and 12 February 2026. Updated every Monday.
+                      <span className="text-slate-200">This is a record, not a tip.</span> It shows what the market has priced this club at and how often it was wrong, at flat stakes, with no selection. Prices are Pinnacle closes: football-data.co.uk to January 2026, SteamWatch's own capture from February 2026. For the roughly 200 matches across the five leagues between mid-January and 12 February 2026, where no Pinnacle close exists, the Betfair Exchange closing price (before commission) is used instead. Updated every Monday.
                     </span>
                   </li>
                 </ul>

@@ -380,13 +380,14 @@ class OddsScheduler:
         (10:00, which reads priced rows). Failures logged, never raised.
         """
         from app.models.database import SessionLocal
-        from app.services.closing_line_backfill import fill_historical_prices
+        from app.services.closing_line_backfill import fill_historical_prices, fill_from_exchange_close
 
         db = SessionLocal()
         try:
             logger.info("Starting weekly historical price fill")
             summary = fill_historical_prices(db)
-            logger.info("Historical price fill complete", summary=summary)
+            exchange = await fill_from_exchange_close(db)
+            logger.info("Historical price fill complete", summary=summary, exchange_fallback=exchange)
         except Exception as e:
             logger.error("Historical price fill failed", error=str(e))
         finally:

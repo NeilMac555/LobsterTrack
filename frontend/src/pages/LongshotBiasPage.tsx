@@ -331,7 +331,7 @@ export default function LongshotBiasPage() {
             <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm text-slate-400">
               <li className="flex items-start gap-2">
                 <span className="text-cyan-400 mt-0.5">•</span>
-                <span>Every finished match with a Pinnacle closing 1X2 price since 2021/22, across the Premier League, La Liga, Bundesliga, Serie A and Ligue 1 — {data.total_matches.toLocaleString()} matches under the current filters{data.data_through ? `, through ${data.data_through}` : ''}.</span>
+                <span>Every finished match with a Pinnacle closing 1X2 price since 2021/22, across the Premier League, La Liga, Bundesliga, Serie A and Ligue 1 — {data.total_matches.toLocaleString()} matches under the current filters{data.data_through ? `, through ${data.data_through}` : ''}. Pinnacle closes come from football-data.co.uk to January 2026 and SteamWatch's own capture from February 2026; the roughly 200 matches in between, where neither has a Pinnacle price, use the Betfair Exchange close.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-cyan-400 mt-0.5">•</span>
