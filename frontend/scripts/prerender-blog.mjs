@@ -346,9 +346,17 @@ for (const post of POSTS) {
     `<link rel="canonical" href="${url}" />`
   );
 
-  // Add JSON-LD before </head>
+  // Replace the homepage's WebApplication + FAQPage JSON-LD with the
+  // post's Article + FAQPage (same regex the static-page branch uses).
+  // Until 2026-09-02 this appended instead, leaving every post with two
+  // FAQPage blocks — Google honours at most one FAQPage per URL and may
+  // ignore both when it sees two, so the post's own FAQ never got
+  // eligible for rich results.
   const jsonLd = `<script type="application/ld+json">${articleSchema(post)}</script>\n    ${faqSchema(post)}`;
-  html = html.replace('</head>', `    ${jsonLd}\n  </head>`);
+  html = html.replace(
+    /<script type="application\/ld\+json">[\s\S]*?<\/script>\s*\n\s*<!-- Privacy/,
+    `${jsonLd}\n\n    <!-- Privacy`
+  );
 
   // Replace generic noscript with post-specific content
   html = html.replace(
