@@ -602,7 +602,7 @@ const PAGES = [
     path: 'longshot-bias',
     title: 'Longshot Bias — Favourites vs Underdogs ROI at Pinnacle Closing Prices | SteamWatch',
     description:
-      'What blindly backing every favourite, underdog or draw at Pinnacle closing prices returned across 8,666 top-five-league matches since 2021/22, by odds band, league, season and venue, plus every Premier League club on its own. Favourites dead level, underdogs -10.7%.',
+      'What blindly backing every favourite, underdog or draw at Pinnacle closing prices returned across 8,666 top-five-league matches since 2021/22, by odds band, league, season and venue, plus every Premier League and La Liga club on its own. Favourites dead level, underdogs -10.7%.',
     ogType: 'website',
     jsonLd: [
       {
@@ -647,7 +647,7 @@ const PAGES = [
   <li>Ligue 1: favourites -2.8%, underdogs -3.9%, draws -2.7%.</li>
 </ul>
 <h2>Per team</h2>
-<p>Every Premier League club can be pulled up on its own: record, win rate, median close and flat-stake ROI backing or fading them, split by matches where they were the favourite and matches where they were the underdog, with a match-by-match cumulative chart. Example: Arsenal, all time, +4.9% backing overall, +8.5% as favourite, -26.1% as underdog.</p>
+<p>Every Premier League and La Liga club can be pulled up on its own: record, win rate, median close and flat-stake ROI backing or fading them, split by matches where they were the favourite and matches where they were the underdog, with a match-by-match cumulative chart. Example: Arsenal, all time, +4.9% backing overall, +8.5% as favourite, -26.1% as underdog.</p>
 <p>Odds bands are terciles of the filtered data (equal match counts per band). The favourite is whichever side closed shorter. Backing the favourite or the underdog loses on a draw. Prices are football-data.co.uk's Pinnacle closes to January 2026 and SteamWatch's own Pinnacle closing-line capture from February 2026. Premier League 25/26 and the live 26/27 season are free to explore; every league and season is available with SteamWatch Pro.</p>
 <p><a href="https://www.steamwatch.io/blog/favourite-longshot-bias-in-football-betting">Read the full breakdown</a> · <a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
   },

@@ -16,9 +16,15 @@ import PaywallOverlay from './PaywallOverlay';
 const MONO_STACK = '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace';
 const AXIS_TICK = { fill: '#94a3b8', fontSize: 10, fontFamily: MONO_STACK };
 
-// Premier League only for now (Neil, 2026-09-02). Widen HISTORY league
-// by league once the per-team view has bedded in.
-const LEAGUE = 'soccer_epl';
+// Leagues wired into the per-team view. Premier League first (Neil,
+// 2026-09-02), La Liga the same day. The endpoints are league-aware, so
+// adding a league is one entry here once its history is in
+// historical_matches.
+const TEAM_LEAGUES = [
+  { key: 'soccer_epl', label: 'EPL', name: 'Premier League' },
+  { key: 'soccer_spain_la_liga', label: 'LAL', name: 'La Liga' },
+];
+const FREE_LEAGUE = 'soccer_epl';      // same free rule as the overview
 const FREE_SEASON = '2526';            // default landing (fuller sample)
 const FREE_SEASONS = ['2526', '2627'];  // last season + the live one, per Neil 2026-09-02
 const LATEST_SEASON = '2627';
@@ -66,12 +72,20 @@ function StatCard({ title, block, side }: { title: string; block: FavDogTeamBloc
 export default function LongshotTeamsView({
   isSubscribed,
   initialTeam,
+  initialLeague,
   onTeamChange,
+  onLeagueChange,
 }: {
   isSubscribed: boolean;
   initialTeam: string | null;
+  initialLeague: string | null;
   onTeamChange: (team: string | null) => void;
+  onLeagueChange: (league: string) => void;
 }) {
+  const [league, setLeagueState] = useState<string>(
+    TEAM_LEAGUES.some((l) => l.key === initialLeague) ? (initialLeague as string) : FREE_LEAGUE,
+  );
+  const leagueName = TEAM_LEAGUES.find((l) => l.key === league)?.name ?? '';
   const [teams, setTeams] = useState<FavDogTeamListItem[]>([]);
   const [query, setQuery] = useState(initialTeam ?? '');
   const [team, setTeam] = useState<string | null>(initialTeam);
@@ -83,20 +97,30 @@ export default function LongshotTeamsView({
   const [error, setError] = useState('');
 
   useEffect(() => {
-    getFavDogTeams(LEAGUE).then((r) => setTeams(r.teams)).catch(() => setTeams([]));
-  }, []);
+    getFavDogTeams(league).then((r) => setTeams(r.teams)).catch(() => setTeams([]));
+  }, [league]);
 
-  const locked = !isSubscribed && !(season !== null && FREE_SEASONS.includes(season));
+  const locked = !isSubscribed && !(league === FREE_LEAGUE && season !== null && FREE_SEASONS.includes(season));
 
   useEffect(() => {
     if (!team || locked) return;
     setLoading(true);
     setError('');
-    getFavDogTeam({ team, league: LEAGUE, seasons: season ?? undefined, venue: venue ?? undefined })
+    getFavDogTeam({ team, league, seasons: season ?? undefined, venue: venue ?? undefined })
       .then(setData)
       .catch(() => setError('Failed to load team data'))
       .finally(() => setLoading(false));
-  }, [team, season, venue, locked]);
+  }, [team, league, season, venue, locked]);
+
+  const pickLeague = (key: string) => {
+    if (key === league) return;
+    setLeagueState(key);
+    setTeam(null);
+    setQuery('');
+    setData(null);
+    onTeamChange(null);
+    onLeagueChange(key);
+  };
 
   const suggestions = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -159,7 +183,7 @@ export default function LongshotTeamsView({
         <input
           value={query}
           onChange={(e) => { setQuery(e.target.value); if (team && e.target.value !== team) { setTeam(null); onTeamChange(null); } }}
-          placeholder="Search Premier League team…"
+          placeholder={`Search ${leagueName} team…`}
           className="w-full rounded-xl border border-slate-700/60 bg-slate-900/70 px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50"
         />
         {suggestions.length > 0 && (
@@ -178,17 +202,25 @@ export default function LongshotTeamsView({
         )}
       </div>
       <p className="text-[11px] text-slate-500 mb-4">
-        Premier League teams with Pinnacle closing prices on record, 2021/22 onward. Other leagues to follow.
+        {leagueName} clubs with Pinnacle closing prices on record, 2021/22 onward, updated every Monday.
       </p>
 
       {/* Filters */}
       <div className="mb-4 sm:mb-6 rounded-xl border border-slate-700/60 bg-slate-800/80 p-3 sm:p-4 space-y-3">
         <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold w-14">League</span>
+          {TEAM_LEAGUES.map((l) => (
+            <button key={l.key} className={chipClass(league === l.key)} onClick={() => pickLeague(l.key)}>
+              {l.label}{lock(l.key === FREE_LEAGUE)}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold w-14">Season</span>
           <button className={chipClass(season === null)} onClick={() => setSeason(null)}>All time{lock(false)}</button>
           {Object.entries(SEASON_LABELS).filter(([c]) => c <= LATEST_SEASON).map(([code, label]) => (
             <button key={code} className={chipClass(season === code)} onClick={() => setSeason(code)}>
-              {label}{lock(FREE_SEASONS.includes(code))}
+              {label}{lock(league === FREE_LEAGUE && FREE_SEASONS.includes(code))}
             </button>
           ))}
         </div>
@@ -223,8 +255,8 @@ export default function LongshotTeamsView({
       {locked && (
         <div className="mb-6">
           <PaywallOverlay
-            title="Unlock every season"
-            description="Premier League 25/26 and 26/27 are free per team — SteamWatch Pro opens every season back to 2021/22 and the all-time view, for every club."
+            title="Unlock every league and season"
+            description="Premier League 25/26 and 26/27 are free per team — SteamWatch Pro opens La Liga, every season back to 2021/22 and the all-time view, for every club."
           />
         </div>
       )}

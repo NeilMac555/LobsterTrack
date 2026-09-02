@@ -130,6 +130,7 @@ export default function LongshotBiasPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const view: 'overview' | 'teams' = searchParams.get('view') === 'teams' ? 'teams' : 'overview';
   const urlTeam = searchParams.get('team');
+  const urlLeague = searchParams.get('lg');
   const setView = (v: 'overview' | 'teams') => {
     const next = new URLSearchParams(searchParams);
     if (v === 'teams') next.set('view', 'teams'); else { next.delete('view'); next.delete('team'); }
@@ -139,6 +140,13 @@ export default function LongshotBiasPage() {
     const next = new URLSearchParams(searchParams);
     next.set('view', 'teams');
     if (t) next.set('team', t); else next.delete('team');
+    setSearchParams(next, { replace: true });
+  };
+  const setUrlLeague = (lg: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('view', 'teams');
+    next.set('lg', lg);
+    next.delete('team');
     setSearchParams(next, { replace: true });
   };
 
@@ -222,7 +230,7 @@ export default function LongshotBiasPage() {
       </div>
 
       {view === 'teams' && (
-        <LongshotTeamsView isSubscribed={isSubscribed} initialTeam={urlTeam} onTeamChange={setUrlTeam} />
+        <LongshotTeamsView isSubscribed={isSubscribed} initialTeam={urlTeam} initialLeague={urlLeague} onTeamChange={setUrlTeam} onLeagueChange={setUrlLeague} />
       )}
 
       {view === 'overview' && <>
