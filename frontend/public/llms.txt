@@ -46,7 +46,7 @@ SteamWatch reports what moved and what happened next. It does not claim to know 
 
 ## Access
 
-- Free: real-time steam alerts via Telegram (https://t.me/steamwatchalerts), live odds, biggest movers, the closing line archive, Team P/L, calculators, and the Longshot Bias explorer for Premier League 25/26.
+- Free: real-time steam alerts via Telegram (https://t.me/steamwatchalerts), live odds, biggest movers, the closing line archive, Team P/L, calculators, and the Longshot Bias explorer for Premier League 25/26 and 26/27.
 - Pro (paid): Match Predictor, Rolling xG, Steam Results history, Drifters, and the full Longshot Bias explorer (every league and season).
 
 ## Attribution

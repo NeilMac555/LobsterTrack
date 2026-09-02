@@ -252,7 +252,7 @@ const POSTS = [
 <p>Premier League favs -0.2%, dogs -10.2%, Super Dogs -18.7%.</p>
 <h2>What I'd take from it</h2>
 <p>Blind favourites come out level and blind dogs cost you just under 11%. You can still back a dog, the price just has to be wrong by more than 10% before you're level, and away favs in tight games are the one blind angle that's been paying.</p>
-<p>One hole in the sample: about 200 matches between mid January and mid February 2026, football-data stopped publishing Pinnacle prices in January and our own closing line capture didn't start until the 12th of February. Everything from then on is our own record and it updates every week. Every number above is on the Longshot Bias page with league, season and venue filters, and you can pull up any Premier League club on its own, 25/26 is free to look at.</p>
+<p>One hole in the sample: about 200 matches between mid January and mid February 2026, football-data stopped publishing Pinnacle prices in January and our own closing line capture didn't start until the 12th of February. Everything from then on is our own record and it updates every week. Every number above is on the Longshot Bias page with league, season and venue filters, and you can pull up any Premier League club on its own, 25/26 and 26/27 are free to look at.</p>
 <p><a href="https://www.steamwatch.io/longshot-bias">View Longshot Bias on SteamWatch</a></p>`,
   },
 ];
@@ -648,7 +648,7 @@ const PAGES = [
 </ul>
 <h2>Per team</h2>
 <p>Every Premier League club can be pulled up on its own: record, win rate, median close and flat-stake ROI backing or fading them, split by matches where they were the favourite and matches where they were the underdog, with a match-by-match cumulative chart. Example: Arsenal, all time, +4.9% backing overall, +8.5% as favourite, -26.1% as underdog.</p>
-<p>Odds bands are terciles of the filtered data (equal match counts per band). The favourite is whichever side closed shorter. Backing the favourite or the underdog loses on a draw. Prices are football-data.co.uk's Pinnacle closes to January 2026 and SteamWatch's own Pinnacle closing-line capture from February 2026. Premier League 25/26 is free to explore; every league and season is available with SteamWatch Pro.</p>
+<p>Odds bands are terciles of the filtered data (equal match counts per band). The favourite is whichever side closed shorter. Backing the favourite or the underdog loses on a draw. Prices are football-data.co.uk's Pinnacle closes to January 2026 and SteamWatch's own Pinnacle closing-line capture from February 2026. Premier League 25/26 and the live 26/27 season are free to explore; every league and season is available with SteamWatch Pro.</p>
 <p><a href="https://www.steamwatch.io/blog/favourite-longshot-bias-in-football-betting">Read the full breakdown</a> · <a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
   },
 ];

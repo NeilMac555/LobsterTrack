@@ -48,7 +48,8 @@ const SEASON_LABELS: Record<string, string> = {
 // place of the data. Venue subfilters of the free view stay free — it's
 // still the same EPL 25/26 dataset either way.
 const FREE_LEAGUE = 'soccer_epl';
-const FREE_SEASON = '2526';
+const FREE_SEASON = '2526';            // default landing (fuller sample)
+const FREE_SEASONS = ['2526', '2627'];  // last season + the live one, per Neil 2026-09-02
 
 function yieldClass(v: number): string {
   if (v > 0) return 'text-emerald-400';
@@ -141,7 +142,7 @@ export default function LongshotBiasPage() {
     setSearchParams(next, { replace: true });
   };
 
-  const isFreeView = league === FREE_LEAGUE && season === FREE_SEASON;
+  const isFreeView = league === FREE_LEAGUE && season !== null && FREE_SEASONS.includes(season);
   const locked = !isSubscribed && !isFreeView;
 
   useEffect(() => {
@@ -198,8 +199,8 @@ export default function LongshotBiasPage() {
             Free preview
           </span>
           <span className="text-xs sm:text-sm text-slate-300">
-            Premier League 25/26 is free to explore. Every other league and season — plus all-time
-            views — is a Pro feature.
+            Premier League 25/26 and the live 26/27 season are free to explore. Every other league
+            and season — plus all-time views — is a Pro feature.
           </span>
         </div>
       )}
@@ -240,9 +241,9 @@ export default function LongshotBiasPage() {
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold w-14">Season</span>
           <button className={chipClass(season === null)} onClick={() => pickSeason(null)}>All{lock(false)}</button>
-          {Object.entries(SEASON_LABELS).filter(([code]) => data?.seasons.includes(code) || season === code || code === FREE_SEASON).map(([code, label]) => (
+          {Object.entries(SEASON_LABELS).filter(([code]) => data?.seasons.includes(code) || season === code || FREE_SEASONS.includes(code)).map(([code, label]) => (
             <button key={code} className={chipClass(season === code)} onClick={() => pickSeason(code)}>
-              {label}{lock(code === FREE_SEASON)}
+              {label}{lock(FREE_SEASONS.includes(code))}
             </button>
           ))}
         </div>
@@ -258,7 +259,7 @@ export default function LongshotBiasPage() {
         <div className="mb-6 sm:mb-8">
           <PaywallOverlay
             title="Unlock every league and season"
-            description="Premier League 25/26 is free — SteamWatch Pro opens all five leagues, every season back to 2021/22, all-time views and the venue splits across the lot."
+            description="Premier League 25/26 and 26/27 are free — SteamWatch Pro opens all five leagues, every season back to 2021/22, all-time views and the venue splits across the lot."
           />
         </div>
       )}

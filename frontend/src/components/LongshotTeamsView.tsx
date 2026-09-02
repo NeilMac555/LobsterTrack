@@ -19,7 +19,9 @@ const AXIS_TICK = { fill: '#94a3b8', fontSize: 10, fontFamily: MONO_STACK };
 // Premier League only for now (Neil, 2026-09-02). Widen HISTORY league
 // by league once the per-team view has bedded in.
 const LEAGUE = 'soccer_epl';
-const FREE_SEASON = '2526';
+const FREE_SEASON = '2526';            // default landing (fuller sample)
+const FREE_SEASONS = ['2526', '2627'];  // last season + the live one, per Neil 2026-09-02
+const LATEST_SEASON = '2627';
 const SEASON_LABELS: Record<string, string> = {
   '2122': '21/22', '2223': '22/23', '2324': '23/24', '2425': '24/25', '2526': '25/26', '2627': '26/27',
 };
@@ -84,7 +86,7 @@ export default function LongshotTeamsView({
     getFavDogTeams(LEAGUE).then((r) => setTeams(r.teams)).catch(() => setTeams([]));
   }, []);
 
-  const locked = !isSubscribed && season !== FREE_SEASON;
+  const locked = !isSubscribed && !(season !== null && FREE_SEASONS.includes(season));
 
   useEffect(() => {
     if (!team || locked) return;
@@ -184,9 +186,9 @@ export default function LongshotTeamsView({
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold w-14">Season</span>
           <button className={chipClass(season === null)} onClick={() => setSeason(null)}>All time{lock(false)}</button>
-          {Object.entries(SEASON_LABELS).filter(([c]) => c <= '2526').map(([code, label]) => (
+          {Object.entries(SEASON_LABELS).filter(([c]) => c <= LATEST_SEASON).map(([code, label]) => (
             <button key={code} className={chipClass(season === code)} onClick={() => setSeason(code)}>
-              {label}{lock(code === FREE_SEASON)}
+              {label}{lock(FREE_SEASONS.includes(code))}
             </button>
           ))}
         </div>
@@ -222,7 +224,7 @@ export default function LongshotTeamsView({
         <div className="mb-6">
           <PaywallOverlay
             title="Unlock every season"
-            description="Premier League 25/26 is free per team — SteamWatch Pro opens every season back to 2021/22 and the all-time view, for every club."
+            description="Premier League 25/26 and 26/27 are free per team — SteamWatch Pro opens every season back to 2021/22 and the all-time view, for every club."
           />
         </div>
       )}
