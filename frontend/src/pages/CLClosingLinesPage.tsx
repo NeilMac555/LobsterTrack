@@ -357,7 +357,7 @@ export default function CLClosingLinesPage() {
   return (
     <div>
       <Helmet>
-        <title>Champions League Closing Lines — SteamWatch</title>
+        <title>Champions League Closing Lines: Pinnacle Opening vs Closing Odds — SteamWatch</title>
         <meta name="description" content="Champions League closing line analysis. Compare opening and closing odds for every UCL match." />
         <link rel="canonical" href="https://www.steamwatch.io/cl-closing-lines" />
       </Helmet>

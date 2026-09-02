@@ -108,7 +108,7 @@ export default function ClosingLinesPage() {
   return (
     <div>
       <Helmet>
-        <title>Closing Lines — SteamWatch</title>
+        <title>Pinnacle Closing Lines Archive: Opening vs Closing Football Odds — SteamWatch</title>
         <meta name="description" content="Pinnacle 1X2, Asian Handicap and Totals closing lines for every tracked European football match, grouped by matchweek." />
         <meta property="og:title" content="Closing Lines — SteamWatch" />
         <meta property="og:url" content="https://www.steamwatch.io/closing-lines" />
@@ -129,6 +129,10 @@ export default function ClosingLinesPage() {
             <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em]">
               Pinnacle close prices &middot; 1X2 / Asian Handicap / Totals &middot; grouped by matchweek
             </p>
+            <span className="flex flex-wrap gap-x-3">
+              <Link to="/blog/how-to-read-closing-lines-in-football-betting" className="text-[11px] font-mono uppercase tracking-[0.1em] text-cyan-400 hover:text-cyan-300 mt-1.5 inline-block">How to read closing lines &rarr;</Link>
+              <Link to="/blog/what-is-closing-line-value-in-football-betting" className="text-[11px] font-mono uppercase tracking-[0.1em] text-cyan-400 hover:text-cyan-300 mt-1.5 inline-block">What is CLV? &rarr;</Link>
+            </span>
           </div>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { getDrifterResults } from '../api';
 import type { SteamResultsData } from '../types';
 import { LEAGUE_CONFIG, VISIBLE_LEAGUES } from '../types';
@@ -142,7 +142,7 @@ export default function DriftersPage() {
   return (
     <div>
       <Helmet>
-        <title>Biggest Drifters — SteamWatch</title>
+        <title>Football Drifters: Odds That Lengthened Before Kickoff & What Happened — SteamWatch</title>
         <meta name="description" content="Football teams whose 1X2 odds consistently drift (lengthen) in the 3 hours before kickoff. Historical performance, win rates, and P/L." />
         <meta property="og:title" content="Biggest Drifters — SteamWatch" />
         <meta property="og:description" content="Football teams whose 1X2 odds consistently drift (lengthen) in the 3 hours before kickoff. Historical performance, win rates, and P/L." />
@@ -176,6 +176,7 @@ export default function DriftersPage() {
             <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em]">
               Teams the market fades &middot; odds drifted pre-KO
             </p>
+            <Link to="/blog/what-is-a-drifter-in-football-betting" className="text-[11px] font-mono uppercase tracking-[0.1em] text-cyan-400 hover:text-cyan-300 mt-1.5 inline-block">What is a drifter? &rarr;</Link>
           </div>
         </div>
       </div>

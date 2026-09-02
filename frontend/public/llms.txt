@@ -37,6 +37,12 @@ SteamWatch reports what moved and what happened next. It does not claim to know 
 - Favourites playing away returned +3.3% (2,756 matches); favourites at home returned -1.6% (5,164 matches).
 - Serie A underdogs were the worst blind bet at -17.4%; the Bundesliga was the only league where the draw came out ahead (+0.4%).
 
+## Key findings (Steam Results track record, 27 January 2026 to 1 September 2026)
+
+- 531 steam moves (3+ percentage-point implied-probability shortening before kickoff at Pinnacle) tracked through to a result: 216 won (40.7%), 128 drew, 187 lost.
+- Backing every steam move blind at the detected price returned -3.5%. Backing every drifter blind (797 moves, 35.6% won) also returned -3.5%.
+- A steam move shows the market changed its mind; it does not by itself show the market was wrong.
+
 ## Access
 
 - Free: real-time steam alerts via Telegram (https://t.me/steamwatchalerts), live odds, biggest movers, the closing line archive, Team P/L, calculators, and the Longshot Bias explorer for Premier League 25/26.

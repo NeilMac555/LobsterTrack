@@ -17,7 +17,7 @@ export default function BlogIndexPage() {
       <h1 className="text-3xl sm:text-4xl font-bold text-white mb-8">Blog</h1>
 
       <div className="space-y-6">
-        {BLOG_POSTS.map((post) => (
+        {[...BLOG_POSTS].sort((a, b) => b.datePublished.localeCompare(a.datePublished)).map((post) => (
           <Link
             key={post.slug}
             to={`/blog/${post.slug}`}

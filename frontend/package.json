@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "indexnow": "node scripts/indexnow.mjs",
     "build": "tsc -b && vite build && node scripts/prerender-blog.mjs",
     "lint": "eslint .",
     "preview": "vite preview"

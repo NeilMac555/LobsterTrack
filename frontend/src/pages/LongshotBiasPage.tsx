@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { Link } from 'react-router-dom';
 import {
   LineChart,
   Line,
@@ -154,7 +155,7 @@ export default function LongshotBiasPage() {
   return (
     <div className="max-w-6xl mx-auto">
       <Helmet>
-        <title>Longshot Bias — SteamWatch</title>
+        <title>Longshot Bias: Favourites vs Underdogs ROI at Pinnacle Closing Prices — SteamWatch</title>
         <meta name="description" content="What blindly backing every football favourite, underdog or draw at Pinnacle closing prices would have returned — by odds band, league and season, since 2021/22." />
         <link rel="canonical" href="https://www.steamwatch.io/longshot-bias" />
       </Helmet>
@@ -294,6 +295,10 @@ export default function LongshotBiasPage() {
               <li className="flex items-start gap-2">
                 <span className="text-cyan-400 mt-0.5">•</span>
                 <span>European competitions aren't here yet: no deep public closing-price history exists for them. Our own capture has been recording UCL/UEL/UECL closes since February 2026 and a Europe view will appear once the sample justifies one.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-cyan-400 mt-0.5">•</span>
+                <span>Full write-up with the league and venue splits: <Link to="/blog/favourite-longshot-bias-in-football-betting" className="text-cyan-400 hover:text-cyan-300 underline underline-offset-2">The favourite-longshot bias in football</Link>.</span>
               </li>
             </ul>
           </div>

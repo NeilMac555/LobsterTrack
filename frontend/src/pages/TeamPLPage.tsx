@@ -212,7 +212,7 @@ export default function TeamPLPage() {
   return (
     <div>
       <Helmet>
-        <title>Team P/L — SteamWatch</title>
+        <title>Team P/L: Blind Back & Fade Returns for Every Football Team — SteamWatch</title>
         <meta
           name="description"
           content="Backward-looking 1X2 profit/loss per Premier League team at Pinnacle closing prices, season-by-season. Flat £50 stake."

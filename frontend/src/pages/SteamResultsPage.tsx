@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { getSteamResults } from '../api';
 import type { SteamResultsData } from '../types';
 import { LEAGUE_CONFIG, VISIBLE_LEAGUES } from '../types';
@@ -142,7 +142,7 @@ export default function SteamResultsPage() {
   return (
     <div>
       <Helmet>
-        <title>Steam Results — SteamWatch</title>
+        <title>Do Steam Moves Win? Football Steam Move Results & ROI — SteamWatch</title>
         <meta name="description" content="Historical performance data for tracked football steam moves across major European leagues, including win rates and P/L." />
         <meta property="og:title" content="Steam Results — SteamWatch" />
         <meta property="og:description" content="Historical performance data for tracked football steam moves across major European leagues, including win rates and P/L." />
@@ -175,6 +175,7 @@ export default function SteamResultsPage() {
             <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em]">
               Teams backed by sharp money &middot; odds shortened pre-KO
             </p>
+            <Link to="/blog/what-are-steam-moves-in-football-betting" className="text-[11px] font-mono uppercase tracking-[0.1em] text-cyan-400 hover:text-cyan-300 mt-1.5 inline-block">What is a steam move? &rarr;</Link>
           </div>
         </div>
       </div>

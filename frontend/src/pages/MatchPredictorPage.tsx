@@ -452,7 +452,7 @@ export default function MatchPredictorPage() {
   return (
     <div className="max-w-7xl mx-auto">
       <Helmet>
-        <title>Match Predictor — SteamWatch Dixon-Coles Model</title>
+        <title>Football Match Predictor: Dixon-Coles Probabilities & Fair Odds — SteamWatch</title>
         <meta name="description" content="Generate match probability predictions using the SteamWatch Dixon-Coles adjusted Poisson model. Fair odds for 1X2, Asian Handicap, and Totals markets." />
         <link rel="canonical" href="https://www.steamwatch.io/tools/match-predictor" />
       </Helmet>

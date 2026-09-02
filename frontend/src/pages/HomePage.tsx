@@ -17,6 +17,7 @@ import { toDisplayDate, dayGroupLabel, formatKickoff, type TimeMode } from '../u
 import { useTimePreference } from '../contexts/TimePreferenceContext';
 import { useOddsFormat } from '../contexts/OddsFormatContext';
 import { formatOdds } from '../utils/odds';
+import { BLOG_POSTS } from '../blog/posts';
 
 interface GroupedMatches {
   label: string;
@@ -691,6 +692,34 @@ export default function HomePage() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* From the blog — newest three explainers. The homepage is the
+          site's biggest exit page, and the posts are the pages we most
+          want crawled and ranked; this routes visitors (and crawl
+          equity) to them. Not shown on league-filtered views. */}
+      {!league && (
+        <div className="mb-6 sm:mb-10">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">From the blog</h2>
+            <Link to="/blog" className="text-[11px] font-mono uppercase tracking-[0.1em] text-slate-400 hover:text-white">All posts &rarr;</Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {[...BLOG_POSTS]
+              .sort((a, b) => b.datePublished.localeCompare(a.datePublished))
+              .slice(0, 3)
+              .map((post) => (
+                <Link
+                  key={post.slug}
+                  to={`/blog/${post.slug}`}
+                  className="block bg-slate-800/60 rounded-xl border border-slate-700/50 p-4 hover:border-slate-600 transition-colors group"
+                >
+                  <div className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 mb-1.5">{post.dateFormatted} &middot; {post.readTime}</div>
+                  <div className="text-sm font-semibold text-white group-hover:text-cyan-300 transition-colors leading-snug">{post.title}</div>
+                </Link>
+              ))}
           </div>
         </div>
       )}

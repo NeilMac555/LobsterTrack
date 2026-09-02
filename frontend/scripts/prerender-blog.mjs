@@ -380,7 +380,7 @@ console.log(`\nPre-rendered ${POSTS.length} blog page(s).`);
 const PAGES = [
   {
     path: 'steam-results',
-    title: 'Steam Results — SteamWatch',
+    title: 'Do Steam Moves Win? Football Steam Move Results & ROI — SteamWatch',
     description:
       'Historical performance data for tracked football steam moves across major European leagues, including win rates and P/L.',
     ogType: 'website',
@@ -396,9 +396,16 @@ const PAGES = [
       keywords: ['steam moves', 'sharp money', 'football betting', 'line movement'],
     },
     noscriptHtml: `<h1>Steam Results — SteamWatch</h1>
-<p>Historical performance tracking of football steam moves across major European leagues. See win rates, profit/loss, and team rankings for sharp money signals tracked by SteamWatch.</p>
+<p>Do steam moves win? SteamWatch records every significant pre-kickoff price shortening (3+ percentage points of implied probability at Pinnacle) across major European leagues and tracks what happened next.</p>
+<h2>The all-time record (27 January 2026 to 1 September 2026)</h2>
+<ul>
+  <li>531 steam moves tracked through to a result. 216 won (40.7%), 128 drew, 187 lost.</li>
+  <li>Backing every one blind at the price when the move was detected returned -3.5% (-18.7 units at flat 1 unit stakes).</li>
+  <li>Drifters, the moves going the other way: 797 tracked, 284 won (35.6%), blind backing returned -3.5%.</li>
+</ul>
+<p>A steam move tells you the market changed its mind, it does not tell you the market was wrong. The per-team rankings, updated after every result, show which sides the money has been right about this season.</p>
 <p>Leagues covered: Premier League, La Liga, Bundesliga, Serie A, Ligue 1, Champions League, Europa League.</p>
-<p><a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
+<p><a href="https://www.steamwatch.io/blog/what-are-steam-moves-in-football-betting">What is a steam move?</a> · <a href="https://www.steamwatch.io/drifters">Drifters</a> · <a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
   },
   {
     path: 'tools/hedge-calculator',
@@ -460,7 +467,7 @@ const PAGES = [
   },
   {
     path: 'closing-lines',
-    title: 'Closing Lines — SteamWatch',
+    title: 'Pinnacle Closing Lines Archive: Opening vs Closing Football Odds — SteamWatch',
     description:
       'Compare opening and closing odds across major European football leagues. Track closing line value and market efficiency on 1X2, Asian Handicap, and Totals markets.',
     ogType: 'website',
@@ -481,7 +488,7 @@ const PAGES = [
   },
   {
     path: 'cl-closing-lines',
-    title: 'Champions League Closing Lines — SteamWatch',
+    title: 'Champions League Closing Lines: Pinnacle Opening vs Closing Odds — SteamWatch',
     description:
       'Champions League closing line analysis. Compare opening and closing odds for every UCL match across 1X2, Asian Handicap, and Totals markets.',
     ogType: 'website',
@@ -501,7 +508,7 @@ const PAGES = [
   },
   {
     path: 'tools/match-predictor',
-    title: 'Match Predictor — SteamWatch Dixon-Coles Model',
+    title: 'Football Match Predictor: Dixon-Coles Probabilities & Fair Odds — SteamWatch',
     description:
       'Generate match probability predictions using the SteamWatch Dixon-Coles adjusted Poisson model. Fair odds for 1X2, Asian Handicap, and Totals markets.',
     ogType: 'website',
@@ -521,7 +528,7 @@ const PAGES = [
   },
   {
     path: 'tools/rolling-xg',
-    title: 'Rolling xG — SteamWatch',
+    title: 'Rolling xG Tables: Football Team Form by Expected Goals — SteamWatch',
     description:
       'Track rolling expected goals (xG) trends for every team across Europe\'s top football leagues. Identify form changes and performance shifts.',
     ogType: 'website',
@@ -543,7 +550,7 @@ const PAGES = [
   },
   {
     path: 'drifters',
-    title: 'Drifters — SteamWatch',
+    title: 'Football Drifters: Odds That Lengthened Before Kickoff & What Happened — SteamWatch',
     description:
       'Football odds drifters: selections whose prices lengthened before kickoff, tracked with outcomes recorded. The other side of steam, across major European leagues.',
     ogType: 'website',
@@ -560,12 +567,18 @@ const PAGES = [
     },
     noscriptHtml: `<h1>Drifters — SteamWatch</h1>
 <p>A drifter is a selection whose odds lengthened before kickoff — its implied probability fell. SteamWatch tracks every drift across major European leagues and records what happened next: win rates and profit/loss for the moves going the other way.</p>
+<h2>The all-time record (27 January 2026 to 1 September 2026)</h2>
+<ul>
+  <li>797 drifters tracked through to a result. 284 won (35.6%), 200 drew, 313 lost.</li>
+  <li>Backing every drifter blind at the drifted price returned -3.5% (-28.0 units at flat 1 unit stakes).</li>
+  <li>For comparison, backing every steam move blind over the same period also returned -3.5% across 531 moves.</li>
+</ul>
 <p>Leagues covered: Premier League, La Liga, Bundesliga, Serie A, Ligue 1, Champions League, Europa League.</p>
 <p><a href="https://www.steamwatch.io/blog/what-is-a-drifter-in-football-betting">What is a drifter?</a> · <a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
   },
   {
     path: 'team-pnl',
-    title: 'Team P/L — SteamWatch',
+    title: 'Team P/L: Blind Back & Fade Returns for Every Football Team — SteamWatch',
     description:
       'What backing or fading every team blindly would have returned, by season and venue. Profit/loss records built from Pinnacle closing prices across major European leagues.',
     ogType: 'website',

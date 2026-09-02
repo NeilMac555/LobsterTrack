@@ -261,7 +261,7 @@ export default function RollingXGPage() {
   return (
     <div className="max-w-5xl mx-auto px-4 py-6 space-y-4 sm:space-y-6">
       <Helmet>
-        <title>Rolling xG — SteamWatch</title>
+        <title>Rolling xG Tables: Football Team Form by Expected Goals — SteamWatch</title>
         <meta name="description" content="Track rolling expected goals (xG) trends for every team across Europe's top football leagues. Identify form changes and performance shifts." />
         <link rel="canonical" href="https://www.steamwatch.io/tools/rolling-xg" />
       </Helmet>
