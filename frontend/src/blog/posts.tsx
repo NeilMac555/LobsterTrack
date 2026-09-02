@@ -706,4 +706,121 @@ export const BLOG_POSTS: BlogPost[] = [
       </>
     ),
   },
+  {
+    slug: 'favourite-longshot-bias-in-football-betting',
+    title: 'The Favourite-Longshot Bias in Football: 7,920 Pinnacle Closing Prices',
+    description:
+      'What blindly backing every favourite, underdog and draw at Pinnacle closing prices returned across 7,920 top-five-league matches from 2021/22 to January 2026. Favourites +0.1%, underdogs -11.1%, and the one venue split worth remembering.',
+    author: 'Neil Macdonald',
+    datePublished: '2026-09-02',
+    dateFormatted: 'September 2, 2026',
+    readTime: '4 min read',
+    faq: [
+      {
+        question: 'Are football favourites profitable to bet on?',
+        answer:
+          'Blindly backing every favourite at Pinnacle closing prices across 7,920 top-five-league matches (2021/22 to January 2026) returned +0.1%, so favourites as a group are a break-even bet at the close. Slight favourites (2.18 to 3.06) returned +3.7%, and favourites playing away returned +3.3%.',
+      },
+      {
+        question: 'Why do underdogs lose money in football betting?',
+        answer:
+          'Underdogs are systematically overpriced by the market, which is the favourite-longshot bias. Blindly backing every underdog at Pinnacle closing prices lost 11.1% across 7,920 matches, and the biggest underdogs (5.32 and above) lost 15.3%. The price has to be wrong by more than that margin before a dog bet is even level.',
+      },
+      {
+        question: 'What is the favourite-longshot bias?',
+        answer:
+          'The tendency for betting markets to price longshots too short and favourites too long relative to how often each actually wins. In football at Pinnacle closing prices it shows up as favourites returning roughly zero and underdogs returning around minus 11% when backed blindly.',
+      },
+      {
+        question: 'Is backing the draw profitable in football?',
+        answer:
+          'Blindly backing the draw in every match at Pinnacle closing prices returned -1.8% across 7,920 top-five-league matches, so it sits between favourites and underdogs. The Bundesliga was the only league where the draw came out ahead, at +0.4%, and Serie A draws returned +3.3%.',
+      },
+    ],
+    noscriptHtml: `<h1>The Favourite-Longshot Bias in Football: 7,920 Pinnacle Closing Prices</h1>
+<p>By Neil Macdonald - September 2, 2026</p>
+<p>Every punter has heard that the market overprices longshots. I wanted to see what that looks like in football with real closing prices rather than a paper from 2004, so I ran every Pinnacle closing 1X2 price we hold across the top 5 leagues, 2021/22 through to January 2026. 7,920 matches. Flat 1 unit on the favourite in every one of them, 1 unit on the dog, 1 unit on the draw, and see what comes back.</p>
+<h2>What blind backing returns</h2>
+<p>Favourites: +0.1% over 7,920 bets. The vig handed back and nothing else.</p>
+<p>Underdogs: -11.1% over the same 7,920 matches.</p>
+<p>The draw: -1.8%.</p>
+<p>So the dog bettor is paying roughly 11p in the pound for the privilege and the fav bettor is paying nothing.</p>
+<h2>It gets worse the bigger the dog</h2>
+<p>The bands are terciles, 2,640 matches in each, I didn't pick the boundaries. Slight Dog (2.60 to 3.62) -9.5%. Mid Dog (3.62 to 5.32) -8.6%. Super Dog (5.32 to 36.00) -15.3%.</p>
+<p>Favourites go the other way. Super Fav (under 1.70) -0.9%, Mid Fav (1.70 to 2.18) -2.5%, Slight Fav (2.18 to 3.06) +3.7%.</p>
+<h2>Away favourites are the number to remember</h2>
+<p>The market still pays too much respect to home advantage in the 1X2 and it has done for 5 seasons. Fav at home, 5,164 matches, -1.6%. Fav away, 2,756 matches, +3.3%. Slight Favs playing away came in at +6.4%, the dogs at home against them lost 13.8%, and the Super Dogs at home to an away fav lost 21.7p in the pound.</p>
+<h2>By league</h2>
+<p>Serie A is the worst place to back a dog, -17.4% overall and -26.2% on Super Dogs.</p>
+<p>La Liga favs +3.2%, the only league where all 3 fav bands are positive.</p>
+<p>Bundesliga is the noisiest, favs -1.4% and dogs -5.9%, and it's the one league where the draw came out ahead (+0.4%).</p>
+<p>Ligue 1 Mid Dogs show +10.6%, which I'd treat as noise from 496 matches rather than an edge, the other two dog bands are -2.3% and -17.2%.</p>
+<p>Premier League favs +1.1%, dogs -11.4%, Super Dogs -19.9%.</p>
+<h2>What I'd take from it</h2>
+<p>Blind favourites come out level and blind dogs cost you 11%. You can still back a dog, the price just has to be wrong by more than 11% before you're level, and away favs in tight games are the one blind angle that's been paying.</p>
+<p>The sample stops mid January 2026 because football-data stopped publishing Pinnacle prices after that. Our own closing line capture takes over from February and I'll add it once it's merged in. Every number above is on the Longshot Bias page with league, season and venue filters, Premier League 25/26 is free to look at.</p>
+<p><a href="https://www.steamwatch.io/longshot-bias">View Longshot Bias on SteamWatch</a></p>`,
+    content: (
+      <>
+        <p>
+          Every punter has heard that the market overprices longshots. I wanted to see what that looks like in football with real closing prices rather than a paper from 2004, so I ran every Pinnacle closing 1X2 price we hold across the top 5 leagues, 2021/22 through to January 2026. 7,920 matches. Flat 1 unit on the favourite in every one of them, 1 unit on the dog, 1 unit on the draw, and see what comes back.
+        </p>
+
+        <h2>What blind backing returns</h2>
+        <p>
+          Favourites: +0.1% over 7,920 bets. The vig handed back and nothing else.
+        </p>
+        <p>
+          Underdogs: -11.1% over the same 7,920 matches.
+        </p>
+        <p>
+          The draw: -1.8%.
+        </p>
+        <p>
+          So the dog bettor is paying roughly 11p in the pound for the privilege and the fav bettor is paying nothing.
+        </p>
+
+        <h2>It gets worse the bigger the dog</h2>
+        <p>
+          The bands are terciles, 2,640 matches in each, I didn't pick the boundaries. Slight Dog (2.60 to 3.62) -9.5%. Mid Dog (3.62 to 5.32) -8.6%. Super Dog (5.32 to 36.00) -15.3%.
+        </p>
+        <p>
+          Favourites go the other way. Super Fav (under 1.70) -0.9%, Mid Fav (1.70 to 2.18) -2.5%, Slight Fav (2.18 to 3.06) +3.7%.
+        </p>
+
+        <h2>Away favourites are the number to remember</h2>
+        <p>
+          The market still pays too much respect to home advantage in the 1X2 and it has done for 5 seasons. Fav at home, 5,164 matches, -1.6%. Fav away, 2,756 matches, +3.3%. Slight Favs playing away came in at +6.4%, the dogs at home against them lost 13.8%, and the Super Dogs at home to an away fav lost 21.7p in the pound.
+        </p>
+
+        <h2>By league</h2>
+        <p>
+          Serie A is the worst place to back a dog, -17.4% overall and -26.2% on Super Dogs.
+        </p>
+        <p>
+          La Liga favs +3.2%, the only league where all 3 fav bands are positive.
+        </p>
+        <p>
+          Bundesliga is the noisiest, favs -1.4% and dogs -5.9%, and it's the one league where the draw came out ahead (+0.4%).
+        </p>
+        <p>
+          Ligue 1 Mid Dogs show +10.6%, which I'd treat as noise from 496 matches rather than an edge, the other two dog bands are -2.3% and -17.2%.
+        </p>
+        <p>
+          Premier League favs +1.1%, dogs -11.4%, Super Dogs -19.9%.
+        </p>
+
+        <h2>What I'd take from it</h2>
+        <p>
+          Blind favourites come out level and blind dogs cost you 11%. You can still back a dog, the price just has to be wrong by more than 11% before you're level, and away favs in tight games are the one blind angle that's been paying.
+        </p>
+        <p>
+          The sample stops mid January 2026 because football-data stopped publishing Pinnacle prices after that. Our own closing line capture takes over from February and I'll add it once it's merged in. Every number above is on the Longshot Bias page with league, season and venue filters, Premier League 25/26 is free to look at.
+        </p>
+        <p>
+          <Link to="/longshot-bias">View Longshot Bias on SteamWatch</Link>
+        </p>
+      </>
+    ),
+  },
 ];
