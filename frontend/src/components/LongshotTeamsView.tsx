@@ -87,7 +87,6 @@ export default function LongshotTeamsView({
   );
   const leagueName = TEAM_LEAGUES.find((l) => l.key === league)?.name ?? '';
   const [teams, setTeams] = useState<FavDogTeamListItem[]>([]);
-  const [query, setQuery] = useState(initialTeam ?? '');
   const [team, setTeam] = useState<string | null>(initialTeam);
   const [season, setSeason] = useState<string | null>(FREE_SEASON);
   const [venue, setVenue] = useState<'home' | 'away' | null>(null);
@@ -116,21 +115,14 @@ export default function LongshotTeamsView({
     if (key === league) return;
     setLeagueState(key);
     setTeam(null);
-    setQuery('');
     setData(null);
     onTeamChange(null);
     onLeagueChange(key);
   };
 
-  const suggestions = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q || (team && q === team.toLowerCase())) return [];
-    return teams.filter((t) => t.team.toLowerCase().includes(q)).slice(0, 8);
-  }, [query, teams, team]);
-
   const pickTeam = (name: string) => {
+    if (!name) { setTeam(null); setData(null); onTeamChange(null); return; }
     setTeam(name);
-    setQuery(name);
     onTeamChange(name);
   };
 
@@ -178,31 +170,22 @@ export default function LongshotTeamsView({
 
   return (
     <div>
-      {/* Search */}
-      <div className="relative mb-3">
-        <input
-          value={query}
-          onChange={(e) => { setQuery(e.target.value); if (team && e.target.value !== team) { setTeam(null); onTeamChange(null); } }}
-          placeholder={`Search ${leagueName} team…`}
-          className="w-full rounded-xl border border-slate-700/60 bg-slate-900/70 px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50"
-        />
-        {suggestions.length > 0 && (
-          <div className="absolute z-20 mt-1 w-full rounded-xl border border-slate-700 bg-slate-800 shadow-xl overflow-hidden">
-            {suggestions.map((s) => (
-              <button
-                key={s.team}
-                onClick={() => pickTeam(s.team)}
-                className="w-full text-left px-4 py-2.5 text-sm text-slate-200 hover:bg-slate-700/60 flex justify-between"
-              >
-                <span>{s.team}</span>
-                <span className="text-slate-500 font-mono text-xs">{s.matches} matches</span>
-              </button>
-            ))}
-          </div>
-        )}
+      {/* Team dropdown — current top-flight clubs that were also in the
+          division last season (the API applies that rule). */}
+      <div className="mb-3">
+        <select
+          value={team ?? ''}
+          onChange={(e) => pickTeam(e.target.value)}
+          className="w-full rounded-xl border border-slate-700/60 bg-slate-900/70 px-4 py-3 text-sm text-white focus:outline-none focus:border-cyan-500/50"
+        >
+          <option value="">Select a {leagueName} club…</option>
+          {teams.map((t) => (
+            <option key={t.team} value={t.team}>{t.team}</option>
+          ))}
+        </select>
       </div>
       <p className="text-[11px] text-slate-500 mb-4">
-        {leagueName} clubs with Pinnacle closing prices on record, 2021/22 onward, updated every Monday.
+        Current {leagueName} clubs that were also in the division last season. Pinnacle closing prices from 2021/22, updated every Monday.
       </p>
 
       {/* Filters */}

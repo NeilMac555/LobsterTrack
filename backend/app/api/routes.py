@@ -1930,18 +1930,41 @@ async def get_fav_dog_teams(
     db: Session = Depends(get_db),
     league: str = Query("soccer_epl", description="Sport key"),
 ):
-    """Teams with usable closing-price history in a league, for the
-    per-team Longshot Bias search box."""
+    """Clubs for the per-team Longshot Bias dropdown: those in the
+    division NOW that were also in it LAST season (Neil, 2026-09-02) —
+    so no side relegated last season and no newly promoted side with no
+    top-flight history. Derived from the data (present in both the
+    latest season and the one before it), so it stays right every year
+    without a hand-kept list. Match counts are all-time."""
+    latest = db.query(func.max(HistoricalMatch.season)).filter(HistoricalMatch.league == league).scalar()
+    if not latest:
+        return FavDogTeamsResponse(league=league, teams=[])
+    start_year = int(latest[:2])
+    prev = f"{(start_year - 1) % 100:02d}{start_year % 100:02d}"
+
+    def teams_in(season: str) -> set[str]:
+        rows = (
+            db.query(HistoricalMatch.home_team, HistoricalMatch.away_team)
+            .filter(HistoricalMatch.league == league, HistoricalMatch.season == season)
+            .all()
+        )
+        return {h for h, _ in rows} | {a for _, a in rows}
+
+    eligible = teams_in(latest) & teams_in(prev)
+
     base = (
-        db.query(HistoricalMatch)
+        db.query(HistoricalMatch.home_team, HistoricalMatch.away_team)
         .filter(HistoricalMatch.league == league)
         .filter(HistoricalMatch.psch.isnot(None), HistoricalMatch.pscd.isnot(None), HistoricalMatch.psca.isnot(None))
         .filter(HistoricalMatch.ftr.isnot(None))
+        .all()
     )
     counts: dict[str, int] = {}
-    for h, a in base.with_entities(HistoricalMatch.home_team, HistoricalMatch.away_team).all():
-        counts[h] = counts.get(h, 0) + 1
-        counts[a] = counts.get(a, 0) + 1
+    for h, a in base:
+        if h in eligible:
+            counts[h] = counts.get(h, 0) + 1
+        if a in eligible:
+            counts[a] = counts.get(a, 0) + 1
     return FavDogTeamsResponse(
         league=league,
         teams=[FavDogTeamListItem(team=t, matches=n) for t, n in sorted(counts.items())],
