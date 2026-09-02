@@ -1953,22 +1953,31 @@ async def get_fav_dog_teams(
     eligible = teams_in(latest) & teams_in(prev)
 
     base = (
-        db.query(HistoricalMatch.home_team, HistoricalMatch.away_team)
+        db.query(HistoricalMatch.home_team, HistoricalMatch.away_team, HistoricalMatch.psch, HistoricalMatch.psca, HistoricalMatch.ftr)
         .filter(HistoricalMatch.league == league)
         .filter(HistoricalMatch.psch.isnot(None), HistoricalMatch.pscd.isnot(None), HistoricalMatch.psca.isnot(None))
         .filter(HistoricalMatch.ftr.isnot(None))
         .all()
     )
     counts: dict[str, int] = {}
-    for h, a in base:
+    pl: dict[str, float] = {}
+    for h, a, psch, psca, ftr in base:
         if h in eligible:
             counts[h] = counts.get(h, 0) + 1
+            pl[h] = pl.get(h, 0.0) + ((psch - 1) if ftr == "H" else -1.0)
         if a in eligible:
             counts[a] = counts.get(a, 0) + 1
-    return FavDogTeamsResponse(
-        league=league,
-        teams=[FavDogTeamListItem(team=t, matches=n) for t, n in sorted(counts.items())],
-    )
+            pl[a] = pl.get(a, 0.0) + ((psca - 1) if ftr == "A" else -1.0)
+    teams = [
+        FavDogTeamListItem(
+            team=t, matches=n,
+            back_pl=round(pl.get(t, 0.0), 2),
+            back_roi_pct=round(pl.get(t, 0.0) / n * 100, 1) if n else None,
+        )
+        for t, n in sorted(counts.items())
+    ]
+    default_team = max(teams, key=lambda x: x.back_pl).team if teams else None
+    return FavDogTeamsResponse(league=league, teams=teams, default_team=default_team)
 
 
 @router.get("/fav-dog-results/team", response_model=FavDogTeamResponse)

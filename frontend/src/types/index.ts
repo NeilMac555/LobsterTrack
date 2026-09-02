@@ -233,11 +233,15 @@ export interface FavDogTeamData {
 export interface FavDogTeamListItem {
   team: string;
   matches: number;
+  back_pl?: number;
+  back_roi_pct?: number | null;
 }
 
 export interface FavDogTeamsData {
   league: string;
   teams: FavDogTeamListItem[];
+  /** Club shown before the user picks one: highest all-time backing P/L. */
+  default_team?: string | null;
 }
 
 export interface ClosingLine {

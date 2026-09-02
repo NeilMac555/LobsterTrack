@@ -224,11 +224,18 @@ class FavDogTeamResponse(BaseModel):
 class FavDogTeamListItem(BaseModel):
     team: str
     matches: int
+    back_pl: float = 0.0          # all-time units, 1u flat on them to win at the close
+    back_roi_pct: Optional[float] = None
 
 
 class FavDogTeamsResponse(BaseModel):
     league: str
     teams: list[FavDogTeamListItem]
+    # The club to show before the user picks one: highest all-time
+    # backing P/L in units (Neil, 2026-09-02: "default to the best in
+    # that competition, e.g. Villa"). Units rather than ROI so a
+    # 35-match sample can't outrank a 187-match one.
+    default_team: Optional[str] = None
 
 
 class BiggestMover(BaseModel):

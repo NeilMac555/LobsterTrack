@@ -96,7 +96,18 @@ export default function LongshotTeamsView({
   const [error, setError] = useState('');
 
   useEffect(() => {
-    getFavDogTeams(league).then((r) => setTeams(r.teams)).catch(() => setTeams([]));
+    getFavDogTeams(league)
+      .then((r) => {
+        setTeams(r.teams);
+        // No club chosen (fresh load, or league just switched): show the
+        // league's best blind-back club rather than an empty panel.
+        // Doesn't touch the URL — only an explicit pick is a deep link.
+        if (!initialTeam && r.default_team) {
+          setTeam((current) => current ?? r.default_team ?? null);
+        }
+      })
+      .catch(() => setTeams([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [league]);
 
   const locked = !isSubscribed && !(league === FREE_LEAGUE && season !== null && FREE_SEASONS.includes(season));
@@ -180,7 +191,9 @@ export default function LongshotTeamsView({
         >
           <option value="">Select a {leagueName} club…</option>
           {teams.map((t) => (
-            <option key={t.team} value={t.team}>{t.team}</option>
+            <option key={t.team} value={t.team}>
+              {t.team}{typeof t.back_pl === 'number' ? ` (${t.back_pl > 0 ? '+' : ''}${t.back_pl.toFixed(1)}u all time)` : ''}
+            </option>
           ))}
         </select>
       </div>
