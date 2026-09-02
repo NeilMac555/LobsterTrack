@@ -370,6 +370,28 @@ class OddsScheduler:
         except Exception as e:
             logger.error("Power ranking refresh failed", error=str(e))
 
+    async def historical_price_fill_job(self):
+        """
+        Weekly fill of historical_matches Pinnacle prices from our own
+        closing-line capture — football-data stopped shipping Pinnacle
+        columns in Jan 2026, so results come from them and prices from
+        us. Scheduled 09:30 Monday, between the football-data refresh
+        (09:00, which adds the week's result rows) and league constants
+        (10:00, which reads priced rows). Failures logged, never raised.
+        """
+        from app.models.database import SessionLocal
+        from app.services.closing_line_backfill import fill_historical_prices
+
+        db = SessionLocal()
+        try:
+            logger.info("Starting weekly historical price fill")
+            summary = fill_historical_prices(db)
+            logger.info("Historical price fill complete", summary=summary)
+        except Exception as e:
+            logger.error("Historical price fill failed", error=str(e))
+        finally:
+            db.close()
+
     async def football_data_refresh_job(self):
         """
         Weekly refresh of historical_matches (current season only) from
@@ -566,6 +588,19 @@ class OddsScheduler:
             trigger=CronTrigger(day_of_week="mon", hour=9, minute=0),
             id="football_data_refresh_weekly",
             name="Weekly football-data.co.uk refresh (Team P/L)",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
+
+        # Weekly historical price fill — Monday 09:30 UTC, after the
+        # football-data results refresh (09:00) and before league
+        # constants (10:00). See historical_price_fill_job.
+        self.scheduler.add_job(
+            self.historical_price_fill_job,
+            trigger=CronTrigger(day_of_week="mon", hour=9, minute=30),
+            id="historical_price_fill_weekly",
+            name="Weekly historical price fill from SteamWatch closing lines",
             replace_existing=True,
             max_instances=1,
             coalesce=True,

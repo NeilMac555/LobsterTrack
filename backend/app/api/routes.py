@@ -2777,6 +2777,21 @@ async def admin_purge_junk_snapshots(
     }
 
 
+@router.post("/admin/fill-historical-prices")
+async def admin_fill_historical_prices(
+    password: str = Query(..., description="Admin password"),
+    db: Session = Depends(get_db),
+):
+    """Fill Pinnacle prices on result-bearing historical_matches rows from
+    our own closing-line capture (see services/closing_line_backfill.py).
+    Idempotent. Runs weekly after the football-data refresh too; this is
+    the manual trigger."""
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid password")
+    from app.services.closing_line_backfill import fill_historical_prices
+    return {"summary": fill_historical_prices(db)}
+
+
 @router.get("/admin/club-finances-health")
 async def get_club_finances_health(
     password: str = Query(..., description="Admin password"),

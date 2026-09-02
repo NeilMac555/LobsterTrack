@@ -216,10 +216,18 @@ def _import_season_rows(league_key: str, season: str, csv_text: str) -> dict:
                 existing.fthg = _parse_int(row.get("FTHG", ""))
                 existing.ftag = _parse_int(row.get("FTAG", ""))
                 existing.ftr = (row.get("FTR") or "").strip() or None
-                existing.psch = psch
-                existing.pscd = pscd
-                existing.psca = psca
-                existing.price_source = price_source
+                # football-data dropped its Pinnacle columns in Jan 2026;
+                # since then closing_line_backfill fills prices from our
+                # own capture (price_source='steamwatch_close'). A CSV
+                # row with no price must not overwrite that — results
+                # still refresh above, the price stays ours.
+                if price_source == "missing" and existing.price_source == "steamwatch_close":
+                    pass
+                else:
+                    existing.psch = psch
+                    existing.pscd = pscd
+                    existing.psca = psca
+                    existing.price_source = price_source
             else:
                 db.add(
                     HistoricalMatch(
