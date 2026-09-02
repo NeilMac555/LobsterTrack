@@ -1,4 +1,4 @@
-import type { MatchSummary, MatchDetail, LeagueSummary, Stats, BiggestMover, MatchTotals, SyndicateMove, MatchSpreads, SteamResultsData, ClosingLinesResponse, MatchClosingLinesResponse, XGDataResponse, TeamPLResponse, InPlayJumpsResponse, LateSteamResponse, LeagueConstantsResponse, ForecastRegistry, ForecastResponse, RecentForecastsResponse, PowerRatingsResponse, PowerRatingHistoryResponse, FavDogData } from '../types';
+import type { MatchSummary, MatchDetail, LeagueSummary, Stats, BiggestMover, MatchTotals, SyndicateMove, MatchSpreads, SteamResultsData, ClosingLinesResponse, MatchClosingLinesResponse, XGDataResponse, TeamPLResponse, InPlayJumpsResponse, LateSteamResponse, LeagueConstantsResponse, ForecastRegistry, ForecastResponse, RecentForecastsResponse, PowerRatingsResponse, PowerRatingHistoryResponse, FavDogData, FavDogTeamData, FavDogTeamsData } from '../types';
 
 const API_BASE = '/api';
 
@@ -89,6 +89,24 @@ export async function getFavDogResults(params?: {
   if (params?.venue) searchParams.set('venue', params.venue);
   const query = searchParams.toString();
   return fetchJson<FavDogData>(`${API_BASE}/fav-dog-results${query ? `?${query}` : ''}`);
+}
+
+export async function getFavDogTeams(league = 'soccer_epl'): Promise<FavDogTeamsData> {
+  return fetchJson<FavDogTeamsData>(`${API_BASE}/fav-dog-results/teams?league=${encodeURIComponent(league)}`);
+}
+
+export async function getFavDogTeam(params: {
+  team: string;
+  league?: string;
+  seasons?: string;
+  venue?: string;
+}): Promise<FavDogTeamData> {
+  const searchParams = new URLSearchParams();
+  searchParams.set('team', params.team);
+  if (params.league) searchParams.set('league', params.league);
+  if (params.seasons) searchParams.set('seasons', params.seasons);
+  if (params.venue) searchParams.set('venue', params.venue);
+  return fetchJson<FavDogTeamData>(`${API_BASE}/fav-dog-results/team?${searchParams.toString()}`);
 }
 
 export async function getSteamResults(params?: {

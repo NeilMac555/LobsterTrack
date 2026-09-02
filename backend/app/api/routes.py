@@ -48,6 +48,11 @@ from .schemas import (
     FavDogBand,
     FavDogCumulativePoint,
     FavDogResponse,
+    FavDogTeamBlock,
+    FavDogTeamPoint,
+    FavDogTeamResponse,
+    FavDogTeamListItem,
+    FavDogTeamsResponse,
 )
 
 # Simple admin password
@@ -1917,6 +1922,125 @@ async def get_fav_dog_results(
         dog_all=dog_all,
         draw_all=draw_all,
         cumulative=cumulative,
+    )
+
+
+@router.get("/fav-dog-results/teams", response_model=FavDogTeamsResponse)
+async def get_fav_dog_teams(
+    db: Session = Depends(get_db),
+    league: str = Query("soccer_epl", description="Sport key"),
+):
+    """Teams with usable closing-price history in a league, for the
+    per-team Longshot Bias search box."""
+    base = (
+        db.query(HistoricalMatch)
+        .filter(HistoricalMatch.league == league)
+        .filter(HistoricalMatch.psch.isnot(None), HistoricalMatch.pscd.isnot(None), HistoricalMatch.psca.isnot(None))
+        .filter(HistoricalMatch.ftr.isnot(None))
+    )
+    counts: dict[str, int] = {}
+    for h, a in base.with_entities(HistoricalMatch.home_team, HistoricalMatch.away_team).all():
+        counts[h] = counts.get(h, 0) + 1
+        counts[a] = counts.get(a, 0) + 1
+    return FavDogTeamsResponse(
+        league=league,
+        teams=[FavDogTeamListItem(team=t, matches=n) for t, n in sorted(counts.items())],
+    )
+
+
+@router.get("/fav-dog-results/team", response_model=FavDogTeamResponse)
+async def get_fav_dog_team(
+    db: Session = Depends(get_db),
+    team: str = Query(..., description="Canonical team name"),
+    league: str = Query("soccer_epl", description="Sport key"),
+    seasons: Optional[str] = Query(None, description="Comma-separated season codes"),
+    venue: Optional[str] = Query(None, description="'home' or 'away' — the TEAM's venue"),
+):
+    """Per-team Longshot Bias (FavOrDog 'Players' view, 2026-09-02):
+    what backing or fading one team in every match at Pinnacle closing
+    prices returned, split by whether they were the favourite or the
+    underdog. Fade = Double Chance against them at the no-margin
+    combination of Pinnacle's other two prices, the same definition
+    Team P/L uses, so the two pages agree."""
+    import statistics
+    from sqlalchemy import or_
+
+    q = (
+        db.query(HistoricalMatch)
+        .filter(HistoricalMatch.league == league)
+        .filter(or_(HistoricalMatch.home_team == team, HistoricalMatch.away_team == team))
+        .filter(HistoricalMatch.psch.isnot(None), HistoricalMatch.pscd.isnot(None), HistoricalMatch.psca.isnot(None))
+        .filter(HistoricalMatch.ftr.isnot(None))
+    )
+    if seasons:
+        season_list = [s.strip() for s in seasons.split(",") if s.strip()]
+        if season_list:
+            q = q.filter(HistoricalMatch.season.in_(season_list))
+    if venue == "home":
+        q = q.filter(HistoricalMatch.home_team == team)
+    elif venue == "away":
+        q = q.filter(HistoricalMatch.away_team == team)
+    rows = q.order_by(HistoricalMatch.match_date.asc(), HistoricalMatch.id.asc()).all()
+
+    entries = []  # dicts per match
+    back_cum = fade_cum = 0.0
+    for i, m in enumerate(rows, 1):
+        at_home = m.home_team == team
+        odds = m.psch if at_home else m.psca
+        opp_odds = m.psca if at_home else m.psch
+        # Same tie rule as the overview: the home side is the favourite
+        # on identical prices.
+        is_fav = (m.psch <= m.psca) if at_home else (m.psca < m.psch)
+        if m.ftr == "D":
+            result = "D"
+        elif (m.ftr == "H") == at_home:
+            result = "W"
+        else:
+            result = "L"
+        fade_odds = 1.0 / (1.0 / m.pscd + 1.0 / opp_odds)
+        back_pl = (odds - 1) if result == "W" else -1.0
+        fade_pl = (fade_odds - 1) if result != "W" else -1.0
+        back_cum += back_pl
+        fade_cum += fade_pl
+        entries.append({
+            "n": i, "date": m.match_date.isoformat(), "season": m.season,
+            "opponent": m.away_team if at_home else m.home_team,
+            "venue": "home" if at_home else "away",
+            "odds": float(odds), "is_fav": is_fav, "result": result,
+            "back_pl": back_pl, "fade_pl": fade_pl,
+            "back_cum": round(back_cum, 2), "fade_cum": round(fade_cum, 2),
+        })
+
+    def block(items) -> FavDogTeamBlock:
+        n = len(items)
+        wins = sum(1 for e in items if e["result"] == "W")
+        draws = sum(1 for e in items if e["result"] == "D")
+        bpl = sum(e["back_pl"] for e in items)
+        fpl = sum(e["fade_pl"] for e in items)
+        return FavDogTeamBlock(
+            matches=n, wins=wins, draws=draws, losses=n - wins - draws,
+            win_rate=round(wins / n * 100, 1) if n else None,
+            median_odds=round(statistics.median([e["odds"] for e in items]), 2) if n else 0.0,
+            back_pl=round(bpl, 2), back_roi_pct=round(bpl / n * 100, 1) if n else None,
+            fade_pl=round(fpl, 2), fade_roi_pct=round(fpl / n * 100, 1) if n else None,
+        )
+
+    return FavDogTeamResponse(
+        team=team,
+        league=league,
+        seasons=sorted({m.season for m in rows}),
+        data_through=rows[-1].match_date.isoformat() if rows else None,
+        all=block(entries),
+        as_favourite=block([e for e in entries if e["is_fav"]]),
+        as_underdog=block([e for e in entries if not e["is_fav"]]),
+        series=[
+            FavDogTeamPoint(
+                n=e["n"], date=e["date"], season=e["season"], opponent=e["opponent"], venue=e["venue"],
+                odds=e["odds"], is_favourite=e["is_fav"], result=e["result"],
+                back_cum=e["back_cum"], fade_cum=e["fade_cum"],
+            )
+            for e in entries
+        ],
     )
 
 

@@ -183,6 +183,54 @@ class FavDogResponse(BaseModel):
     cumulative: list[FavDogCumulativePoint]
 
 
+class FavDogTeamBlock(BaseModel):
+    """Per-team fav/dog stats for one slice (all / as favourite / as underdog)."""
+    matches: int
+    wins: int
+    draws: int
+    losses: int
+    win_rate: Optional[float] = None
+    median_odds: float
+    back_pl: float            # units, 1u flat on the team to win at the close
+    back_roi_pct: Optional[float] = None
+    fade_pl: float            # units, 1u flat on Double Chance against them
+    fade_roi_pct: Optional[float] = None
+
+
+class FavDogTeamPoint(BaseModel):
+    n: int
+    date: str
+    season: str
+    opponent: str
+    venue: str                # 'home' | 'away'
+    odds: float               # team's closing price
+    is_favourite: bool
+    result: str               # 'W' | 'D' | 'L'
+    back_cum: float
+    fade_cum: float
+
+
+class FavDogTeamResponse(BaseModel):
+    team: str
+    league: str
+    seasons: list[str]
+    data_through: Optional[str] = None
+    all: FavDogTeamBlock
+    as_favourite: FavDogTeamBlock
+    as_underdog: FavDogTeamBlock
+    series: list[FavDogTeamPoint]
+
+
+class FavDogTeamListItem(BaseModel):
+    team: str
+    matches: int
+
+
+class FavDogTeamsResponse(BaseModel):
+    league: str
+    teams: list[FavDogTeamListItem]
+
+
 class BiggestMover(BaseModel):
     """A match with significant odds movement"""
     match_id: str

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import LongshotTeamsView from '../components/LongshotTeamsView';
 import {
   LineChart,
   Line,
@@ -122,6 +123,24 @@ export default function LongshotBiasPage() {
   const [season, setSeason] = useState<string | null>(FREE_SEASON);
   const [venue, setVenue] = useState<string | null>(null);
 
+  // Overview (bands) vs Teams (per-club, FavOrDog 'Players' style).
+  // Both the view and the chosen team live in the URL so a team's
+  // numbers are shareable and crawlable: /longshot-bias?view=teams&team=Arsenal
+  const [searchParams, setSearchParams] = useSearchParams();
+  const view: 'overview' | 'teams' = searchParams.get('view') === 'teams' ? 'teams' : 'overview';
+  const urlTeam = searchParams.get('team');
+  const setView = (v: 'overview' | 'teams') => {
+    const next = new URLSearchParams(searchParams);
+    if (v === 'teams') next.set('view', 'teams'); else { next.delete('view'); next.delete('team'); }
+    setSearchParams(next, { replace: true });
+  };
+  const setUrlTeam = (t: string | null) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('view', 'teams');
+    if (t) next.set('team', t); else next.delete('team');
+    setSearchParams(next, { replace: true });
+  };
+
   const isFreeView = league === FREE_LEAGUE && season === FREE_SEASON;
   const locked = !isSubscribed && !isFreeView;
 
@@ -185,6 +204,27 @@ export default function LongshotBiasPage() {
         </div>
       )}
 
+      {/* View tabs */}
+      <div className="mb-4 inline-flex rounded-lg border border-slate-700/60 overflow-hidden">
+        <button
+          onClick={() => setView('overview')}
+          className={`px-4 py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.1em] transition-colors ${view === 'overview' ? 'bg-slate-700 text-white' : 'bg-slate-900/60 text-slate-400 hover:text-white'}`}
+        >
+          Overview
+        </button>
+        <button
+          onClick={() => setView('teams')}
+          className={`px-4 py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.1em] transition-colors ${view === 'teams' ? 'bg-slate-700 text-white' : 'bg-slate-900/60 text-slate-400 hover:text-white'}`}
+        >
+          Teams <span className="ml-1 px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 text-[9px]">NEW</span>
+        </button>
+      </div>
+
+      {view === 'teams' && (
+        <LongshotTeamsView isSubscribed={isSubscribed} initialTeam={urlTeam} onTeamChange={setUrlTeam} />
+      )}
+
+      {view === 'overview' && <>
       {/* Filters — always visible; locked selections flip the content
           area into the paywall below. */}
       <div className="mb-4 sm:mb-6 rounded-xl border border-slate-700/60 bg-slate-800/80 p-3 sm:p-4 space-y-3">
@@ -304,6 +344,7 @@ export default function LongshotBiasPage() {
           </div>
         </>
       )}
+      </>}
     </div>
   );
 }

@@ -193,6 +193,53 @@ export interface FavDogData {
   cumulative: FavDogCumulativePoint[];
 }
 
+export interface FavDogTeamBlock {
+  matches: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  win_rate: number | null;
+  median_odds: number;
+  back_pl: number;
+  back_roi_pct: number | null;
+  fade_pl: number;
+  fade_roi_pct: number | null;
+}
+
+export interface FavDogTeamPoint {
+  n: number;
+  date: string;
+  season: string;
+  opponent: string;
+  venue: 'home' | 'away';
+  odds: number;
+  is_favourite: boolean;
+  result: 'W' | 'D' | 'L';
+  back_cum: number;
+  fade_cum: number;
+}
+
+export interface FavDogTeamData {
+  team: string;
+  league: string;
+  seasons: string[];
+  data_through: string | null;
+  all: FavDogTeamBlock;
+  as_favourite: FavDogTeamBlock;
+  as_underdog: FavDogTeamBlock;
+  series: FavDogTeamPoint[];
+}
+
+export interface FavDogTeamListItem {
+  team: string;
+  matches: number;
+}
+
+export interface FavDogTeamsData {
+  league: string;
+  teams: FavDogTeamListItem[];
+}
+
 export interface ClosingLine {
   id: number;
   match_id: string;
