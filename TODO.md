@@ -3,6 +3,21 @@
 Lightweight kanban maintained by Claude Code. Read at the start of every
 session; update before finishing (move cards, add new ones, trim Done).
 
+## Parked: App Store (iOS/Android) — 2026-09-02
+
+Neil asked, assessed, then parked ("leave it"). If revisited, the three
+decisions that shape the build, with the recommendation at the time:
+
+- Route: Expo (React Native) app on the existing API, push notifications
+  for steam alerts as the native feature that clears Apple Guideline 4.2
+  (a plain web wrapper gets rejected). Builds/submits from Windows via
+  EAS. ~3-4 weeks to an MVP. Capacitor wrapper is days but a real 4.2 risk.
+- Pro in-app: "reader" model (sign in only, Pro bought on the website, no
+  Apple commission) vs Apple in-app subscriptions synced with Stripe
+  (15-30% cut, more backend work).
+- Prereqs: Apple Developer account (£79/yr, ~48h approval), Google Play
+  (£20 one-off) if Android too. Expect a 17+ rating (gambling-adjacent).
+
 ## Now
 
 - Team P/L 26/27 data: BLOCKED UPSTREAM as of 2026-08-17 —
