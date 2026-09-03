@@ -289,7 +289,12 @@ export default function MatchDetailPage() {
                       {o.team && <span className="text-slate-600 hidden sm:inline"> · {o.team.split(' ').slice(0, 2).join(' ')}</span>}
                     </span>
                   </div>
-                  <div className="flex items-start justify-between gap-2">
+                  {/* Phones: stack price / caption / badge / sparkline so
+                      nothing overlays the number (a 3-column grid leaves
+                      ~95px per card; the side-by-side layout squeezed the
+                      price column to nothing and the badge sat on top of
+                      it). Tablet and up: side by side as before. */}
+                  <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between sm:gap-2">
                     <div className="min-w-0">
                       <div className="text-2xl sm:text-3xl font-mono font-bold tabular-nums tracking-tight text-white leading-none">
                         {cur != null ? formatOdds(cur, oddsFormat) : '—'}
@@ -300,7 +305,7 @@ export default function MatchDetailPage() {
                         {cur ? `${((1 / cur) * 100).toFixed(1)}%` : '—'}
                       </div>
                     </div>
-                    <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                    <div className="flex flex-col items-start sm:items-end gap-1.5 flex-shrink-0">
                       <span className={`px-1.5 py-0.5 rounded font-mono text-[9px] sm:text-[10px] font-bold tabular-nums whitespace-nowrap ${
                         direction === 'down' ? 'bg-emerald-500/20 text-emerald-400' :
                         direction === 'up' ? 'bg-red-500/20 text-red-400' :
