@@ -249,7 +249,10 @@ export default function LongshotBiasPage() {
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold w-14">Season</span>
           <button className={chipClass(season === null)} onClick={() => pickSeason(null)}>All{lock(false)}</button>
-          {Object.entries(SEASON_LABELS).filter(([code]) => data?.seasons.includes(code) || season === code || FREE_SEASONS.includes(code)).map(([code, label]) => (
+          {/* Every season, always. Building this from the current response's
+              seasons hid 21/22-24/25 whenever a single-season view was loaded
+              (which is every landing, since the page opens on EPL 25/26). */}
+          {Object.entries(SEASON_LABELS).map(([code, label]) => (
             <button key={code} className={chipClass(season === code)} onClick={() => pickSeason(code)}>
               {label}{lock(FREE_SEASONS.includes(code))}
             </button>
