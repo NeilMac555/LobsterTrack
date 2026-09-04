@@ -34,6 +34,17 @@ NAME_MAP_BY_LEAGUE = _normalizer.NAME_MAP_BY_LEAGUE
 OUTPUT = BACKEND_ROOT / "app" / "data" / "team_badges.json"
 API_ROOT = "https://www.thesportsdb.com/api/v1/json"
 LIVE_MATCHES_URL = "https://www.steamwatch.io/api/matches"
+LIVE_LEAGUES = (
+    "soccer_epl",
+    "soccer_efl_champ",
+    "soccer_spain_la_liga",
+    "soccer_germany_bundesliga",
+    "soccer_france_ligue_one",
+    "soccer_italy_serie_a",
+    "soccer_uefa_champs_league",
+    "soccer_uefa_europa_league",
+    "soccer_uefa_europa_conference_league",
+)
 
 # SteamWatch mirrors The Odds API's canonical names. TheSportsDB sometimes
 # indexes the same club under a shorter/common name, so keep the differences
@@ -69,6 +80,33 @@ TEAM_SEARCH_ALIASES = {
     "Viking FK": "Viking",
     "Wrexham AFC": "Wrexham",
     "ŠK Slovan Bratislava": "Slovan Bratislava",
+    "Besiktas JK": "Besiktas",
+    "FC Ararat-Armenia": "Ararat Armenia",
+    "FC Iberia 1999": "Iberia 1999",
+    "FC Kairat": "Kairat Almaty",
+    "FC Lugano": "Lugano",
+    "FC Nordsjaelland": "FC Nordsjælland",
+    "FC Thun": "Thun",
+    "FC Twente Enschede": "Twente",
+    "FK Borac Banja Luka": "Borac Banja Luka",
+    "FK Jablonec": "Jablonec",
+    "FK Kauno Žalgiris": "Kauno Zalgiris",
+    "Ferencváros TC": "Ferencvaros",
+    "Hearts": "Heart of Midlothian",
+    "KuPS Kuopio": "KuPS",
+    "Lillestrom": "Lillestrøm",
+    "Lincoln Red Imps FC": "Lincoln Red Imps",
+    "NK Celje": "Celje",
+    "Omonoia FC": "Omonia Nicosia",
+    "PFC CSKA Sofia": "CSKA Sofia",
+    "PFC Levski Sofia": "Levski Sofia",
+    "Pafos FC": "Pafos",
+    "Panathinaikos FC": "Panathinaikos",
+    "SC Braga": "Braga",
+    "SK Brann": "Brann",
+    "SK Sturm Graz": "Sturm Graz",
+    "Salzburg": "Red Bull Salzburg",
+    "Union Saint-Gilloise": "Union Saint Gilloise",
 }
 
 
@@ -108,13 +146,19 @@ async def main() -> None:
             for mapping in NAME_MAP_BY_LEAGUE.values()
             for team in mapping.values()
         }
+        live = []
         async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
-            response = await client.get(
-                LIVE_MATCHES_URL,
-                params={"upcoming_only": "true", "limit": 100},
-            )
-            response.raise_for_status()
-            live = response.json()
+            for league in LIVE_LEAGUES:
+                response = await client.get(
+                    LIVE_MATCHES_URL,
+                    params={
+                        "league": league,
+                        "upcoming_only": "true",
+                        "limit": 100,
+                    },
+                )
+                response.raise_for_status()
+                live.extend(response.json())
         live_teams = {
             match[field]
             for match in live

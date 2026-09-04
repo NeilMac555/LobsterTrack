@@ -7,10 +7,16 @@ import { useTimePreference } from '../contexts/TimePreferenceContext';
 import { useOddsFormat } from '../contexts/OddsFormatContext';
 import LoginModal from './LoginModal';
 import CheckoutSuccessBanner from './CheckoutSuccessBanner';
-import LiveTicker from './LiveTicker';
 import AmIUpCTA from './AmIUpCTA';
 
 const leagues = VISIBLE_LEAGUES;
+
+const results = [
+  { name: 'Steam Results', path: '/steam-results', icon: '⚡' },
+  { name: 'Drifter Results', path: '/drifters', icon: '↑' },
+  { name: 'Team P/L', path: '/team-pnl', icon: '£' },
+  { name: 'Longshot Bias', path: '/longshot-bias', icon: '⚖' },
+];
 
 // `external: true` makes a tool entry open in a new tab and render as
 // a plain <a> instead of a router <Link> — used for cross-promo items
@@ -49,15 +55,20 @@ export default function Layout() {
   const [showLogin, setShowLogin] = useState(false);
   const [loginMode, setLoginMode] = useState<'signin' | 'subscribe'>('signin');
   const currentLeague = new URLSearchParams(location.search).get('league');
+  const [resultsOpen, setResultsOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const resultsRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const accountRef = useRef<HTMLDivElement>(null);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
+      if (resultsRef.current && !resultsRef.current.contains(event.target as Node)) {
+        setResultsOpen(false);
+      }
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setToolsOpen(false);
       }
@@ -81,6 +92,7 @@ export default function Layout() {
   const isTeamPLPage = location.pathname === '/team-pnl';
   const isPowerRankingsPage = location.pathname === '/power-rankings';
   const isLongshotBiasPage = location.pathname === '/longshot-bias';
+  const isResultsPage = isSteamResultsPage || isDriftersPage || isTeamPLPage || isLongshotBiasPage;
   const isOverviewPage = !currentLeague && !isToolsPage && !isSteamResultsPage && !isDriftersPage && !isClosingLinesPage && !isTeamPLPage && !isPowerRankingsPage && !isLongshotBiasPage && location.pathname === '/';
 
   const navItemClass = (active: boolean) =>
@@ -118,11 +130,43 @@ export default function Layout() {
             {/* Desktop flat nav */}
             <nav className="hidden lg:flex items-center gap-0.5 flex-1 min-w-0">
               <Link to="/" className={navItemClass(isOverviewPage)}>Overview</Link>
-              <Link to="/steam-results" className={navItemClass(isSteamResultsPage)}>Steam Results</Link>
-              <Link to="/drifters" className={navItemClass(isDriftersPage)}>Drifters</Link>
+              <div className="relative" ref={resultsRef}>
+                <button
+                  onClick={() => setResultsOpen(!resultsOpen)}
+                  className={navItemClass(isResultsPage) + ' flex items-center gap-1'}
+                >
+                  Results
+                  <svg
+                    className={`w-3 h-3 transition-transform duration-200 ${resultsOpen ? 'rotate-180' : ''}`}
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {resultsOpen && (
+                  <div className="absolute left-0 mt-3 w-56 bg-slate-800 border border-slate-700 rounded-md shadow-xl shadow-black/30 overflow-hidden z-50">
+                    {results.map((item) => {
+                      const isActive = location.pathname === item.path;
+                      return (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          onClick={() => setResultsOpen(false)}
+                          className={`flex items-center gap-2.5 px-3 py-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors ${
+                            isActive
+                              ? 'bg-cyan-500/10 text-cyan-300'
+                              : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                          }`}
+                        >
+                          <span className="w-4 text-center text-sm text-slate-400">{item.icon}</span>
+                          <span>{item.name}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
               <Link to="/closing-lines" className={navItemClass(isClosingLinesPage)}>Closing Lines</Link>
-              <Link to="/team-pnl" className={navItemClass(isTeamPLPage)}>Team P/L</Link>
-              <Link to="/longshot-bias" className={navItemClass(isLongshotBiasPage)}>Longshot Bias</Link>
               {/* Power Rankings hidden 2026-08-15 per Neil after the deploy
                   outage (the page itself wasn't the cause — see TODO.md — but
                   it's parked until wanted again). Restore this Link + the
@@ -620,9 +664,6 @@ export default function Layout() {
           </div>
         )}
       </header>
-
-      {/* Live odds ticker — real-time biggest movers scrolling */}
-      <LiveTicker />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
