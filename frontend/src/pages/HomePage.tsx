@@ -9,7 +9,7 @@ import MatchCard from '../components/MatchCard';
 import Sparkline from '../components/Sparkline';
 import WorldCupMatchCard from '../components/WorldCupMatchCard';
 import LeagueLogo from '../components/LeagueLogo';
-import { countryFlagImgUrl } from '../utils/countryFlags';
+import TeamBadge from '../components/TeamBadge';
 import { SteamGuideModal, HelpButton } from '../components/SteamGuideModal';
 import { useAuth } from '../contexts/AuthContext';
 import LoginModal from '../components/LoginModal';
@@ -437,16 +437,10 @@ export default function HomePage() {
                           {/* Flags appear next to nation names on WC moves;
                               fall through for club matches (no flag map). */}
                           <div className="flex items-center gap-2 font-semibold text-base tracking-tight">
-                            {(() => {
-                              const f = countryFlagImgUrl(mover.home_team, 20);
-                              return f ? <img src={f} alt="" className="h-3.5 w-auto rounded-sm" loading="lazy" /> : null;
-                            })()}
+                            <TeamBadge team={mover.home_team} badgeUrl={mover.home_badge_url} size="sm" />
                             <span>{mover.home_team}</span>
                             <span className="text-slate-500 font-normal">vs</span>
-                            {(() => {
-                              const f = countryFlagImgUrl(mover.away_team, 20);
-                              return f ? <img src={f} alt="" className="h-3.5 w-auto rounded-sm" loading="lazy" /> : null;
-                            })()}
+                            <TeamBadge team={mover.away_team} badgeUrl={mover.away_badge_url} size="sm" />
                             <span>{mover.away_team}</span>
                           </div>
                           <div className="text-[11px] text-slate-500 mt-0.5 font-mono">
@@ -493,7 +487,10 @@ export default function HomePage() {
                       </td>
                       <td className="px-4 py-4">
                         <div className="flex justify-center">
-                          <Sparkline values={mover.sparkline} width={88} height={26} color="auto" />
+                          {/* mover.sparkline is raw odds (falls as the price shortens), unlike the
+                              match-card series which is implied probability — so colour by the
+                              mover's direction rather than the series slope. Red = shortening. */}
+                          <Sparkline values={mover.sparkline} width={88} height={26} color={mover.direction === 'down' ? '#f87171' : '#34d399'} />
                         </div>
                       </td>
                     </tr>
@@ -541,16 +538,10 @@ export default function HomePage() {
                         <span className="text-[10px] font-mono tabular-nums text-slate-500">{formatKickoff(mover.commence_time, 'EEE HH:mm', timeMode)}</span>
                       </div>
                       <div className="flex items-center gap-1.5 text-white font-semibold text-sm tracking-tight">
-                        {(() => {
-                          const f = countryFlagImgUrl(mover.home_team, 20);
-                          return f ? <img src={f} alt="" className="h-3 w-auto rounded-sm flex-shrink-0" loading="lazy" /> : null;
-                        })()}
+                        <TeamBadge team={mover.home_team} badgeUrl={mover.home_badge_url} size="sm" />
                         <span className="truncate">{mover.home_team}</span>
                         <span className="text-slate-500 font-normal">v</span>
-                        {(() => {
-                          const f = countryFlagImgUrl(mover.away_team, 20);
-                          return f ? <img src={f} alt="" className="h-3 w-auto rounded-sm flex-shrink-0" loading="lazy" /> : null;
-                        })()}
+                        <TeamBadge team={mover.away_team} badgeUrl={mover.away_badge_url} size="sm" />
                         <span className="truncate">{mover.away_team}</span>
                       </div>
                       <div className="flex items-center gap-2 mt-2">
@@ -577,7 +568,7 @@ export default function HomePage() {
                       </div>
                       {mover.sparkline && (
                         <div className="mt-1.5">
-                          <Sparkline values={mover.sparkline} width={88} height={22} color="auto" />
+                          <Sparkline values={mover.sparkline} width={88} height={22} color={mover.direction === 'down' ? '#f87171' : '#34d399'} />
                         </div>
                       )}
                     </div>
