@@ -214,6 +214,8 @@ decisions that shape the build, with the recommendation at the time:
 
 (newest first)
 
+- Top-mover hero follows the site convention: shortening/backed prices and
+  their graph are red; drifting prices are green — `ad2a3c9`
 - Top-mover graph now plots the backed selection's decimal odds directly,
   so shortening prices visibly slope downward (e.g. 4.74 to 4.13) — `eccc34d`
 - Top-mover hero now leads with the backed selection's badge and name,
