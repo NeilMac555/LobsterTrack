@@ -184,6 +184,7 @@ export interface FavDogCumulativePoint {
   n: number;
   fav: number;
   dog: number;
+  season?: string;
 }
 
 export interface FavDogData {

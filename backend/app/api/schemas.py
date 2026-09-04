@@ -169,6 +169,7 @@ class FavDogCumulativePoint(BaseModel):
     n: int                    # bet number (chronological)
     fav: float                # cumulative units backing every favourite
     dog: float                # cumulative units backing every underdog
+    season: Optional[str] = None  # season code of this bet, for axis ticks
 
 
 class FavDogResponse(BaseModel):

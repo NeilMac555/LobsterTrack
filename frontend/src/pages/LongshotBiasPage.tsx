@@ -19,6 +19,11 @@ import { useAuth } from '../contexts/AuthContext';
 import PaywallOverlay from '../components/PaywallOverlay';
 
 const MONO_STACK = '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace';
+// Series palette: the site's two-series pairing (Rolling xG uses the same
+// cyan-vs-red), and cyan is this page's own accent. Amber is reserved for
+// 'draw' everywhere on the site, so it is deliberately NOT used here.
+const COLOR_FAV = '#22d3ee'; // cyan-400
+const COLOR_DOG = '#f87171'; // red-400
 const AXIS_TICK = { fill: '#94a3b8', fontSize: 10, fontFamily: MONO_STACK };
 
 // The five leagues with imported closing-line history (football-data.co.uk,
@@ -152,6 +157,19 @@ export default function LongshotBiasPage() {
   const isFreeView = league === FREE_LEAGUE && season !== null && FREE_SEASONS.includes(season);
   const locked = !isSubscribed && !isFreeView;
   const cumulativeLatest = data?.cumulative[data.cumulative.length - 1];
+  // One x tick per season boundary (the API emits the first bet of each
+  // season as a point), labelled 21/22 ... instead of meaningless bet numbers.
+  const seasonTicks = (() => {
+    const out: { n: number; label: string }[] = [];
+    let last: string | undefined;
+    for (const p of data?.cumulative ?? []) {
+      if (p.season && p.season !== last) {
+        out.push({ n: p.n, label: SEASON_LABELS[p.season] ?? p.season });
+        last = p.season;
+      }
+    }
+    return out;
+  })();
 
   useEffect(() => {
     if (locked) return; // keep the last (free-view) data behind the paywall panel
@@ -284,8 +302,8 @@ export default function LongshotBiasPage() {
         <>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
             <div className="space-y-4 sm:space-y-6">
-              <BandTable title="Favorites" accent="#22d3ee" bands={data.fav_bands} all={data.fav_all} />
-              <BandTable title="Underdogs" accent="#fbbf24" bands={data.dog_bands} all={data.dog_all} />
+              <BandTable title="Favorites" accent={COLOR_FAV} bands={data.fav_bands} all={data.fav_all} />
+              <BandTable title="Underdogs" accent={COLOR_DOG} bands={data.dog_bands} all={data.dog_all} />
               {/* The draw — the bucket tennis doesn't have. */}
               <div className="rounded-xl border border-slate-700/50 bg-slate-800/60 px-4 sm:px-5 py-3 flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-2">
@@ -302,7 +320,7 @@ export default function LongshotBiasPage() {
             {/* Cumulative profit chart */}
             <div
               className="rounded-xl sm:rounded-2xl border border-slate-700/50 overflow-hidden card-shadow"
-              style={{ background: 'radial-gradient(circle at 80% 0%, rgba(34,211,238,0.07), transparent 34%), linear-gradient(180deg, rgba(30,41,59,0.9) 0%, rgba(15,23,42,0.98) 100%)' }}
+              style={{ background: 'linear-gradient(180deg, rgba(30,41,59,0.85) 0%, rgba(15,23,42,0.95) 100%)' }}
             >
               <div className="px-4 sm:px-5 pt-4 sm:pt-5 pb-4 border-b border-slate-700/40">
                 <div className="flex items-start justify-between gap-4">
@@ -319,15 +337,15 @@ export default function LongshotBiasPage() {
                 <div className="grid grid-cols-2 gap-2 mt-4">
                   <div className="rounded-lg border border-cyan-400/15 bg-cyan-400/[0.06] px-3 py-2.5">
                     <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-wider text-slate-400">
-                      <span className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.65)]" /> Favorites
+                      <span className="h-2 w-2 rounded-full bg-cyan-400" /> Favorites
                     </div>
                     <div className={`mt-1 font-mono text-xl font-bold tabular-nums ${yieldClass(cumulativeLatest?.fav ?? 0)}`}>
                       {(cumulativeLatest?.fav ?? 0) > 0 ? '+' : ''}{(cumulativeLatest?.fav ?? 0).toFixed(1)}u
                     </div>
                   </div>
-                  <div className="rounded-lg border border-amber-400/15 bg-amber-400/[0.06] px-3 py-2.5">
+                  <div className="rounded-lg border border-red-400/15 bg-red-400/[0.06] px-3 py-2.5">
                     <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-wider text-slate-400">
-                      <span className="h-2 w-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.65)]" /> Underdogs
+                      <span className="h-2 w-2 rounded-full bg-red-400" /> Underdogs
                     </div>
                     <div className={`mt-1 font-mono text-xl font-bold tabular-nums ${yieldClass(cumulativeLatest?.dog ?? 0)}`}>
                       {(cumulativeLatest?.dog ?? 0) > 0 ? '+' : ''}{(cumulativeLatest?.dog ?? 0).toFixed(1)}u
@@ -341,11 +359,13 @@ export default function LongshotBiasPage() {
                     <CartesianGrid vertical={false} strokeDasharray="2 6" stroke="#334155" opacity={0.55} />
                     <XAxis
                       dataKey="n"
+                      type="number"
+                      domain={['dataMin', 'dataMax']}
+                      ticks={seasonTicks.map((t) => t.n)}
                       tick={AXIS_TICK}
                       tickLine={false}
                       axisLine={false}
-                      minTickGap={38}
-                      tickFormatter={(value) => `#${value}`}
+                      tickFormatter={(value) => seasonTicks.find((t) => t.n === value)?.label ?? ''}
                     />
                     <YAxis
                       tick={AXIS_TICK}
@@ -359,11 +379,11 @@ export default function LongshotBiasPage() {
                       cursor={{ stroke: '#64748b', strokeDasharray: '3 4', opacity: 0.7 }}
                       contentStyle={{ background: 'rgba(15,23,42,0.96)', border: '1px solid #475569', borderRadius: 10, boxShadow: '0 12px 30px rgba(0,0,0,0.3)', fontFamily: MONO_STACK, fontSize: 11 }}
                       labelStyle={{ color: '#cbd5e1', marginBottom: 6 }}
-                      labelFormatter={(v) => `Bet #${v}`}
+                      labelFormatter={(v) => { const p = data.cumulative.find((q) => q.n === v); return `Bet #${v}${p?.season ? ` · ${SEASON_LABELS[p.season] ?? p.season}` : ''}`; }}
                       formatter={(value?: number, name?: string) => [typeof value === 'number' ? `${value > 0 ? '+' : ''}${value.toFixed(1)}u` : value, name]}
                     />
-                    <Line type="monotone" dataKey="fav" name="Favorites" stroke="#22d3ee" strokeWidth={2.5} dot={false} activeDot={{ r: 4, fill: '#22d3ee', stroke: '#0f172a', strokeWidth: 2 }} />
-                    <Line type="monotone" dataKey="dog" name="Underdogs" stroke="#fbbf24" strokeWidth={2.5} dot={false} activeDot={{ r: 4, fill: '#fbbf24', stroke: '#0f172a', strokeWidth: 2 }} />
+                    <Line type="monotone" dataKey="fav" name="Favorites" stroke={COLOR_FAV} strokeWidth={2} dot={false} activeDot={{ r: 4, fill: COLOR_FAV, stroke: '#0f172a', strokeWidth: 2 }} isAnimationActive={false} />
+                    <Line type="monotone" dataKey="dog" name="Underdogs" stroke={COLOR_DOG} strokeWidth={2} dot={false} activeDot={{ r: 4, fill: COLOR_DOG, stroke: '#0f172a', strokeWidth: 2 }} isAnimationActive={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>

@@ -1880,7 +1880,7 @@ async def get_fav_dog_results(
         dog_odds = m.psca if fav_is_home else m.psch
         fav_won = (m.ftr == "H") == fav_is_home and m.ftr != "D"
         dog_won = (m.ftr != "D") and not fav_won
-        bets.append((fav_odds, dog_odds, m.pscd, fav_won, dog_won, m.ftr == "D", m.match_date))
+        bets.append((fav_odds, dog_odds, m.pscd, fav_won, dog_won, m.ftr == "D", m.match_date, m.season))
 
     def _band(label: str, entries: list[tuple[float, bool]], lo: float, hi: float) -> FavDogBand:
         n = len(entries)
@@ -1931,11 +1931,16 @@ async def get_fav_dog_results(
     cumulative: list[FavDogCumulativePoint] = []
     fav_cum = dog_cum = 0.0
     step = max(1, len(bets) // 400)
-    for i, (fo, do, _po, fw, dw, _dr, _dt) in enumerate(bets, 1):
+    # Always emit the first bet of each season too, so the chart can
+    # place a tick exactly at every season boundary.
+    last_season = None
+    for i, (fo, do, _po, fw, dw, _dr, _dt, season) in enumerate(bets, 1):
         fav_cum += (fo - 1) if fw else -1
         dog_cum += (do - 1) if dw else -1
-        if i % step == 0 or i == len(bets):
-            cumulative.append(FavDogCumulativePoint(n=i, fav=round(fav_cum, 2), dog=round(dog_cum, 2)))
+        season_start = season != last_season
+        last_season = season
+        if i % step == 0 or i == len(bets) or season_start:
+            cumulative.append(FavDogCumulativePoint(n=i, fav=round(fav_cum, 2), dog=round(dog_cum, 2), season=season))
 
     return FavDogResponse(
         total_matches=len(bets),
