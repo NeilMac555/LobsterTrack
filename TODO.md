@@ -214,6 +214,8 @@ decisions that shape the build, with the recommendation at the time:
 
 (newest first)
 
+- Top-mover hero now charts the complete 48-hour price path in a full-width
+  graph instead of showing only the latest 12 readings — `94e7a85`
 - Homepage Top move now card restricted to the largest movement whose
   fixture kicks off within the next 72 hours — `64e1321`
 - Homepage mock-up shipped: simplified Results navigation, removed the live
