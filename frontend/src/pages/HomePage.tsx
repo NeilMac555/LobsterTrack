@@ -91,7 +91,7 @@ export default function HomePage() {
         const [matchesData, statsData, moversData, syndicateData] = await Promise.all([
           getMatches({ league: league || undefined, limit: 200 }),
           getStats(),
-          getBiggestMovers(4, league || undefined),
+          getBiggestMovers(50, league || undefined),
           league ? Promise.resolve([]) : getSyndicateMoves(4)
         ]);
         setMatches(matchesData);
@@ -123,7 +123,7 @@ export default function HomePage() {
       try {
         const [statsData, moversData] = await Promise.all([
           getStats(),
-          getBiggestMovers(4, league || undefined),
+          getBiggestMovers(50, league || undefined),
         ]);
         setStats(statsData);
         setBiggestMovers(moversData);
@@ -145,6 +145,18 @@ export default function HomePage() {
 
   const groupedMatches = useMemo(() => groupMatchesByDay(matches, timeMode), [matches, timeMode]);
   const leagueConfig = league ? LEAGUE_CONFIG[league] : null;
+  const marketMovers = useMemo(() => biggestMovers.slice(0, 4), [biggestMovers]);
+  const topMover = useMemo(() => {
+    const now = Date.now();
+    const threeDaysFromNow = now + (3 * 24 * 60 * 60 * 1000);
+
+    // The API returns movers ordered by movement size, so the first
+    // eligible fixture is the largest move kicking off in the next 72 hours.
+    return biggestMovers.find((mover) => {
+      const kickoff = new Date(mover.commence_time).getTime();
+      return Number.isFinite(kickoff) && kickoff >= now && kickoff <= threeDaysFromNow;
+    }) ?? null;
+  }, [biggestMovers]);
 
   if (loading) {
     return (
@@ -230,8 +242,8 @@ export default function HomePage() {
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
               </span>
             </div>
-            {biggestMovers[0] ? (() => {
-              const mover = biggestMovers[0];
+            {topMover ? (() => {
+              const mover = topMover;
               const shortening = mover.direction === 'down';
               return (
                 <Link to={`/match/${mover.match_id}`} className="grid sm:grid-cols-[1fr_auto_1fr] items-center gap-5 mt-4 group">
@@ -405,7 +417,7 @@ export default function HomePage() {
           per Neil — the footer placement (Layout.tsx) remains site-wide. */}
 
       {/* Biggest Movers - Mobile Card / Desktop Table */}
-      {biggestMovers.length > 0 && (
+      {marketMovers.length > 0 && (
         <div id="market-movers" className="bg-slate-800/80 rounded-2xl border border-slate-700/50 overflow-hidden mb-6 sm:mb-10 card-shadow">
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-700/50 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -463,7 +475,7 @@ export default function HomePage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/50">
-                {biggestMovers.map((mover, index) => {
+                {marketMovers.map((mover, index) => {
                   const isSignificant = Math.abs(mover.movement_percent) >= 5;
                   const leagueInfo = LEAGUE_CONFIG[mover.sport_key];
 
@@ -559,7 +571,7 @@ export default function HomePage() {
 
           {/* Mobile Cards */}
           <div className="md:hidden divide-y divide-slate-700/50">
-            {biggestMovers.map((mover, index) => {
+            {marketMovers.map((mover, index) => {
               const isSignificant = Math.abs(mover.movement_percent) >= 5;
               const leagueInfo = LEAGUE_CONFIG[mover.sport_key];
 
