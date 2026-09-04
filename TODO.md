@@ -214,6 +214,8 @@ decisions that shape the build, with the recommendation at the time:
 
 (newest first)
 
+- Homepage Top move now card restricted to the largest movement whose
+  fixture kicks off within the next 72 hours — `64e1321`
 - Homepage mock-up shipped: simplified Results navigation, removed the live
   ticker, added the split hero and live top-mover chart, and fixed the hero
   for signed-in Pro users — `08d5dad`, `efe7e34`
