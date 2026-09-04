@@ -1163,7 +1163,21 @@ async def get_biggest_movers(
     # `limit` (default 4), so one small query per mover here is cheap —
     # far simpler than trying to batch this across mixed 1x2/totals
     # outcome columns, and the result set is tiny.
-    SPARK_POINTS = 12
+    # Pull enough raw readings to span the complete 48-hour movement window,
+    # then reduce them to a smooth, browser-friendly series. The old 12-row
+    # tail often looked flat because the meaningful move happened earlier.
+    SPARK_SOURCE_POINTS = 500
+    SPARK_DISPLAY_POINTS = 48
+
+    def downsample_sparkline(values: list[float], opening_odds: float) -> list[float]:
+        opening_probability = round((1.0 / opening_odds) * 100, 2)
+        if not values or values[0] != opening_probability:
+            values = [opening_probability, *values]
+        if len(values) <= SPARK_DISPLAY_POINTS:
+            return values
+        last = len(values) - 1
+        return [values[round(i * last / (SPARK_DISPLAY_POINTS - 1))] for i in range(SPARK_DISPLAY_POINTS)]
+
     for m in top_movers:
         match_id = m['match'].id
         series: list[float] = []
@@ -1180,8 +1194,9 @@ async def get_biggest_movers(
                     .filter(odds_col.isnot(None))
                     .filter(odds_col > 0)
                     .filter(OddsSnapshot.in_play == False)  # noqa: E712
+                    .filter(OddsSnapshot.fetched_at >= cutoff_48h)
                     .order_by(OddsSnapshot.fetched_at.desc())
-                    .limit(SPARK_POINTS)
+                    .limit(SPARK_SOURCE_POINTS)
                     .all()
                 )
                 series = [round((1.0 / r[0]) * 100, 2) for r in reversed(rows)]
@@ -1192,11 +1207,13 @@ async def get_biggest_movers(
                 .filter(TotalsSnapshot.match_id == match_id)
                 .filter(odds_col.isnot(None))
                 .filter(odds_col > 0)
+                .filter(TotalsSnapshot.fetched_at >= cutoff_48h)
                 .order_by(TotalsSnapshot.fetched_at.desc())
-                .limit(SPARK_POINTS)
+                .limit(SPARK_SOURCE_POINTS)
                 .all()
             )
             series = [round((1.0 / r[0]) * 100, 2) for r in reversed(rows)]
+        series = downsample_sparkline(series, m['opening_odds'])
         m['sparkline'] = series if len(series) >= 2 else None
 
     response = [

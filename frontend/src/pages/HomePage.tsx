@@ -272,9 +272,15 @@ export default function HomePage() {
                         <div className="text-[10px] uppercase tracking-widest text-slate-500">Now</div>
                         <div className={`text-2xl ${shortening ? 'text-emerald-400' : 'text-amber-400'}`}>{formatOdds(mover.current_odds, oddsFormat)}</div>
                       </div>
-                      <div className="ml-auto hidden xl:block">
-                        <Sparkline values={mover.sparkline} width={150} height={52} color={shortening ? '#34d399' : '#fbbf24'} />
-                      </div>
+                    </div>
+                    <div className="hidden sm:block w-full h-20 mt-4">
+                      <Sparkline
+                        values={mover.sparkline}
+                        width={360}
+                        height={80}
+                        color={shortening ? '#34d399' : '#fbbf24'}
+                        className="block w-full h-full"
+                      />
                     </div>
                     <div className="mt-4 text-right text-[11px] text-slate-500 font-mono">
                       {LEAGUE_CONFIG[mover.sport_key]?.name} · {formatKickoff(mover.commence_time, 'EEE, HH:mm', timeMode)}
