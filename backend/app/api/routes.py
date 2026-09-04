@@ -7,6 +7,7 @@ from typing import Optional
 from app.models import get_db, Match, OddsSnapshot, SteamMove, EmailSubscriber, TotalsSnapshot, SpreadsSnapshot, ClosingLine, SyndicateAlert, XGData, HistoricalMatch, LeagueConstants, PowerRating, PowerRatingHistory, SquadMarketValue
 from app.config import get_settings
 from app.services.scheduler import odds_scheduler
+from app.services.team_badges import badge_url
 from .schemas import (
     MatchSummary,
     MatchDetail,
@@ -374,6 +375,8 @@ async def get_matches(
             id=match.id,
             home_team=match.home_team,
             away_team=match.away_team,
+            home_badge_url=badge_url(match.home_team),
+            away_badge_url=badge_url(match.away_team),
             league_name=match.league_name,
             sport_key=match.sport_key,
             commence_time=match.commence_time,
@@ -425,6 +428,8 @@ async def get_match_detail(match_id: str, db: Session = Depends(get_db)):
         id=match.id,
         home_team=match.home_team,
         away_team=match.away_team,
+        home_badge_url=badge_url(match.home_team),
+        away_badge_url=badge_url(match.away_team),
         league_name=match.league_name,
         sport_key=match.sport_key,
         commence_time=match.commence_time,
@@ -1199,6 +1204,8 @@ async def get_biggest_movers(
             match_id=m['match'].id,
             home_team=m['match'].home_team,
             away_team=m['match'].away_team,
+            home_badge_url=badge_url(m['match'].home_team),
+            away_badge_url=badge_url(m['match'].away_team),
             sport_key=m['match'].sport_key,
             league_name=m['match'].league_name,
             commence_time=m['match'].commence_time,

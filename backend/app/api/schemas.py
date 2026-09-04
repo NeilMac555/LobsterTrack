@@ -16,6 +16,8 @@ class MatchSummary(BaseModel):
     id: str
     home_team: str
     away_team: str
+    home_badge_url: Optional[str] = None
+    away_badge_url: Optional[str] = None
     league_name: str
     sport_key: str
     commence_time: datetime
@@ -43,6 +45,8 @@ class MatchDetail(BaseModel):
     id: str
     home_team: str
     away_team: str
+    home_badge_url: Optional[str] = None
+    away_badge_url: Optional[str] = None
     league_name: str
     sport_key: str
     commence_time: datetime
@@ -243,6 +247,8 @@ class BiggestMover(BaseModel):
     match_id: str
     home_team: str
     away_team: str
+    home_badge_url: Optional[str] = None
+    away_badge_url: Optional[str] = None
     sport_key: str
     league_name: str
     commence_time: datetime
@@ -530,5 +536,4 @@ class TeamPLResponse(BaseModel):
     # active or the league has no top set defined yet.
     top_teams: Optional[list[str]] = None
     opponents_filter: Optional[str] = None   # echo of the filter applied: None or 'top'
-
 

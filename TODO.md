@@ -20,6 +20,14 @@ decisions that shape the build, with the recommendation at the time:
 
 ## Now
 
+- Team badges: provider-backed integration and UI are implemented locally.
+  Match cards and Biggest Movers now render a badge, national flag, or
+  initials fallback without making provider calls at request time. The
+  premium TheSportsDB key is configured locally and team_badges.json is
+  populated for all 166 current/configured clubs with zero unresolved
+  names. Remaining step: deploy these changes and configure
+  THESPORTSDB_API_KEY in the production backend environment for later syncs.
+
 - Team P/L 26/27 data: BLOCKED UPSTREAM as of 2026-08-17 —
   football-data.co.uk's 2627 folder has no top-5-league files yet
   (I1/D1/F1/E1 are HTTP 300) and E0/SP1 contain the WRONG competition

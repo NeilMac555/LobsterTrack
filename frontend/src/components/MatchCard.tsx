@@ -4,7 +4,7 @@ import { LEAGUE_CONFIG } from '../types';
 import { OddsDisplayWithMovement, calculateMovement, getBiggestMover } from './OddsWithMovement';
 import LeagueLogo from './LeagueLogo';
 import Sparkline from './Sparkline';
-import { countryFlagImgUrl } from '../utils/countryFlags';
+import TeamBadge from './TeamBadge';
 import { formatKickoff } from '../utils/time';
 import { useTimePreference } from '../contexts/TimePreferenceContext';
 
@@ -77,26 +77,14 @@ export default function MatchCard({ match }: MatchCardProps) {
             {/* Flag prepended when the team is a country we recognise
                 (e.g. WC nations). Falls through to plain name for
                 club teams since they're not in the country map. */}
-            {(() => {
-              const homeFlag = countryFlagImgUrl(match.home_team, 20);
-              const awayFlag = countryFlagImgUrl(match.away_team, 20);
-              return (
-                <>
-                  <div className="flex items-center gap-2">
-                    {homeFlag && (
-                      <img src={homeFlag} alt="" className="h-4 w-auto rounded-sm flex-shrink-0" loading="lazy" />
-                    )}
-                    <span className="text-white font-semibold text-sm sm:text-base tracking-tight truncate">{match.home_team}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {awayFlag && (
-                      <img src={awayFlag} alt="" className="h-4 w-auto rounded-sm flex-shrink-0" loading="lazy" />
-                    )}
-                    <span className="text-white font-semibold text-sm sm:text-base tracking-tight truncate">{match.away_team}</span>
-                  </div>
-                </>
-              );
-            })()}
+            <div className="flex items-center gap-2">
+              <TeamBadge team={match.home_team} badgeUrl={match.home_badge_url} size="md" />
+              <span className="text-white font-semibold text-sm sm:text-base tracking-tight truncate">{match.home_team}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <TeamBadge team={match.away_team} badgeUrl={match.away_badge_url} size="md" />
+              <span className="text-white font-semibold text-sm sm:text-base tracking-tight truncate">{match.away_team}</span>
+            </div>
           </div>
 
           {/* Kickoff — mono for the terminal feel */}

@@ -9,6 +9,8 @@ export interface MatchSummary {
   id: string;
   home_team: string;
   away_team: string;
+  home_badge_url?: string | null;
+  away_badge_url?: string | null;
   league_name: string;
   sport_key: string;
   commence_time: string;
@@ -32,6 +34,8 @@ export interface MatchDetail {
   id: string;
   home_team: string;
   away_team: string;
+  home_badge_url?: string | null;
+  away_badge_url?: string | null;
   league_name: string;
   sport_key: string;
   commence_time: string;
@@ -60,6 +64,8 @@ export interface BiggestMover {
   match_id: string;
   home_team: string;
   away_team: string;
+  home_badge_url?: string | null;
+  away_badge_url?: string | null;
   sport_key: string;
   league_name: string;
   commence_time: string;
