@@ -181,17 +181,18 @@ export default function HomePage() {
           know WHY a move happened (no "syndicates", no "sharp money", no
           market mind-reading). Keep that constraint if editing this copy. */}
       {!league && !isSubscribed && (
-        <div className="mb-4 sm:mb-6 rounded-xl border border-slate-700/60 bg-slate-800/80 px-4 sm:px-8 py-7 sm:py-10 text-center card-shadow">
+        <div className="mb-5 sm:mb-7 grid lg:grid-cols-[0.9fr_1.4fr] gap-5 lg:gap-8 items-stretch">
+          <div className="px-1 sm:px-2 py-5 sm:py-8 text-left flex flex-col justify-center">
           <h1 className="text-2xl sm:text-4xl font-bold text-white tracking-tight leading-tight">
-            Track the biggest odds moves.
+            Track the market.
             <br className="hidden sm:block" />
             <span className="sm:hidden"> </span>
-            See what happened next.
+            Understand the move.
           </h1>
-          <p className="text-slate-400 text-sm sm:text-base mt-3 sm:mt-4 max-w-2xl mx-auto leading-relaxed">
-            See major market moves in real time — then analyse how similar moves have performed historically.
+          <p className="text-slate-400 text-sm sm:text-base mt-3 sm:mt-4 max-w-lg leading-relaxed font-mono">
+            Real-time closing line movement, steam alerts, and historical analysis for sharp bettors.
           </p>
-          <div className="mt-5 sm:mt-7 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <div className="mt-5 sm:mt-7 flex flex-col sm:flex-row items-start gap-3">
             <a
               href="https://t.me/steamwatchalerts"
               target="_blank"
@@ -217,12 +218,66 @@ export default function HomePage() {
               {subscribing ? 'Redirecting to Stripe…' : 'Explore SteamWatch Pro'}
             </button>
           </div>
+          </div>
+
+          <div className="rounded-xl border border-slate-700/60 bg-slate-800/90 px-5 sm:px-7 py-5 sm:py-6 card-shadow min-h-[220px] flex flex-col justify-between">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-bold text-white">Top move now</h2>
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              </span>
+            </div>
+            {biggestMovers[0] ? (() => {
+              const mover = biggestMovers[0];
+              const shortening = mover.direction === 'down';
+              return (
+                <Link to={`/match/${mover.match_id}`} className="grid sm:grid-cols-[1fr_auto_1fr] items-center gap-5 mt-4 group">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 text-white font-semibold">
+                      <TeamBadge team={mover.home_team} badgeUrl={mover.home_badge_url} size="lg" />
+                      <span>{mover.home_team}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-white font-semibold">
+                      <TeamBadge team={mover.away_team} badgeUrl={mover.away_badge_url} size="lg" />
+                      <span>{mover.away_team}</span>
+                    </div>
+                  </div>
+                  <div className="hidden sm:block h-24 w-px bg-slate-700" />
+                  <div>
+                    <div className={`font-mono text-base ${shortening ? 'text-emerald-400' : 'text-amber-400'}`}>
+                      {shortening ? 'Shortened' : 'Drifted'} <span className="text-2xl ml-1">{Math.abs(mover.movement_percent).toFixed(1)}%</span>
+                    </div>
+                    <div className="flex items-end gap-4 mt-3">
+                      <div className="font-mono">
+                        <div className="text-[10px] uppercase tracking-widest text-slate-500">Open</div>
+                        <div className="text-2xl text-white">{formatOdds(mover.opening_odds, oddsFormat)}</div>
+                      </div>
+                      <span className="text-slate-500 pb-1">→</span>
+                      <div className="font-mono">
+                        <div className="text-[10px] uppercase tracking-widest text-slate-500">Now</div>
+                        <div className={`text-2xl ${shortening ? 'text-emerald-400' : 'text-amber-400'}`}>{formatOdds(mover.current_odds, oddsFormat)}</div>
+                      </div>
+                      <div className="ml-auto hidden xl:block">
+                        <Sparkline values={mover.sparkline} width={150} height={52} color={shortening ? '#34d399' : '#fbbf24'} />
+                      </div>
+                    </div>
+                    <div className="mt-4 text-right text-[11px] text-slate-500 font-mono">
+                      {LEAGUE_CONFIG[mover.sport_key]?.name} · {formatKickoff(mover.commence_time, 'EEE, HH:mm', timeMode)}
+                    </div>
+                  </div>
+                </Link>
+              );
+            })() : (
+              <div className="py-12 text-center text-slate-500 font-mono">Waiting for the next move…</div>
+            )}
+          </div>
         </div>
       )}
 
       {/* Terminal-style stat strip — live snapshot of what SteamWatch is tracking.
           Only shown on the main (unfiltered) homepage view. */}
-      {!league && (
+      {false && !league && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 mb-4 sm:mb-6">
           {/* TRACKING */}
           <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 relative overflow-hidden">
@@ -301,7 +356,7 @@ export default function HomePage() {
                   <div className="text-lg sm:text-2xl font-mono font-bold text-slate-600 leading-none mt-2 sm:mt-1.5">—</div>
                 );
               }
-              const ageSeconds = Math.floor((Date.now() - lastUpdated.getTime()) / 1000);
+              const ageSeconds = Math.floor((Date.now() - lastUpdated!.getTime()) / 1000);
               // Anything > 30 min = almost certainly a quiet window or outage;
               // display "Live" so users don't see stale numbers.
               if (ageSeconds > 30 * 60) {
@@ -349,7 +404,7 @@ export default function HomePage() {
 
       {/* Biggest Movers - Mobile Card / Desktop Table */}
       {biggestMovers.length > 0 && (
-        <div className="bg-slate-800/80 rounded-2xl border border-slate-700/50 overflow-hidden mb-6 sm:mb-10 card-shadow">
+        <div id="market-movers" className="bg-slate-800/80 rounded-2xl border border-slate-700/50 overflow-hidden mb-6 sm:mb-10 card-shadow">
           <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-700/50 flex items-center justify-between">
             <div className="flex items-center gap-3">
               {/* Accent bar — terminal-style visual rhythm */}
@@ -359,10 +414,10 @@ export default function HomePage() {
                   <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">
                     {league && LEAGUE_CONFIG[league]
                       ? `Biggest ${LEAGUE_CONFIG[league].shortName} Movers`
-                      : 'Biggest Movers'}
+                      : 'Market Movers'}
                   </h2>
                   <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em] font-semibold">
-                    Sharp money signals · Last 48h{league === 'soccer_fifa_world_cup' ? ' · 72 fixtures' : ''}
+                    Shorteners · live odds · Last 48h{league === 'soccer_fifa_world_cup' ? ' · 72 fixtures' : ''}
                   </p>
                 </div>
                 <HelpButton onClick={() => setShowSteamGuide(true)} />
@@ -590,7 +645,7 @@ export default function HomePage() {
           odds/movers views are free. Keep this list in sync if gating
           changes. Same language rules as the hero: no "syndicates", no
           "sharp money", no claiming to know why a move happened. */}
-      {!league && !isSubscribed && (
+      {false && !league && !isSubscribed && (
         <div className="mb-6 sm:mb-10 rounded-xl border border-slate-700/60 bg-slate-800/80 overflow-hidden card-shadow">
           <div className="px-4 sm:px-6 py-3.5 border-b border-slate-700/50">
             <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">Free vs Pro</h2>
@@ -691,7 +746,7 @@ export default function HomePage() {
           site's biggest exit page, and the posts are the pages we most
           want crawled and ranked; this routes visitors (and crawl
           equity) to them. Not shown on league-filtered views. */}
-      {!league && (
+      {false && !league && (
         <div className="mb-6 sm:mb-10">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">From the blog</h2>

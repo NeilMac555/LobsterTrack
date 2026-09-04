@@ -93,7 +93,8 @@ export default function Layout() {
   const isPowerRankingsPage = location.pathname === '/power-rankings';
   const isLongshotBiasPage = location.pathname === '/longshot-bias';
   const isResultsPage = isSteamResultsPage || isDriftersPage || isTeamPLPage || isLongshotBiasPage;
-  const isOverviewPage = !currentLeague && !isToolsPage && !isSteamResultsPage && !isDriftersPage && !isClosingLinesPage && !isTeamPLPage && !isPowerRankingsPage && !isLongshotBiasPage && location.pathname === '/';
+  const isMoversPage = location.pathname === '/' && location.hash === '#market-movers';
+  const isOverviewPage = !location.hash && !currentLeague && !isToolsPage && !isSteamResultsPage && !isDriftersPage && !isClosingLinesPage && !isTeamPLPage && !isPowerRankingsPage && !isLongshotBiasPage && location.pathname === '/';
 
   const navItemClass = (active: boolean) =>
     `relative whitespace-nowrap px-2.5 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] transition-colors ${
@@ -130,6 +131,7 @@ export default function Layout() {
             {/* Desktop flat nav */}
             <nav className="hidden lg:flex items-center gap-0.5 flex-1 min-w-0">
               <Link to="/" className={navItemClass(isOverviewPage)}>Overview</Link>
+              <Link to="/#market-movers" className={navItemClass(isMoversPage)}>Movers</Link>
               <div className="relative" ref={resultsRef}>
                 <button
                   onClick={() => setResultsOpen(!resultsOpen)}
