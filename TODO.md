@@ -214,6 +214,8 @@ decisions that shape the build, with the recommendation at the time:
 
 (newest first)
 
+- Top-mover graph now plots the backed selection's decimal odds directly,
+  so shortening prices visibly slope downward (e.g. 4.74 to 4.13) — `eccc34d`
 - Top-mover hero now leads with the backed selection's badge and name,
   with the full fixture shown only as context — `8fab61a`
 - Top-mover hero now charts the complete 48-hour price path in a full-width
