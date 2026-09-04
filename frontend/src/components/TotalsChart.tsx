@@ -1,7 +1,6 @@
 import {
   ComposedChart,
   Line,
-  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -40,6 +39,8 @@ export default function TotalsChart({ data, timeFrame = 'all' }: TotalsChartProp
     ...point,
     time: format(new Date(point.timestamp), 'MMM d, HH:mm'),
     shortTime: format(new Date(point.timestamp), 'd/M HH:mm'),
+    dayLabel: format(new Date(point.timestamp), 'EEE d MMM'),
+    clockLabel: format(new Date(point.timestamp), 'HH:mm'),
     fullTime: format(new Date(point.timestamp), 'MMM d, yyyy HH:mm'),
     timestamp: new Date(point.timestamp).getTime(),
   }));
@@ -48,6 +49,36 @@ export default function TotalsChart({ data, timeFrame = 'all' }: TotalsChartProp
   // dashed amber vertical at each transition so the user can't miss it
   // — without context, a jump in Over/Under odds at the moment the line
   // shifts looks like a steam move when it's really just a different bet.
+  // X-axis ticks: one per calendar day (first point of each day), labelled
+  // with the date; exact times live in the tooltip. Single-day windows
+  // (1H/2H/6H frames) fall back to clock ticks. Same as OddsChart.
+  const dayTicks: string[] = [];
+  const tickLabel = new Map<string, string>();
+  {
+    let lastDay = '';
+    for (const pt of baseData) {
+      if (pt.dayLabel !== lastDay) {
+        dayTicks.push(pt.shortTime);
+        tickLabel.set(pt.shortTime, pt.dayLabel);
+        lastDay = pt.dayLabel;
+      }
+    }
+  }
+  const singleDay = dayTicks.length <= 1;
+  const xTickFormatter = (v: string) => {
+    if (singleDay) {
+      const pt = baseData.find((d) => d.shortTime === v);
+      return pt ? pt.clockLabel : v;
+    }
+    return tickLabel.get(v) ?? '';
+  };
+  // Y-axis scaled to the data with a little headroom (the old area fills
+  // anchored it at zero).
+  const padDomain: [(min: number) => number, (max: number) => number] = [
+    (min) => (min - Math.max((min || 1) * 0.06, 0.05)),
+    (max) => (max + Math.max((max || 1) * 0.06, 0.05)),
+  ];
+
   const lineShifts: Array<{ shortTime: string; from: number; to: number }> = [];
   for (let i = 1; i < baseData.length; i++) {
     const prev = baseData[i - 1].line;
@@ -172,23 +203,15 @@ export default function TotalsChart({ data, timeFrame = 'all' }: TotalsChartProp
 
   return (
     <div className="h-full w-full relative">
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-10">
-        <span className="text-white/10 text-5xl sm:text-7xl font-black tracking-widest -rotate-12 whitespace-nowrap">
+      {/* Watermark — discreet corner mark, same as OddsChart */}
+      <div className="absolute bottom-7 right-3 pointer-events-none select-none z-10">
+        <span className="text-white/[0.12] text-[11px] sm:text-xs font-mono font-semibold uppercase tracking-[0.2em] whitespace-nowrap">
           steamwatch.io
         </span>
       </div>
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart data={chartData} margin={{ top: 10, right: 12, left: 0, bottom: 8 }}>
-          <defs>
-            <linearGradient id="totalsArea-over" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={COLOR_OVER} stopOpacity={0.28} />
-              <stop offset="100%" stopColor={COLOR_OVER} stopOpacity={0} />
-            </linearGradient>
-            <linearGradient id="totalsArea-under" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={COLOR_UNDER} stopOpacity={0.28} />
-              <stop offset="100%" stopColor={COLOR_UNDER} stopOpacity={0} />
-            </linearGradient>
-          </defs>
+          
 
           <CartesianGrid strokeDasharray="2 6" stroke="#475569" strokeOpacity={0.4} vertical={false} />
           <XAxis
@@ -197,15 +220,17 @@ export default function TotalsChart({ data, timeFrame = 'all' }: TotalsChartProp
             tick={AXIS_TICK}
             tickLine={false}
             axisLine={{ stroke: '#334155', strokeWidth: 1 }}
-            interval="preserveStartEnd"
-            minTickGap={30}
+            ticks={singleDay ? undefined : dayTicks}
+            tickFormatter={xTickFormatter}
+            interval={singleDay ? 'preserveStartEnd' : 0}
+            minTickGap={singleDay ? 40 : 0}
           />
           <YAxis
             stroke="#475569"
             tick={AXIS_TICK}
             tickLine={false}
             axisLine={false}
-            domain={['auto', 'auto']}
+            domain={padDomain}
             tickFormatter={(value) => value.toFixed(2)}
             width={42}
           />
@@ -269,30 +294,28 @@ export default function TotalsChart({ data, timeFrame = 'all' }: TotalsChartProp
           {/* Area fills underneath — connectNulls=false so the fill breaks
               at each line-shift gap point instead of bridging two
               incomparable price levels. */}
-          <Area type="monotone" dataKey="over_odds" stroke="none" fill="url(#totalsArea-over)" connectNulls={false} isAnimationActive={false} activeDot={false} />
-          <Area type="monotone" dataKey="under_odds" stroke="none" fill="url(#totalsArea-under)" connectNulls={false} isAnimationActive={false} activeDot={false} />
 
           {/* Lines on top — connectNulls=false breaks the line at each
               line-shift gap point (see chartData construction above)
               instead of drawing a misleading diagonal between an Over
               2.75 price and an Over 3.0 price. */}
           <Line
-            type="monotone"
+            type="stepAfter"
             dataKey="over_odds"
             name="Over"
             stroke={COLOR_OVER}
-            strokeWidth={2.2}
+            strokeWidth={2}
             dot={false}
             connectNulls={false}
             activeDot={{ r: 5, fill: COLOR_OVER, stroke: '#0f172a', strokeWidth: 2 }}
             animationDuration={300}
           />
           <Line
-            type="monotone"
+            type="stepAfter"
             dataKey="under_odds"
             name="Under"
             stroke={COLOR_UNDER}
-            strokeWidth={2.2}
+            strokeWidth={2}
             dot={false}
             connectNulls={false}
             activeDot={{ r: 5, fill: COLOR_UNDER, stroke: '#0f172a', strokeWidth: 2 }}
