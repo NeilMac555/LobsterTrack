@@ -259,7 +259,7 @@ class BiggestMover(BaseModel):
     current_odds: float
     movement_percent: float
     direction: str  # 'up' or 'down'
-    sparkline: Optional[list[float]] = None  # implied prob (0-100) trend for the mover outcome, oldest first
+    sparkline: Optional[list[float]] = None  # decimal-odds trend for the mover outcome, oldest first
 
     class Config:
         from_attributes = True
@@ -536,4 +536,3 @@ class TeamPLResponse(BaseModel):
     # active or the league has no top set defined yet.
     top_teams: Optional[list[str]] = None
     opponents_filter: Optional[str] = None   # echo of the filter applied: None or 'top'
-

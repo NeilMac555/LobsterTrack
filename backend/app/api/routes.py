@@ -1158,8 +1158,10 @@ async def get_biggest_movers(
     movers.sort(key=lambda x: abs(x['movement_percent']), reverse=True)
     top_movers = movers[:limit]
 
-    # Sparkline: implied-probability trend for the specific outcome that
-    # made each match a "biggest mover". top_movers is already capped at
+    # Sparkline: decimal-odds trend for the specific outcome that made each
+    # match a "biggest mover". A shortening price therefore slopes downward,
+    # matching the Open -> Now figures shown beside the chart.
+    # top_movers is already capped at
     # `limit` (default 4), so one small query per mover here is cheap —
     # far simpler than trying to batch this across mixed 1x2/totals
     # outcome columns, and the result set is tiny.
@@ -1170,9 +1172,9 @@ async def get_biggest_movers(
     SPARK_DISPLAY_POINTS = 48
 
     def downsample_sparkline(values: list[float], opening_odds: float) -> list[float]:
-        opening_probability = round((1.0 / opening_odds) * 100, 2)
-        if not values or values[0] != opening_probability:
-            values = [opening_probability, *values]
+        opening_price = round(opening_odds, 2)
+        if not values or values[0] != opening_price:
+            values = [opening_price, *values]
         if len(values) <= SPARK_DISPLAY_POINTS:
             return values
         last = len(values) - 1
@@ -1199,7 +1201,7 @@ async def get_biggest_movers(
                     .limit(SPARK_SOURCE_POINTS)
                     .all()
                 )
-                series = [round((1.0 / r[0]) * 100, 2) for r in reversed(rows)]
+                series = [round(r[0], 2) for r in reversed(rows)]
         elif m['market'] == 'totals':
             odds_col = TotalsSnapshot.over_odds if m['outcome'] == 'over' else TotalsSnapshot.under_odds
             rows = (
@@ -1212,7 +1214,7 @@ async def get_biggest_movers(
                 .limit(SPARK_SOURCE_POINTS)
                 .all()
             )
-            series = [round((1.0 / r[0]) * 100, 2) for r in reversed(rows)]
+            series = [round(r[0], 2) for r in reversed(rows)]
         series = downsample_sparkline(series, m['opening_odds'])
         m['sparkline'] = series if len(series) >= 2 else None
 
