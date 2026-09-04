@@ -214,6 +214,8 @@ decisions that shape the build, with the recommendation at the time:
 
 (newest first)
 
+- Longshot Bias cumulative-profit chart modernised with integrated end-state
+  P/L cards, cleaner axes/grid, a stronger zero line and focused tooltips — `01b1a3e`
 - Top-mover hero follows the site convention: shortening/backed prices and
   their graph are red; drifting prices are green — `ad2a3c9`
 - Top-mover graph now plots the backed selection's decimal odds directly,
