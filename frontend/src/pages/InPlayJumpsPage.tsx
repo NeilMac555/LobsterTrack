@@ -14,10 +14,10 @@ type SortField = 'gap' | 'commence_time';
 
 function gapColor(pp: number | null): string {
   if (pp === null) return 'text-slate-500';
-  if (pp >= 3) return 'text-emerald-400';
-  if (pp <= -3) return 'text-red-400';
-  if (pp >= 1) return 'text-emerald-300/80';
-  if (pp <= -1) return 'text-red-300/80';
+  if (pp >= 3) return 'text-red-400';
+  if (pp <= -3) return 'text-emerald-400';
+  if (pp >= 1) return 'text-red-300/80';
+  if (pp <= -1) return 'text-emerald-300/80';
   return 'text-slate-400';
 }
 

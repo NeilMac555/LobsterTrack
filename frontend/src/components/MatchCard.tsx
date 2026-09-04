@@ -120,8 +120,8 @@ export default function MatchCard({ match }: MatchCardProps) {
             </div>
             <span className={`text-[10px] sm:text-xs font-mono font-bold tabular-nums flex-shrink-0 ${(() => {
               const d = match.home_prob_spark[match.home_prob_spark.length - 1] - match.home_prob_spark[0];
-              if (d > 0.15) return 'text-emerald-400';
-              if (d < -0.15) return 'text-red-400';
+              if (d > 0.15) return 'text-red-400';      // shortening
+              if (d < -0.15) return 'text-emerald-400'; // drifting
               return 'text-slate-400';
             })()}`}>
               {(() => {

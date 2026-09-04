@@ -44,13 +44,15 @@ export default function Sparkline({
     .join(' ');
   const area = line + ` L${width},${height} L0,${height} Z`;
 
-  // Auto color: rising = emerald (home backed), falling = red (home drifting),
-  // flat = slate. Use a tight threshold so tiny 0.5pp moves still read as "drift".
+  // Auto color (site convention since 2026-09-03): values are implied
+  // probabilities, so rising = odds SHORTENING = red, falling = odds
+  // DRIFTING = emerald, flat = slate. Tight threshold so tiny 0.5pp moves
+  // still read as a move.
   let stroke = color;
   if (color === 'auto') {
     const delta = values[values.length - 1] - values[0];
-    if (delta > 0.15) stroke = '#34d399';      // emerald-400
-    else if (delta < -0.15) stroke = '#f87171'; // red-400
+    if (delta > 0.15) stroke = '#f87171';      // red-400: shortening
+    else if (delta < -0.15) stroke = '#34d399'; // emerald-400: drifting
     else stroke = '#94a3b8';                     // slate-400
   }
 

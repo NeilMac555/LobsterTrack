@@ -109,7 +109,7 @@ export default function LiveTicker() {
           <div className="ticker-track flex items-center gap-8 py-1.5 whitespace-nowrap will-change-transform">
             {loop.map((m, i) => {
               const isShortening = m.direction === 'down';
-              const moveColor = isShortening ? 'text-emerald-400' : 'text-red-400';
+              const moveColor = isShortening ? 'text-red-400' : 'text-emerald-400'; // shortening = red (site convention 2026-09-03)
               const arrow = isShortening ? '↓' : '↑';
               const leagueInfo = LEAGUE_CONFIG[m.sport_key];
               return (

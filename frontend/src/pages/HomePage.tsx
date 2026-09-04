@@ -259,8 +259,8 @@ export default function HomePage() {
               <>
                 {(() => {
                   const down = biggestMovers[0].direction === 'down';
-                  const colorClass = down ? 'text-emerald-400' : 'text-red-400';
-                  const dimClass = down ? 'text-emerald-400/70' : 'text-red-400/70';
+                  const colorClass = down ? 'text-red-400' : 'text-emerald-400';
+                  const dimClass = down ? 'text-red-400/70' : 'text-emerald-400/70';
                   return (
                     <div className="flex items-baseline gap-0.5 leading-none mt-1.5">
                       <span className={`font-mono text-base leading-none ${colorClass}`}>
@@ -474,11 +474,11 @@ export default function HomePage() {
                       </td>
                       <td className="px-4 py-4 text-center">
                         <div className="inline-flex items-baseline gap-0.5">
-                          <span className="font-mono text-emerald-400 text-base leading-none">↓</span>
-                          <span className={`font-mono font-bold text-emerald-400 tabular-nums tracking-tight leading-none ${isSignificant ? 'text-2xl' : 'text-xl'}`}>
+                          <span className="font-mono text-red-400 text-base leading-none">↓</span>
+                          <span className={`font-mono font-bold text-red-400 tabular-nums tracking-tight leading-none ${isSignificant ? 'text-2xl' : 'text-xl'}`}>
                             {Math.abs(mover.movement_percent).toFixed(1)}
                           </span>
-                          <span className="font-mono text-emerald-400/70 text-xs leading-none">%</span>
+                          <span className="font-mono text-red-400/70 text-xs leading-none">%</span>
                         </div>
                       </td>
                       <td className="px-4 py-4 text-center">
@@ -563,11 +563,11 @@ export default function HomePage() {
                     <div className="text-right flex-shrink-0 flex flex-col items-end">
                       {/* Hero number — huge mono percentage */}
                       <div className="flex items-baseline gap-0.5 leading-none">
-                        <span className="text-emerald-400 text-lg font-mono leading-none">↓</span>
-                        <span className={`font-mono font-bold text-emerald-400 tabular-nums tracking-tight leading-none ${isSignificant ? 'text-3xl' : 'text-2xl'}`}>
+                        <span className="text-red-400 text-lg font-mono leading-none">↓</span>
+                        <span className={`font-mono font-bold text-red-400 tabular-nums tracking-tight leading-none ${isSignificant ? 'text-3xl' : 'text-2xl'}`}>
                           {Math.abs(mover.movement_percent).toFixed(1)}
                         </span>
-                        <span className="font-mono text-emerald-400/70 text-xs leading-none">%</span>
+                        <span className="font-mono text-red-400/70 text-xs leading-none">%</span>
                       </div>
                       {/* Ticker-style opening → current */}
                       <div className="text-[11px] font-mono mt-1.5 tabular-nums">
@@ -836,11 +836,11 @@ export default function HomePage() {
                           </td>
                           <td className="px-4 py-4 text-center">
                             <div className="inline-flex items-baseline gap-0.5">
-                              <span className="font-mono text-emerald-400 text-base leading-none">↓</span>
-                              <span className="font-mono font-bold text-emerald-400 tabular-nums tracking-tight leading-none text-xl">
+                              <span className="font-mono text-red-400 text-base leading-none">↓</span>
+                              <span className="font-mono font-bold text-red-400 tabular-nums tracking-tight leading-none text-xl">
                                 {Math.abs(move.movement_percent).toFixed(1)}
                               </span>
-                              <span className="font-mono text-emerald-400/70 text-xs leading-none">pp</span>
+                              <span className="font-mono text-red-400/70 text-xs leading-none">pp</span>
                             </div>
                           </td>
                           <td className="px-4 py-4 text-center">
@@ -907,11 +907,11 @@ export default function HomePage() {
                         </div>
                         <div className="text-right flex-shrink-0 flex flex-col items-end">
                           <div className="flex items-baseline gap-0.5 leading-none">
-                            <span className="text-emerald-400 text-lg font-mono leading-none">↓</span>
-                            <span className="font-mono font-bold text-emerald-400 tabular-nums tracking-tight leading-none text-2xl">
+                            <span className="text-red-400 text-lg font-mono leading-none">↓</span>
+                            <span className="font-mono font-bold text-red-400 tabular-nums tracking-tight leading-none text-2xl">
                               {Math.abs(move.movement_percent).toFixed(1)}
                             </span>
-                            <span className="font-mono text-emerald-400/70 text-xs leading-none">pp</span>
+                            <span className="font-mono text-red-400/70 text-xs leading-none">pp</span>
                           </div>
                           <div className="text-[11px] font-mono mt-1.5 tabular-nums">
                             <span className="text-slate-500">Now</span>

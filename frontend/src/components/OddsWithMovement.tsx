@@ -40,10 +40,10 @@ export default function OddsWithMovement({
   const movement = calculateMovement(current, opening);
   const isSignificant = Math.abs(movement.percentage) >= 5;
 
-  // Color logic: Green = shortening (down), Red = drifting (up)
+  // Color logic (site convention since 2026-09-03): Red = shortening (down), Green = drifting (up)
   // Shortening odds = sharp money backing = good signal
   // Drifting odds = money leaving = bad signal
-  const movementColorClass = movement.direction === 'down' ? 'text-emerald-400' : 'text-red-400';
+  const movementColorClass = movement.direction === 'down' ? 'text-red-400' : 'text-emerald-400';
 
   return (
     <div className={`px-2 sm:px-3 py-2 sm:py-3 rounded ${bgClass} text-center min-w-[60px] sm:min-w-[80px]`}>
@@ -53,10 +53,10 @@ export default function OddsWithMovement({
           {formatOdds(current)}
         </span>
         {movement.direction === 'up' && (
-          <span className="text-red-400 text-xs sm:text-sm">↑</span>
+          <span className="text-emerald-400 text-xs sm:text-sm">↑</span>
         )}
         {movement.direction === 'down' && (
-          <span className="text-emerald-400 text-xs sm:text-sm">↓</span>
+          <span className="text-red-400 text-xs sm:text-sm">↓</span>
         )}
       </div>
       {movement.direction !== 'none' && (
@@ -109,7 +109,7 @@ export function OddsDisplayWithMovement({
   ) => {
     const isSignificant = Math.abs(movement.percentage) >= 5;
 
-    // Color logic: Green = shortening (down), Red = drifting (up)
+    // Color logic (site convention since 2026-09-03): Red = shortening (down), Green = drifting (up)
     // Odds values are white, only movement indicators are colored
     return (
       <div
@@ -120,10 +120,10 @@ export function OddsDisplayWithMovement({
           {formatOdds(current)}
         </span>
         {movement.direction === 'up' && (
-          <span className="text-red-400 text-[10px]">↑</span>
+          <span className="text-emerald-400 text-[10px]">↑</span>
         )}
         {movement.direction === 'down' && (
-          <span className="text-emerald-400 text-[10px]">↓</span>
+          <span className="text-red-400 text-[10px]">↓</span>
         )}
       </div>
     );

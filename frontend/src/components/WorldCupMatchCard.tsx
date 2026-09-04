@@ -47,7 +47,7 @@ function MovementChip({
   return (
     <span
       className={`text-[10px] font-mono font-bold tabular-nums ${
-        positive ? 'text-emerald-400' : 'text-red-400'
+        positive ? 'text-red-400' : 'text-emerald-400'
       }`}
     >
       {positive ? '↓' : '↑'}{Math.abs(movement.percentage).toFixed(1)}%
@@ -120,8 +120,8 @@ export default function WorldCupMatchCard({ match }: Props) {
             <span
               className={`text-[10px] font-mono font-bold tabular-nums px-1.5 py-0.5 rounded ${
                 biggestMover.direction === 'down'
-                  ? 'bg-emerald-500/20 text-emerald-300'
-                  : 'bg-red-500/20 text-red-300'
+                  ? 'bg-red-500/20 text-red-300'
+                  : 'bg-emerald-500/20 text-emerald-300'
               }`}
             >
               {biggestMover.outcome} {biggestMover.direction === 'down' ? '↓' : '↑'}
@@ -234,8 +234,8 @@ export default function WorldCupMatchCard({ match }: Props) {
                 const d =
                   match.home_prob_spark![match.home_prob_spark!.length - 1] -
                   match.home_prob_spark![0];
-                if (d > 0.15) return 'text-emerald-400';
-                if (d < -0.15) return 'text-red-400';
+                if (d > 0.15) return 'text-red-400';
+                if (d < -0.15) return 'text-emerald-400';
                 return 'text-slate-400';
               })()}`}
             >

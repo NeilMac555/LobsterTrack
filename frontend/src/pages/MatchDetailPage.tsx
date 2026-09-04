@@ -270,10 +270,8 @@ export default function MatchDetailPage() {
               const direction = pct < -0.1 ? 'down' : pct > 0.1 ? 'up' : 'flat';
               // Plot RAW odds so the mini-chart matches the big Odds Movement
               // chart below — drifting outcomes trend up on both, backed
-              // outcomes trend down on both. Color is driven by direction
-              // (emerald = shortening, red = drifting) via color="auto"
-              // in the Sparkline component, so the line glance always reads
-              // "green = being backed, red = drifting".
+              // outcomes trend down on both. Colour follows the site
+              // convention (2026-09-03): red = shortening, green = drifting.
               const sparkValues = match.odds_history
                 .map((h) => h[`${o.key}_odds`])
                 .filter((v): v is number => v != null && v > 0);
@@ -307,8 +305,8 @@ export default function MatchDetailPage() {
                     </div>
                     <div className="flex flex-col items-start sm:items-end gap-1.5 flex-shrink-0">
                       <span className={`px-1.5 py-0.5 rounded font-mono text-[9px] sm:text-[10px] font-bold tabular-nums whitespace-nowrap ${
-                        direction === 'down' ? 'bg-emerald-500/20 text-emerald-400' :
-                        direction === 'up' ? 'bg-red-500/20 text-red-400' :
+                        direction === 'down' ? 'bg-red-500/20 text-red-400' :
+                        direction === 'up' ? 'bg-emerald-500/20 text-emerald-400' :
                         'bg-slate-700/40 text-slate-400'
                       }`}>
                         {direction === 'down' ? '↓' : direction === 'up' ? '↑' : '·'} {Math.abs(pct).toFixed(1)}%
@@ -318,12 +316,11 @@ export default function MatchDetailPage() {
                           values={sparkValues}
                           width={68}
                           height={22}
-                          // Color by the pill's direction (not by team identity).
-                          // Emerald = odds shortening = being backed,
-                          // Red = odds drifting, slate = flat.
+                          // Colour by the pill's direction (not by team identity).
+                          // Red = odds shortening, emerald = odds drifting, slate = flat.
                           color={
-                            direction === 'down' ? '#34d399'
-                            : direction === 'up' ? '#f87171'
+                            direction === 'down' ? '#f87171'
+                            : direction === 'up' ? '#34d399'
                             : '#94a3b8'
                           }
                         />
@@ -480,7 +477,7 @@ function OddsHistoryTable({ oddsHistory, showChangesOnly, onToggleShowChanges }:
                       {formatOdds(point.home_odds, oddsFormat)}
                     </span>
                     {homeChanged && prevPoint?.home_odds && (
-                      <span className={`ml-2 text-xs ${point.home_odds! < prevPoint.home_odds ? 'text-emerald-400' : 'text-red-400'}`}>
+                      <span className={`ml-2 text-xs ${point.home_odds! < prevPoint.home_odds ? 'text-red-400' : 'text-emerald-400'}`}>
                         {point.home_odds! > prevPoint.home_odds ? '↑' : '↓'}
                       </span>
                     )}
@@ -490,7 +487,7 @@ function OddsHistoryTable({ oddsHistory, showChangesOnly, onToggleShowChanges }:
                       {formatOdds(point.draw_odds, oddsFormat)}
                     </span>
                     {drawChanged && prevPoint?.draw_odds && (
-                      <span className={`ml-2 text-xs ${point.draw_odds! < prevPoint.draw_odds ? 'text-emerald-400' : 'text-red-400'}`}>
+                      <span className={`ml-2 text-xs ${point.draw_odds! < prevPoint.draw_odds ? 'text-red-400' : 'text-emerald-400'}`}>
                         {point.draw_odds! > prevPoint.draw_odds ? '↑' : '↓'}
                       </span>
                     )}
@@ -500,7 +497,7 @@ function OddsHistoryTable({ oddsHistory, showChangesOnly, onToggleShowChanges }:
                       {formatOdds(point.away_odds, oddsFormat)}
                     </span>
                     {awayChanged && prevPoint?.away_odds && (
-                      <span className={`ml-2 text-xs ${point.away_odds! < prevPoint.away_odds ? 'text-emerald-400' : 'text-red-400'}`}>
+                      <span className={`ml-2 text-xs ${point.away_odds! < prevPoint.away_odds ? 'text-red-400' : 'text-emerald-400'}`}>
                         {point.away_odds! > prevPoint.away_odds ? '↑' : '↓'}
                       </span>
                     )}
@@ -538,7 +535,7 @@ function OddsHistoryTable({ oddsHistory, showChangesOnly, onToggleShowChanges }:
                   <div className={`font-mono font-bold text-sm ${homeChanged ? 'text-white bg-slate-600/40 px-1 py-0.5 rounded' : 'text-white'}`}>
                     {formatOdds(point.home_odds, oddsFormat)}
                     {homeChanged && prevPoint?.home_odds && (
-                      <span className={`ml-1 text-xs ${point.home_odds! < prevPoint.home_odds ? 'text-emerald-400' : 'text-red-400'}`}>
+                      <span className={`ml-1 text-xs ${point.home_odds! < prevPoint.home_odds ? 'text-red-400' : 'text-emerald-400'}`}>
                         {point.home_odds! > prevPoint.home_odds ? '↑' : '↓'}
                       </span>
                     )}
@@ -549,7 +546,7 @@ function OddsHistoryTable({ oddsHistory, showChangesOnly, onToggleShowChanges }:
                   <div className={`font-mono font-bold text-sm ${drawChanged ? 'text-white bg-slate-600/40 px-1 py-0.5 rounded' : 'text-white'}`}>
                     {formatOdds(point.draw_odds, oddsFormat)}
                     {drawChanged && prevPoint?.draw_odds && (
-                      <span className={`ml-1 text-xs ${point.draw_odds! < prevPoint.draw_odds ? 'text-emerald-400' : 'text-red-400'}`}>
+                      <span className={`ml-1 text-xs ${point.draw_odds! < prevPoint.draw_odds ? 'text-red-400' : 'text-emerald-400'}`}>
                         {point.draw_odds! > prevPoint.draw_odds ? '↑' : '↓'}
                       </span>
                     )}
@@ -560,7 +557,7 @@ function OddsHistoryTable({ oddsHistory, showChangesOnly, onToggleShowChanges }:
                   <div className={`font-mono font-bold text-sm ${awayChanged ? 'text-white bg-slate-600/40 px-1 py-0.5 rounded' : 'text-white'}`}>
                     {formatOdds(point.away_odds, oddsFormat)}
                     {awayChanged && prevPoint?.away_odds && (
-                      <span className={`ml-1 text-xs ${point.away_odds! < prevPoint.away_odds ? 'text-emerald-400' : 'text-red-400'}`}>
+                      <span className={`ml-1 text-xs ${point.away_odds! < prevPoint.away_odds ? 'text-red-400' : 'text-emerald-400'}`}>
                         {point.away_odds! > prevPoint.away_odds ? '↑' : '↓'}
                       </span>
                     )}
@@ -633,7 +630,7 @@ function TotalsSection({ totals, timeFrame, onTimeFrameChange }: TotalsSectionPr
               {formatOdds(latestTotals.over_odds, oddsFormat)}
             </div>
             {overChange !== null && Math.abs(overChange) >= 0.1 && (
-              <div className={`text-xs mt-1 font-medium ${overChange < 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              <div className={`text-xs mt-1 font-medium ${overChange < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
                 {overChange > 0 ? '+' : ''}{overChange.toFixed(1)}%
               </div>
             )}
@@ -646,7 +643,7 @@ function TotalsSection({ totals, timeFrame, onTimeFrameChange }: TotalsSectionPr
               {formatOdds(latestTotals.under_odds, oddsFormat)}
             </div>
             {underChange !== null && Math.abs(underChange) >= 0.1 && (
-              <div className={`text-xs mt-1 font-medium ${underChange < 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              <div className={`text-xs mt-1 font-medium ${underChange < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
                 {underChange > 0 ? '+' : ''}{underChange.toFixed(1)}%
               </div>
             )}
@@ -759,7 +756,7 @@ function SpreadsSection({ spreads, homeTeam, awayTeam, timeFrame, onTimeFrameCha
               {formatOdds(latestSpreads.home_odds, oddsFormat)}
             </div>
             {homeChange !== null && Math.abs(homeChange) >= 0.1 && (
-              <div className={`text-xs mt-1 font-medium ${homeChange < 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              <div className={`text-xs mt-1 font-medium ${homeChange < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
                 {homeChange > 0 ? '+' : ''}{homeChange.toFixed(1)}%
               </div>
             )}
@@ -774,7 +771,7 @@ function SpreadsSection({ spreads, homeTeam, awayTeam, timeFrame, onTimeFrameCha
               {formatOdds(latestSpreads.away_odds, oddsFormat)}
             </div>
             {awayChange !== null && Math.abs(awayChange) >= 0.1 && (
-              <div className={`text-xs mt-1 font-medium ${awayChange < 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              <div className={`text-xs mt-1 font-medium ${awayChange < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
                 {awayChange > 0 ? '+' : ''}{awayChange.toFixed(1)}%
               </div>
             )}
