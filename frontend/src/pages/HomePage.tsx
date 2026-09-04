@@ -264,7 +264,7 @@ export default function HomePage() {
                   </div>
                   <div className="hidden sm:block h-24 w-px bg-slate-700" />
                   <div>
-                    <div className={`font-mono text-base ${shortening ? 'text-emerald-400' : 'text-amber-400'}`}>
+                    <div className={`font-mono text-base ${shortening ? 'text-red-400' : 'text-emerald-400'}`}>
                       {shortening ? 'Shortened' : 'Drifted'} <span className="text-2xl ml-1">{Math.abs(mover.movement_percent).toFixed(1)}%</span>
                     </div>
                     <div className="flex items-end gap-4 mt-3">
@@ -275,7 +275,7 @@ export default function HomePage() {
                       <span className="text-slate-500 pb-1">→</span>
                       <div className="font-mono">
                         <div className="text-[10px] uppercase tracking-widest text-slate-500">Now</div>
-                        <div className={`text-2xl ${shortening ? 'text-emerald-400' : 'text-amber-400'}`}>{formatOdds(mover.current_odds, oddsFormat)}</div>
+                        <div className={`text-2xl ${shortening ? 'text-red-400' : 'text-emerald-400'}`}>{formatOdds(mover.current_odds, oddsFormat)}</div>
                       </div>
                     </div>
                     <div className="hidden sm:block w-full h-20 mt-4">
@@ -283,7 +283,7 @@ export default function HomePage() {
                         values={mover.sparkline}
                         width={360}
                         height={80}
-                        color={shortening ? '#34d399' : '#fbbf24'}
+                        color={shortening ? '#f87171' : '#34d399'}
                         className="block w-full h-full"
                       />
                     </div>
