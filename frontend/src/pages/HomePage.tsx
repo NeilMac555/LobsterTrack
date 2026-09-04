@@ -9,7 +9,7 @@ import MatchCard from '../components/MatchCard';
 import Sparkline from '../components/Sparkline';
 import WorldCupMatchCard from '../components/WorldCupMatchCard';
 import LeagueLogo from '../components/LeagueLogo';
-import TeamBadge from '../components/TeamBadge';
+import { countryFlagImgUrl } from '../utils/countryFlags';
 import { SteamGuideModal, HelpButton } from '../components/SteamGuideModal';
 import { useAuth } from '../contexts/AuthContext';
 import LoginModal from '../components/LoginModal';
@@ -437,10 +437,16 @@ export default function HomePage() {
                           {/* Flags appear next to nation names on WC moves;
                               fall through for club matches (no flag map). */}
                           <div className="flex items-center gap-2 font-semibold text-base tracking-tight">
-                            <TeamBadge team={mover.home_team} badgeUrl={mover.home_badge_url} size="sm" />
+                            {(() => {
+                              const f = countryFlagImgUrl(mover.home_team, 20);
+                              return f ? <img src={f} alt="" className="h-3.5 w-auto rounded-sm" loading="lazy" /> : null;
+                            })()}
                             <span>{mover.home_team}</span>
                             <span className="text-slate-500 font-normal">vs</span>
-                            <TeamBadge team={mover.away_team} badgeUrl={mover.away_badge_url} size="sm" />
+                            {(() => {
+                              const f = countryFlagImgUrl(mover.away_team, 20);
+                              return f ? <img src={f} alt="" className="h-3.5 w-auto rounded-sm" loading="lazy" /> : null;
+                            })()}
                             <span>{mover.away_team}</span>
                           </div>
                           <div className="text-[11px] text-slate-500 mt-0.5 font-mono">
@@ -538,10 +544,16 @@ export default function HomePage() {
                         <span className="text-[10px] font-mono tabular-nums text-slate-500">{formatKickoff(mover.commence_time, 'EEE HH:mm', timeMode)}</span>
                       </div>
                       <div className="flex items-center gap-1.5 text-white font-semibold text-sm tracking-tight">
-                        <TeamBadge team={mover.home_team} badgeUrl={mover.home_badge_url} size="sm" />
+                        {(() => {
+                          const f = countryFlagImgUrl(mover.home_team, 20);
+                          return f ? <img src={f} alt="" className="h-3 w-auto rounded-sm flex-shrink-0" loading="lazy" /> : null;
+                        })()}
                         <span className="truncate">{mover.home_team}</span>
                         <span className="text-slate-500 font-normal">v</span>
-                        <TeamBadge team={mover.away_team} badgeUrl={mover.away_badge_url} size="sm" />
+                        {(() => {
+                          const f = countryFlagImgUrl(mover.away_team, 20);
+                          return f ? <img src={f} alt="" className="h-3 w-auto rounded-sm flex-shrink-0" loading="lazy" /> : null;
+                        })()}
                         <span className="truncate">{mover.away_team}</span>
                       </div>
                       <div className="flex items-center gap-2 mt-2">

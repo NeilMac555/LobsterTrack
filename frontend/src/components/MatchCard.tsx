@@ -61,7 +61,7 @@ export default function MatchCard({ match }: MatchCardProps) {
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           {biggestMover && (
-            <span className={`px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full font-mono font-bold bg-emerald-500/20 text-emerald-400 tabular-nums tracking-tight ${
+            <span className={`px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full font-mono font-bold bg-red-500/20 text-red-400 tabular-nums tracking-tight ${
               isSignificantMove ? 'text-xs sm:text-sm' : 'text-[10px] sm:text-xs'
             }`}>
               {biggestMover.outcome} ↓{Math.abs(biggestMover.percentage).toFixed(1)}%

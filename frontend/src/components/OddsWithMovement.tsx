@@ -100,6 +100,9 @@ export function OddsDisplayWithMovement({
     md: 'text-sm px-3 py-1.5',
   };
 
+  const moveBg = (m: ReturnType<typeof calculateMovement>) =>
+    m.direction === 'down' ? 'bg-red-500/20' : m.direction === 'up' ? 'bg-emerald-500/20' : 'bg-slate-700/40';
+
   const renderOddsBox = (
     current: number | null,
     movement: ReturnType<typeof calculateMovement>,
@@ -131,9 +134,12 @@ export function OddsDisplayWithMovement({
 
   return (
     <div className="flex gap-1">
-      {renderOddsBox(home, homeMovement, 'bg-emerald-500/20', 'text-emerald-400', 'Home')}
-      {renderOddsBox(draw, drawMovement, 'bg-yellow-500/20', 'text-yellow-400', 'Draw')}
-      {renderOddsBox(away, awayMovement, 'bg-red-500/20', 'text-red-400', 'Away')}
+      {/* Box colour follows the MOVE, not the outcome (Neil, 2026-09-03):
+          red = price has dropped (shortening), green = price has risen
+          (drifting), slate = no move yet. */}
+      {renderOddsBox(home, homeMovement, moveBg(homeMovement), '', 'Home')}
+      {renderOddsBox(draw, drawMovement, moveBg(drawMovement), '', 'Draw')}
+      {renderOddsBox(away, awayMovement, moveBg(awayMovement), '', 'Away')}
     </div>
   );
 }
