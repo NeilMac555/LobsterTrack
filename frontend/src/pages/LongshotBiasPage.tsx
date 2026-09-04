@@ -9,7 +9,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
@@ -152,6 +151,7 @@ export default function LongshotBiasPage() {
 
   const isFreeView = league === FREE_LEAGUE && season !== null && FREE_SEASONS.includes(season);
   const locked = !isSubscribed && !isFreeView;
+  const cumulativeLatest = data?.cumulative[data.cumulative.length - 1];
 
   useEffect(() => {
     if (locked) return; // keep the last (free-view) data behind the paywall panel
@@ -298,27 +298,69 @@ export default function LongshotBiasPage() {
 
             {/* Cumulative profit chart */}
             <div
-              className="rounded-xl sm:rounded-2xl border border-slate-700/50 p-4 sm:p-5 card-shadow"
-              style={{ background: 'linear-gradient(180deg, rgba(30,41,59,0.85) 0%, rgba(15,23,42,0.95) 100%)' }}
+              className="rounded-xl sm:rounded-2xl border border-slate-700/50 overflow-hidden card-shadow"
+              style={{ background: 'radial-gradient(circle at 80% 0%, rgba(34,211,238,0.07), transparent 34%), linear-gradient(180deg, rgba(30,41,59,0.9) 0%, rgba(15,23,42,0.98) 100%)' }}
             >
-              <h2 className="text-xs sm:text-sm font-mono uppercase tracking-wider text-slate-400 font-semibold mb-3">
-                Cumulative Profit (units, 1u flat stakes)
-              </h2>
-              <div className="h-80 sm:h-[26rem]">
+              <div className="px-4 sm:px-5 pt-4 sm:pt-5 pb-4 border-b border-slate-700/40">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h2 className="text-sm sm:text-base font-bold text-white tracking-tight">Cumulative profit</h2>
+                    <p className="mt-1 text-[10px] sm:text-xs font-mono uppercase tracking-[0.12em] text-slate-500">
+                      1 unit flat stake · {data.total_matches.toLocaleString()} bets
+                    </p>
+                  </div>
+                  <span className="hidden sm:inline-flex rounded-full border border-slate-700/60 bg-slate-900/50 px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                    Closing odds
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 mt-4">
+                  <div className="rounded-lg border border-cyan-400/15 bg-cyan-400/[0.06] px-3 py-2.5">
+                    <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                      <span className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.65)]" /> Favorites
+                    </div>
+                    <div className={`mt-1 font-mono text-xl font-bold tabular-nums ${yieldClass(cumulativeLatest?.fav ?? 0)}`}>
+                      {(cumulativeLatest?.fav ?? 0) > 0 ? '+' : ''}{(cumulativeLatest?.fav ?? 0).toFixed(1)}u
+                    </div>
+                  </div>
+                  <div className="rounded-lg border border-amber-400/15 bg-amber-400/[0.06] px-3 py-2.5">
+                    <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                      <span className="h-2 w-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.65)]" /> Underdogs
+                    </div>
+                    <div className={`mt-1 font-mono text-xl font-bold tabular-nums ${yieldClass(cumulativeLatest?.dog ?? 0)}`}>
+                      {(cumulativeLatest?.dog ?? 0) > 0 ? '+' : ''}{(cumulativeLatest?.dog ?? 0).toFixed(1)}u
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="h-72 sm:h-[22rem] px-2 pt-4 pb-3">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={data.cumulative} margin={{ top: 4, right: 8, bottom: 0, left: -8 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.4} />
-                    <XAxis dataKey="n" tick={AXIS_TICK} stroke="#475569" />
-                    <YAxis tick={AXIS_TICK} stroke="#475569" width={54} />
-                    <ReferenceLine y={0} stroke="#64748b" strokeDasharray="4 4" />
-                    <Tooltip
-                      contentStyle={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 8, fontFamily: MONO_STACK, fontSize: 12 }}
-                      labelFormatter={(v) => `Bet #${v}`}
-                      formatter={(value?: number) => (typeof value === 'number' ? `${value.toFixed(1)}u` : value)}
+                  <LineChart data={data.cumulative} margin={{ top: 8, right: 12, bottom: 4, left: 0 }}>
+                    <CartesianGrid vertical={false} strokeDasharray="2 6" stroke="#334155" opacity={0.55} />
+                    <XAxis
+                      dataKey="n"
+                      tick={AXIS_TICK}
+                      tickLine={false}
+                      axisLine={false}
+                      minTickGap={38}
+                      tickFormatter={(value) => `#${value}`}
                     />
-                    <Legend wrapperStyle={{ fontFamily: MONO_STACK, fontSize: 11 }} />
-                    <Line type="monotone" dataKey="fav" name="Favorites" stroke="#22d3ee" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="dog" name="Underdogs" stroke="#fbbf24" strokeWidth={2} dot={false} />
+                    <YAxis
+                      tick={AXIS_TICK}
+                      tickLine={false}
+                      axisLine={false}
+                      width={48}
+                      tickFormatter={(value) => `${value}u`}
+                    />
+                    <ReferenceLine y={0} stroke="#94a3b8" strokeWidth={1.25} strokeDasharray="5 5" opacity={0.7} />
+                    <Tooltip
+                      cursor={{ stroke: '#64748b', strokeDasharray: '3 4', opacity: 0.7 }}
+                      contentStyle={{ background: 'rgba(15,23,42,0.96)', border: '1px solid #475569', borderRadius: 10, boxShadow: '0 12px 30px rgba(0,0,0,0.3)', fontFamily: MONO_STACK, fontSize: 11 }}
+                      labelStyle={{ color: '#cbd5e1', marginBottom: 6 }}
+                      labelFormatter={(v) => `Bet #${v}`}
+                      formatter={(value?: number, name?: string) => [typeof value === 'number' ? `${value > 0 ? '+' : ''}${value.toFixed(1)}u` : value, name]}
+                    />
+                    <Line type="monotone" dataKey="fav" name="Favorites" stroke="#22d3ee" strokeWidth={2.5} dot={false} activeDot={{ r: 4, fill: '#22d3ee', stroke: '#0f172a', strokeWidth: 2 }} />
+                    <Line type="monotone" dataKey="dog" name="Underdogs" stroke="#fbbf24" strokeWidth={2.5} dot={false} activeDot={{ r: 4, fill: '#fbbf24', stroke: '#0f172a', strokeWidth: 2 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
