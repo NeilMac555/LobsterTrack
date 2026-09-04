@@ -180,7 +180,7 @@ export default function HomePage() {
           reports odds moves and what happened next — it does NOT claim to
           know WHY a move happened (no "syndicates", no "sharp money", no
           market mind-reading). Keep that constraint if editing this copy. */}
-      {!league && !isSubscribed && (
+      {!league && (
         <div className="mb-5 sm:mb-7 grid lg:grid-cols-[0.9fr_1.4fr] gap-5 lg:gap-8 items-stretch">
           <div className="px-1 sm:px-2 py-5 sm:py-8 text-left flex flex-col justify-center">
           <h1 className="text-2xl sm:text-4xl font-bold text-white tracking-tight leading-tight">
@@ -204,19 +204,21 @@ export default function HomePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
             </a>
-            <button
-              onClick={async () => {
-                if (!user) {
-                  setShowLoginFromCTA(true);
-                } else {
-                  setSubscribing(true);
-                  try { await subscribe(); } catch { setSubscribing(false); }
-                }
-              }}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/10 font-mono text-xs sm:text-sm font-bold uppercase tracking-[0.12em] transition-colors"
-            >
-              {subscribing ? 'Redirecting to Stripe…' : 'Explore SteamWatch Pro'}
-            </button>
+            {!isSubscribed && (
+              <button
+                onClick={async () => {
+                  if (!user) {
+                    setShowLoginFromCTA(true);
+                  } else {
+                    setSubscribing(true);
+                    try { await subscribe(); } catch { setSubscribing(false); }
+                  }
+                }}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/10 font-mono text-xs sm:text-sm font-bold uppercase tracking-[0.12em] transition-colors"
+              >
+                {subscribing ? 'Redirecting to Stripe…' : 'Explore SteamWatch Pro'}
+              </button>
+            )}
           </div>
           </div>
 
