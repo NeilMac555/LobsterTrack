@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   ComposedChart,
   Line,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -50,8 +51,6 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
       ...point,
       time: format(new Date(point.timestamp), 'MMM d, HH:mm'),
       shortTime: format(new Date(point.timestamp), 'd/M HH:mm'),
-      dayLabel: format(new Date(point.timestamp), 'EEE d MMM'),
-      clockLabel: format(new Date(point.timestamp), 'HH:mm'),
       fullTime: format(new Date(point.timestamp), 'MMM d, yyyy HH:mm'),
       timestamp: new Date(point.timestamp).getTime(),
     };
@@ -78,38 +77,6 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
 
     return { ...baseData, ...pctData, ...impliedData };
   });
-
-  // X-axis ticks: one per calendar day (first point of each day), labelled
-  // with the date; exact times live in the tooltip. If the whole window
-  // sits inside a single day (1H/2H/6H frames), fall back to clock ticks.
-  const dayTicks: string[] = [];
-  const tickLabel = new Map<string, string>();
-  {
-    let lastDay = '';
-    for (const pt of chartData) {
-      if (pt.dayLabel !== lastDay) {
-        dayTicks.push(pt.shortTime);
-        tickLabel.set(pt.shortTime, pt.dayLabel);
-        lastDay = pt.dayLabel;
-      }
-    }
-  }
-  const singleDay = dayTicks.length <= 1;
-  const xTickFormatter = (v: string) => {
-    if (singleDay) {
-      const pt = chartData.find((d) => d.shortTime === v);
-      return pt ? pt.clockLabel : v;
-    }
-    return tickLabel.get(v) ?? '';
-  };
-
-  // Y-axis scaled to the data with a little headroom, instead of the
-  // zero-anchored range the old area fills forced (which squashed 1.7-6.0
-  // prices into the bottom half of the chart).
-  const padDomain: [(min: number) => number, (max: number) => number] = [
-    (min) => (min - Math.max((min || 1) * 0.06, 0.05)),
-    (max) => (max + Math.max((max || 1) * 0.06, 0.05)),
-  ];
 
   // Handle legend click - toggle between single outcome and all
   const handleLegendClick = (outcome: 'home' | 'draw' | 'away') => {
@@ -298,10 +265,9 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
 
       {/* Chart */}
       <div className="flex-1 min-h-0 relative">
-        {/* Watermark — a discreet corner mark so screenshots carry the name
-            without the brand sitting on top of the data. */}
-        <div className="absolute bottom-7 right-3 pointer-events-none select-none z-10">
-          <span className="text-white/[0.12] text-[11px] sm:text-xs font-mono font-semibold uppercase tracking-[0.2em] whitespace-nowrap">
+        {/* Watermark — visible in screenshots, subtle in-app */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-10">
+          <span className="text-white/10 text-5xl sm:text-7xl font-black tracking-widest -rotate-12 whitespace-nowrap">
             steamwatch.io
           </span>
         </div>
@@ -310,6 +276,21 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
             data={chartData}
             margin={{ top: 10, right: 12, left: 0, bottom: 8 }}
           >
+            {/* Gradient defs — subtle colored glow under each line */}
+            <defs>
+              <linearGradient id="oddsArea-home" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={COLOR_HOME} stopOpacity={0.28} />
+                <stop offset="100%" stopColor={COLOR_HOME} stopOpacity={0} />
+              </linearGradient>
+              <linearGradient id="oddsArea-draw" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={COLOR_DRAW} stopOpacity={0.24} />
+                <stop offset="100%" stopColor={COLOR_DRAW} stopOpacity={0} />
+              </linearGradient>
+              <linearGradient id="oddsArea-away" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={COLOR_AWAY} stopOpacity={0.28} />
+                <stop offset="100%" stopColor={COLOR_AWAY} stopOpacity={0} />
+              </linearGradient>
+            </defs>
 
             {/* Horizontal-only grid — cleaner terminal feel */}
             <CartesianGrid
@@ -324,17 +305,15 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
               tick={AXIS_TICK}
               tickLine={false}
               axisLine={{ stroke: '#334155', strokeWidth: 1 }}
-              ticks={singleDay ? undefined : dayTicks}
-              tickFormatter={xTickFormatter}
-              interval={singleDay ? 'preserveStartEnd' : 0}
-              minTickGap={singleDay ? 40 : 0}
+              interval="preserveStartEnd"
+              minTickGap={30}
             />
             <YAxis
               stroke="#475569"
               tick={AXIS_TICK}
               tickLine={false}
               axisLine={false}
-              domain={padDomain}
+              domain={['auto', 'auto']}
               reversed={isImpliedView}
               tickFormatter={(value) =>
                 isPercentView
@@ -373,14 +352,46 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
               <ReferenceLine y={openingOdds.away_odds} stroke={COLOR_AWAY} strokeDasharray="2 4" strokeOpacity={0.25} />
             )}
 
-            {/* Lines only — no fills, so the three series never wash into each other */}
+            {/* Subtle area fills (render first so lines draw on top) */}
+            {isVisible('home') && (
+              <Area
+                type="monotone"
+                dataKey={isImpliedView ? 'home_impl' : isPercentView ? 'home_pct' : 'home_odds'}
+                stroke="none"
+                fill="url(#oddsArea-home)"
+                isAnimationActive={false}
+                activeDot={false}
+              />
+            )}
+            {isVisible('draw') && (
+              <Area
+                type="monotone"
+                dataKey={isImpliedView ? 'draw_impl' : isPercentView ? 'draw_pct' : 'draw_odds'}
+                stroke="none"
+                fill="url(#oddsArea-draw)"
+                isAnimationActive={false}
+                activeDot={false}
+              />
+            )}
+            {isVisible('away') && (
+              <Area
+                type="monotone"
+                dataKey={isImpliedView ? 'away_impl' : isPercentView ? 'away_pct' : 'away_odds'}
+                stroke="none"
+                fill="url(#oddsArea-away)"
+                isAnimationActive={false}
+                activeDot={false}
+              />
+            )}
+
+            {/* Lines on top — thicker stroke, no mid-point dots, glowing active dot */}
             {isVisible('home') && (
               <Line
-                type="stepAfter"
+                type="monotone"
                 dataKey={isImpliedView ? 'home_impl' : isPercentView ? 'home_pct' : 'home_odds'}
                 name={homeTeam}
                 stroke={COLOR_HOME}
-                strokeWidth={2}
+                strokeWidth={2.2}
                 dot={false}
                 activeDot={{ r: 5, fill: COLOR_HOME, stroke: '#0f172a', strokeWidth: 2 }}
                 animationDuration={300}
@@ -388,11 +399,11 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
             )}
             {isVisible('draw') && (
               <Line
-                type="stepAfter"
+                type="monotone"
                 dataKey={isImpliedView ? 'draw_impl' : isPercentView ? 'draw_pct' : 'draw_odds'}
                 name="Draw"
                 stroke={COLOR_DRAW}
-                strokeWidth={2}
+                strokeWidth={2.2}
                 dot={false}
                 activeDot={{ r: 5, fill: COLOR_DRAW, stroke: '#0f172a', strokeWidth: 2 }}
                 animationDuration={300}
@@ -400,11 +411,11 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
             )}
             {isVisible('away') && (
               <Line
-                type="stepAfter"
+                type="monotone"
                 dataKey={isImpliedView ? 'away_impl' : isPercentView ? 'away_pct' : 'away_odds'}
                 name={awayTeam}
                 stroke={COLOR_AWAY}
-                strokeWidth={2}
+                strokeWidth={2.2}
                 dot={false}
                 activeDot={{ r: 5, fill: COLOR_AWAY, stroke: '#0f172a', strokeWidth: 2 }}
                 animationDuration={300}
