@@ -254,13 +254,38 @@ export default function HomePage() {
                 <Link to={`/match/${mover.match_id}`} className="grid sm:grid-cols-[1fr_auto_1fr] items-center gap-5 mt-4 group">
                   <div>
                     <div className="text-[10px] uppercase tracking-[0.16em] text-slate-500 font-mono mb-3">Backed selection</div>
-                    <div className="flex items-center gap-3 text-white font-semibold text-lg">
-                      <TeamBadge team={mover.outcome_name} badgeUrl={selectionBadgeUrl} size="lg" />
-                      <span>{mover.outcome_name}</span>
-                    </div>
-                    <div className="mt-4 text-xs text-slate-500">
-                      {mover.home_team} <span className="text-slate-600">vs</span> {mover.away_team}
-                    </div>
+                    {selectionBadgeUrl !== null || mover.outcome === 'home' || mover.outcome === 'away' ? (
+                      <>
+                        <div className="flex items-center gap-3 text-white font-semibold text-lg">
+                          <TeamBadge team={mover.outcome_name} badgeUrl={selectionBadgeUrl} size="lg" />
+                          <span>{mover.outcome_name}</span>
+                        </div>
+                        <div className="mt-4 text-xs text-slate-500">
+                          {mover.home_team} <span className="text-slate-600">vs</span> {mover.away_team}
+                        </div>
+                      </>
+                    ) : (
+                      /* Totals, handicaps and the draw have no club to badge, so the
+                         fixture leads with both crests and the selection sits under it
+                         (Neil, 2026-09-06: "why no team names or logo?"). */
+                      <>
+                        <div className="flex items-center gap-3 text-white font-semibold text-lg">
+                          <div className="flex items-center -space-x-1.5">
+                            <TeamBadge team={mover.home_team} badgeUrl={mover.home_badge_url} size="lg" />
+                            <TeamBadge team={mover.away_team} badgeUrl={mover.away_badge_url} size="lg" />
+                          </div>
+                          <span className="leading-tight">
+                            {mover.home_team} <span className="text-slate-500 font-normal">vs</span> {mover.away_team}
+                          </span>
+                        </div>
+                        <div className="mt-3 inline-flex items-center gap-2 rounded-md border border-slate-700/60 bg-slate-900/60 px-2.5 py-1">
+                          <span className="text-[10px] uppercase tracking-[0.12em] text-slate-500 font-mono">
+                            {mover.market === 'totals' ? 'Total goals' : mover.market === 'spreads' ? 'Asian handicap' : 'Match odds'}
+                          </span>
+                          <span className="font-mono font-semibold text-white text-sm">{mover.outcome_name}</span>
+                        </div>
+                      </>
+                    )}
                   </div>
                   <div className="hidden sm:block h-24 w-px bg-slate-700" />
                   <div>
