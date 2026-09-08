@@ -1,293 +1,55 @@
-import {
-  ComposedChart,
-  Line,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  ReferenceLine,
-  ReferenceArea,
-} from 'recharts';
-import { format } from 'date-fns';
+import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import type { SpreadsPoint } from '../types';
-import { filterByTimeFrame, type TimeFrame } from './TimeFrameFilter';
+import { handicapView, formatHandicap, handicapLines } from '../utils/handicapHistory';
+import { useTimePreference } from '../contexts/TimePreferenceContext';
+import { useOddsFormat } from '../contexts/OddsFormatContext';
+import { formatKickoff } from '../utils/time';
+import { formatOdds } from '../utils/odds';
 
-// Shared terminal-feel typography and palette (mirrors OddsChart / TotalsChart).
-const MONO_STACK = '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace';
-const AXIS_TICK = {
-  fill: '#94a3b8',
-  fontSize: 10,
-  fontFamily: MONO_STACK,
-  letterSpacing: '-0.02em',
-};
-const COLOR_HOME = '#34d399';  // emerald-400
-const COLOR_AWAY = '#fb923c';  // orange-400
-const COLOR_LINE_SHIFT = '#fbbf24'; // amber-400 — high contrast on the green/orange odds lines
+const HOME = '#34d399', AWAY = '#fb923c';
+const TICK = { fill: '#94a3b8', fontSize: 10, fontFamily: '"JetBrains Mono", ui-monospace, monospace' };
+interface Props { data: SpreadsPoint[]; line: number; homeTeam: string; awayTeam: string; timeline?: boolean }
+interface TooltipPoint { timestamp: string; line: number; home_odds: number | null; away_odds: number | null }
 
-interface SpreadsChartProps {
-  data: SpreadsPoint[];
-  timeFrame?: TimeFrame;
+function HandicapTooltip({ active, payload, homeTeam, awayTeam, line, timeline }: {
+  active?: boolean; payload?: ReadonlyArray<{ payload?: TooltipPoint }>; homeTeam: string; awayTeam: string; line: number; timeline: boolean;
+}) {
+  const { mode } = useTimePreference();
+  const { format: oddsFormat } = useOddsFormat();
+  const point = payload?.[0]?.payload;
+  if (!active || !point) return null;
+  const handicap = timeline ? point.line : line;
+  return <div className="bg-slate-900 border border-slate-600 rounded-lg p-3 shadow-xl text-xs space-y-2 max-w-72">
+    <p className="text-slate-400">{formatKickoff(point.timestamp, 'd MMM yyyy, HH:mm', mode)}</p>
+    <p className="text-emerald-400">{homeTeam} {formatHandicap(handicap)}{!timeline && ' · ' + formatOdds(point.home_odds, oddsFormat)}</p>
+    <p className="text-orange-400">{awayTeam} {formatHandicap(-handicap)}{!timeline && ' · ' + formatOdds(point.away_odds, oddsFormat)}</p>
+  </div>;
 }
 
-export default function SpreadsChart({ data, timeFrame = 'all' }: SpreadsChartProps) {
-  const filteredData = filterByTimeFrame(data, timeFrame);
-
-  const openingSpreads = data.length > 0 ? data[0] : null;
-
-  const baseData = filteredData.map((point) => ({
-    ...point,
-    time: format(new Date(point.timestamp), 'MMM d, HH:mm'),
-    shortTime: format(new Date(point.timestamp), 'd/M HH:mm'),
-    fullTime: format(new Date(point.timestamp), 'MMM d, yyyy HH:mm'),
-    timestamp: new Date(point.timestamp).getTime(),
-  }));
-
-  // Detect AH line shifts (e.g. -0.5 → -0.75) so we can mark them on the chart.
-  // Without this, a sudden home/away odds jump at the moment of the line move
-  // looks like a steam move when it's really just a different bet.
-  const lineShifts: Array<{ shortTime: string; from: number; to: number }> = [];
-  for (let i = 1; i < baseData.length; i++) {
-    const prev = baseData[i - 1].line;
-    const curr = baseData[i].line;
-    if (prev != null && curr != null && Math.abs(prev - curr) > 0.001) {
-      lineShifts.push({
-        shortTime: baseData[i].shortTime,
-        from: prev,
-        to: curr,
-      });
-    }
-  }
-
-  // Group consecutive same-line points into segments so each stretch
-  // of the chart can be shaded and labelled with the AH line that was
-  // active — same rationale as TotalsChart.
-  const segments: Array<{ line: number; startTime: string; endTime: string }> = [];
-  for (const point of baseData) {
-    if (point.line == null) continue;
-    const last = segments[segments.length - 1];
-    if (last && Math.abs(last.line - point.line) < 0.001) {
-      last.endTime = point.shortTime;
-    } else {
-      segments.push({ line: point.line, startTime: point.shortTime, endTime: point.shortTime });
-    }
-  }
-
-  // Home/Away prices at one AH line aren't comparable to prices at a
-  // different line — connecting them draws a misleading diagonal right
-  // at the shift. Insert a null-value gap point at each boundary and
-  // disable connectNulls so the lines visibly break instead of joining
-  // two incomparable price levels.
-  const chartData: typeof baseData = [];
-  for (let i = 0; i < baseData.length; i++) {
-    if (
-      i > 0 &&
-      baseData[i].line != null &&
-      baseData[i - 1].line != null &&
-      Math.abs((baseData[i].line as number) - (baseData[i - 1].line as number)) > 0.001
-    ) {
-      chartData.push({
-        ...baseData[i - 1],
-        home_odds: null as unknown as number,
-        away_odds: null as unknown as number,
-      });
-    }
-    chartData.push(baseData[i]);
-  }
-
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      const dataPoint = payload[0]?.payload;
-      const seen = new Set<string>();
-      const entries = (payload as any[]).filter((e) => {
-        const k = e?.dataKey as string;
-        if (!k || seen.has(k)) return false;
-        seen.add(k);
-        return true;
-      });
-      return (
-        <div
-          className="bg-slate-900/95 backdrop-blur-md border border-slate-600/50 rounded-lg shadow-2xl overflow-hidden"
-          style={{
-            animation: 'fadeIn 0.15s ease-out',
-            boxShadow: '0 20px 40px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05)',
-          }}
-        >
-          <div className="px-3 py-1.5 bg-slate-800/50 border-b border-slate-700/50">
-            <p className="text-slate-300 text-[10px] font-mono uppercase tracking-[0.12em] font-semibold">
-              {dataPoint?.fullTime || label}
-            </p>
-          </div>
-          <div className="p-2 space-y-1 min-w-[160px]">
-            <div className="flex items-center justify-between gap-4 px-1">
-              <span className="text-slate-400 text-xs font-medium">Line</span>
-              <span className="font-mono font-bold text-sm tabular-nums tracking-tight text-white">
-                {dataPoint?.line >= 0 ? '+' : ''}{dataPoint?.line}
-              </span>
-            </div>
-            {entries.map((entry: any, index: number) => (
-              <div key={index} className="flex items-center justify-between gap-4 px-1">
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: entry.color, boxShadow: `0 0 6px ${entry.color}` }}
-                  />
-                  <span className="text-slate-300 text-xs font-medium">{entry.name}</span>
-                </div>
-                <span
-                  className="font-mono font-bold text-sm tabular-nums tracking-tight"
-                  style={{ color: entry.color }}
-                >
-                  {entry.value?.toFixed(2) ?? '-'}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  if (data.length === 0) {
-    return (
-      <div className="h-48 flex items-center justify-center bg-slate-800/50 rounded-xl border border-slate-700">
-        <p className="text-slate-500 text-sm">No spreads history available</p>
-      </div>
-    );
-  }
-
-  if (filteredData.length === 0) {
-    return (
-      <div className="h-full w-full flex items-center justify-center">
-        <p className="text-slate-500 text-sm">No data in this time range</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="h-full w-full relative">
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-10">
-        <span className="text-white/10 text-5xl sm:text-7xl font-black tracking-widest -rotate-12 whitespace-nowrap">
-          steamwatch.io
-        </span>
-      </div>
-      <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={chartData} margin={{ top: 10, right: 12, left: 0, bottom: 8 }}>
-          <defs>
-            <linearGradient id="spreadsArea-home" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={COLOR_HOME} stopOpacity={0.28} />
-              <stop offset="100%" stopColor={COLOR_HOME} stopOpacity={0} />
-            </linearGradient>
-            <linearGradient id="spreadsArea-away" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={COLOR_AWAY} stopOpacity={0.28} />
-              <stop offset="100%" stopColor={COLOR_AWAY} stopOpacity={0} />
-            </linearGradient>
-          </defs>
-
-          <CartesianGrid strokeDasharray="2 6" stroke="#475569" strokeOpacity={0.4} vertical={false} />
-          <XAxis
-            dataKey="shortTime"
-            stroke="#475569"
-            tick={AXIS_TICK}
-            tickLine={false}
-            axisLine={{ stroke: '#334155', strokeWidth: 1 }}
-            interval="preserveStartEnd"
-            minTickGap={30}
-          />
-          <YAxis
-            stroke="#475569"
-            tick={AXIS_TICK}
-            tickLine={false}
-            axisLine={false}
-            domain={['auto', 'auto']}
-            tickFormatter={(value) => value.toFixed(2)}
-            width={42}
-          />
-          <Tooltip
-            content={<CustomTooltip />}
-            cursor={{ stroke: '#94a3b8', strokeWidth: 1, strokeDasharray: '3 3', strokeOpacity: 0.5 }}
-            offset={15}
-            allowEscapeViewBox={{ x: false, y: true }}
-          />
-
-          {/* Alternating background bands, one per distinct AH line,
-              labelled so a reader can tell at a glance which stretch of
-              the chart was -0.5 vs -0.75 vs -1.0 etc without hovering. */}
-          {segments.map((seg, i) => (
-            <ReferenceArea
-              key={`seg-${i}`}
-              x1={seg.startTime}
-              x2={seg.endTime}
-              fill={i % 2 === 0 ? 'rgba(148,163,184,0.05)' : 'rgba(148,163,184,0.11)'}
-              stroke="none"
-              ifOverflow="extendDomain"
-              label={{
-                value: `${seg.line >= 0 ? '+' : ''}${seg.line.toFixed(2)}`,
-                position: 'insideTop',
-                fill: '#fbbf24',
-                fontSize: 10,
-                fontFamily: MONO_STACK,
-                fontWeight: 700,
-              }}
-            />
-          ))}
-
-          {/* Opening price reference lines */}
-          {openingSpreads?.home_odds && (
-            <ReferenceLine y={openingSpreads.home_odds} stroke={COLOR_HOME} strokeDasharray="2 4" strokeOpacity={0.25} />
-          )}
-          {openingSpreads?.away_odds && (
-            <ReferenceLine y={openingSpreads.away_odds} stroke={COLOR_AWAY} strokeDasharray="2 4" strokeOpacity={0.25} />
-          )}
-
-          {/* AH line-shift markers — see TotalsChart for full rationale. */}
-          {lineShifts.map((s, i) => (
-            <ReferenceLine
-              key={`shift-${i}`}
-              x={s.shortTime}
-              stroke={COLOR_LINE_SHIFT}
-              strokeDasharray="3 4"
-              strokeWidth={1}
-              strokeOpacity={0.35}
-              ifOverflow="extendDomain"
-            />
-          ))}
-
-          {/* Area fills underneath — connectNulls=false so the fill breaks
-              at each line-shift gap point instead of bridging two
-              incomparable price levels. */}
-          <Area type="monotone" dataKey="home_odds" stroke="none" fill="url(#spreadsArea-home)" connectNulls={false} isAnimationActive={false} activeDot={false} />
-          <Area type="monotone" dataKey="away_odds" stroke="none" fill="url(#spreadsArea-away)" connectNulls={false} isAnimationActive={false} activeDot={false} />
-
-          {/* Lines on top — connectNulls=false breaks the line at each
-              line-shift gap point instead of drawing a misleading
-              diagonal between two different AH lines' prices. */}
-          <Line
-            type="monotone"
-            dataKey="home_odds"
-            name="Home"
-            stroke={COLOR_HOME}
-            strokeWidth={2.2}
-            dot={false}
-            connectNulls={false}
-            activeDot={{ r: 5, fill: COLOR_HOME, stroke: '#0f172a', strokeWidth: 2 }}
-            animationDuration={300}
-          />
-          <Line
-            type="monotone"
-            dataKey="away_odds"
-            name="Away"
-            stroke={COLOR_AWAY}
-            strokeWidth={2.2}
-            dot={false}
-            connectNulls={false}
-            activeDot={{ r: 5, fill: COLOR_AWAY, stroke: '#0f172a', strokeWidth: 2 }}
-            animationDuration={300}
-          />
-        </ComposedChart>
-      </ResponsiveContainer>
-    </div>
-  );
+export default function SpreadsChart({ data, line, homeTeam, awayTeam, timeline = false }: Props) {
+  const { mode } = useTimePreference();
+  const view = handicapView(data, line);
+  const chart = timeline ? data.map(p => ({ ...p, time: Date.parse(p.timestamp) })) : view.chart;
+  const ticks = handicapLines(data);
+  if (!data.length) return <div className="h-full flex items-center justify-center text-slate-400 text-sm">No quotes in this time range.</div>;
+  if (!timeline && !view.chart.some(p => p.home_odds !== null || p.away_odds !== null)) return <div className="h-full flex items-center justify-center text-slate-400 text-sm">No recorded prices at this handicap in this time range.</div>;
+  return <div className="h-full w-full relative" role="img" aria-label={timeline ? 'Main handicap history for ' + homeTeam : 'Recorded prices for ' + homeTeam + ' ' + formatHandicap(line) + ' and ' + awayTeam + ' ' + formatHandicap(-line)}>
+    {!timeline && <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"><span className="text-white/5 text-3xl sm:text-6xl font-black tracking-widest -rotate-12">steamwatch.io</span></div>}
+    <ResponsiveContainer width="100%" height="100%">
+      <ComposedChart data={chart} margin={{ top: 12, right: 16, left: 0, bottom: 6 }}>
+        <CartesianGrid strokeDasharray="2 6" stroke="#475569" strokeOpacity={0.4} vertical={false} />
+        <XAxis type="number" dataKey="time" scale="time" domain={['dataMin', 'dataMax']} tick={TICK} tickLine={false} minTickGap={45}
+          tickFormatter={value => formatKickoff(new Date(value), 'd/M HH:mm', mode)} stroke="#334155" />
+        <YAxis tick={TICK} tickLine={false} axisLine={false} width={48}
+          domain={timeline ? [Math.min(...ticks) - 0.125, Math.max(...ticks) + 0.125] : ['auto', 'auto']}
+          ticks={timeline ? ticks : undefined} tickFormatter={value => timeline ? formatHandicap(value) : value.toFixed(2)} />
+        <Tooltip content={<HandicapTooltip homeTeam={homeTeam} awayTeam={awayTeam} line={line} timeline={timeline} />}
+          cursor={{ stroke: '#94a3b8', strokeDasharray: '3 3', strokeOpacity: 0.5 }} />
+        {timeline ? <Line type="stepAfter" dataKey="line" stroke="#fbbf24" strokeWidth={2} dot={data.length === 1 ? { r: 3 } : false} isAnimationActive={false} />
+          : <>{(['home_odds', 'away_odds'] as const).map((side, i) => <Line key={side} type="stepAfter" dataKey={side} name={i ? awayTeam : homeTeam}
+            stroke={i ? AWAY : HOME} strokeWidth={2.2} connectNulls={false} isAnimationActive={false}
+            dot={{ r: 1.5, strokeWidth: 0 }} activeDot={{ r: 4, stroke: '#0f172a', strokeWidth: 2 }} />)}</>}
+      </ComposedChart>
+    </ResponsiveContainer>
+  </div>;
 }

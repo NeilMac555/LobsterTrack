@@ -116,12 +116,15 @@ export function impliedExpectedGoals(
   underOdds: number | null
 ): number | null {
   if (line == null || overOdds == null || underOdds == null) return null;
+  if (![line, overOdds, underOdds].every(Number.isFinite) || line < 0.25 || line > 10 || Math.abs(line * 4 - Math.round(line * 4)) > 1e-6) return null;
+  line = Math.round(line * 4) / 4;
   const probs = devig(overOdds, underOdds);
   if (!probs || probs.pOver <= 0) return null;
   const targetOdds = 1 / probs.pOver;
 
   let lo = 0.05;
   let hi = 9;
+  if (targetOdds > fairOverOdds(line, lo) || targetOdds < fairOverOdds(line, hi)) return null;
   for (let i = 0; i < 50; i++) {
     const mid = (lo + hi) / 2;
     const modelOdds = fairOverOdds(line, mid);
