@@ -19,6 +19,7 @@ import AboutPage from './pages/AboutPage';
 import BlogIndexPage from './pages/BlogIndexPage';
 import BlogPostPage from './pages/BlogPostPage';
 import RollingXGPage from './pages/RollingXGPage';
+import ClubRatingsPage from './pages/ClubRatingsPage';
 import TeamPLPage from './pages/TeamPLPage';
 // PowerRankingsPage is temporarily hidden (see the redirected route below).
 import InPlayJumpsPage from './pages/InPlayJumpsPage';
@@ -55,6 +56,7 @@ function App() {
               <Route path="tools/bet-calculator" element={<BetCalculatorPage />} />
               <Route path="tools/match-predictor" element={<MatchPredictorPage />} />
               <Route path="tools/rolling-xg" element={<RollingXGPage />} />
+              <Route path="tools/club-ratings" element={<ClubRatingsPage />} />
               {/* Forecast Engine hidden 2026-08-05 while player-level
                   (top-scorer) forecasting is built out — redirect to home
                   so existing links don't dead-end. Restore the

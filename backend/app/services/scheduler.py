@@ -14,6 +14,7 @@ from app.services.league_constants_refresher import league_constants_refresher
 from app.services.power_ranking_fitter import power_ranking_fitter
 from app.services.email_sender import email_sender
 from app.services.stripe_reconciler import stripe_reconciler
+from app.services.club_ratings.publication import publish_if_due
 
 logger = structlog.get_logger()
 settings = get_settings()
@@ -531,6 +532,14 @@ class OddsScheduler:
             return
 
         # Main smart tick - runs every 2 minutes, decides what to fetch
+        # Sync job runs in APScheduler's thread pool, never on the event loop.
+        # Publishes Monday 12:00 UTC; hourly checks recover missed/failed runs.
+        self.scheduler.add_job(
+            publish_if_due, trigger=CronTrigger(minute=0, timezone='UTC'),
+            id='club_ratings_weekly', name='Publish weekly club ratings',
+            replace_existing=True, max_instances=1, coalesce=True,
+            next_run_time=datetime.now(timezone.utc)+timedelta(seconds=15),
+        )
         self.scheduler.add_job(
             self.smart_tick,
             trigger=IntervalTrigger(minutes=TICK_INTERVAL),

@@ -20,6 +20,12 @@ decisions that shape the build, with the recommendation at the time:
 
 ## Now
 
+- Club Ratings beta release prepared: free `/tools/club-ratings`, browser-cookie
+  voting with no sign-in, five voters/80% agreement, ±15 cap and 3-point weekly
+  steps. Durable weekly publications/source refresh, tiers, movement and Tools
+  navigation. Steam Results replaces Movers. See `docs/club-ratings.md` for
+  validation, source dates and anonymous-voting limitations. Awaiting deployment.
+
 - Team P/L 26/27 data: BLOCKED UPSTREAM as of 2026-08-17 —
   football-data.co.uk's 2627 folder has no top-5-league files yet
   (I1/D1/F1/E1 are HTTP 300) and E0/SP1 contain the WRONG competition

@@ -527,6 +527,19 @@ const PAGES = [
 <p><a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
   },
   {
+    path: 'tools/club-ratings',
+    title: 'European Club Ratings (Beta) — SteamWatch',
+    description: 'Free European club strength rankings blending four rating sources, rolling non-penalty expected goals and member feedback. Updated weekly.',
+    ogType: 'website',
+    jsonLd: {
+      '@context': 'https://schema.org', '@type': 'WebApplication',
+      name: 'SteamWatch Club Ratings', url: `${DOMAIN}/tools/club-ratings`,
+      applicationCategory: 'SportsApplication', operatingSystem: 'Web',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
+    },
+    noscriptHtml: `<h1>European Club Ratings — Beta</h1><p>Free club strength rankings across the top five leagues, Champions League and Europa League. The blend combines Euro Club Index, Club Elo, Driblab, PitchRank and rolling non-penalty expected goals. Members can vote higher or lower, informing a bounded weekly adjustment.</p><p><a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
+  },
+  {
     path: 'tools/rolling-xg',
     title: 'Rolling xG Tables: Football Team Form by Expected Goals — SteamWatch',
     description:

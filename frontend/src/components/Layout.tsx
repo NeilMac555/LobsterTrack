@@ -44,6 +44,7 @@ const tools: Array<{
   { name: 'Hedging Calculator', path: '/tools/hedge-calculator', icon: '🧮' },
   { name: 'Match Model', path: '/tools/match-predictor', icon: '⚽' },
   { name: 'Rolling xG', path: '/tools/rolling-xg', icon: '📊' },
+  { name: 'Club Ratings', path: '/tools/club-ratings', icon: '🏆', isNew: true },
 ];
 
 export default function Layout() {
@@ -93,7 +94,6 @@ export default function Layout() {
   const isPowerRankingsPage = location.pathname === '/power-rankings';
   const isLongshotBiasPage = location.pathname === '/longshot-bias';
   const isResultsPage = isSteamResultsPage || isDriftersPage || isTeamPLPage || isLongshotBiasPage;
-  const isMoversPage = location.pathname === '/' && location.hash === '#market-movers';
   const isOverviewPage = !location.hash && !currentLeague && !isToolsPage && !isSteamResultsPage && !isDriftersPage && !isClosingLinesPage && !isTeamPLPage && !isPowerRankingsPage && !isLongshotBiasPage && location.pathname === '/';
 
   const navItemClass = (active: boolean) =>
@@ -131,7 +131,7 @@ export default function Layout() {
             {/* Desktop flat nav */}
             <nav className="hidden lg:flex items-center gap-0.5 flex-1 min-w-0">
               <Link to="/" className={navItemClass(isOverviewPage)}>Overview</Link>
-              <Link to="/#market-movers" className={navItemClass(isMoversPage)}>Movers</Link>
+              <Link to="/steam-results" className={navItemClass(isSteamResultsPage)}>Steam Results</Link>
               <div className="relative" ref={resultsRef}>
                 <button
                   onClick={() => setResultsOpen(!resultsOpen)}
