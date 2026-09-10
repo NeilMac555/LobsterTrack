@@ -104,6 +104,26 @@ class DatabaseTests(unittest.TestCase):
         self.assertEqual(self.client.put(url,json={'direction':0}).status_code,200)
         self.assertEqual(self.client.get('/api/club-ratings/votes/me').json(),{})
 
+    def test_public_contract_never_exposes_internal_sources(self):
+        with self.sessions() as db:
+            record=db.query(ClubRatingPublication).one()
+            internal=json.loads(json.dumps(record.board))
+            internal['private_future_field']='DO_NOT_PUBLISH'
+            internal['warnings']=['ECI snapshot unavailable; private diagnostics']
+            internal['teams'][0]['private_future_field']='DO_NOT_PUBLISH'
+            record.board=internal
+            db.commit()
+        response=self.client.get('/api/club-ratings')
+        body=response.json()
+        self.assertEqual(set(body),{'season','published_at','next_update','teams','warnings','overdue'})
+        for team in body['teams']:
+            self.assertEqual(set(team),{'id','name','rank','score','competitions','tier','community_adjustment','rank_change','score_change'})
+        for forbidden in ('DO_NOT_PUBLISH','ECI','Club Elo','Driblab','PitchRank','Understat','scales','weights','base_score','performance'):
+            self.assertNotIn(forbidden,response.text)
+        self.assertTrue(body['warnings'])
+        with self.sessions() as db:
+            self.assertIn('sources',db.query(ClubRatingPublication).one().board['teams'][0])
+
     def test_publication_idempotence_failure_and_weekly_votes(self):
         with self.sessions() as db:
             original=json.loads(json.dumps(db.query(ClubRatingPublication).one().board))

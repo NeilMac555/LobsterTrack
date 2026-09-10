@@ -28,7 +28,13 @@ def identity(request):
 
 @club_rating_router.get('')
 def board(response: Response, db: Session = Depends(get_db)):
-    data = dict(publication(db))
+    saved = publication(db)
+    # Explicit public contract: new internal diagnostics must never leak by default.
+    data = {key: saved[key] for key in ('season', 'published_at', 'next_update')}
+    fields = ('id', 'name', 'rank', 'score', 'competitions', 'tier',
+              'community_adjustment', 'rank_change', 'score_change')
+    data['teams'] = [{key: team[key] for key in fields} for team in saved['teams']]
+    data['warnings'] = ['Some inputs are delayed or unavailable. Ratings use the latest usable data.'] if saved.get('warnings') else []
     data['overdue'] = datetime.utcnow() > datetime.fromisoformat(data['next_update'].rstrip('Z')) + timedelta(hours=6)
     response.headers['Cache-Control'] = 'public, max-age=60'
     return data
