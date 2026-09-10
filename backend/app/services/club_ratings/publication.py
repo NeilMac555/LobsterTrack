@@ -2,15 +2,13 @@
 import json
 import logging
 import math
-from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from sqlalchemy import text
 from app.models.database import SessionLocal, engine
-from app.models.club_rating import ClubRatingPublication, ClubRatingInputs, ClubRatingVote
+from app.models.club_rating import ClubRatingPublication, ClubRatingInputs
 from . import club_consensus
-from .community import adjustment
 from .sportmonks import ProviderError
 
 log = logging.getLogger(__name__)
@@ -104,19 +102,14 @@ def _publish():
             db.commit()
             log.warning('Incomplete club rating board; publication retained')
             return
-        votes = db.query(ClubRatingVote).filter(ClubRatingVote.updated_at > now-timedelta(days=30)).all()
-        by_club = defaultdict(list)
-        for vote in votes:
-            by_club[vote.club_id].append(vote)
         old = {t['id']: t for t in previous_board['teams']} if previous_board else {}
+        prior_ranks = {t['id']: rank for rank, t in enumerate(sorted(old.values(), key=lambda t: (-t.get('base_score', t['score']), t['name'])), 1)}
         for team in board['teams']:
             prior = old.get(team['id'], {})
             base = team['score']
-            prior_offset = prior.get('community_adjustment', 0.)
-            offset, counts = adjustment(by_club[team['id']], base+prior_offset, prior_offset, now)
-            team.update(base_score=base, community_adjustment=offset, community=counts,
-                        score=round(base+offset, 2), previous_rank=prior.get('rank'),
-                        previous_score=prior.get('score'))
+            team.update(base_score=base, community_adjustment=0,
+                        score=round(base, 2), previous_rank=prior_ranks.get(team['id']),
+                        previous_score=prior.get('base_score', prior.get('score')))
             team['tier'] = tier(team['score'])
         board['teams'].sort(key=lambda t: (-t['score'], t['name']))
         for rank, team in enumerate(board['teams'], 1):
@@ -125,7 +118,7 @@ def _publish():
             team['score_change'] = round(team['score']-team['previous_score'], 2) if team['previous_score'] is not None else None
         board.update(published_at=now.isoformat()+'Z', period=period,
                      next_update=(datetime.fromisoformat(period)+timedelta(days=7, hours=12)).isoformat()+'Z',
-                     community_rules={'minimum_voters':5,'minimum_agreement':.8,'expires_days':30,'max_adjustment':15,'max_weekly_step':3})
+                     community_rules={'minimum_voters':5,'minimum_agreement':.8,'expires_days':30,'max_rank_change':1,'immediate':True})
         db.add(ClubRatingPublication(period=period, published_at=now, board=board))
         db.commit()
         log.info('Published club ratings: %s, %s clubs', period, len(board['teams']))

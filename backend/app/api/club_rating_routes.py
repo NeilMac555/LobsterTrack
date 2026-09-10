@@ -8,7 +8,7 @@ from pydantic import BaseModel, StrictInt
 from sqlalchemy.orm import Session
 from app.models.database import get_db
 from app.models.club_rating import ClubRatingPublication, ClubRatingVote, ClubRatingVoter, ClubRatingVotingSession
-from app.services.club_ratings.community import eligible
+from app.services.club_ratings.community import eligible, ranked_board
 
 club_rating_router = APIRouter(prefix='/club-ratings', tags=['club-ratings'])
 COOKIE = 'sw_rating_voter'
@@ -35,21 +35,21 @@ def identity(request):
 
 @club_rating_router.get('')
 def board(response: Response, db: Session = Depends(get_db)):
-    saved = publication(db)
+    saved = ranked_board(publication(db), db.query(ClubRatingVote).filter(ClubRatingVote.updated_at > datetime.utcnow()-timedelta(days=30)).all(), datetime.utcnow())
     # Explicit public contract: new internal diagnostics must never leak by default.
     data = {key: saved[key] for key in ('season', 'published_at', 'next_update')}
     fields = ('id', 'name', 'rank', 'score', 'competitions', 'tier',
-              'community_adjustment', 'rank_change', 'score_change')
+              'community_adjustment', 'community_rank_change', 'community_reason', 'rank_change', 'score_change')
     data['teams'] = [{key: team[key] for key in fields} for team in saved['teams']]
     data['warnings'] = ['Some inputs are delayed or unavailable. Ratings use the latest usable data.'] if saved.get('warnings') else []
     data['overdue'] = datetime.utcnow() > datetime.fromisoformat(data['next_update'].rstrip('Z')) + timedelta(hours=6)
-    response.headers['Cache-Control'] = 'public, max-age=60'
+    response.headers['Cache-Control'] = 'no-store'
     return data
 
 
 @club_rating_router.get('/votes/me')
 def my_votes(request: Request, response: Response, db: Session = Depends(get_db)):
-    scores = {t['id']: t['score'] for t in publication(db)['teams']}
+    scores = {t['id']: t.get('base_score', t['score']) for t in publication(db)['teams']}
     voter_id = identity(request)
     response.headers['Cache-Control'] = 'no-store'
     if voter_id is None:
@@ -103,7 +103,8 @@ def vote(club_id: int, body: VoteBody, request: Request, response: Response, db:
     session = db.get(ClubRatingVotingSession, voter_id)
     status = session_status(session, now)
     response.headers['Cache-Control'] = 'no-store'
-    if existing and existing.direction == body.direction and (body.direction == 0 or eligible(existing, team['score'], now)):
+    score = team.get('base_score', team['score'])
+    if existing and existing.direction == body.direction and (body.direction == 0 or eligible(existing, score, now)):
         db.commit()
         return {'club_id':club_id, 'direction':body.direction, 'session':status}
     if body.direction and club_id not in status['club_ids'] and status['remaining'] == 0:
@@ -116,7 +117,7 @@ def vote(club_id: int, body: VoteBody, request: Request, response: Response, db:
     if existing is None:
         existing = ClubRatingVote(voter_id=voter_id, club_id=club_id)
         db.add(existing)
-    existing.direction, existing.rating_at_vote, existing.updated_at = body.direction, team['score'], now
+    existing.direction, existing.rating_at_vote, existing.updated_at = body.direction, score, now
     if session is None:
         session = ClubRatingVotingSession(voter_id=voter_id)
         db.add(session)

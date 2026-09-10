@@ -11,7 +11,7 @@ from sqlalchemy.pool import StaticPool
 from app.models.database import Base, get_db
 from app.models.club_rating import ClubRatingVote, ClubRatingPublication, ClubRatingInputs, ClubRatingVoter, ClubRatingVotingSession
 from app.api.club_rating_routes import club_rating_router
-from app.services.club_ratings.community import adjustment, eligible
+from app.services.club_ratings.community import ranked_board, eligible
 from app.services.club_ratings import publication
 
 
@@ -20,26 +20,57 @@ def opinion(direction=1, age=0, score=1800):
 
 
 class CommunityTests(unittest.TestCase):
+    def board(self):
+        return {'teams':[{'id':i,'name':str(i),'score':1900-i*30,'base_score':1900-i*30,'rank':i+1} for i in range(5)]}
+
+    def votes(self, club, up, down=0):
+        result=[]
+        for d,n in ((1,up),(-1,down)):
+            for _ in range(n):
+                v=opinion(direction=d,score=1900-club*30);v.club_id=club;result.append(v)
+        return result
+
+    def order(self, board, votes):
+        return ranked_board(board,votes,datetime.utcnow())
+
     def test_quorum_and_agreement(self):
-        now=datetime.utcnow()
-        self.assertEqual(adjustment([opinion() for _ in range(4)],1800,0,now)[0],0)
-        self.assertEqual(adjustment([opinion() for _ in range(4)]+[opinion(-1)],1800,0,datetime.utcnow())[0],3)
-        self.assertEqual(adjustment([opinion() for _ in range(3)]+[opinion(-1) for _ in range(2)],1800,0,datetime.utcnow())[0],0)
+        b=self.board()
+        for up,down,expected in ((4,0,3),(4,1,2),(3,2,3)):
+            rows=self.order(b,self.votes(2,up,down))['teams']
+            self.assertEqual(next(t['rank'] for t in rows if t['id']==2),expected)
 
-    def test_cap_symmetry_and_no_ratchet(self):
-        for direction in (1,-1):
-            vs=[opinion(direction) for _ in range(5)]
-            offset=0
-            for _ in range(50):
-                offset=adjustment(vs,1800,offset,datetime.utcnow())[0]
-            self.assertEqual(offset,5*direction)
-        offset,_=adjustment([opinion() for _ in range(10000)],1800,14,datetime.utcnow())
-        self.assertLessEqual(offset,15)
+    def test_no_ratchet_score_mutation_or_feedback(self):
+        b=self.board();vs=self.votes(2,5)
+        moved=self.order(b,vs)
+        self.assertEqual([t['id'] for t in moved['teams']],[0,2,1,3,4])
+        for _ in range(50): moved=self.order(moved,vs)
+        self.assertEqual([t['id'] for t in moved['teams']],[0,2,1,3,4])
+        self.assertEqual(moved['teams'][1]['score'],1840)
+        self.assertEqual(b['teams'][2]['rank'],3)
+        self.assertEqual(moved['teams'][2]['community_reason'],'neighbour')
 
-    def test_expiry_changed_rating_and_decay(self):
-        vs=[opinion(age=31) for _ in range(20)]+[opinion(score=1750) for _ in range(20)]
-        self.assertEqual(adjustment(vs,1800,9,datetime.utcnow()),(6,{'up':0,'down':0,'voters':0}))
+    def test_expiry_withdrawal_model_drift_and_boundaries(self):
+        b=self.board();vs=self.votes(2,5)
+        for v in vs: v.updated_at-=timedelta(days=31)
+        self.assertEqual(self.order(b,vs)['teams'],self.order(b,[])['teams'])
+        vs=self.votes(2,5)
+        for v in vs: v.direction=0
+        self.assertEqual(self.order(b,vs)['teams'],self.order(b,[])['teams'])
+        vs=self.votes(2,5)
+        for v in vs: v.rating_at_vote-=21
+        self.assertEqual(self.order(b,vs)['teams'],self.order(b,[])['teams'])
         self.assertFalse(eligible(opinion(age=-1),1800,datetime.utcnow()))
+        self.assertEqual([t['id'] for t in self.order(b,self.votes(0,5)+self.votes(4,0,5))['teams']],list(range(5)))
+
+    def test_conflicts_are_bounded_and_deterministic(self):
+        b=self.board();vs=self.votes(2,5)+self.votes(0,0,6)
+        result=self.order(b,vs)
+        self.assertEqual([t['id'] for t in result['teams']],[1,0,2,3,4])
+        self.assertEqual(result,self.order(b,list(reversed(vs))))
+        self.assertTrue(all(abs(t['community_rank_change'])<=1 for t in result['teams']))
+        # Same-direction neighbours are not forced against their consensus.
+        result=self.order(b,self.votes(1,5)+self.votes(2,10))
+        self.assertEqual([t['id'] for t in result['teams']],[1,0,2,3,4])
 
     def test_publication_boundary(self):
         self.assertEqual(publication.period_for(datetime(2026,9,14,11,59)),'2026-09-07')
@@ -104,6 +135,35 @@ class DatabaseTests(unittest.TestCase):
         self.assertEqual(self.client.put(url,json={'direction':0}).status_code,200)
         self.assertEqual(self.client.get('/api/club-ratings/votes/me').json(),{})
 
+    def test_fifth_vote_moves_immediately_and_withdrawal_reverses(self):
+        original=self.client.get('/api/club-ratings').json()['teams']
+        psg=next(t for t in original if 'Paris Saint' in t['name'])
+        clients=[]
+        try:
+            for i in range(5):
+                client=TestClient(self.app);clients.append(client)
+                client.get('/api/club-ratings/votes/me')
+                self.assertEqual(client.put(f"/api/club-ratings/{psg['id']}/vote",json={'direction':1}).status_code,200)
+                live=self.client.get('/api/club-ratings')
+                team=next(t for t in live.json()['teams'] if t['id']==psg['id'])
+                self.assertEqual(team['rank'],5 if i==4 else 6)
+                self.assertEqual(team['score'],psg['score'])
+                self.assertEqual(live.headers['cache-control'],'no-store')
+            self.assertEqual(team['community_rank_change'],1)
+            self.assertEqual(team['community_reason'],'consensus')
+            self.assertEqual(clients[-1].get('/api/club-ratings/votes/me').json(),{str(psg['id']):1})
+            with self.sessions() as db:
+                for v in db.query(ClubRatingVote).all(): v.updated_at-=timedelta(seconds=3)
+                db.commit()
+            clients[-1].put(f"/api/club-ratings/{psg['id']}/vote",json={'direction':0})
+            team=next(t for t in self.client.get('/api/club-ratings').json()['teams'] if t['id']==psg['id'])
+            self.assertEqual(team['rank'],6)
+            with self.sessions() as db:
+                stored=next(t for t in db.query(ClubRatingPublication).one().board['teams'] if t['id']==psg['id'])
+                self.assertEqual(stored['rank'],6)
+        finally:
+            for client in clients: client.close()
+
     def test_public_contract_never_exposes_internal_sources(self):
         with self.sessions() as db:
             record=db.query(ClubRatingPublication).one()
@@ -117,7 +177,7 @@ class DatabaseTests(unittest.TestCase):
         body=response.json()
         self.assertEqual(set(body),{'season','published_at','next_update','teams','warnings','overdue'})
         for team in body['teams']:
-            self.assertEqual(set(team),{'id','name','rank','score','competitions','tier','community_adjustment','rank_change','score_change'})
+            self.assertEqual(set(team),{'id','name','rank','score','competitions','tier','community_adjustment','community_rank_change','community_reason','rank_change','score_change'})
         for forbidden in ('DO_NOT_PUBLISH','ECI','Club Elo','Driblab','PitchRank','Understat','scales','weights','base_score','performance'):
             self.assertNotIn(forbidden,response.text)
         self.assertTrue(body['warnings'])
@@ -184,7 +244,7 @@ class DatabaseTests(unittest.TestCase):
         with self.sessions() as db:
             self.assertEqual(db.query(ClubRatingPublication).count(),2)
             row=db.query(ClubRatingPublication).order_by(ClubRatingPublication.id.desc()).first().board['teams'][0]
-            self.assertEqual(row['community_adjustment'],3)
+            self.assertEqual(row['community_adjustment'],0)
             self.assertEqual(row['base_score'],original['teams'][0]['base_score'])
 
 

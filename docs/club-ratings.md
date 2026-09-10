@@ -50,13 +50,25 @@ Anonymous cookies identify browsers, not verified people. Clearing cookies or
 changing devices can create another identity. This limitation is disclosed in
 the method; the deliberately small effect cap limits its consequences.
 
-At least five eligible browser voters and 80% directional agreement are needed.
-The absolute target is `15 * (up - down) / (count + 10)`; otherwise zero.
-Each weekly publication moves at most three points towards that target, with
-an overall ±15 cap. This is an absolute offset, not an accumulating weekly bonus.
-Votes more than 20 rating points from the currently estimated displayed score
-no longer count. Expired/withdrawn support gradually brings the offset to zero.
-Community offsets never enter the external/performance model's inputs.
+At least five eligible browser voters and 80% directional agreement trigger a
+live one-place swap with the adjacent club. The public board is reconstructed
+from weekly base scores and current votes on each read (no-store); the UI reloads
+it after saving and polls every 15 seconds while visible. No database migration.
+Existing votes count immediately; old score offsets and the one-off PSG editorial
+publication score are ignored. Model strengths and tiers remain unchanged.
+
+Every club remains within one place of model order. Overlapping swaps prefer the
+larger net vote count, then electorate size, then club ID. A club cannot be moved
+against its own qualifying consensus. Disjoint swaps prevent chain displacement.
+Community +1/-1 identifies a direct consensus move; Community swap identifies
+the displaced neighbour. Votes expire at 30 days or after more than 20 points of
+model-strength drift. Withdrawals/expiry can immediately reverse a move. Repeated
+reads and weekly updates cannot accumulate a rank bonus from the same votes.
+
+The score column remains model strength and can therefore be out of descending
+order where community swaps apply; the page explicitly explains this. No model
+score is fabricated to make the display order fit. Anonymous session limits and
+vote validation remain in force. No identifiers or private inputs are exposed.
 
 ## Validation
 
