@@ -537,7 +537,7 @@ class OddsScheduler:
         self.scheduler.add_job(
             publish_if_due, trigger=CronTrigger(minute=0, timezone='UTC'),
             id='club_ratings_weekly', name='Publish weekly club ratings',
-            replace_existing=True, max_instances=1, coalesce=True,
+            replace_existing=True, max_instances=1, coalesce=True, misfire_grace_time=3600,
             next_run_time=datetime.now(timezone.utc)+timedelta(seconds=15),
         )
         self.scheduler.add_job(
