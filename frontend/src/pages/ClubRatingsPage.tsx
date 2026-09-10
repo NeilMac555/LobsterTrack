@@ -4,6 +4,7 @@ import './clubRatingsPage.css';
 
 type Club = { id: number; name: string; rank: number; score: number; competitions: string[]; tier: string; community_adjustment: number; rank_change: number | null; score_change: number | null; performance?: Performance };
 type Board = { teams: Club[]; season: string; published_at: string; next_update: string; overdue: boolean; warnings: string[] };
+type VoteSession = { limit: number; used: number; remaining: number; club_ids: number[] };
 const tiers = [ ['Elite', '1850+'], ['Contenders', '1800–1849'], ['Strong', '1650–1799'], ['Competitive', '1500–1649'], ['Outsiders', '1350–1499'], ['Lower rated', 'Below 1350'] ];
 const leagues = ['All clubs', 'Premier League', 'La Liga', 'Bundesliga', 'Serie A', 'Ligue 1', 'Champions League', 'Europa League'];
 const date = (s: string) => new Date(s).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
@@ -26,6 +27,7 @@ export default function ClubRatingsPage() {
   const [board, setBoard] = useState<Board | null>(null);
   const [votes, setVotes] = useState<Record<string, number>>({});
   const [votesReady, setVotesReady] = useState(false);
+  const [session, setSession] = useState<VoteSession | null>(null);
   const [query, setQuery] = useState('');
   const [league, setLeague] = useState('All clubs');
   const [error, setError] = useState('');
@@ -41,18 +43,33 @@ export default function ClubRatingsPage() {
   }, [retry]);
   useEffect(() => {
     let active = true;
-    request<Record<string, number>>('/votes/me').then(data => { if (active) { setVotes(data); setVotesReady(true); } })
+    request<Record<string, number>>('/votes/me').then(async data => {
+      const allowance = await request<VoteSession>('/votes/session');
+      if (active) { setVotes(data); setSession(allowance); setVotesReady(true); }
+    })
       .catch(e => { if (active) { setVotesReady(false); setError(e.message); } });
     return () => { active = false; };
   }, [retry]);
+  useEffect(() => {
+    if (session?.remaining !== 0) return;
+    let active = true;
+    const timer = window.setInterval(() => {
+      request<VoteSession>('/votes/session').then(value => { if (active) setSession(value); }).catch(() => {});
+    }, 60000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, [session?.remaining]);
   async function vote(team: Club, direction: number) {
     const next = votes[team.id] === direction ? 0 : direction;
     setBusy(team.id); setError(''); setNotice('');
     try {
-      await request(`/${team.id}/vote`, next);
+      const result = await request<{ session: VoteSession }>(`/${team.id}/vote`, next);
+      setSession(result.session);
       setVotes(current => ({ ...current, [team.id]: next }));
       setNotice(next ? `${team.name}: vote saved. Member feedback is assessed at the weekly update.` : `${team.name}: vote removed.`);
-    } catch (e) { setError((e as Error).message); }
+    } catch (e) {
+      setError((e as Error).message);
+      request<VoteSession>('/votes/session').then(setSession).catch(() => {});
+    }
     finally { setBusy(null); }
   }
   const rows = board?.teams.filter(t => (league === 'All clubs' || t.competitions.includes(league)) && t.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())) ?? [];
@@ -66,12 +83,12 @@ export default function ClubRatingsPage() {
     <div className="ratings-notice" role="status" aria-live="polite">{notice}</div>
     <div className="ratings-tiers" aria-label="Strength tiers">{tiers.map(([label, range]) => <div key={label} data-tier={label}><strong>{label}</strong><span>{range}</span><small>{board ? board.teams.filter(t => t.tier === label).length : '—'} clubs</small></div>)}</div>
     <div className="ratings-controls"><label><span>Find a club</span><input placeholder="Search clubs…" value={query} onChange={e => setQuery(e.target.value)} /></label><label><span>Competition</span><select value={league} onChange={e => setLeague(e.target.value)}>{leagues.map(l => <option key={l}>{l}</option>)}</select></label><span>{rows.length} clubs</span></div>
-    <div className="ratings-vote-explainer"><span><strong>How your vote helps.</strong> ↑ means underrated; ↓ means overrated. Votes don't change scores immediately: at least five voters and 80% agreement are needed for a weekly adjustment. Movement is limited to 3 points a week and ±15 points overall. Votes expire after 30 days.</span><small>No sign-in needed · One vote per browser</small></div>
+    <div className="ratings-vote-explainer"><span><strong>How your vote helps.</strong> ↑ means underrated; ↓ means overrated. Votes don't change scores immediately: at least five voters and 80% agreement are needed for a weekly adjustment. Movement is limited to 3 points a week and ±15 points overall. Votes expire after 30 days.</span><small>No sign-in needed · One vote per browser<br />{session ? `${session.used}/${session.limit} clubs voted on this session` : '10 clubs per session'}<br />Resets after 30 minutes without voting. Changing or removing a vote doesn't free a slot.</small></div>
     {loading ? <p role="status">Loading club ratings…</p> : <div className="ratings-table-wrap"><table><caption className="sr-only">European club ratings and member feedback</caption><thead><tr><th scope="col">Rank</th><th scope="col">Club</th><th scope="col">Strength</th><th scope="col">Higher / lower?</th></tr></thead><tbody>{rows.map(t => <tr key={t.id} data-tier={t.tier}>
       <td><strong>{t.rank}</strong><small className="ratings-movement" title="Rank change since the previous weekly publication">{t.rank_change === null ? 'New' : t.rank_change > 0 ? `↑ ${t.rank_change}` : t.rank_change < 0 ? `↓ ${-t.rank_change}` : '—'}</small></td>
       <td className="ratings-club"><strong>{t.name}</strong><small>{t.competitions.join(' · ')}</small></td>
       <td><strong className="ratings-score">{Math.round(t.score)}</strong><span className="ratings-tier">{t.tier}</span>{t.score_change !== null && <small>{signed(t.score_change)} this week</small>}{t.community_adjustment !== 0 && <small>Members: {signed(t.community_adjustment)} pts</small>}</td>
-      <td><div className="ratings-votes">{[1, -1].map(d => <button key={d} disabled={busy !== null || !votesReady} aria-label={`${t.name} should be rated ${d === 1 ? 'higher' : 'lower'}`} aria-pressed={votes[t.id] === d} title={votes[t.id] === d ? 'Click to remove your vote' : d === 1 ? 'Underrated' : 'Overrated'} onClick={() => vote(t, d)}>{d === 1 ? '↑' : '↓'}</button>)}</div><small>{busy === t.id ? 'Saving…' : votes[t.id] ? 'Your vote saved' : 'Your view'}</small></td>
+      <td><div className="ratings-votes">{[1, -1].map(d => <button key={d} disabled={busy !== null || !votesReady || (session?.remaining === 0 && !session.club_ids.includes(t.id) && votes[t.id] !== d)} aria-label={`${t.name} should be rated ${d === 1 ? 'higher' : 'lower'}`} aria-pressed={votes[t.id] === d} title={votes[t.id] === d ? 'Click to remove your vote' : d === 1 ? 'Underrated' : 'Overrated'} onClick={() => vote(t, d)}>{d === 1 ? '↑' : '↓'}</button>)}</div><small>{busy === t.id ? 'Saving…' : votes[t.id] ? 'Your vote saved' : 'Your view'}</small></td>
     </tr>)}</tbody></table>{board && !rows.length && <p className="ratings-empty">No clubs match your search.</p>}</div>}
     <details className="ratings-method"><summary>About these ratings</summary>
       <p>We aim to measure how strong a club is right now, rather than simply reproduce the league table. The ratings combine longer-term team quality with recent results and underlying performance, accounting for the level of opposition.</p>

@@ -7,11 +7,18 @@ from fastapi import APIRouter, Depends, HTTPException, Response, Request
 from pydantic import BaseModel, StrictInt
 from sqlalchemy.orm import Session
 from app.models.database import get_db
-from app.models.club_rating import ClubRatingPublication, ClubRatingVote, ClubRatingVoter
+from app.models.club_rating import ClubRatingPublication, ClubRatingVote, ClubRatingVoter, ClubRatingVotingSession
 from app.services.club_ratings.community import eligible
 
 club_rating_router = APIRouter(prefix='/club-ratings', tags=['club-ratings'])
 COOKIE = 'sw_rating_voter'
+SESSION_LIMIT = 10
+SESSION_IDLE = timedelta(minutes=30)
+
+
+def session_status(session, now):
+    ids = list(session.club_ids) if session and now-session.last_activity < SESSION_IDLE else []
+    return {'limit': SESSION_LIMIT, 'used': len(ids), 'remaining': max(0, SESSION_LIMIT-len(ids)), 'club_ids': ids}
 
 
 def publication(db):
@@ -59,6 +66,14 @@ class VoteBody(BaseModel):
     direction: StrictInt
 
 
+@club_rating_router.get('/votes/session')
+def voting_session(request: Request, response: Response, db: Session = Depends(get_db)):
+    voter_id = identity(request)
+    session = db.get(ClubRatingVotingSession, voter_id) if voter_id else None
+    response.headers['Cache-Control'] = 'no-store'
+    return session_status(session, datetime.utcnow())
+
+
 @club_rating_router.put('/{club_id}/vote')
 def vote(club_id: int, body: VoteBody, request: Request, response: Response, db: Session = Depends(get_db)):
     # Cross-site form submissions cannot vote; only same-origin JSON requests.
@@ -85,10 +100,14 @@ def vote(club_id: int, body: VoteBody, request: Request, response: Response, db:
     db.query(ClubRatingVoter).filter_by(id=voter_id).with_for_update().one()
     existing = db.query(ClubRatingVote).filter_by(voter_id=voter_id, club_id=club_id).first()
     now = datetime.utcnow()
+    session = db.get(ClubRatingVotingSession, voter_id)
+    status = session_status(session, now)
     response.headers['Cache-Control'] = 'no-store'
     if existing and existing.direction == body.direction and (body.direction == 0 or eligible(existing, team['score'], now)):
         db.commit()
-        return {'club_id':club_id, 'direction':body.direction}
+        return {'club_id':club_id, 'direction':body.direction, 'session':status}
+    if body.direction and club_id not in status['club_ids'] and status['remaining'] == 0:
+        raise HTTPException(429, 'You have voted on 10 clubs this session. You can still change or remove those votes. Your allowance resets after 30 minutes without voting.')
     if existing and now-existing.updated_at < timedelta(seconds=2):
         raise HTTPException(429, 'Please wait a moment before changing your vote.', headers={'Retry-After':'2'})
     recent = db.query(ClubRatingVote).filter(ClubRatingVote.voter_id == voter_id, ClubRatingVote.updated_at > now-timedelta(minutes=1)).count()
@@ -98,5 +117,12 @@ def vote(club_id: int, body: VoteBody, request: Request, response: Response, db:
         existing = ClubRatingVote(voter_id=voter_id, club_id=club_id)
         db.add(existing)
     existing.direction, existing.rating_at_vote, existing.updated_at = body.direction, team['score'], now
+    if session is None:
+        session = ClubRatingVotingSession(voter_id=voter_id)
+        db.add(session)
+    ids = status['club_ids']
+    if body.direction and club_id not in ids:
+        ids.append(club_id)
+    session.club_ids, session.last_activity = ids, now
     db.commit()
-    return {'club_id':club_id, 'direction':body.direction}
+    return {'club_id':club_id, 'direction':body.direction, 'session':session_status(session, now)}

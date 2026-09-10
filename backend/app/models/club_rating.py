@@ -37,3 +37,10 @@ class ClubRatingVote(Base):
     direction = Column(Integer, nullable=False)
     rating_at_vote = Column(Float, nullable=False)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
+
+
+class ClubRatingVotingSession(Base):
+    __tablename__ = 'club_rating_voting_sessions'
+    voter_id = Column(String(64), ForeignKey('club_rating_voters.id'), primary_key=True)
+    club_ids = Column(JSON, nullable=False, default=list)
+    last_activity = Column(DateTime, nullable=False, default=datetime.utcnow)

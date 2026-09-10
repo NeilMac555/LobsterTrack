@@ -9,7 +9,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from app.models.database import Base, get_db
-from app.models.club_rating import ClubRatingVote, ClubRatingPublication, ClubRatingInputs, ClubRatingVoter
+from app.models.club_rating import ClubRatingVote, ClubRatingPublication, ClubRatingInputs, ClubRatingVoter, ClubRatingVotingSession
 from app.api.club_rating_routes import club_rating_router
 from app.services.club_ratings.community import adjustment, eligible
 from app.services.club_ratings import publication
@@ -123,6 +123,42 @@ class DatabaseTests(unittest.TestCase):
         self.assertTrue(body['warnings'])
         with self.sessions() as db:
             self.assertIn('sources',db.query(ClubRatingPublication).one().board['teams'][0])
+
+    def test_ten_club_session_limit_survives_reload_and_withdrawal(self):
+        ids=[t['id'] for t in self.client.get('/api/club-ratings').json()['teams'][:11]]
+        for used,club in enumerate(ids[:10],1):
+            response=self.client.put(f'/api/club-ratings/{club}/vote',json={'direction':1})
+            self.assertEqual(response.status_code,200)
+            self.assertEqual(response.json()['session']['used'],used)
+        # Page load and repeated GETs cannot reset the server-side allowance.
+        self.client.get('/api/club-ratings/votes/me')
+        self.assertEqual(self.client.get('/api/club-ratings/votes/session').json()['remaining'],0)
+        blocked=self.client.put(f'/api/club-ratings/{ids[10]}/vote',json={'direction':1})
+        self.assertEqual(blocked.status_code,429)
+        with self.sessions() as db:
+            self.assertEqual(db.query(ClubRatingVote).count(),10)
+            for vote in db.query(ClubRatingVote).all(): vote.updated_at-=timedelta(seconds=3)
+            db.commit()
+        changed=self.client.put(f'/api/club-ratings/{ids[0]}/vote',json={'direction':-1})
+        self.assertEqual(changed.status_code,200)
+        self.assertEqual(changed.json()['session']['used'],10)
+        removed=self.client.put(f'/api/club-ratings/{ids[1]}/vote',json={'direction':0})
+        self.assertEqual(removed.status_code,200)
+        self.assertEqual(removed.json()['session']['remaining'],0)
+        self.assertEqual(self.client.put(f'/api/club-ratings/{ids[10]}/vote',json={'direction':1}).status_code,429)
+        # Another tab sharing the cookie has the same allowance.
+        with TestClient(self.app) as tab:
+            tab.cookies.update(self.client.cookies)
+            self.assertEqual(tab.get('/api/club-ratings/votes/session').json()['remaining'],0)
+        # Idle-session expiry restores slots, but retains existing opinions.
+        with self.sessions() as db:
+            db.query(ClubRatingVotingSession).one().last_activity-=timedelta(minutes=31)
+            db.commit()
+        self.assertEqual(self.client.get('/api/club-ratings/votes/session').json()['remaining'],10)
+        self.assertEqual(len(self.client.get('/api/club-ratings/votes/me').json()),9)
+        response=self.client.put(f'/api/club-ratings/{ids[10]}/vote',json={'direction':1})
+        self.assertEqual(response.status_code,200)
+        self.assertEqual(response.json()['session']['used'],1)
 
     def test_publication_idempotence_failure_and_weekly_votes(self):
         with self.sessions() as db:
