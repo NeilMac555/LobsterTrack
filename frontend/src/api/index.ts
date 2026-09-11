@@ -221,6 +221,7 @@ export async function getTeamPnL(params?: {
   league?: string;
   seasons?: string;       // comma-separated season codes, e.g. '2425,2526'
   stake?: number;
+  date_from?: string;
   opponents?: string;     // 'top' to restrict to matches vs the league's hardcoded top sides
 }): Promise<TeamPLResponse> {
   const searchParams = new URLSearchParams();
@@ -228,6 +229,7 @@ export async function getTeamPnL(params?: {
   if (params?.seasons) searchParams.set('seasons', params.seasons);
   if (params?.stake) searchParams.set('stake', String(params.stake));
   if (params?.opponents) searchParams.set('opponents', params.opponents);
+  if (params?.date_from) searchParams.set('date_from', params.date_from);
   const query = searchParams.toString();
   return fetchJson<TeamPLResponse>(`${API_BASE}/team-pnl${query ? `?${query}` : ''}`);
 }

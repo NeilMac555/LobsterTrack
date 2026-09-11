@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Header, UploadFile, File
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, text
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Optional
 
 from app.models import get_db, Match, OddsSnapshot, SteamMove, EmailSubscriber, TotalsSnapshot, SpreadsSnapshot, ClosingLine, SyndicateAlert, XGData, HistoricalMatch, LeagueConstants, PowerRating, PowerRatingHistory, SquadMarketValue
@@ -2167,6 +2167,7 @@ async def get_team_pnl(
         description="Comma-separated season codes (e.g. '2425,2526') to include. "
                     "Default: every season currently in the historical_matches table.",
     ),
+    date_from: Optional[date] = Query(None, description="Include results on or after this date."),
     stake: float = Query(50.0, ge=0.01, le=100000.0, description="Flat stake per match in £."),
     opponents: Optional[str] = Query(
         None,
@@ -2206,6 +2207,9 @@ async def get_team_pnl(
     if seasons:
         season_list = [s.strip() for s in seasons.split(",") if s.strip()]
         q = q.filter(HistoricalMatch.season.in_(season_list))
+
+    if date_from:
+        q = q.filter(HistoricalMatch.match_date >= date_from)
 
     rows = q.all()
 

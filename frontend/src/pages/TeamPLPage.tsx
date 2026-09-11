@@ -15,13 +15,13 @@ const LEAGUE_OPTIONS = [
   { value: 'soccer_france_ligue_one', label: 'Ligue 1', disabled: false },
 ];
 
-// Hard-locked to the current season per Neil's request — historical
-// seasons sit in the historical_matches table but are hidden from the
-// UI for now. If we want to bring them back later, swap this for a
-// season selector and stop filtering on the row predicate below.
-// Bump at each August switchover (also bump the importer/scheduler —
-// see backend/app/services/football_data_importer.py DEFAULT_SEASONS).
-const CURRENT_SEASON = '2627';
+// Capture began on 12 February 2026. Restrict before aggregation so ROI,
+// stakes and all venue/opponent views use exactly the same collection window.
+const COLLECTION_START = '2026-02-12';
+const now = new Date();
+const seasonStart = now.getUTCFullYear() - (now.getUTCMonth() < 7 ? 1 : 0);
+const seasonCode = (year: number) => `${String(year).slice(-2)}${String(year+1).slice(-2)}`;
+const INCLUDED_SEASONS = `${seasonCode(seasonStart-1)},${seasonCode(seasonStart)}`;
 
 type Venue = 'overall' | 'home' | 'away';
 type Side = 'back' | 'fade';
@@ -39,15 +39,6 @@ const LEAGUES_WITH_TOP: Record<string, { label: string }> = {
   soccer_germany_bundesliga: { label: 'Top 4' },
   soccer_france_ligue_one: { label: 'Top 6' },
 };
-
-// Format football-data.co.uk season codes ('2122') as the human '2021/22'.
-function formatSeason(code: string): string {
-  if (code === 'all') return 'All seasons';
-  if (code.length !== 4) return code;
-  const start = `20${code.slice(0, 2)}`;
-  const end = code.slice(2);
-  return `${start}/${end}`;
-}
 
 function plColor(pl: number, muted: boolean): string {
   if (muted) return 'text-slate-500';
@@ -137,6 +128,8 @@ export default function TeamPLPage() {
     setData(null);  // clear stale data immediately when switching leagues
     getTeamPnL({
       league,
+      seasons: INCLUDED_SEASONS,
+      date_from: COLLECTION_START,
       opponents: effectiveOpponents === 'top' ? 'top' : undefined,
     })
       .then((res) => {
@@ -171,12 +164,10 @@ export default function TeamPLPage() {
   // off each row. Two filters compose into one stat block.
   const view = (r: TeamPLRow): TeamPLViewStats => r[sideParam][venueParam];
 
-  // Show only the current season per Neil's request. The aggregator
-  // also emits an 'all' aggregate row per team — we drop that since
-  // it's redundant when only one season is visible.
+  // Use the API aggregate across the two requested seasons, after date filtering.
   const filteredRows = useMemo(() => {
     if (!data) return [];
-    return data.rows.filter((r) => r.season === CURRENT_SEASON);
+    return data.rows.filter((r) => r.season === 'all');
   }, [data]);
 
   // Sort + sample-size flagging.
@@ -203,10 +194,10 @@ export default function TeamPLPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredRows, sortField, sortDir, venueParam, sideParam]);
 
-  // Show the current-season label in place of a season selector. We
-  // dropped the dropdown but still want users to see which season the
-  // numbers cover.
-  const currentSeasonLabel = formatSeason(CURRENT_SEASON);
+  const windowStart = new Date(Date.UTC(seasonStart-1, 7, 1));
+  const firstDate = new Date(COLLECTION_START+'T00:00:00Z');
+  const dateLabel = (windowStart > firstDate ? windowStart : firstDate).toLocaleDateString('en-GB', {day:'numeric',month:'long',year:'numeric',timeZone:'UTC'});
+  const currentSeasonLabel = `This season + last season · since ${dateLabel}`;
   const leagueLabel = LEAGUE_OPTIONS.find((o) => o.value === league)?.label ?? 'Premier League';
 
   return (
@@ -215,7 +206,7 @@ export default function TeamPLPage() {
         <title>Team P/L: Blind Back & Fade Returns for Every Football Team — SteamWatch</title>
         <meta
           name="description"
-          content="Backward-looking 1X2 profit/loss per Premier League team at Pinnacle closing prices, season-by-season. Flat £50 stake."
+          content="Backward-looking 1X2 profit/loss per Premier League team at Pinnacle closing prices, since collection began, combining this season and last season. Flat £50 stake."
         />
         <link rel="canonical" href="https://www.steamwatch.io/team-pnl" />
       </Helmet>
@@ -264,7 +255,7 @@ export default function TeamPLPage() {
         {methodologyOpen && (
           <div className="border-t border-slate-700/50 px-4 sm:px-5 py-3 sm:py-4 text-[12px] sm:text-sm text-slate-300 leading-relaxed space-y-3">
             <p>
-              Imagine you put a £{data?.stake?.toFixed(0) ?? '50'} bet on the same team every single time they played in the {currentSeasonLabel} {leagueLabel} season — no skipping, no judgement, just the same bet every match. The table tells you what your bank balance would look like at the end.
+              Imagine you put a £{data?.stake?.toFixed(0) ?? '50'} bet on the same team every single time they played in the {leagueLabel} since {dateLabel}, across this season and last season — no skipping, no judgement, just the same bet every match. The table tells you what your bank balance would look like at the end.
             </p>
             <div>
               <p className="text-emerald-300 font-semibold mb-1">Bet ON team wins</p>
@@ -283,7 +274,7 @@ export default function TeamPLPage() {
             <p className="text-slate-500 text-[11px]">
               Prices used are Pinnacle's closing odds — the sharpest publicly available reference, taken in the final seconds before kick-off.
               ROI = profit/loss ÷ amount staked.
-              This is a backward-looking summary; small samples are noisy and past results are not a forecast.
+              This season and last season are combined from the start of our collection window. Promoted and relegated clubs may have fewer matches in the selected league. This is a backward-looking summary; small samples are noisy and past results are not a forecast.
             </p>
           </div>
         )}
@@ -495,7 +486,7 @@ export default function TeamPLPage() {
           <div className="px-3 sm:px-4 py-2 border-t border-slate-700/40 bg-slate-900/40 text-[10px] font-mono uppercase tracking-wider text-slate-500">
             {sortedRows.length} teams · side: {sideParam} · venue: {venueParam}
             {effectiveOpponents === 'top' && leagueHasTop && <> · vs {LEAGUES_WITH_TOP[league].label}</>}
-            {' '}· season: {currentSeasonLabel}
+            {' '}· {currentSeasonLabel}
           </div>
         </div>
       )}
