@@ -6,7 +6,7 @@ The standalone dashboard is packaged in `frontend/public/tools/manager-ratings/`
 Vite copies it into the production build. FastAPI's existing static-page handler
 serves its `index.html` before the SPA fallback. Both desktop and mobile Tools
 links use React Router's `reloadDocument` to reach the static page. It preserves
-the dashboard's light design, sortable rankings, date filters, comparisons,
+SteamWatch's dark slate/cyan design, sortable rankings, date filters, comparisons,
 methodology and downloadable derived data. No backend or database changes.
 
 Initial snapshot: 19 September 2026; 132 manager records, 96 eligible for the
@@ -52,3 +52,5 @@ finding in the mobile-menu close effect, also present at release base f28906f.
 
 Rollback: revert the Manager Ratings release commit; this removes the page,
 navigation entry and sitemap entry. Existing backend data is unaffected.
+
+Theme: `scripts/manager-ratings-theme.css` is embedded by the snapshot packager. Fonts, navigation branding, panels, numeric typography and chart colours follow SteamWatch.
