@@ -21,6 +21,12 @@ export default function AuthVerifyPage() {
     console.log('[AuthVerify] Verifying token:', token.substring(0, 8) + '...');
     verify(token)
       .then(() => {
+        const returnAt = Number(localStorage.getItem('manager_ratings_return'));
+        localStorage.removeItem('manager_ratings_return');
+        if (returnAt > Date.now() - 86400000) {
+          window.location.replace('/tools/manager-ratings');
+          return;
+        }
         console.log('[AuthVerify] Success! Redirecting...');
         navigate('/tools/match-predictor', { replace: true });
       })

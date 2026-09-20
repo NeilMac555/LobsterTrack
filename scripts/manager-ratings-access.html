@@ -1,0 +1,20 @@
+<style>
+#manager-access-label{color:#22d3ee;font:11px 'JetBrains Mono',monospace;margin:14px 0}
+#manager-access-status{color:#cbd5e1;font-size:13px}
+#manager-paywall{margin:20px 0;padding:28px;border:1px solid #334155;background:#0f172a;border-radius:8px;text-align:center}
+#manager-paywall[hidden]{display:none}#manager-paywall h3{font-size:22px;margin:0 0 10px}#manager-paywall p{max-width:640px;margin:10px auto;color:#94a3b8}
+#manager-paywall button,#manager-access-dialog button{border:1px solid #334155;border-radius:6px;padding:12px 20px;background:#1e293b;color:#e2e8f0;margin:6px;cursor:pointer}
+#manager-paywall button:first-of-type,#manager-access-submit{background:#22d3ee!important;color:#020617!important;border-color:#22d3ee!important}
+#manager-access-dialog{width:min(460px,calc(100% - 30px));padding:28px;background:#0f172a;color:#e2e8f0;border:1px solid #334155;border-radius:10px}#manager-access-dialog::backdrop{background:#020617cc}
+#manager-access-dialog input{display:block;width:100%;margin:12px 0;background:#1e293b;color:#fff;border:1px solid #475569;padding:12px;border-radius:6px}#manager-access-message{font-size:13px;color:#cbd5e1}#manager-access-close{float:right}
+</style>
+<section id="manager-paywall" aria-label="Unlock full manager rankings">
+<h3>See the full picture with SteamWatch Pro</h3>
+<p>The top three managers by overall impact are free. Unlock the full rankings, every manager comparison and the complete data download.</p>
+<p>Free filters explore these same three managers. Pro lets you find the leaders for any available period.</p>
+<button data-manager-access="subscribe">Unlock full rankings</button><button data-manager-access="signin">Already a member? Sign in</button>
+</section>
+<dialog id="manager-access-dialog" aria-labelledby="manager-access-title">
+<button id="manager-access-close" aria-label="Close sign-in dialog">✕</button><h2 id="manager-access-title">Unlock every manager with Pro</h2>
+<form id="manager-access-form"><label for="manager-access-email">Email address</label><input id="manager-access-email" type="email" autocomplete="email" required><button id="manager-access-submit" type="submit">Continue to secure checkout</button><p id="manager-access-message" role="status"></p></form>
+</dialog>

@@ -224,6 +224,8 @@ decisions that shape the build, with the recommendation at the time:
 
 ## Done
 
+- Manager Ratings: fixed top-three free preview, server-enforced existing Pro access, protected downloads and Monday 09:00 Dublin refresh runbook; validated 20 September snapshot (this release).
+
 (newest first)
 
 - Longshot Bias cumulative-profit chart modernised with integrated end-state

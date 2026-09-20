@@ -15,6 +15,7 @@ from app.services.email_sender import email_sender
 
 class PublicCheckoutRequest(BaseModel):
     email: EmailStr
+    manager_ratings: bool = False
 
 logger = structlog.get_logger()
 settings = get_settings()
@@ -83,6 +84,9 @@ async def create_public_checkout_session(
         cancel_url=f"{settings.frontend_url}/?checkout=cancel",
         allow_promotion_codes=True,
     )
+    if body.manager_ratings:
+        session_kwargs["success_url"] = f"{settings.frontend_url}/tools/manager-ratings?checkout=success"
+        session_kwargs["cancel_url"] = f"{settings.frontend_url}/tools/manager-ratings?checkout=cancel"
     if customer_id:
         session_kwargs["customer"] = customer_id
     else:

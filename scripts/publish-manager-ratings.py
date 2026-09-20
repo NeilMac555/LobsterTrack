@@ -37,6 +37,26 @@ source = source.replace('stroke="#e8e5e0"', 'stroke="#334155"').replace('fill="#
 source = source.replace('<title>Manager Ratings | SteamWatch</title>', '<title>Manager Ratings | SteamWatch</title><link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">')
 theme = (root / 'scripts/manager-ratings-theme.css').read_text(encoding='utf-8')
 source = source.replace('</html>', '<style id="steamwatch-theme">'+theme+'</style></html>')
+# Keep the complete snapshot outside the frontend/static directory.
+private = root / 'backend/app/data/manager-ratings.json'
+private.parent.mkdir(parents=True, exist_ok=True)
+private.write_text(payload, encoding='utf-8')
+keys = ('as_of', 'ranking_start', 'recent_start', 'eligible_managers', 'current_managers',
+        'managers', 'imported_completed_fixtures', 'used_fixtures', 'coverage', 'skipped')
+preview = {k: data[k] for k in keys if k in data}
+preview.update(rows=sorted((r for r in data['rows'] if r['eligible']), key=lambda r: r['rank'])[:3],
+               appointment_overrides=[], fixture_coach_corrections=[], access='preview')
+assert len(preview['rows']) == 3
+scripts = re.findall(r'<script[^>]*>(.*?)</script>', source, flags=re.S)
+source = re.sub(r'<script[^>]*>.*?</script>', '', source, flags=re.S)
+scripts[0], count = re.subn(r'const data=.*?;\s*\n', lambda _: 'const data=await loadManagerRatings('+json.dumps(preview).replace('<', '\\u003c')+');\nsetupManagerAccess(data);\n', scripts[0], count=1, flags=re.S)
+assert count == 1
+access_html = (root / 'scripts/manager-ratings-access.html').read_text(encoding='utf-8')
+source = source.replace('<div id="detail"', access_html+'<div id="detail"', 1)
+assert 'id="manager-paywall"' in source
+source = source.replace('<section id="date-window">', '<div id="manager-access-label">Checking access…</div><p id="manager-access-status" role="status"></p><section id="date-window">', 1)
+access_js = (root / 'scripts/manager-ratings-access.js').read_text(encoding='utf-8')
+source += '<script>\n'+access_js+'\n(async()=>{\n'+'\n'.join(scripts)+'\n})().catch(()=>{document.getElementById("manager-access-status").textContent="Unable to load the rankings. Please reload.";});\n</script>'
 (destination / 'index.html').write_text(source, encoding='utf-8')
-(destination / 'manager-elo-data.json').write_text(payload, encoding='utf-8')
+(destination / 'manager-elo-data.json').write_text(json.dumps(preview), encoding='utf-8')
 print(f'Packaged {len(data["rows"])} managers; source snapshot timestamps preserved.')

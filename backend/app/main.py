@@ -2,7 +2,8 @@ import os
 import asyncio
 import structlog
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
+from pathlib import Path
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, RedirectResponse
@@ -204,9 +205,21 @@ async def redirect_trailing_slash(request: Request, call_next):
 
 # Include API routes
 app.include_router(router, prefix="/api")
+from app.api.manager_ratings import manager_ratings_router
+app.include_router(manager_ratings_router, prefix="/api")
 
 # Serve static frontend files in production
 static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
+
+
+def safe_static_path(directory, relative):
+    root = Path(directory).resolve()
+    candidate = (root / relative).resolve()
+    if not candidate.is_relative_to(root):
+        raise HTTPException(status_code=404, detail="Not found")
+    return candidate
+
+
 if os.path.exists(static_dir):
     app.mount("/assets", StaticFiles(directory=os.path.join(static_dir, "assets")), name="assets")
 
@@ -216,11 +229,11 @@ if os.path.exists(static_dir):
         Priority: exact static file > pre-rendered page > SPA index.html."""
         if full_path:
             # Serve root-level static files (robots.txt, sitemap.xml, etc.)
-            static_file = os.path.join(static_dir, full_path)
+            static_file = safe_static_path(static_dir, full_path)
             if os.path.isfile(static_file):
                 return FileResponse(static_file)
             # Check for pre-rendered page (e.g. /blog/slug -> blog/slug/index.html)
-            prerendered = os.path.join(static_dir, full_path, "index.html")
+            prerendered = safe_static_path(static_dir, str(Path(full_path) / "index.html"))
             if os.path.exists(prerendered):
                 return FileResponse(prerendered)
         index_path = os.path.join(static_dir, "index.html")
