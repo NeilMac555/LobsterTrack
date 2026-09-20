@@ -20,6 +20,12 @@ decisions that shape the build, with the recommendation at the time:
 
 ## Now
 
+- Manager Ratings: initial public snapshot prepared at /tools/manager-ratings;
+  retains sorting, date filters, comparisons and the light dashboard design.
+  Follow-up: automatic data refresh and shared verified-account voting with
+  ten changes per UTC day. Current voting remains explicitly device-only.
+  See docs/manager-ratings.md.
+
 - Club Ratings beta release prepared: free `/tools/club-ratings`, browser-cookie
   voting with no sign-in, five voters/80% agreement, ±15 cap and 3-point weekly
   steps. Durable weekly publications/source refresh, tiers, movement and Tools

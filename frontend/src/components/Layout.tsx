@@ -28,6 +28,7 @@ const tools: Array<{
   path: string;
   icon: string;
   external?: boolean;
+  reloadDocument?: boolean;
   isNew?: boolean;
 }> = [
   {
@@ -44,6 +45,7 @@ const tools: Array<{
   { name: 'Hedging Calculator', path: '/tools/hedge-calculator', icon: '🧮' },
   { name: 'Match Model', path: '/tools/match-predictor', icon: '⚽' },
   { name: 'Rolling xG', path: '/tools/rolling-xg', icon: '📊' },
+  { name: 'Manager Ratings', path: '/tools/manager-ratings', icon: '↗', isNew: true, reloadDocument: true },
   { name: 'Club Ratings', path: '/tools/club-ratings', icon: '🏆', isNew: true },
 ];
 
@@ -222,7 +224,7 @@ export default function Layout() {
                       ) : (
                         <Link
                           key={tool.path}
-                          to={tool.path}
+                          to={tool.path} reloadDocument={tool.reloadDocument}
                           onClick={() => setToolsOpen(false)}
                           className={innerClasses}
                         >
@@ -655,7 +657,7 @@ export default function Layout() {
                         {inner}
                       </a>
                     ) : (
-                      <Link key={tool.path} to={tool.path} className={classes}>
+                      <Link key={tool.path} to={tool.path} reloadDocument={tool.reloadDocument} className={classes}>
                         {inner}
                       </Link>
                     );
