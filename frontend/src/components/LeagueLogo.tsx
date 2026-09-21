@@ -13,7 +13,6 @@ const sizes = {
 // Local league assets in /public/flags/
 // Domestic leagues use country flag circles; UEFA comps use official logos.
 const images: Record<string, string> = {
-  soccer_uefa_nations_league: '/flags/nations-league.svg',
   soccer_fifa_world_cup: '/flags/fifa-world-cup-2026.png',
   soccer_epl: '/flags/uk-en-circle-01.png',
   soccer_efl_champ: '/flags/uk-en-circle-01.png',
@@ -30,6 +29,15 @@ const images: Record<string, string> = {
 export default function LeagueLogo({ sportKey, size = 'md', className = '' }: LeagueLogoProps) {
   const sizeClass = sizes[size];
   const src = images[sportKey];
+
+  if (sportKey === 'soccer_uefa_nations_league') {
+    const emojiSize = { sm: 'text-lg', md: 'text-3xl', lg: 'text-5xl' }[size];
+    return (
+      <span role="img" aria-label="UEFA Nations League" className={`${sizeClass} ${className} ${emojiSize} inline-flex items-center justify-center leading-none`}>
+        {'\u{1F30D}'}
+      </span>
+    );
+  }
 
   if (!src) {
     return (
