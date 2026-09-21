@@ -13,6 +13,7 @@ const sizes = {
 // Local league assets in /public/flags/
 // Domestic leagues use country flag circles; UEFA comps use official logos.
 const images: Record<string, string> = {
+  soccer_uefa_nations_league: '/flags/nations-league.svg',
   soccer_fifa_world_cup: '/flags/fifa-world-cup-2026.png',
   soccer_epl: '/flags/uk-en-circle-01.png',
   soccer_efl_champ: '/flags/uk-en-circle-01.png',

@@ -517,6 +517,7 @@ export const LEAGUE_CONFIG: Record<string, { name: string; shortName: string; co
   soccer_uefa_champs_league_qualification: { name: 'Champions League Qualifying', shortName: 'UCLQ', color: '#071D49', hidden: true },
   soccer_uefa_europa_league: { name: 'Europa League', shortName: 'UEL', color: '#F47B20' },
   soccer_uefa_europa_conference_league: { name: 'Conference League', shortName: 'UECL', color: '#0AC44B' },
+  soccer_uefa_nations_league: { name: 'UEFA Nations League', shortName: 'UNL', color: '#39B9D1' },
   // World Cup '26 has finished — hidden from the picker, kept in the
   // lookup so historical WC matches/pages still render correctly.
   soccer_fifa_world_cup: { name: 'FIFA World Cup', shortName: 'WC', color: '#D4AF37', hidden: true },
