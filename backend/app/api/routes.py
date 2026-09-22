@@ -1,3 +1,4 @@
+from app.services.telegram_results import alert_moves
 from fastapi import APIRouter, Depends, HTTPException, Query, Header, UploadFile, File
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, text
@@ -1248,254 +1249,29 @@ async def get_syndicate_moves(
     db: Session = Depends(get_db),
     limit: int = Query(4, le=20, description="Number of moves to return")
 ):
-    """
-    Get late sharp money moves for the homepage's Syndicate Moves
-    section. Window and threshold are IMPORTED from syndicate_alerter
-    (2026-08-22 fix: this endpoint had its own hardcoded 3-hour window,
-    which silently diverged from the Telegram alerter when the alert
-    window was widened on 2026-08-14 — the site section and the alerts
-    were answering different questions. Single source of truth now.)
-    - Match kicks off within SYNDICATE_ALERT_WINDOW_MINUTES
-    - SYNDICATE_THRESHOLD_PROB_POINTS+ implied probability shift within
-      that window
-    - Only SHORTENING odds (being backed)
-
-    Uses implied probability movement instead of raw odds percentage change
-    to avoid false positives on longshots.
-    """
-    from app.services.syndicate_alerter import (
-        SYNDICATE_ALERT_WINDOW_MINUTES,
-        SYNDICATE_THRESHOLD_PROB_POINTS,
-    )
-    PROB_THRESHOLD = SYNDICATE_THRESHOLD_PROB_POINTS
-
-    def _prob(odds: float) -> float:
-        return (1.0 / odds) * 100
-
+    """Upcoming confirmed Telegram alerts at the actual sent price."""
     now = datetime.utcnow()
-    window_end = now + timedelta(minutes=SYNDICATE_ALERT_WINDOW_MINUTES)
-
-    matches = (
-        db.query(Match)
-        .filter(Match.commence_time > now)
-        .filter(Match.commence_time <= window_end)
-        .all()
-    )
-
-    if not matches:
-        return []
-
-    syndicate_moves = []
-
-    for match in matches:
-        window_start = match.commence_time - timedelta(minutes=SYNDICATE_ALERT_WINDOW_MINUTES)
-        time_to_ko = match.commence_time - now
-        minutes_to_ko = int(time_to_ko.total_seconds() / 60)
-
-        best_move = None
-        best_prob_move = 0
-
-        # === 1X2 MARKET ===
-        baseline_1x2 = (
-            db.query(OddsSnapshot)
-            .filter(OddsSnapshot.match_id == match.id)
-            .filter(OddsSnapshot.fetched_at >= window_start)
-            .order_by(OddsSnapshot.fetched_at.asc())
-            .first()
-        )
-        latest_1x2 = (
-            db.query(OddsSnapshot)
-            .filter(OddsSnapshot.match_id == match.id)
-            .order_by(OddsSnapshot.fetched_at.desc())
-            .first()
-        )
-
-        if baseline_1x2 and latest_1x2 and baseline_1x2.id != latest_1x2.id:
-            outcomes = [
-                ('home', match.home_team, baseline_1x2.home_odds, latest_1x2.home_odds),
-                ('draw', 'Draw', baseline_1x2.draw_odds, latest_1x2.draw_odds),
-                ('away', match.away_team, baseline_1x2.away_odds, latest_1x2.away_odds),
-            ]
-            for outcome, name, baseline_odds, curr_odds in outcomes:
-                if baseline_odds and curr_odds and baseline_odds > 0 and curr_odds > 0:
-                    # Positive = odds shortened (probability increased)
-                    prob_move = _prob(curr_odds) - _prob(baseline_odds)
-                    if prob_move >= PROB_THRESHOLD and prob_move > best_prob_move:
-                        best_prob_move = prob_move
-                        best_move = {
-                            'match': match,
-                            'market': '1x2',
-                            'outcome': outcome,
-                            'outcome_name': name,
-                            'baseline_odds': baseline_odds,
-                            'current_odds': curr_odds,
-                            'movement_percent': -prob_move,  # Negative to indicate shortening (convention)
-                            'direction': 'down',
-                            'minutes_to_kickoff': minutes_to_ko,
-                            'moved_at': latest_1x2.fetched_at
-                        }
-
-        # === TOTALS MARKET ===
-        # Pin to opening line so we compare like-for-like across the window,
-        # even when the market's main line has shifted since we stored many
-        # alternate lines per fetch.
-        opening_totals = (
-            db.query(TotalsSnapshot)
-            .filter(TotalsSnapshot.match_id == match.id)
-            .order_by(TotalsSnapshot.fetched_at.asc(), TotalsSnapshot.id.asc())
-            .first()
-        )
-        opening_totals_line = opening_totals.line if opening_totals else None
-
-        baseline_totals = (
-            db.query(TotalsSnapshot)
-            .filter(TotalsSnapshot.match_id == match.id)
-            .filter(TotalsSnapshot.line == opening_totals_line)
-            .filter(TotalsSnapshot.fetched_at >= window_start)
-            .order_by(TotalsSnapshot.fetched_at.asc())
-            .first()
-        ) if opening_totals_line is not None else None
-
-        latest_totals = (
-            db.query(TotalsSnapshot)
-            .filter(TotalsSnapshot.match_id == match.id)
-            .filter(TotalsSnapshot.line == opening_totals_line)
-            .order_by(TotalsSnapshot.fetched_at.desc())
-            .first()
-        ) if opening_totals_line is not None else None
-
-        if baseline_totals and latest_totals and baseline_totals.id != latest_totals.id and baseline_totals.line == latest_totals.line:
-            line = baseline_totals.line
-            outcomes = [
-                ('over', f'O {line}', baseline_totals.over_odds, latest_totals.over_odds),
-                ('under', f'U {line}', baseline_totals.under_odds, latest_totals.under_odds),
-            ]
-            for outcome, name, baseline_odds, curr_odds in outcomes:
-                if baseline_odds and curr_odds and baseline_odds > 0 and curr_odds > 0:
-                    prob_move = _prob(curr_odds) - _prob(baseline_odds)
-                    if prob_move >= PROB_THRESHOLD and prob_move > best_prob_move:
-                        best_prob_move = prob_move
-                        best_move = {
-                            'match': match,
-                            'market': 'totals',
-                            'outcome': outcome,
-                            'outcome_name': name,
-                            'baseline_odds': baseline_odds,
-                            'current_odds': curr_odds,
-                            'movement_percent': -prob_move,
-                            'direction': 'down',
-                            'minutes_to_kickoff': minutes_to_ko,
-                            'moved_at': latest_totals.fetched_at
-                        }
-
-        # === SPREADS (ASIAN HANDICAP) MARKET === disabled for now (line changes cause noise)
-        # baseline_spreads / latest_spreads check skipped
-
-        if best_move:
-            syndicate_moves.append(best_move)
-
-    # Sort by implied prob movement (largest shift first) and take top N
-    syndicate_moves.sort(key=lambda x: x['movement_percent'])
-    top_moves = syndicate_moves[:limit]
-
-    return [
-        SyndicateMove(
-            match_id=m['match'].id,
-            home_team=m['match'].home_team,
-            away_team=m['match'].away_team,
-            sport_key=m['match'].sport_key,
-            league_name=m['match'].league_name,
-            commence_time=m['match'].commence_time,
-            market=m['market'],
-            outcome=m['outcome'],
-            outcome_name=m['outcome_name'],
-            opening_odds=m['baseline_odds'],  # This is the 3hr baseline, not opening
-            current_odds=m['current_odds'],
-            movement_percent=m['movement_percent'],  # Now implied prob change (negative = shortening)
-            direction=m['direction'],
-            minutes_to_kickoff=m['minutes_to_kickoff'],
-            moved_at=m['moved_at']
-        )
-        for m in top_moves
-    ]
+    moves = [m for m in alert_moves(db, since=now-timedelta(days=7)) if m.match_commence_time > now][:limit]
+    matches = {m.id: m for m in db.query(Match).filter(Match.id.in_([m.match_id for m in moves])).all()}
+    return [SyndicateMove(match_id=m.match_id, home_team=matches[m.match_id].home_team,
+        away_team=matches[m.match_id].away_team, sport_key=m.sport_key, league_name=matches[m.match_id].league_name,
+        commence_time=m.match_commence_time, market='1x2', outcome=m.outcome, outcome_name=m.team_name,
+        opening_odds=m.opening_odds, current_odds=m.current_odds, movement_percent=-m.movement_percent,
+        direction='down', minutes_to_kickoff=int((m.match_commence_time-now).total_seconds()/60), moved_at=m.detected_at)
+        for m in moves]
 
 
 @router.get("/steam-moves", response_model=SteamMoveStats)
 async def get_steam_moves(db: Session = Depends(get_db)):
-    """
-    Get statistics and sample data about steam moves (late sharp money movements).
-    """
-    # Total counts
-    total_moves = db.query(func.count(SteamMove.id)).scalar() or 0
-    moves_with_results = (
-        db.query(func.count(SteamMove.id))
-        .filter(SteamMove.result_updated == True)
-        .scalar() or 0
-    )
-    moves_pending_results = (
-        db.query(func.count(SteamMove.id))
-        .filter(SteamMove.result_updated == False)
-        .scalar() or 0
-    )
-
-    # Win/loss stats
-    total_wins = (
-        db.query(func.count(SteamMove.id))
-        .filter(SteamMove.result_updated == True, SteamMove.won == True)
-        .scalar() or 0
-    )
-    total_losses = (
-        db.query(func.count(SteamMove.id))
-        .filter(SteamMove.result_updated == True, SteamMove.won == False)
-        .scalar() or 0
-    )
-
-    # Calculate win rate
-    win_rate = None
-    if moves_with_results > 0:
-        win_rate = (total_wins / moves_with_results) * 100
-
-    # Average movement percent
-    avg_movement = db.query(func.avg(SteamMove.movement_percent)).scalar()
-
-    # Get sample moves (most recent 10)
-    sample_moves = (
-        db.query(SteamMove)
-        .order_by(desc(SteamMove.detected_at))
-        .limit(10)
-        .all()
-    )
-
-    return SteamMoveStats(
-        total_moves=total_moves,
-        moves_with_results=moves_with_results,
-        moves_pending_results=moves_pending_results,
-        total_wins=total_wins,
-        total_losses=total_losses,
-        win_rate=win_rate,
-        avg_movement_percent=avg_movement,
-        sample_moves=[
-            SteamMoveResponse(
-                id=m.id,
-                match_id=m.match_id,
-                sport_key=m.sport_key,
-                outcome=m.outcome,
-                team_name=m.team_name,
-                opening_odds=m.opening_odds,
-                previous_odds=m.previous_odds,
-                current_odds=m.current_odds,
-                movement_percent=m.movement_percent,
-                detected_at=m.detected_at,
-                match_commence_time=m.match_commence_time,
-                minutes_before_kickoff=m.minutes_before_kickoff,
-                result_updated=m.result_updated,
-                won=m.won,
-                home_score=m.home_score,
-                away_score=m.away_score
-            )
-            for m in sample_moves
-        ]
-    )
+    """Counts of confirmed sent alerts, never raw detector observations."""
+    moves = alert_moves(db, since=_season_start())
+    settled = [m for m in moves if m.result_updated]
+    wins = sum(m.won for m in settled)
+    return SteamMoveStats(total_moves=len(moves), moves_with_results=len(settled),
+        moves_pending_results=len(moves)-len(settled), total_wins=wins, total_losses=len(settled)-wins,
+        win_rate=100*wins/len(settled) if settled else None,
+        avg_movement_percent=sum(m.movement_percent for m in moves)/len(moves) if moves else None,
+        sample_moves=[SteamMoveResponse.model_validate(m) for m in moves[:10]])
 
 
 # Steam/Drifter results season scoping + rankings threshold, per Neil
@@ -1528,42 +1304,12 @@ async def get_steam_results(
     limit: int = Query(200, le=10000, description="Number of moves to return"),
     days: Optional[int] = Query(None, description="Only include moves from the last N days")
 ):
-    """
-    Public endpoint: completed steam move results with team rankings.
-    Only shows odds that SHORTENED (sharp money backing) — no draws, no drifters.
-    Deduplicates by match: each match counts only once per team (using the biggest move).
-    Scoped to the CURRENT season (July 1 rollover) since 2026-08-22, and
-    team rankings require MIN_MOVES_FOR_TEAM_RANKING finished moves.
-    """
-    # Base query — completed results, odds shortened (positive movement per
-    # odds_fetcher.py's SteamMove.movement_percent convention: positive =
-    # implied prob went UP = odds shortened = backed), no draws.
-    # 2026-07-08: was filtering < 0, which is actually DRIFTS — inverted
-    # relative to /drifters below, which had the same bug in reverse.
-    base_query = (
-        db.query(SteamMove)
-        .filter(SteamMove.result_updated == True)
-        .filter(SteamMove.outcome != 'draw')
-        .filter(SteamMove.movement_percent > 0)  # Only shortened odds
-        .filter(SteamMove.match_commence_time >= _season_start())
-    )
-    if league:
-        base_query = base_query.filter(SteamMove.sport_key == league)
+    """Confirmed Telegram 1X2 alerts, filtered by sent date; 1u at sent odds."""
+    since = _season_start()
     if days:
-        cutoff = datetime.utcnow() - timedelta(days=days)
-        base_query = base_query.filter(SteamMove.match_commence_time >= cutoff)
-
-    all_moves = base_query.order_by(desc(SteamMove.match_commence_time)).all()
-
-    # Deduplicate: keep only the biggest move per (team_name, match_id)
-    # This ensures each match counts once per team
-    best_per_match: dict[tuple[str, str], SteamMove] = {}
-    for m in all_moves:
-        key = (m.team_name, m.match_id)
-        if key not in best_per_match or abs(m.movement_percent) > abs(best_per_match[key].movement_percent):
-            best_per_match[key] = m
-
-    deduped_moves = sorted(best_per_match.values(), key=lambda x: x.match_commence_time, reverse=True)
+        since = max(since, datetime.utcnow()-timedelta(days=days))
+    all_moves = alert_moves(db, since=since, league=league)
+    deduped_moves = [m for m in all_moves if m.result_updated]
 
     # Helper: determine result (win/draw/loss) from a steam move
     # The `won` boolean is True only for outright wins; draws show as won=False
@@ -1590,6 +1336,8 @@ async def get_steam_results(
     # === TEAM RANKINGS (from deduplicated moves) ===
     team_stats: dict[str, dict] = {}
     for m in deduped_moves:
+        if m.outcome == "draw":
+            continue
         key = m.team_name
         if key not in team_stats:
             team_stats[key] = {
@@ -1643,12 +1391,16 @@ async def get_steam_results(
     # Return limited moves for the response
     limited_moves = deduped_moves[:limit]
 
+    profit = sum(m.current_odds - 1 if m.won else -1 for m in deduped_moves)
     return SteamResultsResponse(
+        total_alerts=len(all_moves), pending_alerts=len(all_moves)-len(deduped_moves),
+        profit_units=round(profit, 4), roi_percent=round(100*profit/len(deduped_moves), 2) if deduped_moves else None,
+        source='telegram',
         total_moves=total_moves,
         total_wins=total_wins,
         total_draws=total_draws,
         total_losses=total_losses,
-        win_rate=round(win_rate, 1) if win_rate else None,
+        win_rate=round(win_rate, 1) if win_rate is not None else None,
         avg_movement_percent=round(avg_movement, 1) if avg_movement else None,
         season_label=_season_label(),
         min_moves_for_rankings=MIN_MOVES_FOR_TEAM_RANKING,

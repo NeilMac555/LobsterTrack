@@ -139,6 +139,11 @@ class SteamResultsResponse(BaseModel):
     min_moves_for_rankings finished moves — teams_below_min counts how
     many are still building a sample (they appear in `moves` but have
     no rankings row yet)."""
+    source: str = "legacy"
+    total_alerts: int = 0
+    pending_alerts: int = 0
+    profit_units: float = 0
+    roi_percent: Optional[float] = None
     total_moves: int
     total_wins: int
     total_draws: int

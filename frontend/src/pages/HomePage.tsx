@@ -832,8 +832,8 @@ export default function HomePage() {
               {/* Amber accent bar matching the terminal rhythm */}
               <div className="w-1 h-6 sm:h-7 rounded-full bg-gradient-to-b from-amber-400 to-amber-600 flex-shrink-0" />
               <div>
-                <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">Syndicate Moves</h2>
-                <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em] font-semibold">Late sharp action on closing lines</p>
+                <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">Telegram Alerts</h2>
+                <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em] font-semibold">Confirmed sent alerts · odds at time sent</p>
               </div>
             </div>
             <span className="hidden sm:inline-block text-[10px] font-mono uppercase tracking-[0.12em] text-amber-400/80 font-semibold">Within 16h Â· 4pp+ move</span>
@@ -841,8 +841,8 @@ export default function HomePage() {
 
           {syndicateMoves.length === 0 ? (
             <div className="px-6 py-8 text-center">
-              <p className="text-slate-500 text-sm">No late sharp action detected</p>
-              <p className="text-slate-600 text-xs mt-1 font-mono tracking-tight">Matches within 16 hours with 4pp+ implied probability shift will appear here</p>
+              <p className="text-slate-500 text-sm">No upcoming Telegram alerts</p>
+              <p className="text-slate-600 text-xs mt-1 font-mono tracking-tight">Confirmed alerts appear here after they are sent</p>
             </div>
           ) : (
             <>
@@ -867,7 +867,7 @@ export default function HomePage() {
                         Prob &Delta;
                       </th>
                       <th className="px-4 py-3 text-center text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">
-                        Now
+                        Alert odds
                       </th>
                     </tr>
                   </thead>

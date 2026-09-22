@@ -5,7 +5,8 @@ from sqlalchemy import and_
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
-from app.models import Match, SteamMove
+from app.models import Match, SteamMove, AlertResult
+from app.services.telegram_results import alert_moves
 from app.models.database import SessionLocal
 
 logger = structlog.get_logger()
@@ -52,6 +53,10 @@ class ResultsFetcher:
                 .all()
             )
 
+            # Telegram can alert without any legacy late-steam record.
+            telegram_pending = [m for m in alert_moves(db) if not m.result_updated and m.match_commence_time < cutoff_time]
+            pending_moves.extend(telegram_pending)
+
             if not pending_moves:
                 logger.debug("No steam moves pending result updates")
                 return summary
@@ -76,6 +81,9 @@ class ResultsFetcher:
                         summary["errors"].append(error_msg)
                         logger.error("Failed to fetch results", sport_key=sport_key, error=str(e))
 
+            for move in telegram_pending:
+                if move.result_updated:
+                    db.merge(AlertResult(match_id=move.match_id, home_score=move.home_score, away_score=move.away_score))
             db.commit()
             logger.info("Results update complete", **summary)
 

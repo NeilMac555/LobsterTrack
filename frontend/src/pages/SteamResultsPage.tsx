@@ -173,28 +173,34 @@ export default function SteamResultsPage() {
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Steam Results</h1>
             <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em]">
-              Teams backed by sharp money &middot; odds shortened pre-KO
+              Confirmed Telegram alerts &middot; prices at time sent
             </p>
             <Link to="/blog/what-are-steam-moves-in-football-betting" className="text-[11px] font-mono uppercase tracking-[0.1em] text-cyan-400 hover:text-cyan-300 mt-1.5 inline-block">What is a steam move? &rarr;</Link>
           </div>
         </div>
       </div>
 
+      <div className="mb-5 text-sm text-slate-400 space-y-2">
+        <p>Flat 1u per confirmed Telegram alert at the price sent. Draw selections are included; a draw bet wins when the match is drawn. Filters use the date the alert was sent.</p>
+        <p>{data.total_alerts ?? data.total_moves} alerts · {data.total_moves} settled · {data.pending_alerts ?? 0} awaiting results.</p>
+        <p className="text-white">Net P/L: {formatPL(data.profit_units ?? 0)} · ROI: {data.roi_percent == null ? '—' : `${data.roi_percent.toFixed(2)}%`}</p>
+        <p>Team rankings cover home/away selections only. Overall totals include every settled alert, including draws.</p>
+      </div>
       {/* Stats Banner â€” terminal stat strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4 sm:mb-6">
         <div className="bg-slate-800/80 rounded-xl border border-slate-700/60 px-3 sm:px-4 py-2.5 sm:py-3">
-          <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">Matches</div>
+          <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">Settled alerts</div>
           <div className="text-2xl sm:text-3xl font-mono font-bold tabular-nums tracking-tight text-white leading-none mt-1.5">
             {data.total_moves}
           </div>
-          <div className="text-[10px] sm:text-xs text-slate-500 mt-1">completed steam moves</div>
+          <div className="text-[10px] sm:text-xs text-slate-500 mt-1">settled Telegram selections</div>
         </div>
         <div className="bg-slate-800/80 rounded-xl border border-emerald-500/30 px-3 sm:px-4 py-2.5 sm:py-3">
           <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-emerald-400/80 font-semibold">Win Rate</div>
           <div className="text-2xl sm:text-3xl font-mono font-bold tabular-nums tracking-tight text-emerald-400 leading-none mt-1.5">
             {data.win_rate !== null ? `${data.win_rate}%` : 'â€”'}
           </div>
-          <div className="text-[10px] sm:text-xs text-slate-500 mt-1">hit rate vs. close</div>
+          <div className="text-[10px] sm:text-xs text-slate-500 mt-1">at the alerted price</div>
         </div>
         <div className="bg-slate-800/80 rounded-xl border border-slate-700/60 px-3 sm:px-4 py-2.5 sm:py-3">
           <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">W / D / L</div>
@@ -530,6 +536,21 @@ export default function SteamResultsPage() {
           </div>
         </div>
       )}
+
+      <section className="mt-6 mb-6 bg-slate-800/50 rounded-xl p-4 overflow-x-auto">
+        <h2 className="text-lg font-semibold text-white mb-3">Recent settled Telegram alerts</h2>
+        <table className="w-full text-sm text-left">
+          <thead className="text-slate-400"><tr><th className="p-2">Sent</th><th className="p-2">Selection</th><th className="p-2">Alert odds</th><th className="p-2">Result</th><th className="p-2">P/L</th></tr></thead>
+          <tbody>{data.moves.map(move => <tr key={move.id} className="border-t border-slate-700">
+            <td className="p-2 text-slate-400">{new Date(move.detected_at.endsWith('Z') ? move.detected_at : `${move.detected_at}Z`).toLocaleString()}</td>
+            <td className="p-2"><Link className="text-cyan-400" to={`/match/${move.match_id}`}>{move.team_name}</Link></td>
+            <td className="p-2 text-white">{move.current_odds.toFixed(2)}</td>
+            <td className="p-2 text-slate-300">{move.won ? 'Won' : 'Lost'} ({move.home_score}–{move.away_score})</td>
+            <td className={`p-2 ${move.won ? 'text-emerald-400' : 'text-red-400'}`}>{formatPL(move.won ? move.current_odds-1 : -1)}</td>
+          </tr>)}</tbody>
+        </table>
+        <p className="text-xs text-slate-500 mt-3">Showing up to 200 settled alerts. Summary totals include all alerts in the selected period.</p>
+      </section>
 
       {/* Empty state when no data at all */}
       {data.team_rankings.length === 0 && (

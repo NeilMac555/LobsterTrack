@@ -153,6 +153,11 @@ export interface TeamSteamRanking {
 }
 
 export interface SteamResultsData {
+  source?: string;
+  total_alerts?: number;
+  pending_alerts?: number;
+  profit_units?: number;
+  roi_percent?: number | null;
   total_moves: number;
   total_wins: number;
   total_draws: number;
