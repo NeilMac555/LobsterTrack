@@ -3,7 +3,7 @@ fastapi>=0.109.0
 uvicorn[standard]>=0.27.0
 
 # Database
-sqlalchemy>=2.0.25
+sqlalchemy>=2.0.25,<2.1  # 2.1 defaults postgresql:// to psycopg 3, which we do not ship (broke the 2026-09-26 deploy)
 alembic>=1.13.1
 psycopg2-binary>=2.9.9
 

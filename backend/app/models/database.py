@@ -11,8 +11,17 @@ if settings.database_url.startswith("sqlite"):
         connect_args={"check_same_thread": False}  # SQLite needs this for FastAPI
     )
 else:
+    # Name the driver explicitly. SQLAlchemy 2.1 changed the default for a
+    # bare "postgresql://" URL from psycopg2 to psycopg 3, which is not in
+    # requirements; that surfaced as ModuleNotFoundError at boot on
+    # 2026-09-26. Railway's DATABASE_URL is bare, so rewrite it here.
+    _url = settings.database_url
+    if _url.startswith("postgresql://"):
+        _url = "postgresql+psycopg2://" + _url[len("postgresql://"):]
+    elif _url.startswith("postgres://"):
+        _url = "postgresql+psycopg2://" + _url[len("postgres://"):]
     engine = create_engine(
-        settings.database_url,
+        _url,
         pool_pre_ping=True,
         pool_size=10,
         max_overflow=20,
