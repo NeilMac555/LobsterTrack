@@ -10,7 +10,7 @@ const PERSON_SCHEMA = {
   "knowsAbout": ["football betting", "steam moves", "sharp money", "closing line value", "Dixon-Coles model"],
   "sameAs": [
     "https://x.com/NeilMac555",
-    "https://neilmac.substack.com/",
+    "https://www.sharpsidesoccer.com/",
 "https://www.honestbettingreviews.com/best-football-tipster-telegram/",
     "https://smartsportstrader.com/bookie-insiders-football-review/",
     "https://www.bet-experts.com/tipster-review/neil-mac/",
@@ -132,16 +132,16 @@ export default function AboutPage() {
       <section className="mb-10">
         <h2 className="text-xl font-bold text-white mb-4">The Dixon-Coles Match Model</h2>
         <p className="text-slate-300 leading-relaxed mb-4">
-          SteamWatch includes a Dixon-Coles adjusted Poisson regression model that generates
-          fair odds baselines for every match. The model runs an 11-step pipeline covering
-          penalty xG adjustment, set piece discounting, red card normalisation, xG per shot
-          quality, form weighting, attack/defence ratings, motivation and absence factors,
-          and the Dixon-Coles low-score correction.
+          SteamWatch includes an xG-based Poisson baseline with the Dixon-Coles
+          low-score correction. Select recorded team data or enter your own
+          non-penalty xG averages to calculate probabilities and fair odds.
+          This beta does not yet fit opponent-adjusted team strengths or account
+          for confirmed lineups. Market-beating accuracy has not been established.
         </p>
         <p className="text-slate-400 text-sm">
-          All calculations run in your browser — no data leaves your device.
-          Based on the original Dixon &amp; Coles (1997) paper with modern adjustments
-          for xG data and contextual factors.
+          Probability calculations run in your browser. Saved team inputs are
+          loaded from SteamWatch; manually entered figures stay on your device.
+          Historical samples are labelled clearly and are not current-match forecasts.
         </p>
       </section>
 
@@ -150,7 +150,7 @@ export default function AboutPage() {
         <h2 className="text-xl font-bold text-white mb-4">Find Me</h2>
         <div className="flex flex-wrap gap-3">
           <a
-            href="https://neilmac.substack.com/"
+            href="https://www.sharpsidesoccer.com/"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 px-4 py-2 bg-orange-500/20 border border-orange-500/40 rounded-lg text-orange-400 text-sm font-medium hover:bg-orange-500/30 transition-colors"
@@ -158,7 +158,7 @@ export default function AboutPage() {
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
               <path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z"/>
             </svg>
-            Substack
+            Sharp Side Soccer
           </a>
           <a
             href="https://x.com/NeilMac555"

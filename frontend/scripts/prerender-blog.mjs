@@ -444,7 +444,7 @@ const PAGES = [
       knowsAbout: ['football betting', 'steam moves', 'sharp money', 'closing line value', 'Dixon-Coles model'],
       sameAs: [
         'https://x.com/NeilMac555',
-        'https://neilmac.substack.com/',
+        'https://www.sharpsidesoccer.com/',
 'https://www.honestbettingreviews.com/best-football-tipster-telegram/',
         'https://smartsportstrader.com/bookie-insiders-football-review/',
         'https://www.bet-experts.com/tipster-review/neil-mac/',
@@ -459,7 +459,7 @@ const PAGES = [
 <p>SteamWatch tracks sharp money movement across major European football betting markets using Pinnacle odds data updated every 15 minutes. Features include Biggest Movers, Syndicate Moves with Telegram alerts, Steam Results with P/L tracking, Closing Line Analysis, Rolling xG, and a Dixon-Coles Match Prediction Model.</p>
 <h2>Find Neil Mac</h2>
 <ul>
-<li><a href="https://neilmac.substack.com/">Substack</a></li>
+<li><a href="https://www.sharpsidesoccer.com/">Sharp Side Soccer (Substack)</a></li>
 <li><a href="https://x.com/NeilMac555">X / Twitter</a></li>
 <li><a href="https://t.me/steamwatchalerts">Telegram Alerts</a></li>
 </ul>
@@ -523,7 +523,7 @@ const PAGES = [
       operatingSystem: 'Web',
     },
     noscriptHtml: `<h1>Match Predictor — SteamWatch</h1>
-<p>Generate match probability predictions using the Dixon-Coles adjusted Poisson regression model. Input team stats to get fair odds for 1X2, Asian Handicap, and Totals markets.</p>
+<p>Explore an xG-based Poisson baseline with the Dixon-Coles low-score correction. Select recorded team data or enter your own figures for 1X2, Asian Handicap, and Totals fair odds. Market-beating accuracy has not been established.</p>
 <p><a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
   },
   {

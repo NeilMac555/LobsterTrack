@@ -135,7 +135,7 @@ class EmailSender:
             <p style="color: #64748b; font-size: 13px; margin-top: 32px;">
                 — Neil Mac<br>
                 <a href="https://x.com/NeilMac555" style="color: #64748b;">@NeilMac555</a> ·
-                <a href="https://neilmac.substack.com" style="color: #64748b;">Substack</a> ·
+                <a href="https://www.sharpsidesoccer.com/" style="color: #64748b;">Sharp Side Soccer</a> ·
                 <a href="https://t.me/steamwatchalerts" style="color: #64748b;">Telegram</a>
             </p>
         </div>
