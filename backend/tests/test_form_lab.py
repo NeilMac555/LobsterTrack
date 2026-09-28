@@ -39,4 +39,13 @@ class FormLabTests(unittest.TestCase):
   gap=SimpleNamespace(season='2025/2026',data={'standings':{'2':1},'fixtures':[]})
   current=SimpleNamespace(season='2026/2027',data={'standings':{'1':1},'fixtures':[]})
   self.assertEqual(strength_tables([old,gap,current])['2026/2027']['1']['matches'],0)
+ def test_league_table_margin_and_clean_sheet(self):
+  from app.api.form_lab import form_table
+  for view in ('handicap','clean'):
+   result=form_table('soccer_epl',window=10,venue='home',view=view,db=self.db)
+   team=next(r for r in result['teams'] if r['id']==1)
+   self.assertEqual(team['played'],10)
+   self.assertEqual(team['margins'],[0,10,0,0,0,0])
+   self.assertEqual(team['clean_pct'],100)
+   self.assertEqual(team['cover_pct'],100)
 if __name__=='__main__':unittest.main()

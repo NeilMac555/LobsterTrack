@@ -36,3 +36,33 @@ def analysis(league: str, team_id: int, window: int = Query(10,ge=1,le=50),
     if league in EUROPE and opposition!='all': raise HTTPException(400,'Domestic ranking bands are unavailable for European fixtures')
     if handicap*2 != int(handicap*2): raise HTTPException(400,'Choose a whole or half-goal handicap')
     return analyze(db,league,team_id,window,venue,opposition,season,handicap)
+
+@router.get('/form-lab/table')
+def form_table(league: str, window: int=Query(10,ge=1,le=50),
+    venue: Literal['all','home','away']='all',
+    view: Literal['form','top6','tophalf','bottomhalf','bottom6','handicap','clean']='form',
+    db: Session=Depends(get_db)):
+    if league not in LEAGUES: raise HTTPException(400,'Unknown competition')
+    if league in EUROPE and view in ('top6','tophalf','bottomhalf','bottom6'):
+        raise HTTPException(400,'Domestic opposition groups only')
+    snapshots=db.query(FormLabSeason).filter_by(league=league).order_by(FormLabSeason.season).all()
+    if not snapshots:return {'teams':[]}
+    latest=snapshots[-1]
+    members=latest.data['standings'] if league not in EUROPE else latest.data['teams']
+    previous=snapshots[-2].data['standings'] if len(snapshots)>1 else {}
+    output=[]
+    for tid in members:
+        result=analyze(db,league,int(tid),window,venue,view if view in ('top6','tophalf','bottomhalf','bottom6') else 'all',snapshots=snapshots)
+        matches=result['matches'];n=len(matches)
+        wins=sum(m['gf']>m['ga'] for m in matches);draws=sum(m['gf']==m['ga'] for m in matches)
+        gf=sum(m['gf'] for m in matches);ga=sum(m['ga'] for m in matches)
+        cs=sum(m['ga']==0 for m in matches)
+        row=dict(id=int(tid),name=latest.data['teams'].get(tid,tid),promoted=league not in EUROPE and bool(previous) and tid not in previous,
+            played=n,wins=wins,draws=draws,losses=n-wins-draws,gf=gf,ga=ga,points=3*wins+draws,
+            ppg=(3*wins+draws)/n if n else None,clean=cs,clean_pct=100*cs/n if n else None,
+            margins=[sum(m['gf']-m['ga']==v for m in matches) for v in (1,2)]+[sum(m['gf']-m['ga']>=3 for m in matches)]+[sum(m['ga']-m['gf']==v for m in matches) for v in (1,2)]+[sum(m['ga']-m['gf']>=3 for m in matches)],
+            cover_pct=100*sum(m['gf']-m['ga']>=2 for m in matches)/n if n else None)
+        output.append(row)
+    metric='clean_pct' if view=='clean' else 'cover_pct' if view=='handicap' else 'ppg'
+    output.sort(key=lambda r:(-(r[metric] if r[metric] is not None else -1),-(r['gf']-r['ga'])/max(r['played'],1),r['name']))
+    return {'teams':[dict(r,rank=i+1) for i,r in enumerate(output)],'season':latest.season}

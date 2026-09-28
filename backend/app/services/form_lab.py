@@ -144,8 +144,9 @@ def strength_tables(snapshots):
         output[snapshot.season]={str(r['id']):dict(r,rank=i+1) for i,r in enumerate(ratings)}
     return output
 
-def analyze(db,league,team_id,window=10,venue='all',opposition='all',season='all',handicap=-1.5):
-    snapshots=db.query(FormLabSeason).filter(FormLabSeason.league==league).order_by(FormLabSeason.season).all()
+def analyze(db,league,team_id,window=10,venue='all',opposition='all',season='all',handicap=-1.5,snapshots=None):
+    if snapshots is None:
+        snapshots=db.query(FormLabSeason).filter(FormLabSeason.league==league).order_by(FormLabSeason.season).all()
     strengths=strength_tables(snapshots) if league not in EUROPE else {}
     candidates=[];unclassified=0
     for snapshot in snapshots:

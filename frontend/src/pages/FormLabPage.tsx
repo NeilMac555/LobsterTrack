@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import './FormLabPage.css';
+import FormLabTable from '../components/FormLabTable';
 import { Helmet } from 'react-helmet-async';
 type Fixture = {id:number;date:string;home_id:number;away_id:number;home:string;away:string};
 type League = {upcoming:Fixture[];key:string;name:string;opposition_bands:boolean;seasons:string[];updated_at:string|null;teams:{id:number;name:string}[]};
@@ -29,6 +30,7 @@ export default function FormLabPage(){
    <div className="fl-grid filters">{select('Sample',window,setWindow,['5','10','20','50'].map(n=>[n,'Last '+n]))}{select('Venue',venue,setVenue,[['all','All venues'],['home','Home only'],['away','Away only'],['match','Home / away form']])}{select('Opponent strength',opposition,setOpposition,[['all','All opponents'],...(competition?.opposition_bands?[['top6','Top six'],['tophalf','Top half'],['bottomhalf','Bottom half'],['bottom6','Bottom six']]:[]) ] as [string,string][])}{select('Season',season,setSeason,[['all','All available'],...(competition?.seasons||[]).map(s=>[s,s] as [string,string])])}{select('Test handicap',handicap,setHandicap,[-3.5,-3,-2.5,-2,-1.5,-1,-0.5,0,0.5,1,1.5,2,2.5,3,3.5].map(n=>[String(n),n>0?'+'+n:String(n)]))}</div>
    <p className="fl-note">Filters apply before selecting the last {window} matches. Opponent strength uses the last 20 top-flight league games, ranked by points per game. Teams with fewer games receive a provisional 1 point per missing game until they reach 20. Current-season groups update daily; past-season groups use results through that season's end, not the position on match day. European fixtures exclude qualifiers; domestic rank filters are unavailable there.</p>
   </section>
+  {competition&&<FormLabTable league={league} home={a} away={b} domestic={competition.opposition_bands} />}
   {error&&<p role="alert" className="fl-warning">{error}</p>}{busy&&<p role="status" className="fl-note">Building your sample...</p>}
   {data.length===2&&<>
    <div className="fl-grid two">{data.map((d,i)=><section className={'fl-summary team-'+i} key={i}><small>{i===0?'HOME TEAM':'AWAY TEAM'} · {venue==='match'?(i===0?'HOME':'AWAY'):venue.toUpperCase()}</small><h2>{name(i===0?a:b)}</h2><div className="fl-sample"><strong>{d.sample}</strong> matches <span>of {d.available} matching fixtures</span></div><div className="fl-form">{d.matches.slice(0,10).map(g=><span key={g.id} className={g.gf>g.ga?'win':g.gf===g.ga?'draw':'loss'} title={`${g.date.slice(0,10)}: ${g.opponent} ${g.gf}-${g.ga}`}>{g.gf>g.ga?'W':g.gf===g.ga?'D':'L'}</span>)}<small>Latest first</small></div>{d.sample<Number(window)&&<p className="fl-warning">Only {d.sample} matches meet these filters. Percentages use the available sample.</p>}{d.unclassified>0&&<p className="fl-note">{d.unclassified} fixtures excluded because opponent rank was unavailable.</p>}</section>)}</div>
