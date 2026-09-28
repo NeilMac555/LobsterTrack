@@ -71,4 +71,19 @@ class FormLabTests(unittest.TestCase):
    row=form_table('soccer_epl',window=5,venue='all',view='xg',db=self.db)['teams'][0]
    self.assertEqual(row['xg_games'],0)
    self.assertIsNone(row['xgf'])
+ def test_promoted_table_uses_current_season_only(self):
+  from app.api.form_lab import form_table
+  old=self.db.query(FormLabSeason).first()
+  old.data={**old.data,'teams':{'1':'Returning club','2':'Established'}}
+  self.db.add(FormLabSeason(key='gap',league='soccer_epl',season='2026/2027',updated_at=datetime.now(),data={'standings':{'2':1},'teams':{'2':'Established'},'fixtures':[]}))
+  fixture={**old.data['fixtures'][0],'id':999,'season':'2027/2028','date':'2027-09-01 12:00:00'}
+  self.db.add(FormLabSeason(key='new',league='soccer_epl',season='2027/2028',updated_at=datetime.now(),data={'standings':{'1':1,'2':2},'teams':{'1':'Returning club','2':'Established'},'fixtures':[fixture]}))
+  self.db.commit()
+  for view in ('form','clean','handicap','xg','top6'):
+   result=form_table('soccer_epl',window=20,venue='all',view=view,db=self.db)
+   promoted=next(r for r in result['teams'] if r['id']==1)
+   self.assertTrue(promoted['promoted'])
+   self.assertEqual(promoted['played'],1)
+   established=next(r for r in result['teams'] if r['id']==2)
+   self.assertGreater(established['played'],1)
 if __name__=='__main__':unittest.main()

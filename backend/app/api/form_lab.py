@@ -54,12 +54,13 @@ def form_table(league: str, window: int=Query(10,ge=1,le=50),
     previous=snapshots[-2].data['standings'] if len(snapshots)>1 else {}
     output=[]
     for tid in members:
-        result=analyze(db,league,int(tid),window,venue,view if view in ('top6','tophalf','bottomhalf','bottom6') else 'all',snapshots=snapshots)
+        promoted=league not in EUROPE and bool(previous) and tid not in previous
+        result=analyze(db,league,int(tid),window,venue,view if view in ('top6','tophalf','bottomhalf','bottom6') else 'all',season=latest.season if promoted else 'all',snapshots=snapshots)
         matches=result['matches'];n=len(matches)
         wins=sum(m['gf']>m['ga'] for m in matches);draws=sum(m['gf']==m['ga'] for m in matches)
         gf=sum(m['gf'] for m in matches);ga=sum(m['ga'] for m in matches)
         cs=sum(m['ga']==0 for m in matches)
-        row=dict(id=int(tid),name=latest.data['teams'].get(tid,tid),promoted=league not in EUROPE and bool(previous) and tid not in previous,
+        row=dict(id=int(tid),name=latest.data['teams'].get(tid,tid),promoted=promoted,
             played=n,wins=wins,draws=draws,losses=n-wins-draws,gf=gf,ga=ga,points=3*wins+draws,
             ppg=(3*wins+draws)/n if n else None,clean=cs,clean_pct=100*cs/n if n else None,
             margins=[sum(m['gf']-m['ga']==v for m in matches) for v in (1,2)]+[sum(m['gf']-m['ga']>=3 for m in matches)]+[sum(m['ga']-m['gf']==v for m in matches) for v in (1,2)]+[sum(m['ga']-m['gf']>=3 for m in matches)],
