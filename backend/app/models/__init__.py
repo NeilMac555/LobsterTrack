@@ -26,3 +26,5 @@ __all__ = ["Base", "get_db", "engine", "Match", "OddsSnapshot", "SteamMove", "Em
 from .alert_result import AlertResult
 
 from .european_xg import EuropeanXG
+
+from .form_lab import FormLabSeason

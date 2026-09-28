@@ -208,6 +208,9 @@ app.include_router(router, prefix="/api")
 from app.api.manager_ratings import manager_ratings_router
 app.include_router(manager_ratings_router, prefix="/api")
 
+from app.api.form_lab import router as form_lab_router
+app.include_router(form_lab_router, prefix="/api")
+
 # Serve static frontend files in production
 static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
 

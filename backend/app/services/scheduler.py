@@ -561,6 +561,12 @@ class OddsScheduler:
             coalesce=True
         )
 
+        from app.services.form_lab import refresh_form_lab
+        self.scheduler.add_job(
+            refresh_form_lab, trigger=CronTrigger(hour=6, minute=45, timezone="UTC"),
+            id="form_lab_daily", name="Form Lab daily refresh",
+            replace_existing=True, max_instances=1, coalesce=True,
+        )
         from app.services.european_xg import refresh_european_xg
         self.scheduler.add_job(
             refresh_european_xg, trigger=CronTrigger(hour=6, minute=15),

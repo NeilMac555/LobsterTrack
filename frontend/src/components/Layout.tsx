@@ -44,6 +44,7 @@ const tools: Array<{
   { name: 'Bet Calculator', path: '/tools/bet-calculator', icon: '🎫' },
   { name: 'Hedging Calculator', path: '/tools/hedge-calculator', icon: '🧮' },
   { name: 'Match Model', path: '/tools/match-predictor', icon: '⚽' },
+  { name: 'Form Lab', path: '/tools/form-lab', icon: 'FL', isNew: true },
   { name: 'Rolling xG', path: '/tools/rolling-xg', icon: '📊' },
   { name: 'Manager Ratings', path: '/tools/manager-ratings', icon: '↗', isNew: true, reloadDocument: true },
   { name: 'Club Ratings', path: '/tools/club-ratings', icon: '🏆', isNew: true },
