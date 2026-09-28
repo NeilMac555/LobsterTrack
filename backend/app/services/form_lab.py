@@ -108,17 +108,48 @@ async def refresh_form_lab(backfill=False):
                 summary[key]={'error':'Refresh failed; previous data retained'}
     return summary
 
+def strength_tables(snapshots):
+    """Season-end/latest strength, using a 20-game window and 1 PPG prior.
+
+    Only consecutive top-flight seasons count; a relegation gap resets history.
+    Historical seasons never use results from later seasons.
+    """
+    output={}
+    ordered=sorted(snapshots,key=lambda s:s.season)
+    for index, snapshot in enumerate(ordered):
+        members=snapshot.data['standings']
+        ratings=[]
+        for tid in members:
+            fixtures={}
+            for previous in reversed(ordered[:index+1]):
+                if tid not in previous.data['standings']:break
+                for f in previous.data['fixtures']:
+                    if int(tid) in (f['home_id'],f['away_id']):fixtures[f['id']]=f
+            recent=sorted(fixtures.values(),key=lambda f:(f['date'],f['id']),reverse=True)[:20]
+            points=0;difference=0;goals=0
+            for f in recent:
+                gf,ga=(f['hg'],f['ag']) if f['home_id']==int(tid) else (f['ag'],f['hg'])
+                points+=3 if gf>ga else 1 if gf==ga else 0
+                difference+=gf-ga;goals+=gf
+            # Each unobserved slot contributes a provisional one-point estimate.
+            ppg=(points+20-len(recent))/20
+            ratings.append(dict(id=int(tid),ppg=ppg,matches=len(recent),prior_matches=20-len(recent),gd=difference/20,gf=goals/20))
+        ratings.sort(key=lambda r:(-r['ppg'],-r['gd'],-r['gf'],r['id']))
+        output[snapshot.season]={str(r['id']):dict(r,rank=i+1) for i,r in enumerate(ratings)}
+    return output
+
 def analyze(db,league,team_id,window=10,venue='all',opposition='all',season='all',handicap=-1.5):
     snapshots=db.query(FormLabSeason).filter(FormLabSeason.league==league).order_by(FormLabSeason.season).all()
+    strengths=strength_tables(snapshots) if league not in EUROPE else {}
     candidates=[];unclassified=0
     for snapshot in snapshots:
         if season!='all' and snapshot.season!=season:continue
-        table=snapshot.data['standings'];count=len(table)
+        table=strengths.get(snapshot.season,{});count=len(table)
         for f in snapshot.data['fixtures']:
             if team_id not in (f['home_id'],f['away_id']):continue
             home=f['home_id']==team_id
             if venue!='all' and venue!=('home' if home else 'away'):continue
-            opp=str(f['away_id'] if home else f['home_id']);rank=table.get(opp)
+            opp=str(f['away_id'] if home else f['home_id']);rank=(table.get(opp) or {}).get('rank')
             if opposition!='all':
                 if rank is None or not count:unclassified+=1;continue
                 match={'top6':rank<=6,'tophalf':rank<=count//2,'bottomhalf':rank>count//2,'bottom6':rank>count-6}[opposition]
@@ -166,4 +197,4 @@ def analyze(db,league,team_id,window=10,venue='all',opposition='all',season='all
     average('Underlying','npxG for','xg');average('Underlying','npxG against','xga')
     average('Corners','Corners for','cf');average('Corners','Corners against','ca')
     for line in [8.5,9.5,10.5]:rate('Corners',f'Over {line} corners',lambda r,l=line:r['cf']+r['ca']>l,lambda r:r['cf'] is not None and r['ca'] is not None)
-    return dict(sample=len(rows),available=len(candidates),requested=window,unclassified=unclassified,metrics=metrics,matches=rows)
+    return dict(sample=len(rows),available=len(candidates),requested=window,unclassified=unclassified,metrics=metrics,matches=rows,strength_groups=[dict(season=s.season,teams=[dict(v,name=s.data['teams'].get(k,k)) for k,v in strengths.get(s.season,{}).items()]) for s in reversed(snapshots) if season=='all' or s.season==season])
