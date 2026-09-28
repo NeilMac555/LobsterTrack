@@ -48,4 +48,14 @@ class FormLabTests(unittest.TestCase):
    self.assertEqual(team['margins'],[0,10,0,0,0,0])
    self.assertEqual(team['clean_pct'],100)
    self.assertEqual(team['cover_pct'],100)
+ def test_short_samples_sort_below_full_samples(self):
+  from app.api.form_lab import form_table
+  def sample(n,win):
+   return {'matches':[dict(gf=2 if win else 0,ga=0 if win else 1) for _ in range(n)]}
+  def fake(db,league,tid,*args,**kwargs):return sample(1,True) if tid==1 else sample(10,False)
+  with patch('app.api.form_lab.analyze',side_effect=fake):
+   for view in ('form','handicap','clean','top6'):
+    result=form_table('soccer_epl',window=10,venue='all',view=view,db=self.db)
+    self.assertEqual(result['teams'][-1]['id'],1)
+    self.assertEqual(result['teams'][-1]['ppg'],3)
 if __name__=='__main__':unittest.main()

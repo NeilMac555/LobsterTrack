@@ -64,5 +64,5 @@ def form_table(league: str, window: int=Query(10,ge=1,le=50),
             cover_pct=100*sum(m['gf']-m['ga']>=2 for m in matches)/n if n else None)
         output.append(row)
     metric='clean_pct' if view=='clean' else 'cover_pct' if view=='handicap' else 'ppg'
-    output.sort(key=lambda r:(-(r[metric] if r[metric] is not None else -1),-(r['gf']-r['ga'])/max(r['played'],1),r['name']))
+    output.sort(key=lambda r:(r['played']<window,-(r[metric] if r[metric] is not None else -1),-(r['gf']-r['ga'])/max(r['played'],1),r['name']))
     return {'teams':[dict(r,rank=i+1) for i,r in enumerate(output)],'season':latest.season}
