@@ -10,6 +10,8 @@ router = APIRouter()
 def catalog(db: Session = Depends(get_db)):
     result=[]
     for key, (_, name) in LEAGUES.items():
+        if key in EUROPE:
+            continue
         rows=db.query(FormLabSeason).filter_by(league=key).order_by(FormLabSeason.season.desc()).all()
         teams={}
         for row in reversed(rows): teams.update(row.data['teams'])
