@@ -58,4 +58,17 @@ class FormLabTests(unittest.TestCase):
     result=form_table('soccer_epl',window=10,venue='all',view=view,db=self.db)
     self.assertEqual(result['teams'][-1]['id'],1)
     self.assertEqual(result['teams'][-1]['ppg'],3)
+ def test_xg_coverage_keeps_zero_and_excludes_unpaired(self):
+  from app.api.form_lab import form_table
+  games=[dict(gf=1,ga=0,xg=0,xga=1),dict(gf=2,ga=0,xg=2,xga=0),dict(gf=0,ga=0,xg=5,xga=None)]
+  with patch('app.api.form_lab.analyze',return_value={'matches':games}):
+   row=form_table('soccer_epl',window=5,venue='all',view='xg',db=self.db)['teams'][0]
+   self.assertEqual(row['xg_games'],2)
+   self.assertEqual(row['xgf'],2)
+   self.assertEqual(row['xga'],1)
+   self.assertEqual(row['xgd_avg'],0.5)
+  with patch('app.api.form_lab.analyze',return_value={'matches':[games[-1]]}):
+   row=form_table('soccer_epl',window=5,venue='all',view='xg',db=self.db)['teams'][0]
+   self.assertEqual(row['xg_games'],0)
+   self.assertIsNone(row['xgf'])
 if __name__=='__main__':unittest.main()

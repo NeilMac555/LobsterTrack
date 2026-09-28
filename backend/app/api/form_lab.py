@@ -42,7 +42,7 @@ def analysis(league: str, team_id: int, window: int = Query(10,ge=1,le=50),
 @router.get('/form-lab/table')
 def form_table(league: str, window: int=Query(10,ge=1,le=50),
     venue: Literal['all','home','away']='all',
-    view: Literal['form','top6','tophalf','bottomhalf','bottom6','handicap','clean']='form',
+    view: Literal['form','top6','tophalf','bottomhalf','bottom6','handicap','clean','xg']='form',
     db: Session=Depends(get_db)):
     if league not in LEAGUES: raise HTTPException(400,'Unknown competition')
     if league in EUROPE and view in ('top6','tophalf','bottomhalf','bottom6'):
@@ -64,7 +64,13 @@ def form_table(league: str, window: int=Query(10,ge=1,le=50),
             ppg=(3*wins+draws)/n if n else None,clean=cs,clean_pct=100*cs/n if n else None,
             margins=[sum(m['gf']-m['ga']==v for m in matches) for v in (1,2)]+[sum(m['gf']-m['ga']>=3 for m in matches)]+[sum(m['ga']-m['gf']==v for m in matches) for v in (1,2)]+[sum(m['ga']-m['gf']>=3 for m in matches)],
             cover_pct=100*sum(m['gf']-m['ga']>=2 for m in matches)/n if n else None)
+        covered=[m for m in matches if m.get('xg') is not None and m.get('xga') is not None]
+        count=len(covered)
+        xf=sum(m['xg'] for m in covered);xa=sum(m['xga'] for m in covered)
+        row.update(xg_games=count,xgf=xf if count else None,xga=xa if count else None,
+            xgd=xf-xa if count else None,xgf_avg=xf/count if count else None,
+            xga_avg=xa/count if count else None,xgd_avg=(xf-xa)/count if count else None)
         output.append(row)
-    metric='clean_pct' if view=='clean' else 'cover_pct' if view=='handicap' else 'ppg'
-    output.sort(key=lambda r:(r['played']<window,-(r[metric] if r[metric] is not None else -1),-(r['gf']-r['ga'])/max(r['played'],1),r['name']))
+    metric='xgd_avg' if view=='xg' else 'clean_pct' if view=='clean' else 'cover_pct' if view=='handicap' else 'ppg'
+    output.sort(key=lambda r:((r['xg_games'] if view=='xg' else r['played'])<window,r[metric] is None,-(r[metric] if r[metric] is not None else 0),-(r['gf']-r['ga'])/max(r['played'],1),r['name']))
     return {'teams':[dict(r,rank=i+1) for i,r in enumerate(output)],'season':latest.season}
