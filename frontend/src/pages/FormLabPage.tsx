@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import './FormLabPage.css';
 import FormLabTable from '../components/FormLabTable';
+import { useAuth } from '../contexts/AuthContext';
+import PaywallOverlay from '../components/PaywallOverlay';
 import { Helmet } from 'react-helmet-async';
 type Fixture = {id:number;date:string;home_id:number;away_id:number;home:string;away:string};
 type League = {upcoming:Fixture[];key:string;name:string;opposition_bands:boolean;seasons:string[];updated_at:string|null;teams:{id:number;name:string}[]};
 export default function FormLabPage(){
+ const {isSubscribed,isLoading}=useAuth();
  const [catalog,setCatalog]=useState<League[]>([]),[league,setLeague]=useState('soccer_epl');
  const [a,setA]=useState(''),[b,setB]=useState('');
  const [error,setError]=useState('');
@@ -15,6 +18,10 @@ export default function FormLabPage(){
  const teams: [string,string][]=(competition?.teams||[]).map(t=>[String(t.id),t.name]);
  return <main className="form-lab"><Helmet><title>Form Lab - SteamWatch</title><meta name="description" content="Compare football form, goal patterns, handicap cover rates and home-away splits." /></Helmet>
   <header><div className="fl-eyebrow">STEAMWATCH RESEARCH <span>BETA</span></div><h1>Form Lab<span>.</span></h1><p>Find the pattern. Check the sample. Build your view.</p></header>
+  {isLoading ? <p role="status">Loading Form Lab...</p> : !isSubscribed ? <>
+   <section className="fl-panel" style={{marginBottom:22}}><h2>Explore the form behind the fixture</h2><p>Compare recent form, home and away splits, results vs Top 6 or bottom-half sides, handicap margins, clean sheets and expected goals.</p><p className="fl-note">Sample preview - Illustrative figures, not live team data.</p><div className="fl-table-wrap"><table><thead><tr><th>Last 10 matches</th><th>Home team</th><th>Away team</th></tr></thead><tbody><tr><td>Points per game</td><td>2.10</td><td>1.40</td></tr><tr><td>Clean sheets</td><td>40%</td><td>20%</td></tr><tr><td>-1.5 cover</td><td>30%</td><td>20%</td></tr></tbody></table></div></section>
+   <PaywallOverlay title="Unlock Form Lab" description="Get every competition, sortable form table, opponent-strength filter, home/away split, handicap margin and xG view with SteamWatch Pro." />
+  </> : <>
   <section className="fl-controls">
    <div className="fl-grid two">{select('Competition',league,setLeague,catalog.map(l=>[l.key,l.name]))}{select('Match · next round',String(competition?.upcoming?.find(f=>String(f.home_id)===a&&String(f.away_id)===b)?.id||''),id=>{const f=competition?.upcoming?.find(f=>String(f.id)===id);if(!f){document.querySelector<HTMLDetailsElement>('.fl-options')?.setAttribute('open','')}if(f){setA(String(f.home_id));setB(String(f.away_id))}},[['','Choose manually'],...(competition?.upcoming||[]).map(f=>[String(f.id),`${new Date(f.date.replace(' ','T')+'Z').toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})} · ${f.home} v ${f.away}`] as [string,string])])}{competition&&!competition.upcoming?.length&&<p className="fl-note">No upcoming fixtures available in the latest refresh. Select teams under More options.</p>}</div>
    <details className="fl-options"><summary>Choose teams manually</summary>
@@ -22,6 +29,7 @@ export default function FormLabPage(){
 </details>
   </section>
   {competition&&<FormLabTable league={league} home={a} away={b} domestic={competition.opposition_bands} />}
+  </>}
   {error&&<p role="alert" className="fl-warning">{error}</p>}
  </main>
 }

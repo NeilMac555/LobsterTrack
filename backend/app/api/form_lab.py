@@ -4,6 +4,15 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from app.models import get_db, FormLabSeason
 from app.services.form_lab import LEAGUES, EUROPE, analyze
+from app.api.deps import require_user
+from app.models.user import User
+
+
+def require_form_lab_subscription(user: User = Depends(require_user)):
+    if not user.subscription or user.subscription.status != 'active':
+        raise HTTPException(403, 'Form Lab requires a SteamWatch Pro subscription')
+    return user
+
 router = APIRouter()
 
 @router.get('/form-lab/catalog')
@@ -29,7 +38,7 @@ def catalog(db: Session = Depends(get_db)):
             teams=[dict(id=int(k),name=v) for k,v in sorted(teams.items(),key=lambda x:x[1])]))
     return result
 
-@router.get('/form-lab/analysis')
+@router.get('/form-lab/analysis', dependencies=[Depends(require_form_lab_subscription)])
 def analysis(league: str, team_id: int, window: int = Query(10,ge=1,le=50),
     venue: Literal['all','home','away']='all',
     opposition: Literal['all','top6','tophalf','bottomhalf','bottom6']='all',
@@ -39,7 +48,7 @@ def analysis(league: str, team_id: int, window: int = Query(10,ge=1,le=50),
     if handicap*2 != int(handicap*2): raise HTTPException(400,'Choose a whole or half-goal handicap')
     return analyze(db,league,team_id,window,venue,opposition,season,handicap)
 
-@router.get('/form-lab/table')
+@router.get('/form-lab/table', dependencies=[Depends(require_form_lab_subscription)])
 def form_table(league: str, window: int=Query(10,ge=1,le=50),
     venue: Literal['all','home','away']='all',
     view: Literal['form','top6','tophalf','bottomhalf','bottom6','handicap','clean','xg']='form',
