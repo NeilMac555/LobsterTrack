@@ -1,10 +1,10 @@
 {
-  "as_of": "2026-09-21 09:21:48",
+  "as_of": "2026-09-28 11:27:10",
   "ranking_start": "2016-07-01",
-  "recent_start": "2025-09-21",
-  "eligible_managers": 95,
+  "recent_start": "2025-09-28",
+  "eligible_managers": 92,
   "current_managers": 96,
-  "managers": 131,
+  "managers": 129,
   "imported_completed_fixtures": 33919,
   "used_fixtures": 33469,
   "coverage": [
@@ -778,8 +778,8 @@
       "name": "Unai Emery",
       "impact": 336.0,
       "per38": 27.5,
-      "recent": 31.1,
-      "recent_games": 55,
+      "recent": 29.8,
+      "recent_games": 53,
       "matches": 465,
       "clubs": 4,
       "positive_spells": 4,
@@ -4138,8 +4138,8 @@
       "name": "Antonio Conte",
       "impact": 324.4,
       "per38": 38.3,
-      "recent": -26.2,
-      "recent_games": 40,
+      "recent": -29.0,
+      "recent_games": 39,
       "matches": 322,
       "clubs": 4,
       "positive_spells": 5,
@@ -6561,8 +6561,8 @@
       "name": "Andoni Iraola",
       "impact": 294.5,
       "per38": 52.8,
-      "recent": 60.8,
-      "recent_games": 40,
+      "recent": 63.4,
+      "recent_games": 38,
       "matches": 212,
       "clubs": 4,
       "positive_spells": 2,
@@ -8134,8 +8134,8 @@
       "name": "Mikel Arteta",
       "impact": 251.8,
       "per38": 30.6,
-      "recent": 59.3,
-      "recent_games": 53,
+      "recent": 62.1,
+      "recent_games": 52,
       "matches": 313,
       "clubs": 1,
       "positive_spells": 1,
@@ -10366,8 +10366,8 @@
       "name": "Gian Gasperini",
       "impact": 249.4,
       "per38": 20.6,
-      "recent": 27.6,
-      "recent_games": 50,
+      "recent": 10.4,
+      "recent_games": 48,
       "matches": 460,
       "clubs": 2,
       "positive_spells": 2,
@@ -13643,8 +13643,8 @@
       "name": "Marcelino",
       "impact": 240.5,
       "per38": 33.4,
-      "recent": -31.5,
-      "recent_games": 40,
+      "recent": -46.2,
+      "recent_games": 38,
       "matches": 274,
       "clubs": 4,
       "positive_spells": 3,
@@ -19567,8 +19567,8 @@
       "name": "Hans-Dieter Flick",
       "impact": 191.9,
       "per38": 38.8,
-      "recent": 29.4,
-      "recent_games": 53,
+      "recent": 24.2,
+      "recent_games": 51,
       "matches": 188,
       "clubs": 2,
       "positive_spells": 2,
@@ -22843,8 +22843,8 @@
       "name": "Régis Le Bris",
       "impact": 186.7,
       "per38": 61.2,
-      "recent": 147.2,
-      "recent_games": 40,
+      "recent": 125.3,
+      "recent_games": 38,
       "matches": 116,
       "clubs": 2,
       "positive_spells": 2,
@@ -23712,8 +23712,8 @@
       "name": "Franck Haise",
       "impact": 177.9,
       "per38": 27.8,
-      "recent": -22.7,
-      "recent_games": 35,
+      "recent": -15.4,
+      "recent_games": 34,
       "matches": 243,
       "clubs": 4,
       "positive_spells": 1,
@@ -25518,8 +25518,8 @@
       "name": "Ole Werner",
       "impact": 174.6,
       "per38": 48.4,
-      "recent": 32.9,
-      "recent_games": 30,
+      "recent": 23.8,
+      "recent_games": 29,
       "matches": 137,
       "clubs": 2,
       "positive_spells": 2,
@@ -26550,8 +26550,8 @@
       "name": "Manuel Pellegrini Ripamonti",
       "impact": 168.6,
       "per38": 18.3,
-      "recent": 51.7,
-      "recent_games": 52,
+      "recent": 54.3,
+      "recent_games": 51,
       "matches": 350,
       "clubs": 2,
       "positive_spells": 1,
@@ -29089,8 +29089,8 @@
       "name": "Xabi Alonso",
       "impact": 164.7,
       "per38": 39.9,
-      "recent": -20.4,
-      "recent_games": 24,
+      "recent": -11.6,
+      "recent_games": 22,
       "matches": 157,
       "clubs": 3,
       "positive_spells": 1,
@@ -30261,8 +30261,8 @@
       "name": "Oliver Glasner",
       "impact": 163.6,
       "per38": 22.1,
-      "recent": -48.4,
-      "recent_games": 52,
+      "recent": -62.1,
+      "recent_games": 51,
       "matches": 281,
       "clubs": 5,
       "positive_spells": 2,
@@ -32333,8 +32333,8 @@
       "name": "Cesc Fàbregas",
       "impact": 159.9,
       "per38": 76.9,
-      "recent": 97.7,
-      "recent_games": 38,
+      "recent": 87.7,
+      "recent_games": 36,
       "matches": 79,
       "clubs": 1,
       "positive_spells": 1,
@@ -33634,8 +33634,8 @@
       "name": "Niko Kovač",
       "impact": 151.4,
       "per38": 18.1,
-      "recent": 36.5,
-      "recent_games": 45,
+      "recent": 25.0,
+      "recent_games": 43,
       "matches": 318,
       "clubs": 5,
       "positive_spells": 2,
@@ -35965,8 +35965,8 @@
       "name": "Vincenzo Italiano",
       "impact": 151.3,
       "per38": 20.2,
-      "recent": 33.7,
-      "recent_games": 54,
+      "recent": 40.7,
+      "recent_games": 53,
       "matches": 285,
       "clubs": 4,
       "positive_spells": 1,
@@ -38049,8 +38049,8 @@
       "name": "Pep Guardiola",
       "impact": 149.2,
       "per38": 11.7,
-      "recent": 20.1,
-      "recent_games": 42,
+      "recent": 15.4,
+      "recent_games": 40,
       "matches": 484,
       "clubs": 1,
       "positive_spells": 0,
@@ -41494,8 +41494,8 @@
       "name": "Sebastian Hoeneß",
       "impact": 140.0,
       "per38": 25.3,
-      "recent": 31.7,
-      "recent_games": 47,
+      "recent": 24.7,
+      "recent_games": 46,
       "matches": 210,
       "clubs": 2,
       "positive_spells": 1,
@@ -43009,1848 +43009,6 @@
       ]
     },
     {
-      "id": 456423,
-      "team_id": 645,
-      "club": "Mallorca",
-      "league": "Other / previous club",
-      "appointment": null,
-      "appointment_ambiguous": false,
-      "employment": "Current employment unverified",
-      "is_current": false,
-      "eligible": true,
-      "name": "Arrasate",
-      "impact": 136.1,
-      "per38": 20.3,
-      "recent": 0.9,
-      "recent_games": 21,
-      "matches": 255,
-      "clubs": 2,
-      "positive_spells": 1,
-      "eligible_spells": 2,
-      "spells": [
-        {
-          "coach_id": 456423,
-          "team_id": 459,
-          "club": "Osasuna",
-          "start": "2019-08-17",
-          "end": "2024-05-25 12:00:00",
-          "inherited": 1389.6171691003478,
-          "prior_games": 75,
-          "impact": 145.62515466336274,
-          "games": 192,
-          "league_games": 190,
-          "gain20": 74.97854604059425,
-          "gain40": 137.5944944078739,
-          "left_truncated": false,
-          "observed_at_import_start": false
-        },
-        {
-          "coach_id": 456423,
-          "team_id": 645,
-          "club": "Mallorca",
-          "start": "2024-08-18",
-          "end": "2026-02-22 17:30:00",
-          "inherited": 1527.4075419933536,
-          "prior_games": 152,
-          "impact": -9.531093041998469,
-          "games": 63,
-          "league_games": 63,
-          "gain20": 32.40709880671576,
-          "gain40": -0.631933870343838,
-          "left_truncated": false,
-          "observed_at_import_start": false
-        }
-      ],
-      "rank": 23,
-      "trajectory": [
-        {
-          "date": "2019-08-17",
-          "impact": 14.97,
-          "delta": 14.969152977821851,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2019-08-24",
-          "impact": 17.36,
-          "delta": 2.392384860817197,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2019-08-31",
-          "impact": 25.27,
-          "delta": 7.904813069681244,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2019-09-15",
-          "impact": 29.23,
-          "delta": 3.958743727854064,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2019-09-20",
-          "impact": 31.3,
-          "delta": 2.0726177186371486,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2019-09-25",
-          "impact": 29.02,
-          "delta": -2.2796317209420747,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2019-09-29",
-          "impact": 33.4,
-          "delta": 4.383618393634823,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2019-10-05",
-          "impact": 46.64,
-          "delta": 13.237819182150531,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2019-10-18",
-          "impact": 38.37,
-          "delta": -8.265000076186748,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2019-10-27",
-          "impact": 53.07,
-          "delta": 14.69695655995185,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2019-10-31",
-          "impact": 56.22,
-          "delta": 3.1472913307717842,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2019-11-03",
-          "impact": 67.2,
-          "delta": 10.980150722867815,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2019-11-10",
-          "impact": 72.75,
-          "delta": 5.549390376340806,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2019-11-24",
-          "impact": 64.94,
-          "delta": -7.809571262054051,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2019-12-01",
-          "impact": 79.57,
-          "delta": 14.63421701553809,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2019-12-08",
-          "impact": 84.03,
-          "delta": 4.4614485339685315,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2019-12-14",
-          "impact": 81.12,
-          "delta": -2.9166271991480563,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2019-12-22",
-          "impact": 73.07,
-          "delta": -8.052127396610949,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-01-05",
-          "impact": 75.46,
-          "delta": 2.3973199417025737,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-01-18",
-          "impact": 74.98,
-          "delta": -0.4844207162021741,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-01-24",
-          "impact": 85.12,
-          "delta": 10.143310018861566,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-02-02",
-          "impact": 79.96,
-          "delta": -5.1657431646002046,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-02-09",
-          "impact": 75.85,
-          "delta": -4.109774914930109,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-02-16",
-          "impact": 90.56,
-          "delta": 14.71195971359165,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-02-23",
-          "impact": 78.32,
-          "delta": -12.240128336818072,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-03-01",
-          "impact": 74.29,
-          "delta": -4.029836998553266,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-03-08",
-          "impact": 84.91,
-          "delta": 10.623044303918094,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-06-14",
-          "impact": 90.04,
-          "delta": 5.132037187743488,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-06-17",
-          "impact": 84.82,
-          "delta": -5.227065949169255,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-06-21",
-          "impact": 80.52,
-          "delta": -4.297056934538411,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-06-24",
-          "impact": 93.94,
-          "delta": 13.423845756696469,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-06-27",
-          "impact": 102.21,
-          "delta": 8.26734604900076,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-07-02",
-          "impact": 115.27,
-          "delta": 13.054598380039275,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-07-05",
-          "impact": 116.97,
-          "delta": 1.702087450415286,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-07-08",
-          "impact": 109.55,
-          "delta": -7.419055501541514,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-07-11",
-          "impact": 118.78,
-          "delta": 9.234526457807004,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-07-16",
-          "impact": 136.81,
-          "delta": 18.026088866893957,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-07-19",
-          "impact": 133.42,
-          "delta": -3.3933455836995985,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-09-12",
-          "impact": 144.48,
-          "delta": 11.060011519849894,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-09-19",
-          "impact": 137.59,
-          "delta": -6.880899953687409,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-09-27",
-          "impact": 126.19,
-          "delta": -11.401298058070577,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-10-04",
-          "impact": 134.67,
-          "delta": 8.480074531295399,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-10-18",
-          "impact": 136.05,
-          "delta": 1.3771341640025692,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-10-24",
-          "impact": 145.22,
-          "delta": 9.165046065082134,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-10-31",
-          "impact": 139.22,
-          "delta": -5.993723182062801,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-11-07",
-          "impact": 135.11,
-          "delta": -4.112669168147938,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-11-20",
-          "impact": 132.26,
-          "delta": -2.845360696297843,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-11-29",
-          "impact": 129.74,
-          "delta": -2.525853793468009,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-12-06",
-          "impact": 117.81,
-          "delta": -11.9233262394194,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-12-11",
-          "impact": 109.19,
-          "delta": -8.624356629267162,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-12-19",
-          "impact": 102.1,
-          "delta": -7.086910896237789,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-12-22",
-          "impact": 103.55,
-          "delta": 1.4463125881503491,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2020-12-31",
-          "impact": 102.39,
-          "delta": -1.1564391603817348,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-01-03",
-          "impact": 107.28,
-          "delta": 4.883413912696888,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-01-09",
-          "impact": 112.78,
-          "delta": 5.499172303062084,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-01-12",
-          "impact": 106.2,
-          "delta": -6.579364313859964,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-01-21",
-          "impact": 109.94,
-          "delta": 3.7409086956841175,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-01-24",
-          "impact": 120.44,
-          "delta": 10.504718580333975,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-02-01",
-          "impact": 113.13,
-          "delta": -7.316310033465536,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-02-07",
-          "impact": 121.87,
-          "delta": 8.7408703987426,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-02-14",
-          "impact": 135.12,
-          "delta": 13.251889954873677,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-02-22",
-          "impact": 129.02,
-          "delta": -6.100347752405676,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-02-27",
-          "impact": 140.06,
-          "delta": 11.045695415520871,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-03-06",
-          "impact": 135.42,
-          "delta": -4.648741507381637,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-03-13",
-          "impact": 133.02,
-          "delta": -2.3956792326157483,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-03-20",
-          "impact": 133.26,
-          "delta": 0.2394226571727054,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-04-03",
-          "impact": 131.84,
-          "delta": -1.4220284579731213,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-04-11",
-          "impact": 147.57,
-          "delta": 15.736439427434327,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-04-18",
-          "impact": 154.05,
-          "delta": 6.4794278611317395,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-04-21",
-          "impact": 163.05,
-          "delta": 8.993819438395725,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-04-25",
-          "impact": 154.27,
-          "delta": -8.778853380130986,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-05-01",
-          "impact": 151.44,
-          "delta": -2.8262383599066587,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-05-08",
-          "impact": 154.57,
-          "delta": 3.132853613693367,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-05-11",
-          "impact": 162.73,
-          "delta": 8.160645106152968,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-05-16",
-          "impact": 159.09,
-          "delta": -3.648562634940127,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-05-22",
-          "impact": 149.23,
-          "delta": -9.860363104295342,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-08-14",
-          "impact": 145.99,
-          "delta": -3.2321918541441663,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-08-23",
-          "impact": 145.34,
-          "delta": -0.6576861497535225,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-08-29",
-          "impact": 156.69,
-          "delta": 11.349977150735732,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-09-12",
-          "impact": 145.75,
-          "delta": -10.931867955683856,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-09-18",
-          "impact": 155.91,
-          "delta": 10.152252703437412,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-09-23",
-          "impact": 146.11,
-          "delta": -9.798094116031862,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-09-26",
-          "impact": 156.41,
-          "delta": 10.300456126163127,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-10-02",
-          "impact": 163.31,
-          "delta": 6.899169656301709,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-10-17",
-          "impact": 178.17,
-          "delta": 14.86109954885686,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-10-22",
-          "impact": 175.19,
-          "delta": -2.9798359678542097,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-10-27",
-          "impact": 182.22,
-          "delta": 7.03285623008264,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-10-30",
-          "impact": 177.74,
-          "delta": -4.48189342144852,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-11-07",
-          "impact": 168.67,
-          "delta": -9.06782458760899,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-11-20",
-          "impact": 164.73,
-          "delta": -3.9411356411698506,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-11-29",
-          "impact": 160.75,
-          "delta": -3.984248115361364,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-12-05",
-          "impact": 160.37,
-          "delta": -0.3729931501328543,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-12-12",
-          "impact": 163.27,
-          "delta": 2.8986354284658846,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2021-12-19",
-          "impact": 153.26,
-          "delta": -10.016172561565694,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-01-03",
-          "impact": 142.37,
-          "delta": -10.883783077268891,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-01-09",
-          "impact": 149.46,
-          "delta": 7.086554561363418,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-01-19",
-          "impact": 141.91,
-          "delta": -7.551930794496567,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-01-23",
-          "impact": 153.96,
-          "delta": 12.057250321519327,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-02-05",
-          "impact": 157.45,
-          "delta": 3.489622965897554,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-02-12",
-          "impact": 168.01,
-          "delta": 10.555991135945535,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-02-19",
-          "impact": 160.15,
-          "delta": -7.856652756711069,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-02-27",
-          "impact": 153.55,
-          "delta": -6.604322007849255,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-03-05",
-          "impact": 165.82,
-          "delta": 12.2688320507547,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-03-13",
-          "impact": 162.0,
-          "delta": -3.813189132242696,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-03-19",
-          "impact": 168.12,
-          "delta": 6.119672900827993,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-04-03",
-          "impact": 161.59,
-          "delta": -6.536756490366127,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-04-10",
-          "impact": 167.57,
-          "delta": 5.9796297568615735,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-04-16",
-          "impact": 179.95,
-          "delta": 12.382794633481954,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-04-20",
-          "impact": 175.47,
-          "delta": -4.483023714776621,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-05-01",
-          "impact": 175.74,
-          "delta": 0.26896131995968187,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-05-08",
-          "impact": 175.78,
-          "delta": 0.04558888261079419,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-05-11",
-          "impact": 173.14,
-          "delta": -2.639340205507308,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-05-15",
-          "impact": 165.61,
-          "delta": -7.532791742082841,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-05-22",
-          "impact": 151.61,
-          "delta": -14.00351560779644,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-08-12",
-          "impact": 164.56,
-          "delta": 12.957518703845473,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-08-20",
-          "impact": 172.03,
-          "delta": 7.464761464579535,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-08-26",
-          "impact": 166.05,
-          "delta": -5.981198003761712,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-09-04",
-          "impact": 172.46,
-          "delta": 6.414877128231639,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-09-12",
-          "impact": 180.21,
-          "delta": 7.743577498973561,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-09-18",
-          "impact": 167.19,
-          "delta": -13.018653379229029,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-10-02",
-          "impact": 175.04,
-          "delta": 7.855252496339689,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-10-07",
-          "impact": 163.14,
-          "delta": -11.898195715707455,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-10-17",
-          "impact": 158.48,
-          "delta": -4.66149508938289,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-10-20",
-          "impact": 165.48,
-          "delta": 6.996756399309271,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-10-23",
-          "impact": 164.47,
-          "delta": -1.0091395578865858,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-10-30",
-          "impact": 171.18,
-          "delta": 6.704979915418498,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-11-05",
-          "impact": 181.99,
-          "delta": 10.811093731220279,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-11-08",
-          "impact": 175.61,
-          "delta": -6.371721597552176,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2022-12-31",
-          "impact": 169.96,
-          "delta": -5.653544658804046,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-01-09",
-          "impact": 172.9,
-          "delta": 2.940167580939592,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-01-14",
-          "impact": 180.03,
-          "delta": 7.133234162020581,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-01-22",
-          "impact": 177.8,
-          "delta": -2.235466498912404,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-01-29",
-          "impact": 169.0,
-          "delta": -8.79944639279078,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-02-04",
-          "impact": 169.39,
-          "delta": 0.391792548067611,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-02-12",
-          "impact": 169.2,
-          "delta": -0.19353637762483888,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-02-18",
-          "impact": 164.3,
-          "delta": -4.896756033588764,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-02-26",
-          "impact": 178.01,
-          "delta": 13.704366188496275,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-03-06",
-          "impact": 175.9,
-          "delta": -2.1059802384426285,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-03-11",
-          "impact": 166.1,
-          "delta": -9.796766657317562,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-03-19",
-          "impact": 156.44,
-          "delta": -9.665205145687226,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-03-31",
-          "impact": 157.12,
-          "delta": 0.6815340760081523,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-04-08",
-          "impact": 162.52,
-          "delta": 5.403975593699213,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-04-14",
-          "impact": 153.36,
-          "delta": -9.157994988640235,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-04-22",
-          "impact": 164.36,
-          "delta": 10.991346812712308,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-04-25",
-          "impact": 175.52,
-          "delta": 11.165792281925626,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-04-28",
-          "impact": 166.2,
-          "delta": -9.325334661779651,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-05-02",
-          "impact": 162.89,
-          "delta": -3.307102734764782,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-05-13",
-          "impact": 168.99,
-          "delta": 6.101169808675621,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-05-21",
-          "impact": 164.51,
-          "delta": -4.476151785498357,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-05-25",
-          "impact": 173.63,
-          "delta": 9.113297158104888,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-05-28",
-          "impact": 164.09,
-          "delta": -9.53829348538822,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-06-04",
-          "impact": 172.11,
-          "delta": 8.02194610604994,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-08-13",
-          "impact": 182.92,
-          "delta": 10.812157688697212,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-08-19",
-          "impact": 170.87,
-          "delta": -12.054190806592093,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-08-24",
-          "impact": 159.31,
-          "delta": -11.558040146129745,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-08-27",
-          "impact": 171.04,
-          "delta": 11.733606368185859,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-08-31",
-          "impact": 173.22,
-          "delta": 2.1753361210635402,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-09-03",
-          "impact": 166.74,
-          "delta": -6.478708066376799,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-09-17",
-          "impact": 157.69,
-          "delta": -9.052042415431568,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-09-23",
-          "impact": 157.32,
-          "delta": -0.3695950095773659,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-09-28",
-          "impact": 150.67,
-          "delta": -6.651428370657206,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-10-01",
-          "impact": 159.99,
-          "delta": 9.323374345939596,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-10-07",
-          "impact": 157.36,
-          "delta": -2.6293260084099512,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-10-20",
-          "impact": 164.04,
-          "delta": 6.674030902961141,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-10-29",
-          "impact": 157.83,
-          "delta": -6.201768946383391,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-11-04",
-          "impact": 147.91,
-          "delta": -9.929265923329758,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-11-11",
-          "impact": 143.59,
-          "delta": -4.312257700308892,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-11-26",
-          "impact": 136.99,
-          "delta": -6.604510612852077,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-12-02",
-          "impact": 140.35,
-          "delta": 3.358481502329896,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-12-10",
-          "impact": 141.38,
-          "delta": 1.029238898539091,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-12-15",
-          "impact": 149.95,
-          "delta": 8.57074671480956,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2023-12-21",
-          "impact": 140.93,
-          "delta": -9.015900915737463,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2024-01-04",
-          "impact": 146.09,
-          "delta": 5.1587342585291385,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2024-01-21",
-          "impact": 154.87,
-          "delta": 8.78175222303053,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2024-01-28",
-          "impact": 155.9,
-          "delta": 1.028213010747785,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2024-01-31",
-          "impact": 152.19,
-          "delta": -3.71370041103531,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2024-02-04",
-          "impact": 139.14,
-          "delta": -13.045936233756525,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2024-02-10",
-          "impact": 154.84,
-          "delta": 15.70354763128347,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2024-02-17",
-          "impact": 161.4,
-          "delta": 6.55241678439573,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2024-02-25",
-          "impact": 161.21,
-          "delta": -0.18393099868781015,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2024-03-04",
-          "impact": 167.9,
-          "delta": 6.686192425986306,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2024-03-09",
-          "impact": 162.0,
-          "delta": -5.898735591475099,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2024-03-16",
-          "impact": 157.96,
-          "delta": -4.0373970592266755,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2024-03-30",
-          "impact": 165.96,
-          "delta": 8.001982888694089,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2024-04-15",
-          "impact": 154.7,
-          "delta": -11.26257144456841,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2024-04-20",
-          "impact": 145.33,
-          "delta": -9.375753492582541,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2024-04-28",
-          "impact": 134.0,
-          "delta": -11.325759988984199,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2024-05-05",
-          "impact": 124.45,
-          "delta": -9.548549870149474,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2024-05-11",
-          "impact": 129.3,
-          "delta": 4.844617414913515,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2024-05-14",
-          "impact": 127.57,
-          "delta": -1.723633910408191,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2024-05-19",
-          "impact": 144.12,
-          "delta": 16.546587115897754,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2024-05-25",
-          "impact": 145.63,
-          "delta": 1.5056767937760596,
-          "team_id": 459,
-          "club": "Osasuna"
-        },
-        {
-          "date": "2024-08-18",
-          "impact": 152.49,
-          "delta": 6.869036154429667,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2024-08-24",
-          "impact": 144.17,
-          "delta": -8.326098734410339,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2024-08-27",
-          "impact": 142.69,
-          "delta": -1.47736911792951,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2024-08-31",
-          "impact": 154.41,
-          "delta": 11.720157522963783,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2024-09-14",
-          "impact": 146.16,
-          "delta": -8.254782783715033,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2024-09-17",
-          "impact": 157.15,
-          "delta": 10.99678854192632,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2024-09-23",
-          "impact": 171.16,
-          "delta": 14.004625447486363,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2024-09-27",
-          "impact": 180.71,
-          "delta": 9.554575012399667,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2024-10-05",
-          "impact": 170.33,
-          "delta": -10.385264776530065,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2024-10-20",
-          "impact": 177.9,
-          "delta": 7.56953948562373,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2024-10-28",
-          "impact": 178.82,
-          "delta": 0.9275625036787083,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2024-11-01",
-          "impact": 168.67,
-          "delta": -10.154320885099386,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2024-11-10",
-          "impact": 161.95,
-          "delta": -6.718148879069781,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2024-11-23",
-          "impact": 171.16,
-          "delta": 9.20415079949171,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2024-11-29",
-          "impact": 178.6,
-          "delta": 7.444792447266007,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2024-12-03",
-          "impact": 173.19,
-          "delta": -5.408647322402304,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2024-12-06",
-          "impact": 164.25,
-          "delta": -8.941424829325065,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2024-12-14",
-          "impact": 174.2,
-          "delta": 9.95341803424725,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2024-12-21",
-          "impact": 184.39,
-          "delta": 10.1822527835382,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-01-20",
-          "impact": 178.03,
-          "delta": -6.353742597854158,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-01-25",
-          "impact": 167.13,
-          "delta": -10.898661969543122,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-02-01",
-          "impact": 163.86,
-          "delta": -3.270351202059938,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-02-10",
-          "impact": 162.52,
-          "delta": -1.3443755518469436,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-02-16",
-          "impact": 168.65,
-          "delta": 6.1299786401114105,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-02-24",
-          "impact": 170.52,
-          "delta": 1.8685965774051705,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-03-02",
-          "impact": 167.04,
-          "delta": -3.477078469819672,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-03-09",
-          "impact": 172.27,
-          "delta": 5.227149287271358,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-03-15",
-          "impact": 179.34,
-          "delta": 7.074347921822675,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-03-30",
-          "impact": 170.21,
-          "delta": -9.130701103911505,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-04-05",
-          "impact": 158.73,
-          "delta": -11.48525442228242,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-04-12",
-          "impact": 172.38,
-          "delta": 13.651319082069712,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-04-19",
-          "impact": 169.05,
-          "delta": -3.3271704994656948,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-04-22",
-          "impact": 166.44,
-          "delta": -2.612246281246362,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-05-05",
-          "impact": 157.46,
-          "delta": -8.976126414348727,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-05-10",
-          "impact": 162.07,
-          "delta": 4.603794456239029,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-05-14",
-          "impact": 159.59,
-          "delta": -2.475099495589561,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-05-18",
-          "impact": 146.88,
-          "delta": -12.714593304475033,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-05-24",
-          "impact": 149.63,
-          "delta": 2.751376974984965,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-08-16",
-          "impact": 145.56,
-          "delta": -4.069667146881745,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-08-23",
-          "impact": 144.99,
-          "delta": -0.5642697554931964,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-08-30",
-          "impact": 142.9,
-          "delta": -2.094334944174576,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-09-15",
-          "impact": 135.17,
-          "delta": -7.7336433625658625,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-09-21",
-          "impact": 139.06,
-          "delta": 3.8910416330060094,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-09-24",
-          "impact": 131.76,
-          "delta": -7.293509512065956,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-09-27",
-          "impact": 140.9,
-          "delta": 9.13920159379386,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-10-04",
-          "impact": 135.94,
-          "delta": -4.960249522224293,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-10-18",
-          "impact": 148.46,
-          "delta": 12.513874106774916,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-10-26",
-          "impact": 146.13,
-          "delta": -2.3252235629365536,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-11-02",
-          "impact": 141.09,
-          "delta": -5.0399779996247425,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-11-09",
-          "impact": 149.83,
-          "delta": 8.739159329874566,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-11-22",
-          "impact": 145.49,
-          "delta": -4.341342081326378,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-11-29",
-          "impact": 144.22,
-          "delta": -1.2648184823967834,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-12-05",
-          "impact": 144.47,
-          "delta": 0.24790033456521865,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-12-13",
-          "impact": 151.94,
-          "delta": 7.469383157153519,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2025-12-19",
-          "impact": 154.05,
-          "delta": 2.1096393672378255,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2026-01-04",
-          "impact": 141.68,
-          "delta": -12.37328471419498,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2026-01-11",
-          "impact": 134.92,
-          "delta": -6.75348213309904,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2026-01-17",
-          "impact": 146.31,
-          "delta": 11.384409834511127,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2026-01-25",
-          "impact": 143.27,
-          "delta": -3.0390930410837536,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2026-02-02",
-          "impact": 151.31,
-          "delta": 8.03692473891076,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2026-02-07",
-          "impact": 149.25,
-          "delta": -2.055595209611698,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2026-02-15",
-          "impact": 141.88,
-          "delta": -7.375107648539556,
-          "team_id": 645,
-          "club": "Mallorca"
-        },
-        {
-          "date": "2026-02-22",
-          "impact": 136.09,
-          "delta": -5.781031053638257,
-          "team_id": 645,
-          "club": "Mallorca"
-        }
-      ]
-    },
-    {
       "id": 455978,
       "team_id": 366,
       "club": "Eintracht Frankfurt",
@@ -44863,8 +43021,8 @@
       "name": "Adolf Hütter",
       "impact": 135.4,
       "per38": 18.5,
-      "recent": -11.4,
-      "recent_games": 8,
+      "recent": -0.0,
+      "recent_games": 6,
       "matches": 278,
       "clubs": 4,
       "positive_spells": 2,
@@ -44999,7 +43157,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 24,
+      "rank": 23,
       "trajectory": [
         {
           "date": "2016-07-26",
@@ -46962,8 +45120,8 @@
       "name": "Thomas Frank",
       "impact": 135.3,
       "per38": 27.6,
-      "recent": -19.8,
-      "recent_games": 28,
+      "recent": -15.1,
+      "recent_games": 27,
       "matches": 186,
       "clubs": 2,
       "positive_spells": 1,
@@ -47002,7 +45160,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 25,
+      "rank": 24,
       "trajectory": [
         {
           "date": "2021-08-13",
@@ -48377,7 +46535,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 26,
+      "rank": 25,
       "trajectory": [
         {
           "date": "2016-08-13",
@@ -50650,6 +48808,840 @@
       ]
     },
     {
+      "id": 896798,
+      "team_id": 214,
+      "club": "Valencia",
+      "league": "La Liga",
+      "appointment": "2026-09-23",
+      "appointment_ambiguous": false,
+      "employment": "Current top-five manager",
+      "is_current": true,
+      "eligible": false,
+      "name": "Javier Aguirre Onaindía",
+      "impact": 126.0,
+      "per38": 43.1,
+      "recent": null,
+      "recent_games": 0,
+      "matches": 111,
+      "clubs": 2,
+      "positive_spells": 2,
+      "eligible_spells": 2,
+      "spells": [
+        {
+          "coach_id": 896798,
+          "team_id": 844,
+          "club": "Leganés",
+          "start": "2019-11-08",
+          "end": "2020-07-19 19:00:00",
+          "inherited": 1462.5744956731646,
+          "prior_games": 124,
+          "impact": 52.91585866918216,
+          "games": 26,
+          "league_games": 26,
+          "gain20": 11.906406045295387,
+          "gain40": null,
+          "left_truncated": false,
+          "observed_at_import_start": false
+        },
+        {
+          "coach_id": 896798,
+          "team_id": 645,
+          "club": "Mallorca",
+          "start": "2022-04-02",
+          "end": "2024-05-26 12:00:00",
+          "inherited": 1454.3307197620572,
+          "prior_games": 67,
+          "impact": 73.07682223129576,
+          "games": 85,
+          "league_games": 85,
+          "gain20": 38.90820789271177,
+          "gain40": 73.62625773101256,
+          "left_truncated": false,
+          "observed_at_import_start": false
+        }
+      ],
+      "rank": 26,
+      "trajectory": [
+        {
+          "date": "2019-11-08",
+          "impact": 5.1,
+          "delta": 5.10069372938994,
+          "team_id": 844,
+          "club": "Leganés"
+        },
+        {
+          "date": "2019-11-23",
+          "impact": 2.0,
+          "delta": -3.104293982902922,
+          "team_id": 844,
+          "club": "Leganés"
+        },
+        {
+          "date": "2019-12-01",
+          "impact": -1.2,
+          "delta": -3.198715454634564,
+          "team_id": 844,
+          "club": "Leganés"
+        },
+        {
+          "date": "2019-12-08",
+          "impact": 8.37,
+          "delta": 9.573441418993223,
+          "team_id": 844,
+          "club": "Leganés"
+        },
+        {
+          "date": "2019-12-13",
+          "impact": 11.7,
+          "delta": 3.332994451940736,
+          "team_id": 844,
+          "club": "Leganés"
+        },
+        {
+          "date": "2019-12-22",
+          "impact": 21.77,
+          "delta": 10.070137224933788,
+          "team_id": 844,
+          "club": "Leganés"
+        },
+        {
+          "date": "2020-01-03",
+          "impact": 24.21,
+          "delta": 2.434664843980272,
+          "team_id": 844,
+          "club": "Leganés"
+        },
+        {
+          "date": "2020-01-17",
+          "impact": 16.47,
+          "delta": -7.733962421567555,
+          "team_id": 844,
+          "club": "Leganés"
+        },
+        {
+          "date": "2020-01-26",
+          "impact": 23.48,
+          "delta": 7.008660608184392,
+          "team_id": 844,
+          "club": "Leganés"
+        },
+        {
+          "date": "2020-02-02",
+          "impact": 34.78,
+          "delta": 11.298162296583282,
+          "team_id": 844,
+          "club": "Leganés"
+        },
+        {
+          "date": "2020-02-08",
+          "impact": 27.04,
+          "delta": -7.74054852315129,
+          "team_id": 844,
+          "club": "Leganés"
+        },
+        {
+          "date": "2020-02-16",
+          "impact": 27.37,
+          "delta": 0.33029684956955574,
+          "team_id": 844,
+          "club": "Leganés"
+        },
+        {
+          "date": "2020-02-22",
+          "impact": 19.54,
+          "delta": -7.828399493493499,
+          "team_id": 844,
+          "club": "Leganés"
+        },
+        {
+          "date": "2020-02-29",
+          "impact": 19.47,
+          "delta": -0.07600308232406983,
+          "team_id": 844,
+          "club": "Leganés"
+        },
+        {
+          "date": "2020-03-08",
+          "impact": 34.04,
+          "delta": 14.574385269693034,
+          "team_id": 844,
+          "club": "Leganés"
+        },
+        {
+          "date": "2020-06-13",
+          "impact": 22.38,
+          "delta": -11.662070565055094,
+          "team_id": 844,
+          "club": "Leganés"
+        },
+        {
+          "date": "2020-06-16",
+          "impact": 20.6,
+          "delta": -1.7809486872717928,
+          "team_id": 844,
+          "club": "Leganés"
+        },
+        {
+          "date": "2020-06-19",
+          "impact": 21.91,
+          "delta": 1.3075902118400284,
+          "team_id": 844,
+          "club": "Leganés"
+        },
+        {
+          "date": "2020-06-22",
+          "impact": 20.17,
+          "delta": -1.7323326004113149,
+          "team_id": 844,
+          "club": "Leganés"
+        },
+        {
+          "date": "2020-06-27",
+          "impact": 11.91,
+          "delta": -8.26734604900076,
+          "team_id": 844,
+          "club": "Leganés"
+        },
+        {
+          "date": "2020-06-30",
+          "impact": 5.28,
+          "delta": -6.629145294897319,
+          "team_id": 844,
+          "club": "Leganés"
+        },
+        {
+          "date": "2020-07-05",
+          "impact": 18.26,
+          "delta": 12.982592156934203,
+          "team_id": 844,
+          "club": "Leganés"
+        },
+        {
+          "date": "2020-07-09",
+          "impact": 21.13,
+          "delta": 2.871318279686139,
+          "team_id": 844,
+          "club": "Leganés"
+        },
+        {
+          "date": "2020-07-12",
+          "impact": 33.14,
+          "delta": 12.009618867139501,
+          "team_id": 844,
+          "club": "Leganés"
+        },
+        {
+          "date": "2020-07-16",
+          "impact": 47.47,
+          "delta": 14.32499969168309,
+          "team_id": 844,
+          "club": "Leganés"
+        },
+        {
+          "date": "2020-07-19",
+          "impact": 52.92,
+          "delta": 5.450068923341156,
+          "team_id": 844,
+          "club": "Leganés"
+        },
+        {
+          "date": "2022-04-02",
+          "impact": 46.46,
+          "delta": -6.453176569381707,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2022-04-09",
+          "impact": 62.14,
+          "delta": 15.681078961954423,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2022-04-16",
+          "impact": 54.63,
+          "delta": -7.51601906397934,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2022-04-19",
+          "impact": 63.2,
+          "delta": 8.573031453682965,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2022-05-01",
+          "impact": 60.62,
+          "delta": -2.578591841624047,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2022-05-07",
+          "impact": 49.84,
+          "delta": -10.782514384783218,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2022-05-11",
+          "impact": 57.04,
+          "delta": 7.197217639414218,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2022-05-15",
+          "impact": 66.48,
+          "delta": 9.43879873435401,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2022-05-22",
+          "impact": 80.48,
+          "delta": 14.00351560779644,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2022-08-15",
+          "impact": 85.02,
+          "delta": 4.543805808119283,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2022-08-20",
+          "impact": 77.71,
+          "delta": -7.308656357417953,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2022-08-27",
+          "impact": 89.93,
+          "delta": 12.219108576686253,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2022-09-03",
+          "impact": 87.74,
+          "delta": -2.1979631916563602,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2022-09-11",
+          "impact": 86.12,
+          "delta": -1.6158761303959723,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2022-09-17",
+          "impact": 92.47,
+          "delta": 6.3493968142428265,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2022-10-01",
+          "impact": 87.65,
+          "delta": -4.8163026430166775,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2022-10-10",
+          "impact": 88.64,
+          "delta": 0.9889853418373074,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2022-10-15",
+          "impact": 81.33,
+          "delta": -7.307333852878245,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2022-10-19",
+          "impact": 77.75,
+          "delta": -3.5822203508613293,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2022-10-22",
+          "impact": 91.82,
+          "delta": 14.071923340618898,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2022-10-28",
+          "impact": 90.05,
+          "delta": -1.7742353483267848,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2022-11-06",
+          "impact": 106.02,
+          "delta": 15.970489591363432,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2022-11-09",
+          "impact": 119.4,
+          "delta": 13.384440425661426,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2022-12-30",
+          "impact": 111.04,
+          "delta": -8.362274167693759,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-01-07",
+          "impact": 118.63,
+          "delta": 7.587700099804686,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-01-14",
+          "impact": 111.5,
+          "delta": -7.133234162020581,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-01-20",
+          "impact": 120.36,
+          "delta": 8.866143228717727,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-01-28",
+          "impact": 111.91,
+          "delta": -8.449931510425554,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-02-05",
+          "impact": 128.18,
+          "delta": 16.26983180697191,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-02-11",
+          "impact": 122.36,
+          "delta": -5.824128977750664,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-02-18",
+          "impact": 134.09,
+          "delta": 11.730102915376161,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-02-25",
+          "impact": 125.21,
+          "delta": -8.873989590850437,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-03-04",
+          "impact": 110.91,
+          "delta": -14.303340901489639,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-03-12",
+          "impact": 113.27,
+          "delta": 2.3546501920756024,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-03-19",
+          "impact": 108.36,
+          "delta": -4.91101728336965,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-03-31",
+          "impact": 107.67,
+          "delta": -0.6815340760081523,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-04-09",
+          "impact": 108.56,
+          "delta": 0.8838457913416375,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-04-17",
+          "impact": 121.92,
+          "delta": 13.359442421425321,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-04-23",
+          "impact": 130.45,
+          "delta": 8.532901343443541,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-04-26",
+          "impact": 126.54,
+          "delta": -3.9078119599454353,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-05-01",
+          "impact": 126.71,
+          "delta": 0.1708351714207501,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-05-04",
+          "impact": 119.02,
+          "delta": -7.694947873703033,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-05-12",
+          "impact": 127.52,
+          "delta": 8.497676904609598,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-05-20",
+          "impact": 117.36,
+          "delta": -10.159759887011045,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-05-25",
+          "impact": 126.19,
+          "delta": 8.835474697293431,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-05-28",
+          "impact": 122.96,
+          "delta": -3.2315828360028354,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-06-04",
+          "impact": 131.31,
+          "delta": 8.352293719814458,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-08-12",
+          "impact": 128.74,
+          "delta": -2.5712417132788334,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-08-18",
+          "impact": 120.2,
+          "delta": -8.536401206495885,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-08-26",
+          "impact": 111.15,
+          "delta": -9.055883038399802,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-09-03",
+          "impact": 111.43,
+          "delta": 0.28591695824288665,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-09-16",
+          "impact": 123.62,
+          "delta": 12.189921222595125,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-09-23",
+          "impact": 116.73,
+          "delta": -6.897147344590724,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-09-26",
+          "impact": 121.72,
+          "delta": 4.9933071596021215,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-09-30",
+          "impact": 123.81,
+          "delta": 2.084760112691091,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-10-07",
+          "impact": 122.13,
+          "delta": -1.6777373112870952,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-10-21",
+          "impact": 117.88,
+          "delta": -4.247916325177208,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-10-28",
+          "impact": 116.71,
+          "delta": -1.166563954799289,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-11-04",
+          "impact": 111.49,
+          "delta": -5.223350336179722,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-11-25",
+          "impact": 108.36,
+          "delta": -3.1297495312777612,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-11-29",
+          "impact": 106.45,
+          "delta": -1.906741905087026,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-12-03",
+          "impact": 103.64,
+          "delta": -2.8097273286680347,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-12-09",
+          "impact": 113.82,
+          "delta": 10.17415419938683,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-12-17",
+          "impact": 112.45,
+          "delta": -1.3659692356429165,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2023-12-21",
+          "impact": 121.47,
+          "delta": 9.015900915737463,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2024-01-03",
+          "impact": 119.51,
+          "delta": -1.9590960374831812,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2024-01-13",
+          "impact": 117.33,
+          "delta": -2.1804398830242433,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2024-01-20",
+          "impact": 120.87,
+          "delta": 3.539344402067248,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2024-01-27",
+          "impact": 111.75,
+          "delta": -9.122202613701866,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2024-02-02",
+          "impact": 106.5,
+          "delta": -5.243835844588702,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2024-02-11",
+          "impact": 114.87,
+          "delta": 8.37056739413839,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2024-02-18",
+          "impact": 107.57,
+          "delta": -7.29941094174149,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2024-02-24",
+          "impact": 108.82,
+          "delta": 1.2437330927120116,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2024-03-03",
+          "impact": 121.38,
+          "delta": 12.56767302586977,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2024-03-08",
+          "impact": 118.18,
+          "delta": -3.2019398848164626,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2024-03-16",
+          "impact": 124.17,
+          "delta": 5.989124347286465,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2024-03-30",
+          "impact": 127.0,
+          "delta": 2.830789196756278,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2024-04-13",
+          "impact": 123.5,
+          "delta": -3.5061840221301876,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2024-04-22",
+          "impact": 116.23,
+          "delta": -7.262951538084144,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2024-04-28",
+          "impact": 116.97,
+          "delta": 0.7376529258122821,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2024-05-04",
+          "impact": 110.66,
+          "delta": -6.3070305070348684,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2024-05-11",
+          "impact": 117.01,
+          "delta": 6.346379605175572,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2024-05-14",
+          "impact": 118.73,
+          "delta": 1.723633910408191,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2024-05-19",
+          "impact": 114.2,
+          "delta": -4.537718593541085,
+          "team_id": 645,
+          "club": "Mallorca"
+        },
+        {
+          "date": "2024-05-26",
+          "impact": 125.99,
+          "delta": 11.796955232410653,
+          "team_id": 645,
+          "club": "Mallorca"
+        }
+      ]
+    },
+    {
       "id": 523911,
       "team_id": 20,
       "club": "Newcastle United",
@@ -50662,8 +49654,8 @@
       "name": "Eddie Howe",
       "impact": 124.7,
       "per38": 13.6,
-      "recent": -16.9,
-      "recent_games": 45,
+      "recent": -17.5,
+      "recent_games": 44,
       "matches": 349,
       "clubs": 2,
       "positive_spells": 1,
@@ -55614,8 +54606,8 @@
       "name": "Paulo Rodrigues Fonseca",
       "impact": 118.2,
       "per38": 15.1,
-      "recent": 15.1,
-      "recent_games": 44,
+      "recent": 6.6,
+      "recent_games": 43,
       "matches": 297,
       "clubs": 5,
       "positive_spells": 4,
@@ -57878,8 +56870,8 @@
       "name": "José Bordalás Jiménez",
       "impact": 111.5,
       "per38": 13.0,
-      "recent": -5.3,
-      "recent_games": 40,
+      "recent": 0.6,
+      "recent_games": 37,
       "matches": 326,
       "clubs": 2,
       "positive_spells": 3,
@@ -60265,8 +59257,8 @@
       "name": "Bruno Génésio",
       "impact": 106.1,
       "per38": 11.2,
-      "recent": -57.3,
-      "recent_games": 45,
+      "recent": -61.9,
+      "recent_games": 44,
       "matches": 361,
       "clubs": 4,
       "positive_spells": 2,
@@ -64600,8 +63592,8 @@
       "name": "Carles Martínez Novell",
       "impact": 98.7,
       "per38": 32.9,
-      "recent": 3.3,
-      "recent_games": 34,
+      "recent": 16.4,
+      "recent_games": 32,
       "matches": 114,
       "clubs": 2,
       "positive_spells": 1,
@@ -65455,8 +64447,8 @@
       "name": "Davide Nicola",
       "impact": 97.0,
       "per38": 15.4,
-      "recent": -39.7,
-      "recent_games": 26,
+      "recent": -41.3,
+      "recent_games": 24,
       "matches": 239,
       "clubs": 8,
       "positive_spells": 4,
@@ -67281,8 +66273,8 @@
       "name": "Vincent Kompany",
       "impact": 94.3,
       "per38": 25.2,
-      "recent": 73.9,
-      "recent_games": 47,
+      "recent": 71.2,
+      "recent_games": 46,
       "matches": 142,
       "clubs": 3,
       "positive_spells": 1,
@@ -68364,8 +67356,8 @@
       "name": "Julian Schuster",
       "impact": 92.5,
       "per38": 39.9,
-      "recent": 53.0,
-      "recent_games": 50,
+      "recent": 45.0,
+      "recent_games": 49,
       "matches": 88,
       "clubs": 1,
       "positive_spells": 2,
@@ -70552,8 +69544,8 @@
       "name": "Liam Rosenior",
       "impact": 89.4,
       "per38": 41.9,
-      "recent": -9.4,
-      "recent_games": 41,
+      "recent": -7.1,
+      "recent_games": 39,
       "matches": 81,
       "clubs": 3,
       "positive_spells": 1,
@@ -73929,8 +72921,8 @@
       "name": "Enzo Maresca",
       "impact": 83.3,
       "per38": 39.1,
-      "recent": 23.7,
-      "recent_games": 23,
+      "recent": 37.6,
+      "recent_games": 22,
       "matches": 81,
       "clubs": 2,
       "positive_spells": 1,
@@ -74856,8 +73848,8 @@
       "name": "Fabio Pisacane",
       "impact": 82.6,
       "per38": 73.0,
-      "recent": 62.9,
-      "recent_games": 39,
+      "recent": 66.7,
+      "recent_games": 38,
       "matches": 43,
       "clubs": 1,
       "positive_spells": 1,
@@ -75198,8 +74190,8 @@
       "name": "Iñigo Pérez",
       "impact": 77.0,
       "per38": 26.1,
-      "recent": 5.5,
-      "recent_games": 55,
+      "recent": 12.5,
+      "recent_games": 53,
       "matches": 112,
       "clubs": 2,
       "positive_spells": 1,
@@ -76039,8 +75031,8 @@
       "name": "Arne Slot",
       "impact": 76.4,
       "per38": 19.5,
-      "recent": -136.7,
-      "recent_games": 44,
+      "recent": -122.9,
+      "recent_games": 43,
       "matches": 149,
       "clubs": 3,
       "positive_spells": 2,
@@ -77187,8 +76179,8 @@
       "name": "Fabian Hürzeler",
       "impact": 73.3,
       "per38": 34.0,
-      "recent": 23.8,
-      "recent_games": 39,
+      "recent": 9.9,
+      "recent_games": 38,
       "matches": 82,
       "clubs": 1,
       "positive_spells": 1,
@@ -78745,8 +77737,8 @@
       "name": "Ruben Amorim",
       "impact": 70.7,
       "per38": 28.0,
-      "recent": 20.6,
-      "recent_games": 21,
+      "recent": 29.8,
+      "recent_games": 20,
       "matches": 96,
       "clubs": 3,
       "positive_spells": 1,
@@ -82769,222 +81761,6 @@
       ]
     },
     {
-      "id": 37547542,
-      "team_id": 884,
-      "club": "Sporting Braga",
-      "league": "Other / previous club",
-      "appointment": null,
-      "appointment_ambiguous": false,
-      "employment": "Current employment unverified",
-      "is_current": false,
-      "eligible": true,
-      "name": "Carlos Vicens",
-      "impact": 61.7,
-      "per38": 93.8,
-      "recent": 37.4,
-      "recent_games": 20,
-      "matches": 25,
-      "clubs": 1,
-      "positive_spells": 1,
-      "eligible_spells": 1,
-      "spells": [
-        {
-          "coach_id": 37547542,
-          "team_id": 884,
-          "club": "Sporting Braga",
-          "start": "2025-07-24",
-          "end": "2026-08-27 18:30:00",
-          "inherited": 1610.2332744951927,
-          "prior_games": 96,
-          "impact": 61.737116285244355,
-          "games": 25,
-          "league_games": 0,
-          "gain20": null,
-          "gain40": null,
-          "left_truncated": false,
-          "observed_at_import_start": false
-        }
-      ],
-      "rank": 53,
-      "trajectory": [
-        {
-          "date": "2025-07-24",
-          "impact": -0.51,
-          "delta": -0.5067754742230179,
-          "team_id": 884,
-          "club": "Sporting Braga"
-        },
-        {
-          "date": "2025-08-07",
-          "impact": 9.6,
-          "delta": 10.106754481492908,
-          "team_id": 884,
-          "club": "Sporting Braga"
-        },
-        {
-          "date": "2025-08-14",
-          "impact": 15.86,
-          "delta": 6.261500886090852,
-          "team_id": 884,
-          "club": "Sporting Braga"
-        },
-        {
-          "date": "2025-08-21",
-          "impact": 21.3,
-          "delta": 5.442729520721338,
-          "team_id": 884,
-          "club": "Sporting Braga"
-        },
-        {
-          "date": "2025-08-28",
-          "impact": 24.3,
-          "delta": 2.993258731099535,
-          "team_id": 884,
-          "club": "Sporting Braga"
-        },
-        {
-          "date": "2025-09-24",
-          "impact": 32.57,
-          "delta": 8.275402168656687,
-          "team_id": 884,
-          "club": "Sporting Braga"
-        },
-        {
-          "date": "2025-10-02",
-          "impact": 42.2,
-          "delta": 9.627197873635932,
-          "team_id": 884,
-          "club": "Sporting Braga"
-        },
-        {
-          "date": "2025-10-23",
-          "impact": 47.98,
-          "delta": 5.775079837038037,
-          "team_id": 884,
-          "club": "Sporting Braga"
-        },
-        {
-          "date": "2025-11-06",
-          "impact": 33.99,
-          "delta": -13.980995330449147,
-          "team_id": 884,
-          "club": "Sporting Braga"
-        },
-        {
-          "date": "2025-11-27",
-          "impact": 33.13,
-          "delta": -0.8616326921791972,
-          "team_id": 884,
-          "club": "Sporting Braga"
-        },
-        {
-          "date": "2025-12-11",
-          "impact": 41.42,
-          "delta": 8.287431589133494,
-          "team_id": 884,
-          "club": "Sporting Braga"
-        },
-        {
-          "date": "2026-01-22",
-          "impact": 48.39,
-          "delta": 6.968827585201667,
-          "team_id": 884,
-          "club": "Sporting Braga"
-        },
-        {
-          "date": "2026-01-29",
-          "impact": 44.93,
-          "delta": -3.457374871662423,
-          "team_id": 884,
-          "club": "Sporting Braga"
-        },
-        {
-          "date": "2026-03-12",
-          "impact": 35.29,
-          "delta": -9.64255411245151,
-          "team_id": 884,
-          "club": "Sporting Braga"
-        },
-        {
-          "date": "2026-03-18",
-          "impact": 42.8,
-          "delta": 7.512115235108183,
-          "team_id": 884,
-          "club": "Sporting Braga"
-        },
-        {
-          "date": "2026-04-08",
-          "impact": 40.88,
-          "delta": -1.9194086275250322,
-          "team_id": 884,
-          "club": "Sporting Braga"
-        },
-        {
-          "date": "2026-04-16",
-          "impact": 52.48,
-          "delta": 11.60166617137238,
-          "team_id": 884,
-          "club": "Sporting Braga"
-        },
-        {
-          "date": "2026-04-30",
-          "impact": 60.39,
-          "delta": 7.907829535326279,
-          "team_id": 884,
-          "club": "Sporting Braga"
-        },
-        {
-          "date": "2026-05-07",
-          "impact": 51.11,
-          "delta": -9.285525573534164,
-          "team_id": 884,
-          "club": "Sporting Braga"
-        },
-        {
-          "date": "2026-07-22",
-          "impact": 58.27,
-          "delta": 7.16322852250383,
-          "team_id": 884,
-          "club": "Sporting Braga"
-        },
-        {
-          "date": "2026-07-30",
-          "impact": 62.36,
-          "delta": 4.095874550871104,
-          "team_id": 884,
-          "club": "Sporting Braga"
-        },
-        {
-          "date": "2026-08-06",
-          "impact": 65.35,
-          "delta": 2.989444853697758,
-          "team_id": 884,
-          "club": "Sporting Braga"
-        },
-        {
-          "date": "2026-08-13",
-          "impact": 60.42,
-          "delta": -4.938912738112413,
-          "team_id": 884,
-          "club": "Sporting Braga"
-        },
-        {
-          "date": "2026-08-20",
-          "impact": 64.79,
-          "delta": 4.378670590766367,
-          "team_id": 884,
-          "club": "Sporting Braga"
-        },
-        {
-          "date": "2026-08-27",
-          "impact": 61.74,
-          "delta": -3.0567164273350733,
-          "team_id": 884,
-          "club": "Sporting Braga"
-        }
-      ]
-    },
-    {
       "id": 523959,
       "team_id": 591,
       "club": "Paris Saint Germain",
@@ -82997,8 +81773,8 @@
       "name": "Luis Enrique",
       "impact": 59.9,
       "per38": 11.7,
-      "recent": -23.1,
-      "recent_games": 51,
+      "recent": -10.9,
+      "recent_games": 49,
       "matches": 195,
       "clubs": 2,
       "positive_spells": 1,
@@ -83069,7 +81845,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 54,
+      "rank": 53,
       "trajectory": [
         {
           "date": "2016-08-28",
@@ -84451,8 +83227,8 @@
       "name": "Claudio Giráldez",
       "impact": 58.3,
       "per38": 20.0,
-      "recent": 12.5,
-      "recent_games": 55,
+      "recent": 17.4,
+      "recent_games": 53,
       "matches": 111,
       "clubs": 1,
       "positive_spells": 1,
@@ -84491,7 +83267,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 55,
+      "rank": 54,
       "trajectory": [
         {
           "date": "2016-08-22",
@@ -85285,8 +84061,8 @@
       "name": "Daniel Farke",
       "impact": 55.4,
       "per38": 16.7,
-      "recent": 106.3,
-      "recent_games": 38,
+      "recent": 104.3,
+      "recent_games": 37,
       "matches": 126,
       "clubs": 3,
       "positive_spells": 1,
@@ -85357,7 +84133,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 56,
+      "rank": 55,
       "trajectory": [
         {
           "date": "2019-08-09",
@@ -86256,8 +85032,8 @@
       "name": "Cristian Chivu",
       "impact": 54.4,
       "per38": 31.8,
-      "recent": 4.2,
-      "recent_games": 49,
+      "recent": -1.4,
+      "recent_games": 47,
       "matches": 65,
       "clubs": 2,
       "positive_spells": 0,
@@ -86328,7 +85104,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 57,
+      "rank": 56,
       "trajectory": [
         {
           "date": "2025-02-22",
@@ -86800,8 +85576,8 @@
       "name": "Vítor de Oliveira Lopes Pereira",
       "impact": 53.2,
       "per38": 33.1,
-      "recent": 13.4,
-      "recent_games": 24,
+      "recent": 8.7,
+      "recent_games": 23,
       "matches": 61,
       "clubs": 3,
       "positive_spells": 1,
@@ -86872,7 +85648,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 58,
+      "rank": 57,
       "trajectory": [
         {
           "date": "2016-07-27",
@@ -87340,7 +86116,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 59,
+      "rank": 58,
       "trajectory": [
         {
           "date": "2025-08-24",
@@ -87647,7 +86423,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 60,
+      "rank": 59,
       "trajectory": [
         {
           "date": "2026-08-20",
@@ -87713,8 +86489,8 @@
       "name": "Carlos Antón Cuesta",
       "impact": 49.1,
       "per38": 43.4,
-      "recent": 55.0,
-      "recent_games": 40,
+      "recent": 52.5,
+      "recent_games": 39,
       "matches": 43,
       "clubs": 1,
       "positive_spells": 1,
@@ -87737,7 +86513,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 61,
+      "rank": 60,
       "trajectory": [
         {
           "date": "2025-08-24",
@@ -88055,8 +86831,8 @@
       "name": "Eder Sarabia Armesto",
       "impact": 44.5,
       "per38": 48.3,
-      "recent": 21.1,
-      "recent_games": 31,
+      "recent": 8.0,
+      "recent_games": 29,
       "matches": 35,
       "clubs": 1,
       "positive_spells": 1,
@@ -88111,7 +86887,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 62,
+      "rank": 61,
       "trajectory": [
         {
           "date": "2025-08-18",
@@ -88493,7 +87269,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 63,
+      "rank": 62,
       "trajectory": [
         {
           "date": "2017-12-03",
@@ -89908,7 +88684,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 64,
+      "rank": 63,
       "trajectory": [
         {
           "date": "2024-07-25",
@@ -90023,8 +88799,8 @@
       "name": "Didier Digard",
       "impact": 37.4,
       "per38": 14.7,
-      "recent": 2.1,
-      "recent_games": 35,
+      "recent": 4.2,
+      "recent_games": 34,
       "matches": 97,
       "clubs": 2,
       "positive_spells": 2,
@@ -90063,7 +88839,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 65,
+      "rank": 64,
       "trajectory": [
         {
           "date": "2023-01-11",
@@ -90831,7 +89607,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 66,
+      "rank": 65,
       "trajectory": [
         {
           "date": "2022-10-15",
@@ -91562,8 +90338,8 @@
       "name": "Roberto De Zerbi",
       "impact": 34.8,
       "per38": 4.2,
-      "recent": 6.3,
-      "recent_games": 36,
+      "recent": -18.7,
+      "recent_games": 34,
       "matches": 317,
       "clubs": 7,
       "positive_spells": 3,
@@ -91682,7 +90458,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 67,
+      "rank": 66,
       "trajectory": [
         {
           "date": "2016-09-10",
@@ -94022,7 +92798,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 68,
+      "rank": 67,
       "trajectory": [
         {
           "date": "2016-08-14",
@@ -96552,8 +95328,8 @@
       "name": "Keith Andrews",
       "impact": 33.3,
       "per38": 29.4,
-      "recent": 50.6,
-      "recent_games": 38,
+      "recent": 41.3,
+      "recent_games": 37,
       "matches": 43,
       "clubs": 1,
       "positive_spells": 1,
@@ -96576,7 +95352,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 69,
+      "rank": 68,
       "trajectory": [
         {
           "date": "2025-08-17",
@@ -96894,8 +95670,8 @@
       "name": "Míchel",
       "impact": 33.2,
       "per38": 5.9,
-      "recent": 72.5,
-      "recent_games": 39,
+      "recent": 66.4,
+      "recent_games": 37,
       "matches": 212,
       "clubs": 4,
       "positive_spells": 1,
@@ -96966,7 +95742,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 70,
+      "rank": 69,
       "trajectory": [
         {
           "date": "2018-08-19",
@@ -98455,989 +97231,6 @@
       ]
     },
     {
-      "id": 251872,
-      "team_id": 2975,
-      "club": "Deportivo Alavés",
-      "league": "Other / previous club",
-      "appointment": null,
-      "appointment_ambiguous": false,
-      "employment": "Current employment unverified",
-      "is_current": false,
-      "eligible": true,
-      "name": "Eduardo Coudet",
-      "impact": 32.5,
-      "per38": 9.5,
-      "recent": -29.8,
-      "recent_games": 21,
-      "matches": 130,
-      "clubs": 2,
-      "positive_spells": 2,
-      "eligible_spells": 2,
-      "spells": [
-        {
-          "coach_id": 251872,
-          "team_id": 2975,
-          "club": "Deportivo Alavés",
-          "start": "2016-08-21",
-          "end": "2016-08-28 16:15:00",
-          "inherited": 1500.0,
-          "prior_games": 0,
-          "impact": 4.937202507717564,
-          "games": 2,
-          "league_games": 2,
-          "gain20": null,
-          "gain40": null,
-          "left_truncated": false,
-          "observed_at_import_start": true
-        },
-        {
-          "coach_id": 251872,
-          "team_id": 36,
-          "club": "Celta de Vigo",
-          "start": "2020-11-21",
-          "end": "2022-11-05 17:30:00",
-          "inherited": 1503.0568498459427,
-          "prior_games": 288,
-          "impact": 15.16660067647689,
-          "games": 80,
-          "league_games": 80,
-          "gain20": 44.33021191284216,
-          "gain40": 44.1359834382307,
-          "left_truncated": false,
-          "observed_at_import_start": false
-        },
-        {
-          "coach_id": 251872,
-          "team_id": 2975,
-          "club": "Deportivo Alavés",
-          "start": "2024-12-15",
-          "end": "2026-02-27 20:00:00",
-          "inherited": 1500.059640994265,
-          "prior_games": 280,
-          "impact": 12.363443052482005,
-          "games": 48,
-          "league_games": 48,
-          "gain20": 26.30765476354273,
-          "gain40": 15.285771784123664,
-          "left_truncated": false,
-          "observed_at_import_start": false
-        }
-      ],
-      "rank": 71,
-      "trajectory": [
-        {
-          "date": "2016-08-21",
-          "impact": 7.03,
-          "delta": 7.029544831198504,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2016-08-28",
-          "impact": 4.94,
-          "delta": -2.09234232348094,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2020-11-21",
-          "impact": 1.36,
-          "delta": -3.5788237291149394,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2020-11-29",
-          "impact": 12.15,
-          "delta": 10.787037744102904,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2020-12-04",
-          "impact": 25.2,
-          "delta": 13.051447024123616,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2020-12-14",
-          "impact": 34.04,
-          "delta": 8.84237923036774,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2020-12-20",
-          "impact": 41.76,
-          "delta": 7.7212385167360225,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2020-12-23",
-          "impact": 44.4,
-          "delta": 2.6422000620495933,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2020-12-30",
-          "impact": 51.19,
-          "delta": 6.788430032184991,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-01-02",
-          "impact": 47.85,
-          "delta": -3.3419864690145396,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-01-08",
-          "impact": 39.51,
-          "delta": -8.341462417278866,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-01-20",
-          "impact": 31.11,
-          "delta": -8.397295639969332,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-01-24",
-          "impact": 29.23,
-          "delta": -1.8846173815673661,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-01-31",
-          "impact": 32.01,
-          "delta": 2.7815264326181466,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-02-08",
-          "impact": 39.4,
-          "delta": 7.38779467679707,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-02-12",
-          "impact": 45.82,
-          "delta": 6.424521433349472,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-02-20",
-          "impact": 38.21,
-          "delta": -7.610964006392877,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-02-28",
-          "impact": 35.17,
-          "delta": -3.03723292803763,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-03-07",
-          "impact": 45.46,
-          "delta": 10.283838011046821,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-03-14",
-          "impact": 44.51,
-          "delta": -0.9450201823735882,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-03-20",
-          "impact": 39.34,
-          "delta": -5.167335896302966,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-04-04",
-          "impact": 49.27,
-          "delta": 9.924537399517881,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-04-12",
-          "impact": 42.48,
-          "delta": -6.78564726552456,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-04-18",
-          "impact": 43.73,
-          "delta": 1.2473533504083978,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-04-22",
-          "impact": 37.18,
-          "delta": -6.545390925948283,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-04-25",
-          "impact": 45.96,
-          "delta": 8.778853380130986,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-04-30",
-          "impact": 54.09,
-          "delta": 8.12623079162569,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-05-09",
-          "impact": 69.0,
-          "delta": 14.908391086849262,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-05-12",
-          "impact": 75.95,
-          "delta": 6.948267871795357,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-05-16",
-          "impact": 92.63,
-          "delta": 16.68271622271137,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-05-22",
-          "impact": 81.24,
-          "delta": -11.385892586540203,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-08-15",
-          "impact": 74.61,
-          "delta": -6.634443429785737,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-08-23",
-          "impact": 75.27,
-          "delta": 0.6576861497535225,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-08-28",
-          "impact": 63.34,
-          "delta": -11.928535678463756,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-09-12",
-          "impact": 60.41,
-          "delta": -2.9307162377349316,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-09-17",
-          "impact": 47.18,
-          "delta": -13.221731970920032,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-09-21",
-          "impact": 58.28,
-          "delta": 11.097145196385265,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-09-27",
-          "impact": 65.41,
-          "delta": 7.123855587639691,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-10-03",
-          "impact": 54.85,
-          "delta": -10.557894732648583,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-10-17",
-          "impact": 47.92,
-          "delta": -6.927850897595383,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-10-25",
-          "impact": 57.77,
-          "delta": 9.850666517011417,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-10-28",
-          "impact": 49.07,
-          "delta": -8.697290903760928,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-11-01",
-          "impact": 49.62,
-          "delta": 0.5515508427246818,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-11-06",
-          "impact": 52.94,
-          "delta": 3.3124481823764396,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-11-20",
-          "impact": 54.21,
-          "delta": 1.2678723383455104,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-11-27",
-          "impact": 64.67,
-          "delta": 10.468162836905622,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-12-05",
-          "impact": 53.27,
-          "delta": -11.405352355882911,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-12-10",
-          "impact": 53.44,
-          "delta": 0.16745771498839268,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2021-12-17",
-          "impact": 60.87,
-          "delta": 7.437618074038332,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2022-01-02",
-          "impact": 74.74,
-          "delta": 13.871084436001798,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2022-01-08",
-          "impact": 67.77,
-          "delta": -6.969721855940049,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2022-01-19",
-          "impact": 75.33,
-          "delta": 7.551930794496567,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2022-01-22",
-          "impact": 80.97,
-          "delta": 5.648665312043748,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2022-02-05",
-          "impact": 87.5,
-          "delta": 6.52027822748688,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2022-02-12",
-          "impact": 86.26,
-          "delta": -1.2376253365653211,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2022-02-21",
-          "impact": 81.41,
-          "delta": -4.84869277021345,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2022-02-26",
-          "impact": 76.18,
-          "delta": -5.231024118142871,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2022-03-06",
-          "impact": 81.77,
-          "delta": 5.5876085005559855,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2022-03-12",
-          "impact": 75.86,
-          "delta": -5.902663062878453,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2022-03-20",
-          "impact": 75.55,
-          "delta": -0.3177532222803481,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2022-04-02",
-          "impact": 70.44,
-          "delta": -5.105000743231999,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2022-04-10",
-          "impact": 60.65,
-          "delta": -9.788414836983556,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2022-04-17",
-          "impact": 73.36,
-          "delta": 12.708655666952966,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2022-04-20",
-          "impact": 60.26,
-          "delta": -13.102612404746477,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2022-05-01",
-          "impact": 60.15,
-          "delta": -0.10618782816993244,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2022-05-07",
-          "impact": 66.18,
-          "delta": 6.0243272011873366,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2022-05-10",
-          "impact": 62.22,
-          "delta": -3.9563646803009234,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2022-05-15",
-          "impact": 68.89,
-          "delta": 6.666861820101064,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2022-05-21",
-          "impact": 60.2,
-          "delta": -8.688714899273275,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2022-08-13",
-          "impact": 56.9,
-          "delta": -3.2950603250506028,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2022-08-20",
-          "impact": 52.52,
-          "delta": -4.38194809102945,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2022-08-26",
-          "impact": 62.32,
-          "delta": 9.794845894149859,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2022-09-02",
-          "impact": 69.17,
-          "delta": 6.851735623467157,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2022-09-10",
-          "impact": 64.91,
-          "delta": -4.2618327365552044,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2022-09-17",
-          "impact": 56.23,
-          "delta": -8.671370278015392,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2022-10-02",
-          "impact": 68.03,
-          "delta": 11.799719928866438,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2022-10-09",
-          "impact": 64.08,
-          "delta": -3.950619835325553,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2022-10-16",
-          "impact": 55.7,
-          "delta": -8.384425547810533,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2022-10-19",
-          "impact": 45.03,
-          "delta": -10.671907888618183,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2022-10-24",
-          "impact": 42.65,
-          "delta": -2.377046281393216,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2022-10-29",
-          "impact": 30.91,
-          "delta": -11.734773326814643,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2022-11-05",
-          "impact": 20.1,
-          "delta": -10.811093731220279,
-          "team_id": 36,
-          "club": "Celta de Vigo"
-        },
-        {
-          "date": "2024-12-15",
-          "impact": 24.04,
-          "delta": 3.9321344192261485,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2024-12-22",
-          "impact": 25.46,
-          "delta": 1.426647204485576,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-01-11",
-          "impact": 16.43,
-          "delta": -9.029861479942765,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-01-18",
-          "impact": 30.89,
-          "delta": 14.458005307387074,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-01-27",
-          "impact": 29.68,
-          "delta": -1.2142921335898427,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-02-02",
-          "impact": 27.06,
-          "delta": -2.62114448248546,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-02-09",
-          "impact": 15.79,
-          "delta": -11.262310214323392,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-02-15",
-          "impact": 17.99,
-          "delta": 2.1984968675408334,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-02-22",
-          "impact": 6.28,
-          "delta": -11.708930383150387,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-03-02",
-          "impact": 9.76,
-          "delta": 3.477078469819672,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-03-08",
-          "impact": 22.94,
-          "delta": 13.180563503944747,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-03-14",
-          "impact": 23.14,
-          "delta": 0.19566805921729324,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-03-29",
-          "impact": 12.67,
-          "delta": -10.46725978248271,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-04-05",
-          "impact": 25.99,
-          "delta": 13.326232146233966,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-04-13",
-          "impact": 22.38,
-          "delta": -3.614791935067326,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-04-20",
-          "impact": 25.14,
-          "delta": 2.757918182799133,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-04-23",
-          "impact": 36.23,
-          "delta": 11.095681806977996,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-05-03",
-          "impact": 40.69,
-          "delta": 4.451606132935098,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-05-11",
-          "impact": 36.28,
-          "delta": -4.4082186512597605,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-05-14",
-          "impact": 46.41,
-          "delta": 10.134431725276833,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-05-18",
-          "impact": 53.9,
-          "delta": 7.487980572467066,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-05-24",
-          "impact": 53.71,
-          "delta": -0.19350101087179494,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-08-16",
-          "impact": 61.45,
-          "delta": 7.739432515634281,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-08-22",
-          "impact": 55.84,
-          "delta": -5.60205244228751,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-08-30",
-          "impact": 59.28,
-          "delta": 3.437741405674115,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-09-13",
-          "impact": 75.12,
-          "delta": 15.834428220187037,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-09-20",
-          "impact": 62.23,
-          "delta": -12.885301350586262,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-09-24",
-          "impact": 63.61,
-          "delta": 1.3777401056193783,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-09-27",
-          "impact": 54.47,
-          "delta": -9.13920159379386,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-10-05",
-          "impact": 61.82,
-          "delta": 7.3517952810008325,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-10-20",
-          "impact": 60.37,
-          "delta": -1.4476294285657487,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-10-26",
-          "impact": 53.38,
-          "delta": -6.996860053291442,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-11-02",
-          "impact": 62.35,
-          "delta": 8.976567808009591,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-11-08",
-          "impact": 52.58,
-          "delta": -9.774532402011697,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-11-22",
-          "impact": 42.78,
-          "delta": -9.793664094113769,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-11-29",
-          "impact": 40.49,
-          "delta": -2.2991434015255785,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-12-06",
-          "impact": 50.28,
-          "delta": 9.792016949273009,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-12-14",
-          "impact": 46.09,
-          "delta": -4.183808803177705,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2025-12-20",
-          "impact": 38.43,
-          "delta": -7.667541369877782,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2026-01-04",
-          "impact": 35.39,
-          "delta": -3.036349887181231,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2026-01-10",
-          "impact": 31.27,
-          "delta": -4.123023443767028,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2026-01-18",
-          "impact": 28.48,
-          "delta": -2.784067892997988,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2026-01-25",
-          "impact": 41.36,
-          "delta": 12.879970764560804,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2026-01-30",
-          "impact": 54.3,
-          "delta": 12.933054763207643,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2026-02-08",
-          "impact": 41.65,
-          "delta": -12.648851783431109,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2026-02-14",
-          "impact": 42.94,
-          "delta": 1.2967749245439353,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2026-02-23",
-          "impact": 42.01,
-          "delta": -0.9349949803068669,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        },
-        {
-          "date": "2026-02-27",
-          "impact": 32.47,
-          "delta": -9.541191083451046,
-          "team_id": 2975,
-          "club": "Deportivo Alavés"
-        }
-      ]
-    },
-    {
       "id": 127980,
       "team_id": 1628,
       "club": "Monza",
@@ -99450,8 +97243,8 @@
       "name": "Ivan Juric",
       "impact": 30.4,
       "per38": 4.0,
-      "recent": -17.7,
-      "recent_games": 16,
+      "recent": -28.5,
+      "recent_games": 14,
       "matches": 286,
       "clubs": 7,
       "positive_spells": 2,
@@ -99602,7 +97395,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 72,
+      "rank": 70,
       "trajectory": [
         {
           "date": "2016-08-21",
@@ -101645,7 +99438,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 73,
+      "rank": 71,
       "trajectory": [
         {
           "date": "2026-08-17",
@@ -101799,7 +99592,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 74,
+      "rank": 72,
       "trajectory": [
         {
           "date": "2022-07-21",
@@ -102164,17 +99957,17 @@
       "id": 456360,
       "team_id": 214,
       "club": "Valencia",
-      "league": "La Liga",
-      "appointment": "2024-12-25",
+      "league": "Other / previous club",
+      "appointment": null,
       "appointment_ambiguous": false,
-      "employment": "Current top-five manager",
-      "is_current": true,
+      "employment": "Current employment unverified",
+      "is_current": false,
       "eligible": true,
       "name": "Carlos Corberán Vallet",
       "impact": 24.8,
       "per38": 9.1,
-      "recent": -20.7,
-      "recent_games": 38,
+      "recent": -21.7,
+      "recent_games": 37,
       "matches": 104,
       "clubs": 2,
       "positive_spells": 1,
@@ -102229,7 +100022,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 75,
+      "rank": 73,
       "trajectory": [
         {
           "date": "2016-08-22",
@@ -103030,7 +100823,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 76,
+      "rank": 74,
       "trajectory": [
         {
           "date": "2016-08-27",
@@ -103430,7 +101223,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 77,
+      "rank": 75,
       "trajectory": [
         {
           "date": "2021-08-17",
@@ -103632,7 +101425,7 @@
           "observed_at_import_start": true
         }
       ],
-      "rank": 78,
+      "rank": 76,
       "trajectory": [
         {
           "date": "2026-08-29",
@@ -103749,7 +101542,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 79,
+      "rank": 77,
       "trajectory": [
         {
           "date": "2019-08-08",
@@ -104466,8 +102259,8 @@
       "name": "Luís Ferreira de Castro",
       "impact": 21.2,
       "per38": 19.1,
-      "recent": 26.0,
-      "recent_games": 37,
+      "recent": 22.8,
+      "recent_games": 36,
       "matches": 42,
       "clubs": 2,
       "positive_spells": 0,
@@ -104522,7 +102315,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 80,
+      "rank": 78,
       "trajectory": [
         {
           "date": "2025-08-17",
@@ -104833,8 +102626,8 @@
       "name": "Scott Parker",
       "impact": 19.7,
       "per38": 7.9,
-      "recent": -15.2,
-      "recent_games": 29,
+      "recent": -13.3,
+      "recent_games": 28,
       "matches": 95,
       "clubs": 4,
       "positive_spells": 1,
@@ -104953,7 +102746,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 81,
+      "rank": 79,
       "trajectory": [
         {
           "date": "2019-03-03",
@@ -105659,7 +103452,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 82,
+      "rank": 80,
       "trajectory": [
         {
           "date": "2026-08-29",
@@ -105704,8 +103497,8 @@
       "name": "Christophe Pélissier",
       "impact": 14.1,
       "per38": 2.2,
-      "recent": 17.5,
-      "recent_games": 30,
+      "recent": 9.5,
+      "recent_games": 28,
       "matches": 246,
       "clubs": 3,
       "positive_spells": 2,
@@ -105776,7 +103569,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 83,
+      "rank": 81,
       "trajectory": [
         {
           "date": "2017-08-05",
@@ -107515,8 +105308,8 @@
       "name": "Olivier Pantaloni",
       "impact": 13.7,
       "per38": 6.6,
-      "recent": 68.1,
-      "recent_games": 35,
+      "recent": 51.9,
+      "recent_games": 33,
       "matches": 79,
       "clubs": 3,
       "positive_spells": 1,
@@ -107587,7 +105380,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 84,
+      "rank": 82,
       "trajectory": [
         {
           "date": "2016-08-13",
@@ -108197,7 +105990,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 85,
+      "rank": 83,
       "trajectory": [
         {
           "date": "2024-01-20",
@@ -108655,8 +106448,8 @@
       "name": "José González Álvarez",
       "impact": 13.6,
       "per38": 6.1,
-      "recent": -36.8,
-      "recent_games": 40,
+      "recent": -35.9,
+      "recent_games": 38,
       "matches": 85,
       "clubs": 1,
       "positive_spells": 1,
@@ -108695,7 +106488,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 86,
+      "rank": 84,
       "trajectory": [
         {
           "date": "2016-08-20",
@@ -109331,7 +107124,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 87,
+      "rank": 85,
       "trajectory": [
         {
           "date": "2026-08-23",
@@ -109407,7 +107200,7 @@
           "observed_at_import_start": true
         }
       ],
-      "rank": 88,
+      "rank": 86,
       "trajectory": [
         {
           "date": "2026-08-22",
@@ -109448,19 +107241,19 @@
     },
     {
       "id": 35571,
-      "team_id": 353,
-      "club": "St. Pauli",
-      "league": "Other / previous club",
-      "appointment": null,
+      "team_id": 683,
+      "club": "Borussia Mönchengladbach",
+      "league": "Bundesliga",
+      "appointment": "2026-09-22",
       "appointment_ambiguous": false,
-      "employment": "Current employment unverified",
-      "is_current": false,
+      "employment": "Current top-five manager",
+      "is_current": true,
       "eligible": true,
       "name": "Alexander Blessin",
       "impact": 6.3,
       "per38": 2.5,
-      "recent": -57.7,
-      "recent_games": 30,
+      "recent": -52.4,
+      "recent_games": 29,
       "matches": 96,
       "clubs": 3,
       "positive_spells": 0,
@@ -109515,7 +107308,7 @@
           "observed_at_import_start": true
         }
       ],
-      "rank": 89,
+      "rank": 87,
       "trajectory": [
         {
           "date": "2022-01-22",
@@ -110244,7 +108037,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 90,
+      "rank": 88,
       "trajectory": [
         {
           "date": "2026-03-07",
@@ -110368,6 +108161,285 @@
       ]
     },
     {
+      "id": 30987,
+      "team_id": 683,
+      "club": "Borussia Mönchengladbach",
+      "league": "Other / previous club",
+      "appointment": null,
+      "appointment_ambiguous": false,
+      "employment": "Current employment unverified",
+      "is_current": false,
+      "eligible": true,
+      "name": "Eugen Polanski",
+      "impact": 5.9,
+      "per38": 6.6,
+      "recent": 7.0,
+      "recent_games": 32,
+      "matches": 34,
+      "clubs": 1,
+      "positive_spells": 1,
+      "eligible_spells": 1,
+      "spells": [
+        {
+          "coach_id": 30987,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach",
+          "start": "2025-09-21",
+          "end": "2026-09-12 13:30:00",
+          "inherited": 1520.0645320252238,
+          "prior_games": 453,
+          "impact": 5.911419683616734,
+          "games": 34,
+          "league_games": 34,
+          "gain20": 3.8138019380125154,
+          "gain40": null,
+          "left_truncated": false,
+          "observed_at_import_start": false
+        }
+      ],
+      "rank": 89,
+      "trajectory": [
+        {
+          "date": "2025-09-21",
+          "impact": 6.92,
+          "delta": 6.923382925911394,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        },
+        {
+          "date": "2025-09-27",
+          "impact": -1.04,
+          "delta": -7.967187021393557,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        },
+        {
+          "date": "2025-10-05",
+          "impact": 0.17,
+          "delta": 1.2142828241125214,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        },
+        {
+          "date": "2025-10-17",
+          "impact": -7.2,
+          "delta": -7.367251420220735,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        },
+        {
+          "date": "2025-10-25",
+          "impact": -10.28,
+          "delta": -3.079010517769969,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        },
+        {
+          "date": "2025-11-01",
+          "impact": 0.7,
+          "delta": 10.979603564311695,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        },
+        {
+          "date": "2025-11-08",
+          "impact": 9.16,
+          "delta": 8.460315585233227,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        },
+        {
+          "date": "2025-11-22",
+          "impact": 19.51,
+          "delta": 10.349918808077124,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        },
+        {
+          "date": "2025-11-28",
+          "impact": 21.56,
+          "delta": 2.042800905856005,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        },
+        {
+          "date": "2025-12-05",
+          "impact": 33.69,
+          "delta": 12.132686620588157,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        },
+        {
+          "date": "2025-12-13",
+          "impact": 21.22,
+          "delta": -12.464992402330004,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        },
+        {
+          "date": "2025-12-19",
+          "impact": 17.83,
+          "delta": -3.389583925466053,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        },
+        {
+          "date": "2026-01-11",
+          "impact": 25.68,
+          "delta": 7.849921057309537,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        },
+        {
+          "date": "2026-01-14",
+          "impact": 18.46,
+          "delta": -7.226457533671605,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        },
+        {
+          "date": "2026-01-17",
+          "impact": 18.14,
+          "delta": -0.3136213610897387,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        },
+        {
+          "date": "2026-01-25",
+          "impact": 9.85,
+          "delta": -8.296757607573241,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        },
+        {
+          "date": "2026-01-31",
+          "impact": 12.15,
+          "delta": 2.3036534032363543,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        },
+        {
+          "date": "2026-02-07",
+          "impact": 16.21,
+          "delta": 4.062837789622479,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        },
+        {
+          "date": "2026-02-14",
+          "impact": 9.45,
+          "delta": -6.760282742971569,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        },
+        {
+          "date": "2026-02-22",
+          "impact": 3.81,
+          "delta": -5.640457013759503,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        },
+        {
+          "date": "2026-02-28",
+          "impact": 13.14,
+          "delta": 9.3288768767773,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        },
+        {
+          "date": "2026-03-06",
+          "impact": 11.47,
+          "delta": -1.677198154964883,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        },
+        {
+          "date": "2026-03-13",
+          "impact": 18.89,
+          "delta": 7.425361994929098,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        },
+        {
+          "date": "2026-03-21",
+          "impact": 19.25,
+          "delta": 0.3551231808837563,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        },
+        {
+          "date": "2026-04-04",
+          "impact": 15.12,
+          "delta": -4.127663350294107,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        },
+        {
+          "date": "2026-04-11",
+          "impact": 10.24,
+          "delta": -4.879280449988979,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        },
+        {
+          "date": "2026-04-19",
+          "impact": 10.78,
+          "delta": 0.5404217195061678,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        },
+        {
+          "date": "2026-04-25",
+          "impact": 11.17,
+          "delta": 0.3953981372322546,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        },
+        {
+          "date": "2026-05-03",
+          "impact": 25.42,
+          "delta": 14.24793927291641,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        },
+        {
+          "date": "2026-05-09",
+          "impact": 17.74,
+          "delta": -7.682771405409985,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        },
+        {
+          "date": "2026-05-16",
+          "impact": 28.64,
+          "delta": 10.89971804916175,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        },
+        {
+          "date": "2026-08-29",
+          "impact": 23.58,
+          "delta": -5.057893196696719,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        },
+        {
+          "date": "2026-09-05",
+          "impact": 11.07,
+          "delta": -12.516582993875966,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        },
+        {
+          "date": "2026-09-12",
+          "impact": 5.91,
+          "delta": -5.153831934571875,
+          "team_id": 683,
+          "club": "Borussia Mönchengladbach"
+        }
+      ]
+    },
+    {
       "id": 94341,
       "team_id": 7047,
       "club": "Troyes",
@@ -110404,7 +108476,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 91,
+      "rank": 90,
       "trajectory": [
         {
           "date": "2026-08-22",
@@ -110456,8 +108528,8 @@
       "name": "Ernesto Valverde Tejedor",
       "impact": 4.4,
       "per38": 0.5,
-      "recent": -96.0,
-      "recent_games": 40,
+      "recent": -82.2,
+      "recent_games": 38,
       "matches": 337,
       "clubs": 2,
       "positive_spells": 1,
@@ -110512,7 +108584,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 92,
+      "rank": 91,
       "trajectory": [
         {
           "date": "2016-08-21",
@@ -112944,7 +111016,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 93,
+      "rank": 92,
       "trajectory": [
         {
           "date": "2021-07-22",
@@ -113633,8 +111705,8 @@
       "name": "Maurizio Sarri",
       "impact": 1.6,
       "per38": 0.2,
-      "recent": -43.4,
-      "recent_games": 41,
+      "recent": -33.6,
+      "recent_games": 40,
       "matches": 366,
       "clubs": 5,
       "positive_spells": 2,
@@ -113753,7 +111825,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 94,
+      "rank": 93,
       "trajectory": [
         {
           "date": "2016-08-21",
@@ -116356,7 +114428,7 @@
           "observed_at_import_start": true
         }
       ],
-      "rank": 95,
+      "rank": 94,
       "trajectory": [
         {
           "date": "2026-08-16",
@@ -116422,8 +114494,8 @@
       "name": "Stéphane Gilli",
       "impact": -1.2,
       "per38": -1.6,
-      "recent": -6.6,
-      "recent_games": 24,
+      "recent": 2.1,
+      "recent_games": 23,
       "matches": 28,
       "clubs": 2,
       "positive_spells": 0,
@@ -116462,7 +114534,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 96,
+      "rank": 95,
       "trajectory": [
         {
           "date": "2025-08-17",
@@ -116699,7 +114771,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 97,
+      "rank": 96,
       "trajectory": [
         {
           "date": "2025-12-20",
@@ -116894,7 +114966,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 98,
+      "rank": 97,
       "trajectory": [
         {
           "date": "2026-08-21",
@@ -116930,292 +115002,6 @@
           "delta": -9.785886847160592,
           "team_id": 686,
           "club": "Strasbourg"
-        }
-      ]
-    },
-    {
-      "id": 30987,
-      "team_id": 683,
-      "club": "Borussia Mönchengladbach",
-      "league": "Bundesliga",
-      "appointment": "2025-11-18",
-      "appointment_ambiguous": false,
-      "employment": "Current top-five manager",
-      "is_current": true,
-      "eligible": true,
-      "name": "Eugen Polanski",
-      "impact": -3.8,
-      "per38": -4.1,
-      "recent": -3.8,
-      "recent_games": 35,
-      "matches": 35,
-      "clubs": 1,
-      "positive_spells": 0,
-      "eligible_spells": 1,
-      "spells": [
-        {
-          "coach_id": 30987,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach",
-          "start": "2025-09-21",
-          "end": "2026-09-19 13:30:00",
-          "inherited": 1520.0645320252238,
-          "prior_games": 453,
-          "impact": -3.7809031283036907,
-          "games": 35,
-          "league_games": 35,
-          "gain20": 3.8138019380125154,
-          "gain40": null,
-          "left_truncated": false,
-          "observed_at_import_start": false
-        }
-      ],
-      "rank": 99,
-      "trajectory": [
-        {
-          "date": "2025-09-21",
-          "impact": 6.92,
-          "delta": 6.923382925911394,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2025-09-27",
-          "impact": -1.04,
-          "delta": -7.967187021393557,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2025-10-05",
-          "impact": 0.17,
-          "delta": 1.2142828241125214,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2025-10-17",
-          "impact": -7.2,
-          "delta": -7.367251420220735,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2025-10-25",
-          "impact": -10.28,
-          "delta": -3.079010517769969,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2025-11-01",
-          "impact": 0.7,
-          "delta": 10.979603564311695,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2025-11-08",
-          "impact": 9.16,
-          "delta": 8.460315585233227,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2025-11-22",
-          "impact": 19.51,
-          "delta": 10.349918808077124,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2025-11-28",
-          "impact": 21.56,
-          "delta": 2.042800905856005,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2025-12-05",
-          "impact": 33.69,
-          "delta": 12.132686620588157,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2025-12-13",
-          "impact": 21.22,
-          "delta": -12.464992402330004,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2025-12-19",
-          "impact": 17.83,
-          "delta": -3.389583925466053,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2026-01-11",
-          "impact": 25.68,
-          "delta": 7.849921057309537,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2026-01-14",
-          "impact": 18.46,
-          "delta": -7.226457533671605,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2026-01-17",
-          "impact": 18.14,
-          "delta": -0.3136213610897387,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2026-01-25",
-          "impact": 9.85,
-          "delta": -8.296757607573241,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2026-01-31",
-          "impact": 12.15,
-          "delta": 2.3036534032363543,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2026-02-07",
-          "impact": 16.21,
-          "delta": 4.062837789622479,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2026-02-14",
-          "impact": 9.45,
-          "delta": -6.760282742971569,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2026-02-22",
-          "impact": 3.81,
-          "delta": -5.640457013759503,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2026-02-28",
-          "impact": 13.14,
-          "delta": 9.3288768767773,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2026-03-06",
-          "impact": 11.47,
-          "delta": -1.677198154964883,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2026-03-13",
-          "impact": 18.89,
-          "delta": 7.425361994929098,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2026-03-21",
-          "impact": 19.25,
-          "delta": 0.3551231808837563,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2026-04-04",
-          "impact": 15.12,
-          "delta": -4.127663350294107,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2026-04-11",
-          "impact": 10.24,
-          "delta": -4.879280449988979,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2026-04-19",
-          "impact": 10.78,
-          "delta": 0.5404217195061678,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2026-04-25",
-          "impact": 11.17,
-          "delta": 0.3953981372322546,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2026-05-03",
-          "impact": 25.42,
-          "delta": 14.24793927291641,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2026-05-09",
-          "impact": 17.74,
-          "delta": -7.682771405409985,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2026-05-16",
-          "impact": 28.64,
-          "delta": 10.89971804916175,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2026-08-29",
-          "impact": 23.58,
-          "delta": -5.057893196696719,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2026-09-05",
-          "impact": 11.07,
-          "delta": -12.516582993875966,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2026-09-12",
-          "impact": 5.91,
-          "delta": -5.153831934571875,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
-        },
-        {
-          "date": "2026-09-19",
-          "impact": -3.78,
-          "delta": -9.692322811920425,
-          "team_id": 683,
-          "club": "Borussia Mönchengladbach"
         }
       ]
     },
@@ -117256,7 +115042,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 100,
+      "rank": 98,
       "trajectory": [
         {
           "date": "2026-08-23",
@@ -117339,7 +115125,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 101,
+      "rank": 99,
       "trajectory": [
         {
           "date": "2026-08-24",
@@ -117445,7 +115231,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 102,
+      "rank": 100,
       "trajectory": [
         {
           "date": "2016-08-19",
@@ -117551,7 +115337,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 103,
+      "rank": 101,
       "trajectory": [
         {
           "date": "2026-08-22",
@@ -117603,8 +115389,8 @@
       "name": "Kasper Hjulmand",
       "impact": -5.6,
       "per38": -4.3,
-      "recent": -33.3,
-      "recent_games": 41,
+      "recent": -31.7,
+      "recent_games": 39,
       "matches": 49,
       "clubs": 2,
       "positive_spells": 0,
@@ -117659,7 +115445,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 104,
+      "rank": 102,
       "trajectory": [
         {
           "date": "2018-07-12",
@@ -118043,7 +115829,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 105,
+      "rank": 103,
       "trajectory": [
         {
           "date": "2026-08-23",
@@ -118119,7 +115905,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 106,
+      "rank": 104,
       "trajectory": [
         {
           "date": "2026-08-19",
@@ -118241,7 +116027,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 107,
+      "rank": 105,
       "trajectory": [
         {
           "date": "2016-12-17",
@@ -119110,7 +116896,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 108,
+      "rank": 106,
       "trajectory": [
         {
           "date": "2026-09-18",
@@ -119158,7 +116944,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 109,
+      "rank": 107,
       "trajectory": [
         {
           "date": "2025-08-24",
@@ -119452,7 +117238,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 110,
+      "rank": 108,
       "trajectory": [
         {
           "date": "2022-09-17",
@@ -120293,7 +118079,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 111,
+      "rank": 109,
       "trajectory": [
         {
           "date": "2025-01-30",
@@ -120380,8 +118166,8 @@
       "name": "Dino Toppmöller",
       "impact": -10.5,
       "per38": -2.9,
-      "recent": -54.2,
-      "recent_games": 25,
+      "recent": -47.3,
+      "recent_games": 23,
       "matches": 137,
       "clubs": 3,
       "positive_spells": 1,
@@ -120436,7 +118222,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 112,
+      "rank": 110,
       "trajectory": [
         {
           "date": "2016-07-12",
@@ -121436,7 +119222,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 113,
+      "rank": 111,
       "trajectory": [
         {
           "date": "2026-02-07",
@@ -121619,7 +119405,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 114,
+      "rank": 112,
       "trajectory": [
         {
           "date": "2020-08-20",
@@ -121678,8 +119464,8 @@
       "name": "D. Simeone",
       "impact": -16.2,
       "per38": -1.3,
-      "recent": 7.5,
-      "recent_games": 56,
+      "recent": -5.6,
+      "recent_games": 53,
       "matches": 488,
       "clubs": 1,
       "positive_spells": 0,
@@ -121718,7 +119504,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 115,
+      "rank": 113,
       "trajectory": [
         {
           "date": "2016-08-21",
@@ -125191,7 +122977,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 116,
+      "rank": 114,
       "trajectory": [
         {
           "date": "2022-08-14",
@@ -125369,8 +123155,8 @@
       "name": "Frank Schmidt",
       "impact": -20.0,
       "per38": -6.8,
-      "recent": -1.7,
-      "recent_games": 30,
+      "recent": -11.4,
+      "recent_games": 29,
       "matches": 111,
       "clubs": 1,
       "positive_spells": 0,
@@ -125393,7 +123179,7 @@
           "observed_at_import_start": true
         }
       ],
-      "rank": 117,
+      "rank": 115,
       "trajectory": [
         {
           "date": "2023-08-19",
@@ -126211,7 +123997,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 118,
+      "rank": 116,
       "trajectory": [
         {
           "date": "2026-08-29",
@@ -126256,8 +124042,8 @@
       "name": "Steffen Baumgart",
       "impact": -25.6,
       "per38": -5.6,
-      "recent": -10.7,
-      "recent_games": 26,
+      "recent": -25.6,
+      "recent_games": 25,
       "matches": 173,
       "clubs": 3,
       "positive_spells": 2,
@@ -126328,7 +124114,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 119,
+      "rank": 117,
       "trajectory": [
         {
           "date": "2019-08-17",
@@ -127644,7 +125430,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 120,
+      "rank": 118,
       "trajectory": [
         {
           "date": "2024-08-17",
@@ -128179,8 +125965,8 @@
       "name": "Fabio Grosso",
       "impact": -29.8,
       "per38": -21.4,
-      "recent": 16.2,
-      "recent_games": 37,
+      "recent": 18.0,
+      "recent_games": 36,
       "matches": 53,
       "clubs": 4,
       "positive_spells": 1,
@@ -128283,7 +126069,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 121,
+      "rank": 119,
       "trajectory": [
         {
           "date": "2019-11-09",
@@ -128671,8 +126457,8 @@
       "name": "Alessio Lisci",
       "impact": -32.2,
       "per38": -18.2,
-      "recent": -66.0,
-      "recent_games": 39,
+      "recent": -61.7,
+      "recent_games": 38,
       "matches": 67,
       "clubs": 3,
       "positive_spells": 1,
@@ -128727,7 +126513,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 122,
+      "rank": 120,
       "trajectory": [
         {
           "date": "2021-12-05",
@@ -129253,7 +127039,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 123,
+      "rank": 121,
       "trajectory": [
         {
           "date": "2024-08-07",
@@ -129646,7 +127432,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 124,
+      "rank": 122,
       "trajectory": [
         {
           "date": "2026-01-17",
@@ -129927,7 +127713,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 125,
+      "rank": 123,
       "trajectory": [
         {
           "date": "2023-08-12",
@@ -130399,8 +128185,8 @@
       "name": "Marco Baroni",
       "impact": -62.2,
       "per38": -13.1,
-      "recent": -52.4,
-      "recent_games": 22,
+      "recent": -44.2,
+      "recent_games": 21,
       "matches": 180,
       "clubs": 6,
       "positive_spells": 3,
@@ -130519,7 +128305,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 126,
+      "rank": 124,
       "trajectory": [
         {
           "date": "2017-08-20",
@@ -131916,7 +129702,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 127,
+      "rank": 125,
       "trajectory": [
         {
           "date": "2016-08-20",
@@ -134332,7 +132118,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 128,
+      "rank": 126,
       "trajectory": [
         {
           "date": "2016-07-28",
@@ -136379,7 +134165,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 129,
+      "rank": 127,
       "trajectory": [
         {
           "date": "2020-09-20",
@@ -136713,7 +134499,7 @@
           "observed_at_import_start": true
         }
       ],
-      "rank": 130,
+      "rank": 128,
       "trajectory": [
         {
           "date": "2019-08-11",
@@ -137670,7 +135456,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 131,
+      "rank": 129,
       "trajectory": [
         {
           "date": "2016-08-13",
