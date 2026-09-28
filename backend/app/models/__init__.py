@@ -24,3 +24,5 @@ from .squad_market_value import SquadMarketValue
 __all__ = ["Base", "get_db", "engine", "Match", "OddsSnapshot", "SteamMove", "EmailSubscriber", "TotalsSnapshot", "SpreadsSnapshot", "SyndicateAlert", "ClosingLine", "MarketType", "User", "Subscription", "MagicLink", "XGData", "HistoricalMatch", "PolymarketSnapshot", "OutrightSnapshot", "OutrightCapture", "ClubFinance", "PostedTweet", "LeagueConstants", "LeagueConstantsHistory", "Forecast", "PowerRating", "PowerRatingHistory", "SquadMarketValue"]
 
 from .alert_result import AlertResult
+
+from .european_xg import EuropeanXG

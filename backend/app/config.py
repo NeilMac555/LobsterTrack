@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     odds_api_key: str = ""
     odds_api_base_url: str = "https://api.the-odds-api.com/v4"
 
+    sportmonks_api_token: str = ""
+
     # Scheduler
     fetch_interval_minutes: int = 15
 

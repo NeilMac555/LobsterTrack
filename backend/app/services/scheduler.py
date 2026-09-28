@@ -561,6 +561,13 @@ class OddsScheduler:
             coalesce=True
         )
 
+        from app.services.european_xg import refresh_european_xg
+        self.scheduler.add_job(
+            refresh_european_xg, trigger=CronTrigger(hour=6, minute=15),
+            id="european_xg_daily", name="European Sportmonks xG refresh",
+            replace_existing=True, max_instances=1, coalesce=True,
+        )
+
         # Weekly xG refresh from Understat — Monday 03:00 UTC. By that point
         # the weekend games are all settled and Understat's xG has been
         # retagged by their analysts. Catches every matchweek once.

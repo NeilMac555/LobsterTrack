@@ -5043,3 +5043,16 @@ def create_forecast(
     payload["id"] = row.id
     payload["created_at"] = row.created_at.isoformat()
     return payload
+
+
+@router.get("/european-xg")
+async def get_european_xg(league: str = Query(...), db: Session = Depends(get_db)):
+    from app.models import EuropeanXG
+    from app.services.european_xg import LEAGUES, season_name
+    if league not in LEAGUES:
+        raise HTTPException(status_code=400, detail="Unsupported European competition")
+    row = db.get(EuropeanXG, league + ':' + season_name())
+    return {'source': 'Sportmonks', 'metric': 'npxG', 'season': season_name(),
+        'scope': 'Main competition only; qualifiers excluded',
+        'updated_at': row.refreshed_at.isoformat() + 'Z' if row else None,
+        'fixtures': row.fixtures if row else []}

@@ -1,3 +1,4 @@
+import EuropeanRollingXG from '../components/EuropeanRollingXG';
 import { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import {
@@ -169,7 +170,7 @@ function CustomTooltip({ active, payload, label }: any) {
   );
 }
 
-export default function RollingXGPage() {
+function DomesticRollingXGPage() {
   const { isSubscribed } = useAuth();
   const [league, setLeague] = useState('soccer_epl');
   const [team, setTeam] = useState('');
@@ -549,4 +550,16 @@ function StatCard({ label, value, color, borderColor }: { label: string; value: 
       </div>
     </div>
   );
+}
+
+
+export default function RollingXGPage() {
+  const [competition, setCompetition] = useState('domestic');
+  return <div>
+    <nav aria-label="xG competition" className="max-w-5xl mx-auto px-4 pt-5 flex flex-wrap gap-2">
+      {[['domestic', 'Domestic · Understat'], ['soccer_uefa_champs_league', 'Champions League'], ['soccer_uefa_europa_league', 'Europa League'], ['soccer_uefa_europa_conference_league', 'Conference League']].map(([key, name]) =>
+        <button key={key} onClick={() => setCompetition(key)} className={`px-4 py-2 rounded-lg text-sm ${competition === key ? 'bg-cyan-900 text-cyan-300' : 'bg-slate-800 text-slate-400'}`}>{name}</button>)}
+    </nav>
+    {competition === 'domestic' ? <DomesticRollingXGPage/> : <EuropeanRollingXG league={competition}/>}
+  </div>;
 }
