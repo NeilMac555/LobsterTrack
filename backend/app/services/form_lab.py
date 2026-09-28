@@ -86,9 +86,15 @@ async def refresh_form_lab(backfill=False):
                     data=(await request(f"football/seasons/{season['id']}",include='fixtures.participants;fixtures.scores;fixtures.events;fixtures.state;fixtures.statistics;fixtures.xGFixture;fixtures.stage'))['data']
                     if 'fixtures' not in data:raise ValueError('Fixtures absent')
                     rows={}
+                    upcoming=[]
                     teams={}
                     for fixture in data['fixtures']:
                         for team in fixture.get('participants',[]):teams[str(team['id'])]=team['name']
+                        if (fixture.get('state') or {}).get('developer_name')=='NS':
+                            sides={p.get('meta',{}).get('location'):p for p in fixture.get('participants',[])}
+                            stage=(fixture.get('stage') or {}).get('name','').lower()
+                            if 'home' in sides and 'away' in sides and fixture.get('starting_at') and (key not in EUROPE or stage in MAIN_STAGES):
+                                upcoming.append(dict(id=fixture['id'],date=fixture['starting_at'],home_id=sides['home']['id'],away_id=sides['away']['id'],home=sides['home']['name'],away=sides['away']['name'],round_id=fixture.get('round_id')))
                         row=normalize(fixture,key,season['id'],name)
                         if row:rows[row['id']]=row
                     standings={}
@@ -101,7 +107,7 @@ async def refresh_form_lab(backfill=False):
                     with SessionLocal() as db:
                         old=db.get(FormLabSeason,identity)
                         if old and not {f['id'] for f in old.data['fixtures']}.issubset(rows):raise ValueError('Fixture list shrank')
-                        db.merge(FormLabSeason(key=identity,league=key,season=name,updated_at=datetime.utcnow(),data={'fixtures':sorted(rows.values(),key=lambda f:(f['date'],f['id'])),'teams':teams,'standings':standings}))
+                        db.merge(FormLabSeason(key=identity,league=key,season=name,updated_at=datetime.utcnow(),data={'fixtures':sorted(rows.values(),key=lambda f:(f['date'],f['id'])),'teams':teams,'standings':standings,'upcoming':upcoming}))
                         db.commit()
                     summary[identity]=len(rows)
             except Exception:

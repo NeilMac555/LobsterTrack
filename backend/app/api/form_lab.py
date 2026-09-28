@@ -1,4 +1,5 @@
 from typing import Literal
+from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from app.models import get_db, FormLabSeason
@@ -12,7 +13,16 @@ def catalog(db: Session = Depends(get_db)):
         rows=db.query(FormLabSeason).filter_by(league=key).order_by(FormLabSeason.season.desc()).all()
         teams={}
         for row in reversed(rows): teams.update(row.data['teams'])
-        result.append(dict(key=key,name=name,opposition_bands=key not in EUROPE,
+        now=datetime.utcnow()
+        upcoming=sorted([f for r in rows for f in r.data.get('upcoming',[]) if f['date']>now.strftime('%Y-%m-%d %H:%M:%S')],key=lambda f:(f['date'],f['id']))
+        if upcoming:
+            first=upcoming[0]
+            if first.get('round_id'):
+                upcoming=[f for f in upcoming if f.get('round_id')==first['round_id']]
+            else:
+                end=datetime.fromisoformat(first['date'])+timedelta(days=7)
+                upcoming=[f for f in upcoming if datetime.fromisoformat(f['date'])<end]
+        result.append(dict(upcoming=upcoming,(key=key,name=name,opposition_bands=key not in EUROPE,
             seasons=[r.season for r in rows],updated_at=rows[0].updated_at if rows else None,
             teams=[dict(id=int(k),name=v) for k,v in sorted(teams.items(),key=lambda x:x[1])]))
     return result
