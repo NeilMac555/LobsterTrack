@@ -22,7 +22,7 @@ def catalog(db: Session = Depends(get_db)):
             else:
                 end=datetime.fromisoformat(first['date'])+timedelta(days=7)
                 upcoming=[f for f in upcoming if datetime.fromisoformat(f['date'])<end]
-        result.append(dict(upcoming=upcoming,(key=key,name=name,opposition_bands=key not in EUROPE,
+        result.append(dict(upcoming=upcoming,key=key,name=name,opposition_bands=key not in EUROPE,
             seasons=[r.season for r in rows],updated_at=rows[0].updated_at if rows else None,
             teams=[dict(id=int(k),name=v) for k,v in sorted(teams.items(),key=lambda x:x[1])]))
     return result
