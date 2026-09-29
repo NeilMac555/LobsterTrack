@@ -245,6 +245,41 @@ if os.path.exists(static_dir):
                 return HTMLResponse(f.read(), status_code=404)
         return HTMLResponse("<h1>Not found</h1>", status_code=404)
 
+    from fastapi.responses import Response as _Response
+    from app.services import sitemap as _sitemap
+
+    def _xml(body: str | None):
+        if body is None:
+            return _not_found_response()
+        return _Response(content=body, media_type="application/xml",
+                         headers={"Cache-Control": "public, max-age=900"})
+
+    def _with_db(fn):
+        from app.models.database import SessionLocal
+        db = SessionLocal()
+        try:
+            return fn(db)
+        finally:
+            db.close()
+
+    # Dynamic sitemaps (services/sitemap.py). Registered before the catch-all
+    # so they win; there is no static sitemap.xml any more.
+    @app.get("/sitemap.xml")
+    async def sitemap_index():
+        return _xml(_with_db(_sitemap.sitemap_index))
+
+    @app.get("/sitemap-pages.xml")
+    async def sitemap_pages():
+        return _xml(_sitemap.sitemap_pages())
+
+    @app.get("/sitemap-matches.xml")
+    async def sitemap_matches():
+        return _xml(_with_db(lambda db: _sitemap.sitemap_matches(db)))
+
+    @app.get("/sitemap-matches-{part}.xml")
+    async def sitemap_matches_part(part: int):
+        return _xml(_with_db(lambda db: _sitemap.sitemap_matches(db, part)))
+
     @app.get("/{full_path:path}")
     async def serve_frontend(full_path: str):
         """Serve the frontend for all non-API routes (2026-09-29 rewrite).

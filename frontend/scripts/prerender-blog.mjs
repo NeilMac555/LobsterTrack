@@ -966,4 +966,5 @@ writeFileSync(resolve(DIST, 'app.html'), renderPage({
 }), 'utf-8');
 writeFileSync(resolve(DIST, '_shell.html'), renderPage({ head: '<!--PRERENDER:HEAD-->', contentHtml: '<!--PRERENDER:CONTENT-->' }), 'utf-8');
 writeFileSync(resolve(DIST, 'routes.json'), JSON.stringify(ROUTES, null, 2), 'utf-8');
-console.log('Wrote 404.html, app.html, _shell.html, routes.json');
+writeFileSync(resolve(DIST, 'build-info.json'), JSON.stringify({ built_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z') }), 'utf-8');
+console.log('Wrote 404.html, app.html, _shell.html, routes.json, build-info.json');
