@@ -88,7 +88,7 @@ export default function DroppingOddsPage() {
           SteamWatch logs a drop of 3 percentage points or more before kickoff as a steamer and follows it to the result on{' '}
           <Link to="/steam-results" className="text-cyan-400 hover:underline">Steam Results</Link>.
           The opposite move, a price that lengthens, is a drifter, and those are tracked on <Link to="/drifters" className="text-cyan-400 hover:underline">Drifters</Link>.
-          {record}
+          {' '}{record}
         </p>
         <p>
           Background: <Link to="/blog/what-are-steam-moves-in-football-betting" className="text-cyan-400 hover:underline">what steam moves are</Link>,{' '}
