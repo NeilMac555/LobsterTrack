@@ -90,7 +90,7 @@ class TelegramNotifier:
 ↓ {abs(prob_change):.1f}pp implied prob in last 3h{best_line}
 ⏱ Kickoff: {time_str}
 
-steamwatch.io"""
+https://www.steamwatch.io"""
 
         return await self._send_message(message)
 
