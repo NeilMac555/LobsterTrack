@@ -184,6 +184,7 @@ export default function HomePage() {
     <div>
       <Helmet>
         <title>SteamWatch - Track the Biggest Odds Moves in Football Betting</title>
+        <meta name="description" content="Track the biggest odds moves and see what happened next. Real-time steam alerts, historical ROI, closing-line data and betting-market analysis for serious bettors." />
         <link rel="canonical" href="https://www.steamwatch.io/" />
       </Helmet>
 

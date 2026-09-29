@@ -1,0 +1,24 @@
+{
+  "_comment": "Single source of truth for site routes. App.tsx must declare exactly public + dynamic + internal + redirects (the build fails otherwise, see scripts/prerender-blog.mjs). The backend reads the built copy (static/routes.json) to decide what is a real 404. Paths have no leading slash; '' is the homepage. static_only pages have no React route and are served as pure prerendered HTML.",
+  "public": [
+    "",
+    "steam-results",
+    "drifters",
+    "closing-lines",
+    "cl-closing-lines",
+    "team-pnl",
+    "in-play-jumps",
+    "longshot-bias",
+    "tools/hedge-calculator",
+    "tools/bet-calculator",
+    "tools/match-predictor",
+    "tools/rolling-xg",
+    "tools/club-ratings",
+    "about",
+    "blog"
+  ],
+  "dynamic": ["match/*", "blog/*"],
+  "internal": ["auth/verify", "admin/emails"],
+  "redirects": ["power-rankings", "favs-dogs", "tools/forecast", "tools/world-cup"],
+  "static_only": ["tools/manager-ratings"]
+}

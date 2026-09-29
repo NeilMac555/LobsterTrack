@@ -148,16 +148,6 @@ export default function DriftersPage() {
         <meta property="og:description" content="Football teams whose 1X2 odds consistently drift (lengthen) in the 3 hours before kickoff. Historical performance, win rates, and P/L." />
         <meta property="og:url" content="https://www.steamwatch.io/drifters" />
         <link rel="canonical" href="https://www.steamwatch.io/drifters" />
-        <script type="application/ld+json">{JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "Dataset",
-          "name": "SteamWatch Football Drifter Results",
-          "description": "Historical performance data for teams whose 1X2 odds consistently drift pre-kickoff. Win rates and P/L tracking.",
-          "url": "https://www.steamwatch.io/drifters",
-          "temporalCoverage": "2025/..",
-          "creator": { "@type": "Organization", "name": "SteamWatch", "url": "https://www.steamwatch.io" },
-          "keywords": ["drifters", "fade", "football betting", "line movement", "odds drift"]
-        })}</script>
       </Helmet>
 
       {/* Page Header */}

@@ -17,32 +17,7 @@ export default function BlogPostPage() {
     );
   }
 
-  const schemaArticle = {
-    '@context': 'https://schema.org',
-    '@type': 'Article',
-    headline: post.title,
-    description: post.description,
-    author: { '@type': 'Person', name: post.author },
-    datePublished: post.datePublished,
-    publisher: {
-      '@type': 'Organization',
-      name: 'SteamWatch',
-      url: 'https://www.steamwatch.io',
-    },
-    mainEntityOfPage: `https://www.steamwatch.io/blog/${post.slug}`,
-  };
 
-  const schemaFAQ = post.faq
-    ? {
-        '@context': 'https://schema.org',
-        '@type': 'FAQPage',
-        mainEntity: post.faq.map((q) => ({
-          '@type': 'Question',
-          name: q.question,
-          acceptedAnswer: { '@type': 'Answer', text: q.answer },
-        })),
-      }
-    : null;
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -58,11 +33,6 @@ export default function BlogPostPage() {
         <meta name="twitter:title" content={post.title} />
         <meta name="twitter:description" content={post.description} />
         <link rel="canonical" href={`https://www.steamwatch.io/blog/${post.slug}`} />
-        <script type="application/ld+json">{JSON.stringify(schemaArticle)}</script>
-        {schemaFAQ && (
-          <script type="application/ld+json">{JSON.stringify(schemaFAQ)}</script>
-        )}
-        <noscript>{`${post.noscriptHtml}`}</noscript>
       </Helmet>
 
       {/* Breadcrumb */}

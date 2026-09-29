@@ -183,16 +183,6 @@ export default function BetCalculatorPage() {
         <meta property="og:description" content="Calculate returns for singles, doubles, trebles and accumulators in fraction, decimal or American odds." />
         <meta property="og:url" content="https://www.steamwatch.io/tools/bet-calculator" />
         <link rel="canonical" href="https://www.steamwatch.io/tools/bet-calculator" />
-        <script type="application/ld+json">{JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "WebApplication",
-          "name": "Bet Calculator",
-          "url": "https://www.steamwatch.io/tools/bet-calculator",
-          "description": "Calculate returns for singles, doubles, trebles and accumulators in fraction, decimal or American odds",
-          "applicationCategory": "FinanceApplication",
-          "operatingSystem": "Web",
-          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
-        })}</script>
       </Helmet>
 
       {/* Page Header */}

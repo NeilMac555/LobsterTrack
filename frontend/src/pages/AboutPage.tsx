@@ -1,22 +1,5 @@
 import { Helmet } from 'react-helmet-async';
 
-const PERSON_SCHEMA = {
-  "@context": "https://schema.org",
-  "@type": "Person",
-  "name": "Neil Mac",
-  "alternateName": ["Neil Macdonald", "Neil Mac Tips", "NeilMac555", "Bookie Insiders Football"],
-  "url": "https://www.steamwatch.io/about",
-  "jobTitle": "Professional Football Betting Analyst",
-  "knowsAbout": ["football betting", "steam moves", "sharp money", "closing line value", "Dixon-Coles model"],
-  "sameAs": [
-    "https://x.com/NeilMac555",
-    "https://www.sharpsidesoccer.com/",
-"https://www.honestbettingreviews.com/best-football-tipster-telegram/",
-    "https://smartsportstrader.com/bookie-insiders-football-review/",
-    "https://www.bet-experts.com/tipster-review/neil-mac/",
-    "https://www.youtube.com/@neilmac555"
-  ]
-};
 
 export default function AboutPage() {
   return (
@@ -28,7 +11,6 @@ export default function AboutPage() {
         <meta property="og:description" content="Neil Mac is a professional football betting analyst with 20+ years' experience and 7,800+ tracked bets. Creator of SteamWatch, a steam move and sharp money tracking platform." />
         <meta property="og:url" content="https://www.steamwatch.io/about" />
         <link rel="canonical" href="https://www.steamwatch.io/about" />
-        <script type="application/ld+json">{JSON.stringify(PERSON_SCHEMA)}</script>
       </Helmet>
 
       <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">About Neil Mac</h1>

@@ -292,90 +292,7 @@ function faqSchema(post) {
 }
 
 // ---------------------------------------------------------------------------
-// Generate static HTML for each blog post
-// ---------------------------------------------------------------------------
-const template = readFileSync(resolve(DIST, 'index.html'), 'utf-8');
-
-for (const post of POSTS) {
-  const url = `${DOMAIN}/blog/${post.slug}`;
-  const pageTitle = `${post.title} — SteamWatch`;
-
-  // Replace <title>
-  let html = template.replace(
-    /<title>[^<]*<\/title>/,
-    `<title>${pageTitle}</title>`
-  );
-
-  // Replace meta description
-  html = html.replace(
-    /<meta name="description" content="[^"]*"\s*\/?>/,
-    `<meta name="description" content="${post.description}" />`
-  );
-
-  // Replace OG tags
-  html = html.replace(
-    /<meta property="og:type" content="[^"]*"\s*\/?>/,
-    `<meta property="og:type" content="article" />`
-  );
-  html = html.replace(
-    /<meta property="og:url" content="[^"]*"\s*\/?>/,
-    `<meta property="og:url" content="${url}" />`
-  );
-  html = html.replace(
-    /<meta property="og:title" content="[^"]*"\s*\/?>/,
-    `<meta property="og:title" content="${pageTitle}" />`
-  );
-  html = html.replace(
-    /<meta property="og:description" content="[^"]*"\s*\/?>/,
-    `<meta property="og:description" content="${post.description}" />`
-  );
-
-  // Replace Twitter tags
-  html = html.replace(
-    /<meta name="twitter:title" content="[^"]*"\s*\/?>/,
-    `<meta name="twitter:title" content="${pageTitle}" />`
-  );
-  html = html.replace(
-    /<meta name="twitter:description" content="[^"]*"\s*\/?>/,
-    `<meta name="twitter:description" content="${post.description}" />`
-  );
-
-  // Replace canonical
-  html = html.replace(
-    /<link rel="canonical" href="[^"]*"\s*\/?>/,
-    `<link rel="canonical" href="${url}" />`
-  );
-
-  // Replace the homepage's WebApplication + FAQPage JSON-LD with the
-  // post's Article + FAQPage (same regex the static-page branch uses).
-  // Until 2026-09-02 this appended instead, leaving every post with two
-  // FAQPage blocks — Google honours at most one FAQPage per URL and may
-  // ignore both when it sees two, so the post's own FAQ never got
-  // eligible for rich results.
-  const jsonLd = `<script type="application/ld+json">${articleSchema(post)}</script>\n    ${faqSchema(post)}`;
-  html = html.replace(
-    /<script type="application\/ld\+json">[\s\S]*?<\/script>\s*\n\s*<!-- Privacy/,
-    `${jsonLd}\n\n    <!-- Privacy`
-  );
-
-  // Replace generic noscript with post-specific content
-  html = html.replace(
-    /<noscript>[\s\S]*?<\/noscript>/,
-    `<noscript>\n      ${post.noscriptHtml}\n    </noscript>`
-  );
-
-  // Write to dist/blog/<slug>/index.html
-  const outDir = resolve(DIST, 'blog', post.slug);
-  mkdirSync(outDir, { recursive: true });
-  writeFileSync(resolve(outDir, 'index.html'), html, 'utf-8');
-
-  console.log(`  ✓ /blog/${post.slug}`);
-}
-
-console.log(`\nPre-rendered ${POSTS.length} blog page(s).`);
-
-// ---------------------------------------------------------------------------
-// Static pages — pre-render with page-specific meta + JSON-LD + noscript
+// Static pages — data (path, meta, JSON-LD, page HTML in `noscriptHtml`)
 // ---------------------------------------------------------------------------
 const PAGES = [
   {
@@ -666,61 +583,357 @@ const PAGES = [
   },
 ];
 
-for (const page of PAGES) {
-  const url = `${DOMAIN}/${page.path}`;
+// ---------------------------------------------------------------------------
+// Extra static pages (2026-09-29): routes that previously fell back to the
+// homepage template. Same shape as PAGES; `contentHtml` is real page HTML.
+// ---------------------------------------------------------------------------
+PAGES.push(
+  {
+    path: 'in-play-jumps',
+    title: 'In-Play Jumps: Pinnacle Close vs Polymarket First 5 Minutes — SteamWatch',
+    description:
+      'The gap between the Pinnacle closing line and Polymarket\'s first five minutes of in-play trading, match by match, with the implied-probability change in percentage points.',
+    ogType: 'website',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'Dataset',
+      name: 'SteamWatch In-Play Jumps',
+      description: 'Per-match gap between the Pinnacle 1X2 closing line and the Polymarket price in the first five minutes after kickoff, in implied-probability percentage points.',
+      url: `${DOMAIN}/in-play-jumps`,
+      creator: { '@type': 'Organization', name: 'SteamWatch', url: DOMAIN },
+      keywords: ['in-play odds', 'closing line', 'Polymarket', 'football betting'],
+    },
+    noscriptHtml: `<h1>In-Play Jumps</h1>
+<p>Where the market went in the first five minutes after kickoff. For every tracked match SteamWatch records the Pinnacle closing 1X2 price and the first Polymarket price once in-play trading opens, then reports the gap between them in implied-probability percentage points.</p>
+<h2>What the table shows</h2>
+<ul>
+  <li>The Pinnacle close for the side in question, as an implied probability.</li>
+  <li>The Polymarket price at roughly T+5 minutes, as an implied probability.</li>
+  <li>The gap in percentage points. A large positive gap means the in-play market priced the side higher than the close; a large negative gap means lower.</li>
+</ul>
+<p>The page reports observed prices only. It does not claim to know why a price moved. Match-level price histories are on each match page; the closing-line archive is at <a href="${DOMAIN}/closing-lines">Closing Lines</a>.</p>`,
+  },
+  {
+    path: 'tools/bet-calculator',
+    title: 'Bet Calculator: Singles, Doubles, Trebles and Accumulators — SteamWatch',
+    description:
+      'Free bet calculator for singles, doubles, trebles and accumulators. Enter fractional, decimal or American odds and a stake to see the return and profit.',
+    ogType: 'website',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'SoftwareApplication',
+      name: 'SteamWatch Bet Calculator',
+      applicationCategory: 'UtilitiesApplication',
+      operatingSystem: 'Web',
+      url: `${DOMAIN}/tools/bet-calculator`,
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
+      description: 'Calculates returns for singles, doubles, trebles and accumulators from fractional, decimal or American odds.',
+    },
+    noscriptHtml: `<h1>Bet Calculator</h1>
+<p>Work out the return and profit on a single, double, treble or accumulator. Enter each selection's odds in fractional, decimal or American format, set your stake, and the calculator shows the total return, the profit, and the combined odds.</p>
+<h2>How accumulator returns are calculated</h2>
+<p>Each selection's decimal odds are multiplied together to give the combined price, and the stake is multiplied by that combined price to give the return. Fractional odds convert to decimal by dividing the numerator by the denominator and adding 1 (5/2 is 3.50). Positive American odds convert as odds divided by 100 plus 1 (+150 is 2.50); negative American odds as 100 divided by the absolute value plus 1 (-200 is 1.50).</p>
+<p>Also on SteamWatch: the <a href="${DOMAIN}/tools/hedge-calculator">Hedge Calculator</a> for locking in a profit or limiting a loss on an open bet.</p>`,
+  },
+);
 
-  let html = template.replace(/<title>[^<]*<\/title>/, `<title>${page.title}</title>`);
-
-  html = html.replace(
-    /<meta name="description" content="[^"]*"\s*\/?>/,
-    `<meta name="description" content="${page.description}" />`
-  );
-  html = html.replace(
-    /<meta property="og:type" content="[^"]*"\s*\/?>/,
-    `<meta property="og:type" content="${page.ogType}" />`
-  );
-  html = html.replace(
-    /<meta property="og:url" content="[^"]*"\s*\/?>/,
-    `<meta property="og:url" content="${url}" />`
-  );
-  html = html.replace(
-    /<meta property="og:title" content="[^"]*"\s*\/?>/,
-    `<meta property="og:title" content="${page.title}" />`
-  );
-  html = html.replace(
-    /<meta property="og:description" content="[^"]*"\s*\/?>/,
-    `<meta property="og:description" content="${page.description}" />`
-  );
-  html = html.replace(
-    /<meta name="twitter:title" content="[^"]*"\s*\/?>/,
-    `<meta name="twitter:title" content="${page.title}" />`
-  );
-  html = html.replace(
-    /<meta name="twitter:description" content="[^"]*"\s*\/?>/,
-    `<meta name="twitter:description" content="${page.description}" />`
-  );
-  html = html.replace(
-    /<link rel="canonical" href="[^"]*"\s*\/?>/,
-    `<link rel="canonical" href="${url}" />`
-  );
-
-  // Replace the homepage WebApplication JSON-LD with the page-specific one
-  html = html.replace(
-    /<script type="application\/ld\+json">[\s\S]*?<\/script>\s*\n\s*<!-- Privacy/,
-    `<script type="application/ld+json">${JSON.stringify(page.jsonLd)}</script>\n\n    <!-- Privacy`
-  );
-
-  // Replace generic noscript with page-specific content
-  html = html.replace(
-    /<noscript>[\s\S]*?<\/noscript>/,
-    `<noscript>\n      ${page.noscriptHtml}\n    </noscript>`
-  );
-
-  const outDir = resolve(DIST, ...page.path.split('/'));
-  mkdirSync(outDir, { recursive: true });
-  writeFileSync(resolve(outDir, 'index.html'), html, 'utf-8');
-
-  console.log(`  ✓ /${page.path}`);
+// ---------------------------------------------------------------------------
+// Route manifest check — src/routes.json is the single source of truth.
+// App.tsx must declare exactly those routes, and every public route must
+// have a prerender entry. Either mismatch fails the build, so a new page
+// cannot ship and 404 in production because a list was forgotten.
+// ---------------------------------------------------------------------------
+const ROUTES = JSON.parse(readFileSync(resolve(__dirname, '..', 'src', 'routes.json'), 'utf-8'));
+{
+  const appSrc = readFileSync(resolve(__dirname, '..', 'src', 'App.tsx'), 'utf-8');
+  const declared = new Set();
+  for (const m of appSrc.matchAll(/<Route\s+(?:index|path="([^"]*)")/g)) {
+    const raw = m[1] === undefined ? '' : m[1];
+    if (raw === '/') continue; // the <Layout /> wrapper route, not a page
+    declared.add(raw.replace(/\/:[^/]+$/, '/*'));
+  }
+  const expected = new Set([...ROUTES.public, ...ROUTES.dynamic, ...ROUTES.internal, ...ROUTES.redirects]);
+  const missingFromRoutes = [...declared].filter((r) => !expected.has(r));
+  const missingFromApp = [...expected].filter((r) => !declared.has(r));
+  if (missingFromRoutes.length || missingFromApp.length) {
+    console.error('\nROUTE MANIFEST MISMATCH (src/routes.json vs App.tsx)');
+    if (missingFromRoutes.length) console.error('  declared in App.tsx but not in routes.json:', missingFromRoutes);
+    if (missingFromApp.length) console.error('  in routes.json but not declared in App.tsx:', missingFromApp);
+    process.exit(1);
+  }
+  const prerendered = new Set(['', 'blog', ...PAGES.map((p) => p.path)]);
+  const noEntry = ROUTES.public.filter((r) => !prerendered.has(r));
+  if (noEntry.length) {
+    console.error('\nPUBLIC ROUTES WITHOUT A PRERENDER ENTRY:', noEntry, '\nAdd them to PAGES in scripts/prerender-blog.mjs.');
+    process.exit(1);
+  }
 }
 
-console.log(`Pre-rendered ${PAGES.length} static page(s).`);
+// ---------------------------------------------------------------------------
+// Shell: nav + footer + inline CSS, shared by every prerendered page and by
+// the backend's server-rendered match pages (written to dist/_shell.html).
+// Plain CSS on .pr-* classes, so Tailwind's content scan can't purge it.
+// Real visitors see this markup until the app mounts and replaces #root.
+// ---------------------------------------------------------------------------
+const NAV_LINKS = [
+  ['/', 'Overview'],
+  ['/steam-results', 'Steam Results'],
+  ['/closing-lines', 'Closing Lines'],
+  ['/drifters', 'Drifters'],
+  ['/team-pnl', 'Team P/L'],
+  ['/longshot-bias', 'Longshot Bias'],
+  ['/tools/match-predictor', 'Tools'],
+  ['/blog', 'Blog'],
+  ['/about', 'About'],
+];
+const TOOL_LINKS = [
+  ['/tools/bet-calculator', 'Bet Calculator'],
+  ['/tools/hedge-calculator', 'Hedging Calculator'],
+  ['/tools/match-predictor', 'Match Model'],
+  ['/tools/rolling-xg', 'Rolling xG'],
+  ['/tools/club-ratings', 'Club Ratings'],
+  ['/tools/manager-ratings', 'Manager Ratings'],
+  ['/in-play-jumps', 'In-Play Jumps'],
+];
+
+const SHELL_CSS = `
+#root .pr{min-height:100vh;color:#e2e8f0;font-family:'Inter Tight','Inter',system-ui,-apple-system,sans-serif;background:linear-gradient(180deg,#0f172a 0%,#0c1220 100%)}
+#root .pr-mono{font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace}
+#root .pr-header{position:sticky;top:0;background:rgba(15,23,42,.92);border-bottom:1px solid rgba(51,65,85,.5);backdrop-filter:blur(8px)}
+#root .pr-wrap{max-width:80rem;margin:0 auto;padding:0 1rem}
+#root .pr-bar{display:flex;align-items:center;gap:1rem;height:52px}
+#root .pr-brand{display:flex;align-items:center;gap:.625rem;color:#e8edf0;font-weight:700;font-size:18px;letter-spacing:-.02em;text-decoration:none;flex-shrink:0}
+#root .pr-brand img{width:28px;height:28px;border-radius:7px;display:block}
+#root .pr-brand span{color:#8a94a0;font-weight:500}
+#root .pr-nav{display:flex;flex-wrap:wrap;gap:.125rem;align-items:center}
+#root .pr-nav a{padding:.375rem .625rem;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#94a3b8;text-decoration:none;white-space:nowrap}
+#root .pr-nav a:hover{color:#fff}
+#root .pr-main{max-width:80rem;margin:0 auto;padding:1.5rem 1rem 3rem;line-height:1.6}
+#root .pr-main h1{font-size:1.75rem;font-weight:700;color:#fff;letter-spacing:-.02em;margin:0 0 .75rem}
+#root .pr-main h2{font-size:1.125rem;font-weight:700;color:#fff;margin:1.75rem 0 .5rem}
+#root .pr-main h3{font-size:1rem;font-weight:600;color:#e2e8f0;margin:1.25rem 0 .5rem}
+#root .pr-main p,#root .pr-main li{color:#cbd5e1;font-size:.9375rem;max-width:72ch}
+#root .pr-main ul{padding-left:1.25rem}
+#root .pr-main a{color:#22d3ee;text-decoration:none}
+#root .pr-main a:hover{text-decoration:underline}
+#root .pr-main table{border-collapse:collapse;width:100%;max-width:56rem;margin:1rem 0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:.8125rem}
+#root .pr-main th{text-align:left;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#64748b;padding:.5rem .75rem;border-bottom:1px solid rgba(51,65,85,.6)}
+#root .pr-main td{padding:.5rem .75rem;border-bottom:1px solid rgba(51,65,85,.35);color:#e2e8f0;font-variant-numeric:tabular-nums}
+#root .pr-main td.pr-num{text-align:right}
+#root .pr-main .pr-up{color:#34d399}
+#root .pr-main .pr-down{color:#f87171}
+#root .pr-lead{font-size:1.0625rem;color:#e2e8f0;border-left:3px solid #22d3ee;padding-left:1rem;margin:1rem 0 1.5rem}
+#root .pr-meta{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#64748b;margin-bottom:.5rem}
+#root .pr-footer{border-top:1px solid rgba(51,65,85,.5);background:rgba(30,41,59,.5);padding:2rem 1rem;margin-top:2rem}
+#root .pr-footer .pr-cols{max-width:80rem;margin:0 auto;display:grid;gap:1.5rem;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr))}
+#root .pr-footer h4{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#64748b;margin:0 0 .5rem}
+#root .pr-footer a{display:block;color:#94a3b8;text-decoration:none;font-size:.875rem;padding:.125rem 0}
+#root .pr-footer a:hover{color:#fff}
+#root .pr-footer .pr-note{max-width:80rem;margin:1.5rem auto 0;text-align:center;color:#64748b;font-size:.8125rem}
+`.trim();
+
+function esc(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+const NAV_HTML = `<header class="pr-header"><div class="pr-wrap pr-bar">
+<a class="pr-brand" href="/"><img src="/logos/mark-on-dark.svg" width="28" height="28" alt="">SteamWatch<span>.io</span></a>
+<nav class="pr-nav" aria-label="Main">${NAV_LINKS.map(([h, t]) => `<a href="${h}">${t}</a>`).join('')}</nav>
+</div></header>`;
+
+const FOOTER_HTML = `<footer class="pr-footer"><div class="pr-cols">
+<div><h4>Data</h4>${[['/', 'Live odds & biggest movers'], ['/steam-results', 'Steam Results'], ['/drifters', 'Drifters'], ['/closing-lines', 'Closing Lines'], ['/cl-closing-lines', 'Champions League Closing Lines'], ['/team-pnl', 'Team P/L'], ['/longshot-bias', 'Longshot Bias']].map(([h, t]) => `<a href="${h}">${t}</a>`).join('')}</div>
+<div><h4>Tools</h4>${TOOL_LINKS.map(([h, t]) => `<a href="${h}">${t}</a>`).join('')}</div>
+<div><h4>Blog</h4>${POSTS.map((p) => `<a href="/blog/${p.slug}">${esc(p.title)}</a>`).join('')}<a href="/blog">All posts</a></div>
+<div><h4>SteamWatch</h4><a href="/about">About Neil Mac</a><a href="https://t.me/steamwatchalerts">Free Telegram alerts</a><a href="https://x.com/Steamwatchio">@Steamwatchio on X</a></div>
+</div><p class="pr-note">Pinnacle odds via The Odds API · updated every 15 minutes</p></footer>`;
+
+// The Vite template, read once BEFORE the homepage overwrites dist/index.html.
+const template = readFileSync(resolve(DIST, 'index.html'), 'utf-8');
+if (!template.includes('<!-- prerender:head -->') || !template.includes('<!-- prerender:root -->')) {
+  console.error('dist/index.html is missing the prerender markers (index.html was changed?)');
+  process.exit(1);
+}
+// Hashed asset tags change every build: keep them from the built template,
+// never hardcode. Used verbatim by the backend shell too.
+const ASSET_TAGS = [...template.matchAll(/<(?:script type="module"[^>]*><\/script>|link rel="(?:stylesheet|modulepreload)"[^>]*>)/g)].map((m) => m[0]);
+if (!ASSET_TAGS.some((t) => t.startsWith('<script'))) {
+  console.error('No module script tag found in dist/index.html');
+  process.exit(1);
+}
+
+/** Per-route head tags. Tags Helmet will manage carry data-rh="true" so
+ *  react-helmet-async REPLACES them on mount instead of adding a second
+ *  copy. JSON-LD deliberately has no data-rh: it is static, and the pages
+ *  no longer emit schema through Helmet. */
+function headTags({ title, description, url, ogType = 'website', jsonLd, robots }) {
+  const blocks = Array.isArray(jsonLd) ? jsonLd : jsonLd ? [jsonLd] : [];
+  return [
+    `<title>${esc(title)}</title>`,
+    `<meta name="description" content="${esc(description)}" data-rh="true" />`,
+    url ? `<link rel="canonical" href="${url}" data-rh="true" />` : '',
+    robots ? `<meta name="robots" content="${robots}" data-rh="true" />` : '',
+    `<meta property="og:type" content="${ogType}" data-rh="true" />`,
+    `<meta property="og:title" content="${esc(title)}" data-rh="true" />`,
+    `<meta property="og:description" content="${esc(description)}" data-rh="true" />`,
+    url ? `<meta property="og:url" content="${url}" data-rh="true" />` : '',
+    `<meta name="twitter:title" content="${esc(title)}" data-rh="true" />`,
+    `<meta name="twitter:description" content="${esc(description)}" data-rh="true" />`,
+    ...blocks.map((b) => `<script type="application/ld+json">${JSON.stringify(b)}</script>`),
+  ].filter(Boolean).join('\n    ');
+}
+
+/** Full document: template + per-route head + styled static body. `app`
+ *  false drops the bundle for pages with no React route (static_only). */
+function renderPage({ head, contentHtml, app = true }) {
+  let html = template.replace(/<title>[^<]*<\/title>\n?/, '');
+  html = html.replace('<!-- prerender:head -->', `${head}\n    <style id="prerender-css">${SHELL_CSS}</style>`);
+  html = html.replace('<!-- prerender:root -->', `<div class="pr">${NAV_HTML}<main class="pr-main">${contentHtml}</main>${FOOTER_HTML}</div>`);
+  if (!app) for (const t of ASSET_TAGS) html = html.replace(t, '');
+  return html;
+}
+
+function writePage(routePath, html) {
+  const outDir = routePath ? resolve(DIST, ...routePath.split('/')) : DIST;
+  mkdirSync(outDir, { recursive: true });
+  writeFileSync(resolve(outDir, 'index.html'), html, 'utf-8');
+  console.log(`  ✓ /${routePath}`);
+}
+
+// ---------------------------------------------------------------------------
+// Blog posts
+// ---------------------------------------------------------------------------
+for (const post of POSTS) {
+  const url = `${DOMAIN}/blog/${post.slug}`;
+  const jsonLd = [JSON.parse(articleSchema(post))];
+  if (post.faq && post.faq.length) jsonLd.push({
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: post.faq.map((f) => ({ '@type': 'Question', name: f.question, acceptedAnswer: { '@type': 'Answer', text: f.answer } })),
+  });
+  writePage(`blog/${post.slug}`, renderPage({
+    head: headTags({ title: `${post.title} — SteamWatch`, description: post.description, url, ogType: 'article', jsonLd }),
+    contentHtml: post.noscriptHtml,
+  }));
+}
+console.log(`Pre-rendered ${POSTS.length} blog page(s).`);
+
+// ---------------------------------------------------------------------------
+// Blog index — a real list of the posts, newest first
+// ---------------------------------------------------------------------------
+{
+  const sorted = [...POSTS].sort((a, b) => b.datePublished.localeCompare(a.datePublished));
+  const items = sorted.map((p) => `<li><a href="/blog/${p.slug}">${esc(p.title)}</a><br><span class="pr-meta">${p.datePublished}</span> ${esc(p.description)}</li>`).join('\n');
+  writePage('blog', renderPage({
+    head: headTags({
+      title: 'Blog — SteamWatch',
+      description: 'Articles on steam moves, closing line value, drifters and the favourite-longshot bias in football betting, written from SteamWatch\'s own Pinnacle price data.',
+      url: `${DOMAIN}/blog`,
+      jsonLd: {
+        '@context': 'https://schema.org', '@type': 'Blog', name: 'SteamWatch Blog', url: `${DOMAIN}/blog`,
+        blogPost: sorted.map((p) => ({ '@type': 'BlogPosting', headline: p.title, url: `${DOMAIN}/blog/${p.slug}`, datePublished: p.datePublished, author: { '@type': 'Person', name: p.author } })),
+      },
+    }),
+    contentHtml: `<h1>Blog</h1><p>Explainers written from SteamWatch's own Pinnacle price data.</p><ul>${items}</ul>`,
+  }));
+}
+
+// ---------------------------------------------------------------------------
+// Static pages
+// ---------------------------------------------------------------------------
+for (const page of PAGES) {
+  writePage(page.path, renderPage({
+    head: headTags({ title: page.title, description: page.description, url: `${DOMAIN}/${page.path}`, ogType: page.ogType, jsonLd: page.jsonLd }),
+    contentHtml: page.noscriptHtml,
+  }));
+}
+console.log(`Pre-rendered ${PAGES.length + 1} static page(s).`);
+
+// ---------------------------------------------------------------------------
+// Manager Ratings — static-only page (no React route) built from the data
+// file the tool ships with. Only the preview rows are public.
+// ---------------------------------------------------------------------------
+{
+  const dataPath = resolve(__dirname, '..', 'public', 'tools', 'manager-ratings', 'manager-elo-data.json');
+  const d = JSON.parse(readFileSync(dataPath, 'utf-8'));
+  const rows = (d.rows || []).filter((r) => r.eligible).sort((a, b) => a.rank - b.rank);
+  const tr = rows.map((r) => `<tr><td class="pr-num">${r.rank}</td><td>${esc(r.name)}</td><td>${esc(r.club)}</td><td>${esc(r.league)}</td><td class="pr-num">${Number(r.impact).toFixed(2)}</td><td class="pr-num">${Number(r.per38).toFixed(1)}</td><td class="pr-num">${r.matches}</td></tr>`).join('');
+  writePage('tools/manager-ratings', renderPage({
+    app: false,
+    head: headTags({
+      title: 'Manager Ratings: Points Above Expectation for Europe\'s Top Managers — SteamWatch',
+      description: `Manager ratings for Europe's top five leagues built from closing-price expectations: how many points each manager's teams earned above what the market priced them for, since 2018/19. Updated ${String(d.as_of).slice(0, 10)}.`,
+      url: `${DOMAIN}/tools/manager-ratings`,
+      jsonLd: {
+        '@context': 'https://schema.org', '@type': 'Dataset', name: 'SteamWatch Manager Ratings', url: `${DOMAIN}/tools/manager-ratings`,
+        description: 'Points earned above market expectation per manager across the top five European leagues, computed from Pinnacle closing prices since 2018/19.',
+        temporalCoverage: '2018-08/..', creator: { '@type': 'Organization', name: 'SteamWatch', url: DOMAIN },
+      },
+    }),
+    contentHtml: `<h1>Manager Ratings</h1>
+<p class="pr-lead">Which managers have earned the most points above what the market expected of their teams? Every finished top-five-league match since 2018/19 is priced from the Pinnacle closing line into expected points; the manager in charge gets the difference between actual and expected. Rankings cover ${d.eligible_managers} eligible managers (${d.managers} tracked) and were last computed on ${String(d.as_of).slice(0, 10)}.</p>
+<h2>Top of the table</h2>
+<table><thead><tr><th>Rank</th><th>Manager</th><th>Club</th><th>League</th><th>Impact (pts)</th><th>Per 38</th><th>Matches</th></tr></thead><tbody>${tr}</tbody></table>
+<p>The full ranking of all ${d.eligible_managers} eligible managers, recent-form splits and per-spell breakdowns are available with SteamWatch Pro. See also <a href="/tools/club-ratings">Club Ratings</a> and <a href="/team-pnl">Team P/L</a>.</p>`,
+  }));
+}
+
+// ---------------------------------------------------------------------------
+// Homepage — the last write, because it overwrites the template file
+// ---------------------------------------------------------------------------
+writePage('', renderPage({
+  head: headTags({
+    title: 'SteamWatch - Track the Biggest Odds Moves in Football Betting',
+    description: 'Track the biggest odds moves and see what happened next. Real-time steam alerts, historical ROI, closing-line data and betting-market analysis for serious bettors.',
+    url: `${DOMAIN}/`,
+    jsonLd: [
+      {
+        '@context': 'https://schema.org', '@type': 'WebApplication', name: 'SteamWatch', url: DOMAIN,
+        description: 'Track the biggest odds moves across major football betting markets and see what happened next',
+        applicationCategory: 'SportsApplication', operatingSystem: 'Web',
+        sameAs: ['https://x.com/Steamwatchio', 'https://t.me/steamwatchalerts'],
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
+        author: { '@type': 'Person', name: 'Neil Macdonald', url: `${DOMAIN}/about` },
+      },
+      {
+        '@context': 'https://schema.org', '@type': 'FAQPage',
+        mainEntity: [
+          { '@type': 'Question', name: 'What is SteamWatch?', acceptedAnswer: { '@type': 'Answer', text: 'SteamWatch tracks the biggest odds moves in football betting markets and shows what happened next. It records Pinnacle odds roughly every 15 minutes across Europe\'s major leagues, highlights significant pre-kickoff price moves, and keeps a historical record of how those moves performed.' } },
+          { '@type': 'Question', name: 'What is a steam move in football betting?', acceptedAnswer: { '@type': 'Answer', text: 'A steam move is a sudden, significant shift in a betting line. On SteamWatch it means an implied-probability move of 3 or more percentage points on an outcome before kickoff. SteamWatch reports the move and its outcome; it does not claim to know why the market moved.' } },
+          { '@type': 'Question', name: 'Is SteamWatch free?', acceptedAnswer: { '@type': 'Answer', text: 'The core is free: real-time steam alerts via Telegram, live odds and biggest movers, the closing line archive, team profit/loss records, and bet and hedge calculators. SteamWatch Pro adds the Dixon-Coles match predictor, rolling xG tables, the historical steam results directory, drifters, and the full Longshot Bias explorer.' } },
+          { '@type': 'Question', name: 'Which leagues does SteamWatch track?', acceptedAnswer: { '@type': 'Answer', text: 'Premier League, EFL Championship, La Liga, Bundesliga, Serie A, Ligue 1, and the UEFA Champions League, Europa League, Conference League and Nations League, using Pinnacle odds updated roughly every 15 minutes.' } },
+        ],
+      },
+    ],
+  }),
+  contentHtml: `<h1>Track the biggest odds moves. See what happened next.</h1>
+<p class="pr-lead">SteamWatch records Pinnacle football odds roughly every 15 minutes across Europe's major leagues, flags the significant pre-kickoff moves, and keeps a public record of how those moves performed.</p>
+<h2>What is on the site</h2>
+<ul>
+  <li><a href="/">Biggest movers</a>: the largest 1X2, Asian handicap and totals moves over the last 48 hours, with every tracked match's price history one click away.</li>
+  <li><a href="/steam-results">Steam Results</a>: every detected steam move tracked through to a result, with win rates and profit/loss.</li>
+  <li><a href="/drifters">Drifters</a>: the moves going the other way, with the same accounting.</li>
+  <li><a href="/closing-lines">Closing Lines</a>: the Pinnacle close on 1X2, Asian handicap and totals for every finished match, by matchweek.</li>
+  <li><a href="/team-pnl">Team P/L</a> and <a href="/longshot-bias">Longshot Bias</a>: what blindly backing or fading teams, favourites, underdogs and draws at closing prices would have returned since 2021/22.</li>
+</ul>
+<h2>Leagues covered</h2>
+<p>Premier League, EFL Championship, La Liga, Bundesliga, Serie A, Ligue 1, Champions League, Europa League, Conference League and the UEFA Nations League.</p>
+<h2>Free alerts</h2>
+<p>Steam alerts go out in real time on <a href="https://t.me/steamwatchalerts">Telegram</a>. <a href="/blog/what-are-steam-moves-in-football-betting">What is a steam move?</a></p>`,
+}));
+
+// ---------------------------------------------------------------------------
+// 404 page (noindex), bare app shell for internal/redirect routes (noindex),
+// the backend shell for server-rendered match pages, and the route manifest.
+// ---------------------------------------------------------------------------
+writeFileSync(resolve(DIST, '404.html'), renderPage({
+  head: headTags({ title: 'Page not found — SteamWatch', description: 'That page does not exist on SteamWatch.', robots: 'noindex, nofollow' }),
+  contentHtml: `<h1>Page not found</h1><p>There is nothing at this address. Try the <a href="/">live odds overview</a>, <a href="/steam-results">Steam Results</a> or the <a href="/blog">blog</a>.</p>`,
+}), 'utf-8');
+writeFileSync(resolve(DIST, 'app.html'), renderPage({
+  head: headTags({ title: 'SteamWatch', description: 'SteamWatch', robots: 'noindex' }),
+  contentHtml: '',
+}), 'utf-8');
+writeFileSync(resolve(DIST, '_shell.html'), renderPage({ head: '<!--PRERENDER:HEAD-->', contentHtml: '<!--PRERENDER:CONTENT-->' }), 'utf-8');
+writeFileSync(resolve(DIST, 'routes.json'), JSON.stringify(ROUTES, null, 2), 'utf-8');
+console.log('Wrote 404.html, app.html, _shell.html, routes.json');

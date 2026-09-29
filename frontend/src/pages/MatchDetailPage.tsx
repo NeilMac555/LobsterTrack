@@ -130,9 +130,17 @@ export default function MatchDetailPage() {
     fetchMatch();
   }, [matchId]);
 
+  const holdingHelmet = (
+    <Helmet>
+      <meta name="description" content="How the 1X2, Asian handicap and totals prices moved from open to kickoff." />
+      <link rel="canonical" href={`https://www.steamwatch.io/match/${matchId}`} />
+    </Helmet>
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
+        {holdingHelmet}
         <div className="flex items-center gap-3">
           <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
           <span className="text-slate-400">Loading match...</span>
@@ -144,6 +152,7 @@ export default function MatchDetailPage() {
   if (error || !match) {
     return (
       <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-6 sm:p-8 text-center">
+        {holdingHelmet}
         <p className="text-red-400 text-base sm:text-lg">{error || 'Match not found'}</p>
         <Link to="/" className="text-blue-400 hover:text-blue-300 mt-4 inline-block font-medium">
           ← Back to matches
@@ -158,7 +167,7 @@ export default function MatchDetailPage() {
   const firstOdds = match.odds_history[0];
   const isBetfairSourced = match.current_odds_bookmaker === 'betfair_ex_eu';
 
-  const metaDesc = `Sharp money movement for ${match.home_team} vs ${match.away_team} — track line moves, steam alerts and model probabilities on SteamWatch.`;
+  const metaDesc = `${match.home_team} vs ${match.away_team}: how the 1X2, Asian handicap and totals prices moved from open to kickoff.`;
 
   return (
     <div>

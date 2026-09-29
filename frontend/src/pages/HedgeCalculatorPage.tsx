@@ -89,16 +89,6 @@ export default function HedgeCalculatorPage() {
         <meta property="og:description" content="Calculate optimal hedge bet sizes for football wagers with real-time calculations." />
         <meta property="og:url" content="https://www.steamwatch.io/tools/hedge-calculator" />
         <link rel="canonical" href="https://www.steamwatch.io/tools/hedge-calculator" />
-        <script type="application/ld+json">{JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "WebApplication",
-          "name": "Football Hedge Calculator",
-          "url": "https://www.steamwatch.io/tools/hedge-calculator",
-          "description": "Calculate optimal hedge bet sizes for football wagers with real-time calculations",
-          "applicationCategory": "FinanceApplication",
-          "operatingSystem": "Web",
-          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
-        })}</script>
       </Helmet>
 
       {/* Page Header */}

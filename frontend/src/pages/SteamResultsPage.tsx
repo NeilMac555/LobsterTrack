@@ -148,16 +148,6 @@ export default function SteamResultsPage() {
         <meta property="og:description" content="Historical performance data for tracked football steam moves across major European leagues, including win rates and P/L." />
         <meta property="og:url" content="https://www.steamwatch.io/steam-results" />
         <link rel="canonical" href="https://www.steamwatch.io/steam-results" />
-        <script type="application/ld+json">{JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "Dataset",
-          "name": "SteamWatch Football Steam Move Results",
-          "description": "Historical performance data for tracked football steam moves across major European leagues, including win rates and P/L",
-          "url": "https://www.steamwatch.io/steam-results",
-          "temporalCoverage": "2025/..",
-          "creator": { "@type": "Organization", "name": "SteamWatch", "url": "https://www.steamwatch.io" },
-          "keywords": ["steam moves", "sharp money", "football betting", "line movement"]
-        })}</script>
       </Helmet>
 
       {/* Page Header */}
