@@ -140,8 +140,8 @@ export default function InPlayJumpsPage() {
   return (
     <div>
       <Helmet>
-        <title>In-Play Jumps | SteamWatch</title>
-        <meta name="description" content="The gap between Pinnacle's closing line and Polymarket's first 5 minutes of in-play. Catches sharp-money manipulation of the close." />
+        <title>In-Play Jumps: Pinnacle Close vs Polymarket | SteamWatch</title>
+        <meta name="description" content="The gap between the Pinnacle closing line and Polymarket's first five minutes of in-play trading, match by match, in implied-probability points." />
         <link rel="canonical" href="https://www.steamwatch.io/in-play-jumps" />
       </Helmet>
 

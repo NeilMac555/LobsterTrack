@@ -142,10 +142,10 @@ export default function DriftersPage() {
   return (
     <div>
       <Helmet>
-        <title>Football Drifters: Odds That Lengthened Before Kickoff & What Happened | SteamWatch</title>
-        <meta name="description" content="Football teams whose 1X2 odds consistently drift (lengthen) in the 3 hours before kickoff. Historical performance, win rates, and P/L." />
+        <title>Football Drifters: Odds That Lengthened | SteamWatch</title>
+        <meta name="description" content="Selections whose odds lengthened before kickoff, tracked to the result with win rates and P/L. The other side of steam, across the major European leagues." />
         <meta property="og:title" content="Biggest Drifters | SteamWatch" />
-        <meta property="og:description" content="Football teams whose 1X2 odds consistently drift (lengthen) in the 3 hours before kickoff. Historical performance, win rates, and P/L." />
+        <meta property="og:description" content="Selections whose odds lengthened before kickoff, tracked to the result with win rates and P/L. The other side of steam, across the major European leagues." />
         <meta property="og:url" content="https://www.steamwatch.io/drifters" />
         <link rel="canonical" href="https://www.steamwatch.io/drifters" />
       </Helmet>

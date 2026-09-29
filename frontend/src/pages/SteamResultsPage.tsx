@@ -142,7 +142,7 @@ export default function SteamResultsPage() {
   return (
     <div>
       <Helmet>
-        <title>Do Steam Moves Win? Football Steam Move Results & ROI | SteamWatch</title>
+        <title>Football Steam Move Results and ROI | SteamWatch</title>
         <meta name="description" content="Historical performance data for tracked football steam moves across major European leagues, including win rates and P/L." />
         <meta property="og:title" content="Steam Results | SteamWatch" />
         <meta property="og:description" content="Historical performance data for tracked football steam moves across major European leagues, including win rates and P/L." />

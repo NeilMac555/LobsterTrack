@@ -4,6 +4,8 @@ import type { ReactNode } from 'react';
 export interface BlogPost {
   slug: string;
   title: string;
+  /** Optional <title> override (H1 stays `title`). Keep under 60 chars. */
+  seoTitle?: string;
   description: string;
   author: string;
   datePublished: string;
@@ -282,8 +284,9 @@ export const BLOG_POSTS: BlogPost[] = [
   {
     slug: 'what-is-closing-line-value-in-football-betting',
     title: 'What Is Closing Line Value (CLV) in Football Betting?',
+    seoTitle: 'Closing Line Value (CLV) in Football Betting | SteamWatch',
     description:
-      'Closing line value explained: what CLV is, how to calculate it in implied probability, why beating the closing line is the best predictor of long-term betting profit, and how to track it.',
+      'What closing line value is, how to calculate it in implied probability, why beating the close predicts long-term profit, and how to track it.',
     author: 'Neil Macdonald',
     datePublished: '2026-08-15',
     dateFormatted: 'August 15, 2026',
@@ -436,7 +439,7 @@ export const BLOG_POSTS: BlogPost[] = [
     slug: 'what-is-a-drifter-in-football-betting',
     title: 'What Is a Drifter in Football Betting?',
     description:
-      'Drifters explained: what it means when football odds drift, why prices lengthen before kickoff, how drift relates to steam, and what the data says about backing or fading drifting teams.',
+      'What it means when football odds drift, why prices lengthen before kickoff, how drift relates to steam, and what the data says about backing drifters.',
     author: 'Neil Macdonald',
     datePublished: '2026-08-15',
     dateFormatted: 'August 15, 2026',
@@ -560,7 +563,7 @@ export const BLOG_POSTS: BlogPost[] = [
     slug: 'how-to-read-closing-lines-in-football-betting',
     title: 'How to Read Closing Lines in Football Betting',
     description:
-      'A practical guide to reading closing lines: converting odds to implied probability, comparing opening and closing prices, what open-to-close movement tells you, and which markets to trust.',
+      'How to read closing lines: convert odds to implied probability, compare opening and closing prices, and know which markets to trust.',
     author: 'Neil Macdonald',
     datePublished: '2026-08-15',
     dateFormatted: 'August 15, 2026',

@@ -22,7 +22,7 @@ export default function BlogPostPage() {
   return (
     <div className="max-w-3xl mx-auto">
       <Helmet>
-        <title>{`${post.title} | SteamWatch`}</title>
+        <title>{post.seoTitle ?? `${post.title} | SteamWatch`}</title>
         <meta name="description" content={post.description} />
         <meta property="og:type" content="article" />
         <meta property="og:title" content={post.title} />

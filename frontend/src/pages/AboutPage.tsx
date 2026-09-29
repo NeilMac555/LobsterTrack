@@ -5,10 +5,10 @@ export default function AboutPage() {
   return (
     <div className="max-w-3xl mx-auto">
       <Helmet>
-        <title>About Neil Mac | Football Betting Analyst &amp; SteamWatch Founder</title>
-        <meta name="description" content="Neil Mac is a professional football betting analyst with 20+ years' experience and 7,800+ tracked bets. Creator of SteamWatch, a steam move and sharp money tracking platform." />
-        <meta property="og:title" content="About Neil Mac | Football Betting Analyst & SteamWatch Founder" />
-        <meta property="og:description" content="Neil Mac is a professional football betting analyst with 20+ years' experience and 7,800+ tracked bets. Creator of SteamWatch, a steam move and sharp money tracking platform." />
+        <title>About Neil Mac, Betting Analyst | SteamWatch</title>
+        <meta name="description" content="Neil Mac is a football betting analyst with 20+ years' experience and 7,800+ tracked bets. He built SteamWatch to track steam moves and closing lines." />
+        <meta property="og:title" content="About Neil Mac, Betting Analyst | SteamWatch" />
+        <meta property="og:description" content="Neil Mac is a football betting analyst with 20+ years' experience and 7,800+ tracked bets. He built SteamWatch to track steam moves and closing lines." />
         <meta property="og:url" content="https://www.steamwatch.io/about" />
         <link rel="canonical" href="https://www.steamwatch.io/about" />
       </Helmet>

@@ -81,8 +81,9 @@ const POSTS = [
   {
     slug: 'what-is-closing-line-value-in-football-betting',
     title: 'What Is Closing Line Value (CLV) in Football Betting?',
+    seoTitle: 'Closing Line Value (CLV) in Football Betting | SteamWatch',
     description:
-      'Closing line value explained: what CLV is, how to calculate it in implied probability, why beating the closing line is the best predictor of long-term betting profit, and how to track it.',
+      'What closing line value is, how to calculate it in implied probability, why beating the close predicts long-term profit, and how to track it.',
     author: 'Neil Macdonald',
     datePublished: '2026-08-15',
     faq: [
@@ -124,7 +125,7 @@ const POSTS = [
     slug: 'what-is-a-drifter-in-football-betting',
     title: 'What Is a Drifter in Football Betting?',
     description:
-      'Drifters explained: what it means when football odds drift, why prices lengthen before kickoff, how drift relates to steam, and what the data says about backing or fading drifting teams.',
+      'What it means when football odds drift, why prices lengthen before kickoff, how drift relates to steam, and what the data says about backing drifters.',
     author: 'Neil Macdonald',
     datePublished: '2026-08-15',
     faq: [
@@ -164,7 +165,7 @@ const POSTS = [
     slug: 'how-to-read-closing-lines-in-football-betting',
     title: 'How to Read Closing Lines in Football Betting',
     description:
-      'A practical guide to reading closing lines: converting odds to implied probability, comparing opening and closing prices, what open-to-close movement tells you, and which markets to trust.',
+      'How to read closing lines: convert odds to implied probability, compare opening and closing prices, and know which markets to trust.',
     author: 'Neil Macdonald',
     datePublished: '2026-08-15',
     faq: [
@@ -297,7 +298,7 @@ function faqSchema(post) {
 const PAGES = [
   {
     path: 'steam-results',
-    title: 'Do Steam Moves Win? Football Steam Move Results & ROI | SteamWatch',
+    title: 'Football Steam Move Results and ROI | SteamWatch',
     description:
       'Historical performance data for tracked football steam moves across major European leagues, including win rates and P/L.',
     ogType: 'website',
@@ -352,9 +353,9 @@ const PAGES = [
   },
   {
     path: 'about',
-    title: 'About Neil Mac | Football Betting Analyst & SteamWatch Founder',
+    title: 'About Neil Mac, Betting Analyst | SteamWatch',
     description:
-      "Neil Mac is a professional football betting analyst with 20+ years' experience and 7,800+ tracked bets. Creator of SteamWatch, a steam move and sharp money tracking platform.",
+      "Neil Mac is a football betting analyst with 20+ years' experience and 7,800+ tracked bets. He built SteamWatch to track steam moves and closing lines.",
     ogType: 'website',
     jsonLd: {
       '@context': 'https://schema.org',
@@ -514,9 +515,9 @@ const PAGES = [
   },
   {
     path: 'drifters',
-    title: 'Football Drifters: Odds That Lengthened Before Kickoff & What Happened | SteamWatch',
+    title: 'Football Drifters: Odds That Lengthened | SteamWatch',
     description:
-      'Football odds drifters: selections whose prices lengthened before kickoff, tracked with outcomes recorded. The other side of steam, across major European leagues.',
+      'Selections whose odds lengthened before kickoff, tracked to the result with win rates and P/L. The other side of steam, across the major European leagues.',
     ogType: 'website',
     jsonLd: {
       '@context': 'https://schema.org',
@@ -628,9 +629,9 @@ const PAGES = [
 PAGES.push(
   {
     path: 'in-play-jumps',
-    title: 'In-Play Jumps: Pinnacle Close vs Polymarket First 5 Minutes | SteamWatch',
+    title: 'In-Play Jumps: Pinnacle Close vs Polymarket | SteamWatch',
     description:
-      'The gap between the Pinnacle closing line and Polymarket\'s first five minutes of in-play trading, match by match, with the implied-probability change in percentage points.',
+      'The gap between the Pinnacle closing line and Polymarket\'s first five minutes of in-play trading, match by match, in implied-probability points.',
     ogType: 'website',
     jsonLd: {
       '@context': 'https://schema.org',
@@ -653,7 +654,7 @@ PAGES.push(
   },
   {
     path: 'tools/bet-calculator',
-    title: 'Bet Calculator: Singles, Doubles, Trebles and Accumulators | SteamWatch',
+    title: 'Bet Calculator: Singles to Accumulators | SteamWatch',
     description:
       'Free bet calculator for singles, doubles, trebles and accumulators. Enter fractional, decimal or American odds and a stake to see the return and profit.',
     ogType: 'website',
@@ -675,9 +676,9 @@ PAGES.push(
   },
   {
     path: 'tools/form-lab',
-    title: 'Form Lab: Football Form, Handicap Cover Rates and Home/Away Splits | SteamWatch',
+    title: 'Form Lab: Football Form and Cover Rates | SteamWatch',
     description:
-      'Compare football form across the top leagues: results by opponent strength, goal patterns, Asian handicap cover rates, home and away splits, and rolling expected goals, built from Pinnacle closing prices.',
+      'Compare football form across the top leagues: results by opponent strength, goal patterns, handicap cover rates, home and away splits and rolling xG.',
     ogType: 'website',
     jsonLd: {
       '@context': 'https://schema.org',
@@ -938,7 +939,7 @@ for (const post of POSTS) {
     mainEntity: post.faq.map((f) => ({ '@type': 'Question', name: f.question, acceptedAnswer: { '@type': 'Answer', text: f.answer } })),
   });
   writePage(`blog/${post.slug}`, renderPage({
-    head: headTags({ title: `${post.title} | SteamWatch`, description: post.description, url, ogType: 'article', jsonLd }),
+    head: headTags({ title: post.seoTitle || `${post.title} | SteamWatch`, description: post.description, url, ogType: 'article', jsonLd }),
     contentHtml: post.noscriptHtml,
   }));
 }
@@ -975,7 +976,7 @@ for (const page of PAGES) {
 }
 // Length audit: titles under 60 characters, descriptions under 155 (warn only,
 // so older pages don't block a build; tighten to a failure once they're all in).
-for (const p of [...PAGES, ...POSTS.map((x) => ({ path: `blog/${x.slug}`, title: `${x.title} | SteamWatch`, description: x.description }))]) {
+for (const p of [...PAGES, ...POSTS.map((x) => ({ path: `blog/${x.slug}`, title: x.seoTitle || `${x.title} | SteamWatch`, description: x.description }))]) {
   if (p.title.length >= 60 || p.description.length >= 155) console.warn(`  ! /${p.path}: title ${p.title.length} chars, description ${p.description.length} chars`);
 }
 console.log(`Pre-rendered ${PAGES.length + 1} static page(s).`);
