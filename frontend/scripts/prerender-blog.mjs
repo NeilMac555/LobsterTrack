@@ -789,23 +789,26 @@ if (!ASSET_TAGS.some((t) => t.startsWith('<script'))) {
   process.exit(1);
 }
 
-/** Per-route head tags. Tags Helmet will manage carry data-rh="true" so
- *  react-helmet-async REPLACES them on mount instead of adding a second
- *  copy. JSON-LD deliberately has no data-rh: it is static, and the pages
- *  no longer emit schema through Helmet. */
+/** Per-route head tags. Every tag the app re-declares through Helmet
+ *  (title, description, canonical, robots, OG, Twitter) is marked
+ *  data-prerender="1"; src/main.tsx removes those right before React
+ *  mounts, and Helmet (React 19 native head hoisting in react-helmet-async
+ *  v3, which does NOT dedupe against pre-existing tags) adds the page's
+ *  own. Net effect: one of each before JS and after JS. JSON-LD is static
+ *  and unmarked: the pages no longer emit schema through Helmet. */
 function headTags({ title, description, url, ogType = 'website', jsonLd, robots }) {
   const blocks = Array.isArray(jsonLd) ? jsonLd : jsonLd ? [jsonLd] : [];
   return [
-    `<title>${esc(title)}</title>`,
-    `<meta name="description" content="${esc(description)}" data-rh="true" />`,
-    url ? `<link rel="canonical" href="${url}" data-rh="true" />` : '',
-    robots ? `<meta name="robots" content="${robots}" data-rh="true" />` : '',
-    `<meta property="og:type" content="${ogType}" data-rh="true" />`,
-    `<meta property="og:title" content="${esc(title)}" data-rh="true" />`,
-    `<meta property="og:description" content="${esc(description)}" data-rh="true" />`,
-    url ? `<meta property="og:url" content="${url}" data-rh="true" />` : '',
-    `<meta name="twitter:title" content="${esc(title)}" data-rh="true" />`,
-    `<meta name="twitter:description" content="${esc(description)}" data-rh="true" />`,
+    `<title data-prerender="1">${esc(title)}</title>`,
+    `<meta name="description" content="${esc(description)}" data-prerender="1" />`,
+    url ? `<link rel="canonical" href="${url}" data-prerender="1" />` : '',
+    robots ? `<meta name="robots" content="${robots}" data-prerender="1" />` : '',
+    `<meta property="og:type" content="${ogType}" data-prerender="1" />`,
+    `<meta property="og:title" content="${esc(title)}" data-prerender="1" />`,
+    `<meta property="og:description" content="${esc(description)}" data-prerender="1" />`,
+    url ? `<meta property="og:url" content="${url}" data-prerender="1" />` : '',
+    `<meta name="twitter:title" content="${esc(title)}" data-prerender="1" />`,
+    `<meta name="twitter:description" content="${esc(description)}" data-prerender="1" />`,
     ...blocks.map((b) => `<script type="application/ld+json">${JSON.stringify(b)}</script>`),
   ].filter(Boolean).join('\n    ');
 }

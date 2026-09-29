@@ -258,16 +258,16 @@ def _render(db: Session, match: Match) -> str:
         json_ld["superEvent"] = {"@type": "SportsEvent", "name": competition}
 
     head_parts = [
-        f"<title>{_esc(title)}</title>",
-        f"<meta name=\"description\" content=\"{_esc(description)}\" data-rh=\"true\" />",
-        f"<link rel=\"canonical\" href=\"{url}\" data-rh=\"true\" />",
-        "<meta name=\"robots\" content=\"noindex\" data-rh=\"true\" />" if not has_odds else "",
-        "<meta property=\"og:type\" content=\"website\" data-rh=\"true\" />",
-        f"<meta property=\"og:title\" content=\"{_esc(title)}\" data-rh=\"true\" />",
-        f"<meta property=\"og:description\" content=\"{_esc(description)}\" data-rh=\"true\" />",
-        f"<meta property=\"og:url\" content=\"{url}\" data-rh=\"true\" />",
-        f"<meta name=\"twitter:title\" content=\"{_esc(title)}\" data-rh=\"true\" />",
-        f"<meta name=\"twitter:description\" content=\"{_esc(description)}\" data-rh=\"true\" />",
+        f"<title data-prerender=\"1\">{_esc(title)}</title>",
+        f"<meta name=\"description\" content=\"{_esc(description)}\" data-prerender=\"1\" />",
+        f"<link rel=\"canonical\" href=\"{url}\" data-prerender=\"1\" />",
+        "<meta name=\"robots\" content=\"noindex\" data-prerender=\"1\" />" if not has_odds else "",
+        "<meta property=\"og:type\" content=\"website\" data-prerender=\"1\" />",
+        f"<meta property=\"og:title\" content=\"{_esc(title)}\" data-prerender=\"1\" />",
+        f"<meta property=\"og:description\" content=\"{_esc(description)}\" data-prerender=\"1\" />",
+        f"<meta property=\"og:url\" content=\"{url}\" data-prerender=\"1\" />",
+        f"<meta name=\"twitter:title\" content=\"{_esc(title)}\" data-prerender=\"1\" />",
+        f"<meta name=\"twitter:description\" content=\"{_esc(description)}\" data-prerender=\"1\" />",
         f"<script type=\"application/ld+json\">{json.dumps(json_ld)}</script>",
     ]
     head = "\n    ".join(p for p in head_parts if p)
