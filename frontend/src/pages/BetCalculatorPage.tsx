@@ -177,9 +177,9 @@ export default function BetCalculatorPage() {
   return (
     <div className="max-w-3xl mx-auto">
       <Helmet>
-        <title>Bet Calculator — SteamWatch</title>
+        <title>Bet Calculator | SteamWatch</title>
         <meta name="description" content="Calculate returns for singles, doubles, trebles and accumulators in fraction, decimal or American odds." />
-        <meta property="og:title" content="Bet Calculator — SteamWatch" />
+        <meta property="og:title" content="Bet Calculator | SteamWatch" />
         <meta property="og:description" content="Calculate returns for singles, doubles, trebles and accumulators in fraction, decimal or American odds." />
         <meta property="og:url" content="https://www.steamwatch.io/tools/bet-calculator" />
         <link rel="canonical" href="https://www.steamwatch.io/tools/bet-calculator" />

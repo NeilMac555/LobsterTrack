@@ -201,8 +201,8 @@ export default function LongshotBiasPage() {
   return (
     <div className="max-w-6xl mx-auto">
       <Helmet>
-        <title>Longshot Bias: Favourites vs Underdogs ROI at Pinnacle Closing Prices — SteamWatch</title>
-        <meta name="description" content="What blindly backing every football favourite, underdog or draw at Pinnacle closing prices would have returned — by odds band, league and season, since 2021/22." />
+        <title>Longshot Bias: Favourite vs Underdog ROI | SteamWatch</title>
+        <meta name="description" content="What backing every favourite, underdog or draw at Pinnacle closing prices returned since 2021/22, by odds band, league, season and club." />
         <link rel="canonical" href="https://www.steamwatch.io/longshot-bias" />
       </Helmet>
 

@@ -204,9 +204,9 @@ const POSTS = [
   },
   {
     slug: 'favourite-longshot-bias-in-football-betting',
-    title: 'The Favourite-Longshot Bias in Football: Five Seasons of Pinnacle Closing Prices',
+    title: 'Favourite-Longshot Bias in Football: The Data',
     description:
-      'What blindly backing every favourite, underdog and draw at Pinnacle closing prices returned across 8,867 top-five-league matches from 2021/22 to August 2026. Favourites near enough level, underdogs -10.5%, and the one venue split worth remembering.',
+      'Backing every favourite, underdog and draw at Pinnacle closing prices over 8,867 top-five-league matches since 2021/22. Favourites level, dogs -10.5%.',
     author: 'Neil Macdonald',
     datePublished: '2026-09-02',
     faq: [
@@ -231,7 +231,7 @@ const POSTS = [
           'Blindly backing the draw in every match at Pinnacle closing prices returned -2.0% across 8,867 top-five-league matches, so it sits between favourites and underdogs. The Bundesliga (+1.1%) and Serie A (+0.4%) were the only leagues where the draw came out ahead.',
       },
     ],
-    noscriptHtml: `<h1>The Favourite-Longshot Bias in Football: Five Seasons of Pinnacle Closing Prices</h1>
+    noscriptHtml: `<h1>Favourite-Longshot Bias in Football: The Data</h1>
 <p>By Neil Macdonald - September 2, 2026</p>
 <p>Every punter has heard that the market overprices longshots. I wanted to see what that looks like in football with real closing prices rather than a paper from 2004, so I ran every Pinnacle closing 1X2 price we hold across the top 5 leagues, 2021/22 through to the end of August 2026. 8,867 matches. Flat 1 unit on the favourite in every one of them, 1 unit on the dog, 1 unit on the draw, and see what comes back.</p>
 <h2>What blind backing returns</h2>
@@ -297,7 +297,7 @@ function faqSchema(post) {
 const PAGES = [
   {
     path: 'steam-results',
-    title: 'Do Steam Moves Win? Football Steam Move Results & ROI — SteamWatch',
+    title: 'Do Steam Moves Win? Football Steam Move Results & ROI | SteamWatch',
     description:
       'Historical performance data for tracked football steam moves across major European leagues, including win rates and P/L.',
     ogType: 'website',
@@ -312,7 +312,7 @@ const PAGES = [
       creator: { '@type': 'Organization', name: 'SteamWatch', url: DOMAIN },
       keywords: ['steam moves', 'sharp money', 'football betting', 'line movement'],
     },
-    noscriptHtml: `<h1>Steam Results — SteamWatch</h1>
+    noscriptHtml: `<h1>Steam Results | SteamWatch</h1>
 <p>Do steam moves win? SteamWatch records every significant pre-kickoff price shortening (3+ percentage points of implied probability at Pinnacle) across major European leagues and tracks what happened next.</p>
 <h2>The all-time record (27 January 2026 to 1 September 2026)</h2>
 <ul>
@@ -326,9 +326,9 @@ const PAGES = [
   },
   {
     path: 'tools/hedge-calculator',
-    title: 'Football Hedge Calculator — SteamWatch',
+    title: 'Football Hedge Calculator | SteamWatch',
     description:
-      'Calculate optimal hedge bet sizes for football wagers with real-time calculations.',
+      'Work out the stake on the opposite side that locks in the same profit whichever way an open football bet settles, at decimal odds.',
     ogType: 'website',
     jsonLd: {
       '@context': 'https://schema.org',
@@ -341,9 +341,14 @@ const PAGES = [
       operatingSystem: 'Web',
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
     },
-    noscriptHtml: `<h1>Football Hedge Calculator — SteamWatch</h1>
-<p>Calculate the optimal hedge bet size for any football wager. Enter your original stake, original odds, and current hedge odds to see guaranteed profit calculations in real time.</p>
-<p><a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
+    noscriptHtml: `<h1>Hedge Calculator</h1>
+<p class="pr-lead">The Hedge Calculator works out how much to stake on the opposing outcome so that an open bet returns the same profit whichever way it settles. Enter the original stake and decimal price, then the current decimal price on the other side, and it returns the hedge stake, the total outlay and the guaranteed profit. You can also enter your own hedge amount to see the profit or loss on each outcome.</p>
+<h2>How the numbers are calculated</h2>
+<p>The equal-profit hedge stake is the original stake multiplied by the original price, divided by the current price of the opposing outcome. That makes the payout identical on both results. The guaranteed profit is that payout minus both stakes, and it is negative when the price has not moved far enough, which tells you the hedge would only reduce a loss rather than lock in a gain. Prices are decimal only. A three-way market cannot be fully covered with one bet, so the calculator treats the hedge as the direct opposite of the original selection.</p>
+<h2>When a hedge exists</h2>
+<p>A profitable hedge only exists once the price you took has shortened, which is the movement SteamWatch records on every match page. Hedging trades expected value for certainty: the second bet carries the bookmaker's margin, so a hedge placed at a fair price costs little, and one placed at a wide price costs more.</p>
+<h2>Related</h2>
+<p>The <a href="/tools/bet-calculator">Bet Calculator</a> handles returns on singles and accumulators, and the <a href="/">live movers</a> show where prices are moving right now.</p>`,
   },
   {
     path: 'about',
@@ -384,9 +389,9 @@ const PAGES = [
   },
   {
     path: 'closing-lines',
-    title: 'Pinnacle Closing Lines Archive: Opening vs Closing Football Odds — SteamWatch',
+    title: 'Pinnacle Closing Lines Archive | SteamWatch',
     description:
-      'Compare opening and closing odds across major European football leagues. Track closing line value and market efficiency on 1X2, Asian Handicap, and Totals markets.',
+      'Pinnacle closing 1X2, Asian handicap and totals prices for every finished match, by league and matchweek, with the opening price beside each close.',
     ogType: 'website',
     jsonLd: {
       '@context': 'https://schema.org',
@@ -398,16 +403,20 @@ const PAGES = [
       temporalCoverage: '2025/..',
       creator: { '@type': 'Organization', name: 'SteamWatch', url: DOMAIN },
     },
-    noscriptHtml: `<h1>Closing Lines — SteamWatch</h1>
-<p>Compare opening and closing odds across major European football leagues. Track closing line value and market efficiency on 1X2, Asian Handicap, and Totals markets.</p>
-<p>Leagues: Premier League, La Liga, Bundesliga, Serie A, Ligue 1.</p>
-<p><a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
+    noscriptHtml: `<h1>Closing Lines</h1>
+<p class="pr-lead">An archive of Pinnacle closing prices. For every finished match SteamWatch tracks it lists the last price recorded before kickoff on the 1X2 market, the Asian handicap (line and both prices) and the totals market (line, over and under), grouped by league and matchweek. The opening price sits beside each close, so the movement is visible in one row.</p>
+<h2>Where the data comes from</h2>
+<p>Prices are Pinnacle's, taken from The Odds API. SteamWatch requests each tracked competition every 15 minutes from the moment a match is listed, every 10 minutes inside two hours of kickoff and every two minutes in the last half hour, and stores every snapshot. The closing line is the final snapshot captured before the recorded kickoff time. The capture time and the number of minutes before kickoff are stored with it. Nothing is back-filled from other bookmakers.</p>
+<h2>How to read the numbers</h2>
+<p>All prices are decimal. The implied probability of a price is 100 divided by the price. The three 1X2 implied probabilities sum to a little over 100%, and the excess is Pinnacle's margin, typically two to three points on these leagues. Open-to-close movement is best read in implied-probability points rather than raw odds: 1.50 to 1.40 is a much bigger move than 5.00 to 4.00. The <a href="/blog/how-to-read-closing-lines-in-football-betting">guide to reading closing lines</a> covers this in more detail, and <a href="/blog/what-is-closing-line-value-in-football-betting">closing line value</a> explains why the close is the benchmark most bettors measure against.</p>
+<h2>Current coverage</h2>
+<p>{{HEADLINE}} Leagues covered: Premier League, EFL Championship, La Liga, Bundesliga, Serie A, Ligue 1, Champions League, Europa League, Conference League and the UEFA Nations League. The Champions League has its own view at <a href="/cl-closing-lines">Champions League Closing Lines</a>.</p>`,
   },
   {
     path: 'cl-closing-lines',
-    title: 'Champions League Closing Lines: Pinnacle Opening vs Closing Odds — SteamWatch',
+    title: 'Champions League Closing Lines | SteamWatch',
     description:
-      'Champions League closing line analysis. Compare opening and closing odds for every UCL match across 1X2, Asian Handicap, and Totals markets.',
+      'Pinnacle closing 1X2, Asian handicap and totals prices for every Champions League match tracked, with the opening price beside each close.',
     ogType: 'website',
     jsonLd: {
       '@context': 'https://schema.org',
@@ -419,15 +428,20 @@ const PAGES = [
       temporalCoverage: '2025/..',
       creator: { '@type': 'Organization', name: 'SteamWatch', url: DOMAIN },
     },
-    noscriptHtml: `<h1>Champions League Closing Lines — SteamWatch</h1>
-<p>Compare opening and closing odds for every Champions League match. Grouped by matchday with 1X2, Asian Handicap, and Totals analysis.</p>
-<p><a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
+    noscriptHtml: `<h1>Champions League Closing Lines</h1>
+<p class="pr-lead">The Champions League slice of the closing-line archive. For each match in the competition SteamWatch has tracked, it lists the last Pinnacle price recorded before kickoff on the 1X2 market, the Asian handicap and the totals market, with the opening price alongside.</p>
+<h2>Where the data comes from</h2>
+<p>Prices are Pinnacle's, via The Odds API, requested every 15 minutes from the moment a fixture is listed, every 10 minutes inside two hours of kickoff and every two minutes in the last half hour. Every snapshot is stored, and the close is the final one before the recorded kickoff time. European fixtures are listed later than domestic ones, so the opening price here is usually a few days before the match rather than a week or more, and open-to-close movement is correspondingly smaller. Capture began in February 2026, so the archive starts at the 2025/26 knockout rounds, and the 2026/27 league phase is added matchday by matchday.</p>
+<h2>How to read the numbers</h2>
+<p>Prices are decimal. Implied probability is 100 divided by the price, and the Champions League 1X2 market carries a Pinnacle margin of around two to three points. The Asian handicap line is shown from the home side's perspective with both prices. The totals line is the main line at close with its over and under prices. Movement is best compared in implied-probability points: a shortening of 0.10 on a 1.50 favourite is a bigger move than the same 0.10 on a 4.00 outsider.</p>
+<h2>Current coverage</h2>
+<p>{{HEADLINE}} The archive for the domestic leagues is at <a href="/closing-lines">Closing Lines</a>. How the market has treated European favourites and underdogs will join <a href="/longshot-bias">Longshot Bias</a> once the sample justifies it.</p>`,
   },
   {
     path: 'tools/match-predictor',
-    title: 'Football Match Predictor: Dixon-Coles Probabilities & Fair Odds — SteamWatch',
+    title: 'Match Predictor: Dixon-Coles Model | SteamWatch',
     description:
-      'Generate match probability predictions using the SteamWatch Dixon-Coles adjusted Poisson model. Fair odds for 1X2, Asian Handicap, and Totals markets.',
+      'Dixon-Coles match model: enter xG form for two teams and get 1X2, correct score and totals probabilities with fair odds, top five leagues.',
     ogType: 'website',
     jsonLd: {
       '@context': 'https://schema.org',
@@ -439,14 +453,21 @@ const PAGES = [
       applicationCategory: 'SportsApplication',
       operatingSystem: 'Web',
     },
-    noscriptHtml: `<h1>Match Predictor — SteamWatch</h1>
-<p>Explore an xG-based Poisson baseline with the Dixon-Coles low-score correction. Select recorded team data or enter your own figures for 1X2, Asian Handicap, and Totals fair odds. Market-beating accuracy has not been established.</p>
-<p><a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
+    noscriptHtml: `<h1>Match Predictor</h1>
+<p class="pr-lead">The Match Predictor turns two teams' expected-goals form into match probabilities using a Dixon-Coles model, a Poisson goals model corrected for its under-prediction of low-scoring draws. It returns probabilities and fair decimal odds for the 1X2 market, the most likely correct scores and the over and under lines.</p>
+<h2>What goes in</h2>
+<p>For each team you enter season figures: xG for and against per match, goals conceded and matches played, and optionally xG over the last six matches, penalties received and conceded, open-play and set-piece xG, and shots for and against.</p>
+<h2>How the numbers are calculated</h2>
+<p>Penalty xG is stripped out at 0.76 per penalty and set-piece xG is discounted. Season and last-six figures are blended into an attack and a defence strength for each team. Expected goals for each side are attack strength times the opponent's defence strength times the league's average goals per team, adjusted by the league's home advantage ratio. Those two figures feed a Dixon-Coles adjusted Poisson grid of every scoreline, with the draw inflated slightly and the grid renormalised. The 1X2, correct-score and totals probabilities are sums over that grid, and fair odds are 1 divided by the probability, with no margin.</p>
+<h2>Where the league constants come from</h2>
+<p>Average goals per team and the home advantage ratio are recomputed every Monday from finished matches in the current season and the last three completed seasons, weighted towards the most recent. {{HEADLINE}}</p>
+<p>Treat its fair odds as a baseline to set against the Pinnacle price.</p>`,
   },
   {
     path: 'tools/club-ratings',
-    title: 'European Club Ratings (Beta) — SteamWatch',
-    description: 'Free European club strength ratings combining long-term quality, recent performance and community feedback. Updated weekly.',
+    title: 'European Club Ratings | SteamWatch',
+    description:
+      'Weekly strength ratings on one European scale for the top five leagues and UEFA competitions, with rank and score changes each week.',
     ogType: 'website',
     jsonLd: {
       '@context': 'https://schema.org', '@type': 'WebApplication',
@@ -454,13 +475,22 @@ const PAGES = [
       applicationCategory: 'SportsApplication', operatingSystem: 'Web',
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
     },
-    noscriptHtml: `<h1>European Club Ratings — Beta</h1><p>Free club strength rankings across the top five leagues, Champions League and Europa League. The ratings combine longer-term team quality with recent results and underlying performance, accounting for the level of opposition. Members can vote higher or lower, informing a bounded weekly adjustment.</p><p><a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
+    noscriptHtml: `<h1>Club Ratings</h1>
+<p class="pr-lead">A single strength score for every club in the top five European leagues and the UEFA club competitions, placed on one common scale and grouped into six tiers, from Elite (1850 and above) to Lower rated (below 1350). Each club shows its rank, its score, and the change in both since the previous week. The common scale is what lets an English club be compared directly with a Spanish one.</p>
+<h2>How the numbers are calculated</h2>
+<p>The score combines published club strength ratings with match-level non-penalty expected goals from Understat, weighted so that recent matches count for more than older ones, and balanced so that a single result does not dominate. The individual sources and weights are not published. Small gaps between clubs should be read as close calls. Odds play no part in the score.</p>
+<h2>When it updates</h2>
+<p>A new table is published once a week, after Monday 12:00 UTC. If the update is late, the page says so and keeps showing the last published table.</p>
+<h2>Community moves</h2>
+<p>Readers can vote a club higher or lower. Once at least five voters reach 80% agreement, the club moves one place in the displayed order, never more, and the move is marked against the club. Votes expire after 30 days, and a move reverses if its support falls away. Scores and tiers stay as the model set them, so a community move can place a slightly lower score above a higher one.</p>
+<h2>Current table</h2>
+<p>{{HEADLINE}} The closing prices the market set for each club's matches are in <a href="/closing-lines">Closing Lines</a>, and the market's long-run verdict on each club is in <a href="/team-pnl">Team P/L</a>.</p>`,
   },
   {
     path: 'tools/rolling-xg',
-    title: 'Rolling xG Tables: Football Team Form by Expected Goals — SteamWatch',
+    title: 'Rolling xG Tables by Team | SteamWatch',
     description:
-      'Track rolling expected goals (xG) trends for every team across Europe\'s top football leagues. Identify form changes and performance shifts.',
+      'Rolling 5 and 10 match non-penalty xG for and against for every top-five-league club, with last season joined on so windows start full.',
     ogType: 'website',
     jsonLd: {
       '@context': 'https://schema.org',
@@ -473,14 +503,18 @@ const PAGES = [
       operatingSystem: 'Web',
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
     },
-    noscriptHtml: `<h1>Rolling xG — SteamWatch</h1>
-<p>Track rolling expected goals (xG For and xG Against) trends for every team across Europe's top football leagues. Visualise form changes with 5 and 10 game rolling windows.</p>
-<p>Leagues: Premier League, La Liga, Bundesliga, Serie A, Ligue 1.</p>
-<p><a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
+    noscriptHtml: `<h1>Rolling xG</h1>
+<p class="pr-lead">This page charts each club's non-penalty expected goals for and against as a rolling average over its last five or ten league matches, so a change in underlying performance is visible before it shows up in results. A trend line is fitted to each series, and the latest rolling figures are shown as a summary.</p>
+<h2>Where the data comes from</h2>
+<p>Match-level non-penalty xG is imported from Understat for the Premier League, La Liga, Bundesliga, Serie A and Ligue 1. The import runs every Monday at 03:00 UTC, once the weekend's matches are settled. Each row is one team in one match, with the non-penalty xG it created and the non-penalty xG it conceded. Penalties are excluded because they carry a fixed xG value that says nothing about open-play performance.</p>
+<h2>How the numbers are calculated</h2>
+<p>The rolling figure at any match is the plain average of the previous five or ten matches' non-penalty xG for, and separately against. To keep the window full at the start of a season, the full previous season is joined on to the front of each club's series and marked on the chart, so a five-game window on matchday two includes the last three games of the season before. Promoted clubs have no top-flight history and start from their first match. The trend line is a least-squares fit over the plotted window.</p>
+<h2>Current coverage</h2>
+<p>{{HEADLINE}} Rolling xG is a form view and feeds no odds calculation on this site. The closing prices the market set for the same matches are in the <a href="/closing-lines">closing-line archive</a>.</p>`,
   },
   {
     path: 'drifters',
-    title: 'Football Drifters: Odds That Lengthened Before Kickoff & What Happened — SteamWatch',
+    title: 'Football Drifters: Odds That Lengthened Before Kickoff & What Happened | SteamWatch',
     description:
       'Football odds drifters: selections whose prices lengthened before kickoff, tracked with outcomes recorded. The other side of steam, across major European leagues.',
     ogType: 'website',
@@ -495,7 +529,7 @@ const PAGES = [
       creator: { '@type': 'Organization', name: 'SteamWatch', url: DOMAIN },
       keywords: ['drifters', 'odds drift', 'football betting', 'line movement'],
     },
-    noscriptHtml: `<h1>Drifters — SteamWatch</h1>
+    noscriptHtml: `<h1>Drifters | SteamWatch</h1>
 <p>A drifter is a selection whose odds lengthened before kickoff — its implied probability fell. SteamWatch tracks every drift across major European leagues and records what happened next: win rates and profit/loss for the moves going the other way.</p>
 <h2>The all-time record (27 January 2026 to 1 September 2026)</h2>
 <ul>
@@ -508,9 +542,9 @@ const PAGES = [
   },
   {
     path: 'team-pnl',
-    title: 'Team P/L: Blind Back & Fade Returns for Every Football Team — SteamWatch',
+    title: 'Team P/L: Blind Back and Fade Returns | SteamWatch',
     description:
-      'What backing or fading every team blindly would have returned, by season and venue. Profit/loss records built from Pinnacle closing prices across major European leagues.',
+      'What backing or fading every club in every match at Pinnacle closing prices returned, by season and venue, since 2021/22.',
     ogType: 'website',
     jsonLd: {
       '@context': 'https://schema.org',
@@ -523,16 +557,20 @@ const PAGES = [
       creator: { '@type': 'Organization', name: 'SteamWatch', url: DOMAIN },
       keywords: ['team profit loss', 'back and fade', 'football betting', 'closing prices'],
     },
-    noscriptHtml: `<h1>Team P/L — SteamWatch</h1>
-<p>What would blindly backing — or blindly fading — each team have returned? SteamWatch computes profit/loss for every tracked team from Pinnacle closing prices, split by season and home/away venue.</p>
-<p>Leagues covered: Premier League, EFL Championship, La Liga, Bundesliga, Serie A, Ligue 1.</p>
-<p><a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
+    noscriptHtml: `<h1>Team P/L</h1>
+<p class="pr-lead">For every club in the tracked leagues, this page shows what a flat stake on that team in every one of its matches would have returned at Pinnacle closing prices, and what the opposite bet, fading the team, would have returned. Each is split by season and by venue, so home and away records are visible separately.</p>
+<h2>How the numbers are calculated</h2>
+<p>Backing a team means a flat stake, 50 units by default and adjustable on the page, on it to win at the Pinnacle closing 1X2 price. A win returns the stake times the price; a draw or defeat loses the stake. Fading a team means the same stake on the Double Chance against it, priced by combining the other two Pinnacle closing prices (1 divided by the sum of their implied probabilities). Profit and loss is the sum across matches, and ROI is that sum divided by the total staked.</p>
+<h2>Where the data comes from</h2>
+<p>Results and closing prices for 2021/22 to January 2026 are the Pinnacle closing columns from football-data.co.uk. From February 2026 the closing price is SteamWatch's own capture from The Odds API: the last Pinnacle snapshot before kickoff. For the roughly 200 matches between the two sources, where neither has a Pinnacle price, the Betfair Exchange closing price stands in. Results are re-imported every Monday and prices filled the same morning.</p>
+<h2>A current figure</h2>
+<p>{{HEADLINE}} The same closing prices drive <a href="/longshot-bias">Longshot Bias</a>, which asks the same question of favourites and underdogs as groups rather than of individual clubs.</p>`,
   },
   {
     path: 'longshot-bias',
-    title: 'Longshot Bias — Favourites vs Underdogs ROI at Pinnacle Closing Prices | SteamWatch',
+    title: 'Longshot Bias: Favourite vs Underdog ROI | SteamWatch',
     description:
-      'What blindly backing every favourite, underdog or draw at Pinnacle closing prices returned across 8,867 top-five-league matches since 2021/22, by odds band, league, season and venue, plus every club in all five leagues on its own. Favourites near enough level, underdogs -10.5%.',
+      'What backing every favourite, underdog or draw at Pinnacle closing prices returned since 2021/22, by odds band, league, season and club.',
     ogType: 'website',
     jsonLd: [
       {
@@ -540,13 +578,13 @@ const PAGES = [
         '@type': 'Dataset',
         name: 'SteamWatch Longshot Bias: blind favourite, underdog and draw returns at Pinnacle closing prices',
         description:
-          'Flat-stake yield from backing every favourite, underdog and draw at Pinnacle closing 1X2 prices across the Premier League, La Liga, Bundesliga, Serie A and Ligue 1, bucketed into data-driven odds bands and filterable by league, season, venue and team. 8,867 matches from 2021/22 onward, updated weekly.',
+          'Flat-stake yield from backing every favourite, underdog and draw at Pinnacle closing 1X2 prices across the Premier League, La Liga, Bundesliga, Serie A and Ligue 1, in data-driven odds bands, filterable by league, season, venue and club. From 2021/22, updated weekly.',
         url: `${DOMAIN}/longshot-bias`,
         temporalCoverage: '2021-08/..',
         spatialCoverage: 'England, Spain, Germany, Italy, France',
-        creator: { '@type': 'Organization', name: 'SteamWatch', url: DOMAIN },
+        creator: { '@type': 'Person', name: 'Neil Mac', url: `${DOMAIN}/about` },
         keywords: ['favourite-longshot bias', 'football betting', 'underdog ROI', 'Pinnacle closing odds', 'blind backing favourites'],
-        variableMeasured: ['flat-stake yield by odds band', 'median closing odds', 'cumulative profit in units', 'per-team ROI as favourite and as underdog'],
+        variableMeasured: ['flat-stake yield by odds band', 'median closing odds', 'cumulative profit in units', 'per-club ROI as favourite and as underdog'],
       },
       {
         '@context': 'https://schema.org',
@@ -559,7 +597,7 @@ const PAGES = [
         ],
       },
     ],
-    noscriptHtml: `<h1>Longshot Bias — SteamWatch</h1>
+    noscriptHtml: `<h1>Longshot Bias | SteamWatch</h1>
 <p>What blindly backing every favourite, underdog or draw at Pinnacle closing prices would have returned. 8,867 matches across the Premier League, La Liga, Bundesliga, Serie A and Ligue 1, 2021/22 to August 2026, flat 1 unit stakes, updated weekly.</p>
 <h2>Headline numbers (all five leagues)</h2>
 <ul>
@@ -590,7 +628,7 @@ const PAGES = [
 PAGES.push(
   {
     path: 'in-play-jumps',
-    title: 'In-Play Jumps: Pinnacle Close vs Polymarket First 5 Minutes — SteamWatch',
+    title: 'In-Play Jumps: Pinnacle Close vs Polymarket First 5 Minutes | SteamWatch',
     description:
       'The gap between the Pinnacle closing line and Polymarket\'s first five minutes of in-play trading, match by match, with the implied-probability change in percentage points.',
     ogType: 'website',
@@ -615,7 +653,7 @@ PAGES.push(
   },
   {
     path: 'tools/bet-calculator',
-    title: 'Bet Calculator: Singles, Doubles, Trebles and Accumulators — SteamWatch',
+    title: 'Bet Calculator: Singles, Doubles, Trebles and Accumulators | SteamWatch',
     description:
       'Free bet calculator for singles, doubles, trebles and accumulators. Enter fractional, decimal or American odds and a stake to see the return and profit.',
     ogType: 'website',
@@ -637,7 +675,7 @@ PAGES.push(
   },
   {
     path: 'tools/form-lab',
-    title: 'Form Lab: Football Form, Handicap Cover Rates and Home/Away Splits — SteamWatch',
+    title: 'Form Lab: Football Form, Handicap Cover Rates and Home/Away Splits | SteamWatch',
     description:
       'Compare football form across the top leagues: results by opponent strength, goal patterns, Asian handicap cover rates, home and away splits, and rolling expected goals, built from Pinnacle closing prices.',
     ogType: 'website',
@@ -662,6 +700,64 @@ PAGES.push(
 <p>A public sample is free; every competition, filter and view is available with SteamWatch Pro. See also <a href="/tools/rolling-xg">Rolling xG</a>, <a href="/team-pnl">Team P/L</a> and <a href="/longshot-bias">Longshot Bias</a>.</p>`,
   },
 );
+
+// ---------------------------------------------------------------------------
+// Build-time headline figures for the static copy. Pulled from the live API
+// so each page carries one current number; each has a plain fallback so an
+// API blip can't fail the build or leave a template token on the page.
+// ---------------------------------------------------------------------------
+async function fetchJson(path) {
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 15000);
+    const r = await fetch(`${DOMAIN}${path}`, { signal: ctrl.signal });
+    clearTimeout(t);
+    if (!r.ok) return null;
+    return await r.json();
+  } catch {
+    return null;
+  }
+}
+const today = new Date().toISOString().slice(0, 10);
+const fmtN = (n) => Number(n).toLocaleString('en-GB');
+const HEADLINE = {};
+{
+  const cl = await fetchJson('/api/closing-lines?limit=1');
+  HEADLINE['closing-lines'] = cl?.total
+    ? `As of ${today}, ${fmtN(cl.total)} closing lines are on record across the tracked competitions.`
+    : 'The archive grows with every finished match.';
+  const ucl = await fetchJson('/api/closing-lines?league=soccer_uefa_champs_league&limit=1');
+  HEADLINE['cl-closing-lines'] = ucl?.total
+    ? `As of ${today}, ${fmtN(ucl.total)} Champions League closing lines are on record.`
+    : 'The archive grows with every finished Champions League match.';
+  const pnl = await fetchJson('/api/team-pnl?league=soccer_epl');
+  const allRows = (pnl?.rows || []).filter((r) => r.season === 'all' && r.back?.overall?.matches >= 100);
+  const best = allRows.sort((a, b) => b.back.overall.roi - a.back.overall.roi)[0];
+  HEADLINE['team-pnl'] = best
+    ? `Across ${fmtN(best.back.overall.matches)} Premier League matches since 2021/22, backing ${best.team} in every one at the closing price returned ${best.back.overall.roi > 0 ? '+' : ''}${best.back.overall.roi.toFixed(1)}% on turnover, the best blind-back record in the league as of ${today}.`
+    : 'Every club in the Premier League has a full record since 2021/22.';
+  const lc = await fetchJson('/api/league-constants');
+  const epl = (lc?.constants || []).find((c) => c.league === 'soccer_epl');
+  HEADLINE['tools/match-predictor'] = epl
+    ? `For the Premier League the current constants are ${epl.avg_goals_per_team.toFixed(2)} goals per team per match and a home advantage ratio of ${epl.home_away_ratio.toFixed(2)}, from ${fmtN(Math.round(epl.sample_matches))} matches (computed ${String(epl.computed_at).slice(0, 10)}).`
+    : 'Each league has its own scoring rate and home advantage.';
+  const teams = await fetchJson('/api/xg-data/teams?league=soccer_epl');
+  const first = teams?.teams?.[0];
+  const xg = first ? await fetchJson(`/api/xg-data?league=soccer_epl&team=${encodeURIComponent(first)}`) : null;
+  const lastPt = xg?.data?.length ? xg.data[xg.data.length - 1] : null;
+  HEADLINE['tools/rolling-xg'] = teams?.teams?.length
+    ? `${teams.teams.length} Premier League clubs have data this season${lastPt ? `, with matches through ${String(lastPt.match_date).slice(0, 10)} on record` : ''} as of ${today}.`
+    : 'All five leagues are covered.';
+  const m = null; // hedge-calculator: no live example (Neil, 29 Sep 2026)
+  HEADLINE['tools/hedge-calculator'] = m
+    ? `For example, as of ${today} the largest current move on the site is ${m.outcome_name} in ${m.home_team} v ${m.away_team}, from ${Number(m.opening_odds).toFixed(2)} at open to ${Number(m.current_odds).toFixed(2)} now; a bet taken at the opening price could be hedged at the current one.`
+    : 'The live movers show where prices are moving.';
+  const cr = await fetchJson('/api/club-ratings');
+  const top = cr?.teams?.find((t) => t.rank === 1);
+  HEADLINE['tools/club-ratings'] = top
+    ? `In the table published ${String(cr.published_at).slice(0, 10)}, ${top.name} rank first with a score of ${Math.round(top.score)}.`
+    : 'The table is republished every Monday.';
+}
 
 // ---------------------------------------------------------------------------
 // Route manifest check — src/routes.json is the single source of truth.
@@ -842,7 +938,7 @@ for (const post of POSTS) {
     mainEntity: post.faq.map((f) => ({ '@type': 'Question', name: f.question, acceptedAnswer: { '@type': 'Answer', text: f.answer } })),
   });
   writePage(`blog/${post.slug}`, renderPage({
-    head: headTags({ title: `${post.title} — SteamWatch`, description: post.description, url, ogType: 'article', jsonLd }),
+    head: headTags({ title: `${post.title} | SteamWatch`, description: post.description, url, ogType: 'article', jsonLd }),
     contentHtml: post.noscriptHtml,
   }));
 }
@@ -856,7 +952,7 @@ console.log(`Pre-rendered ${POSTS.length} blog page(s).`);
   const items = sorted.map((p) => `<li><a href="/blog/${p.slug}">${esc(p.title)}</a><br><span class="pr-meta">${p.datePublished}</span> ${esc(p.description)}</li>`).join('\n');
   writePage('blog', renderPage({
     head: headTags({
-      title: 'Blog — SteamWatch',
+      title: 'Blog | SteamWatch',
       description: 'Articles on steam moves, closing line value, drifters and the favourite-longshot bias in football betting, written from SteamWatch\'s own Pinnacle price data.',
       url: `${DOMAIN}/blog`,
       jsonLd: {
@@ -874,38 +970,75 @@ console.log(`Pre-rendered ${POSTS.length} blog page(s).`);
 for (const page of PAGES) {
   writePage(page.path, renderPage({
     head: headTags({ title: page.title, description: page.description, url: `${DOMAIN}/${page.path}`, ogType: page.ogType, jsonLd: page.jsonLd }),
-    contentHtml: page.noscriptHtml,
+    contentHtml: page.noscriptHtml.replace('{{HEADLINE}}', HEADLINE[page.path] ?? ''),
   }));
+}
+// Length audit: titles under 60 characters, descriptions under 155 (warn only,
+// so older pages don't block a build; tighten to a failure once they're all in).
+for (const p of [...PAGES, ...POSTS.map((x) => ({ path: `blog/${x.slug}`, title: `${x.title} | SteamWatch`, description: x.description }))]) {
+  if (p.title.length >= 60 || p.description.length >= 155) console.warn(`  ! /${p.path}: title ${p.title.length} chars, description ${p.description.length} chars`);
 }
 console.log(`Pre-rendered ${PAGES.length + 1} static page(s).`);
 
 // ---------------------------------------------------------------------------
-// Manager Ratings — static-only page (no React route) built from the data
-// file the tool ships with. Only the preview rows are public.
+// Manager Ratings — a static-only page (no React route). The interactive Elo
+// dashboard lives in public/tools/manager-ratings/index.html (built by
+// scripts/publish-manager-ratings.py) and Vite copies it into dist. Here we
+// keep that page and inject per-route head tags, WebApplication JSON-LD and a
+// prerendered copy block into it. Never replace the file.
 // ---------------------------------------------------------------------------
 {
-  const dataPath = resolve(__dirname, '..', 'public', 'tools', 'manager-ratings', 'manager-elo-data.json');
-  const d = JSON.parse(readFileSync(dataPath, 'utf-8'));
+  const dir = resolve(DIST, 'tools', 'manager-ratings');
+  const page = resolve(dir, 'index.html');
+  const d = JSON.parse(readFileSync(resolve(dir, 'manager-elo-data.json'), 'utf-8'));
+  let html = readFileSync(page, 'utf-8');
+  if (!html.includes('id="manager-paywall"')) throw new Error('manager-ratings: dashboard HTML missing from dist');
+  const asOf = String(d.as_of).slice(0, 10);
   const rows = (d.rows || []).filter((r) => r.eligible).sort((a, b) => a.rank - b.rank);
-  const tr = rows.map((r) => `<tr><td class="pr-num">${r.rank}</td><td>${esc(r.name)}</td><td>${esc(r.club)}</td><td>${esc(r.league)}</td><td class="pr-num">${Number(r.impact).toFixed(2)}</td><td class="pr-num">${Number(r.per38).toFixed(1)}</td><td class="pr-num">${r.matches}</td></tr>`).join('');
-  writePage('tools/manager-ratings', renderPage({
-    app: false,
-    head: headTags({
-      title: 'Manager Ratings: Points Above Expectation for Europe\'s Top Managers — SteamWatch',
-      description: `Manager ratings for Europe's top five leagues built from closing-price expectations: how many points each manager's teams earned above what the market priced them for, since 2018/19. Updated ${String(d.as_of).slice(0, 10)}.`,
-      url: `${DOMAIN}/tools/manager-ratings`,
-      jsonLd: {
-        '@context': 'https://schema.org', '@type': 'Dataset', name: 'SteamWatch Manager Ratings', url: `${DOMAIN}/tools/manager-ratings`,
-        description: 'Points earned above market expectation per manager across the top five European leagues, computed from Pinnacle closing prices since 2018/19.',
-        temporalCoverage: '2018-08/..', creator: { '@type': 'Organization', name: 'SteamWatch', url: DOMAIN },
-      },
-    }),
-    contentHtml: `<h1>Manager Ratings</h1>
-<p class="pr-lead">Which managers have earned the most points above what the market expected of their teams? Every finished top-five-league match since 2018/19 is priced from the Pinnacle closing line into expected points; the manager in charge gets the difference between actual and expected. Rankings cover ${d.eligible_managers} eligible managers (${d.managers} tracked) and were last computed on ${String(d.as_of).slice(0, 10)}.</p>
-<h2>Top of the table</h2>
-<table><thead><tr><th>Rank</th><th>Manager</th><th>Club</th><th>League</th><th>Impact (pts)</th><th>Per 38</th><th>Matches</th></tr></thead><tbody>${tr}</tbody></table>
-<p>The full ranking of all ${d.eligible_managers} eligible managers, recent-form splits and per-spell breakdowns are available with SteamWatch Pro. See also <a href="/tools/club-ratings">Club Ratings</a> and <a href="/team-pnl">Team P/L</a>.</p>`,
-  }));
+  const monthYear = (iso) => new Date(String(iso).slice(0, 10)).toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+  // Sportmonks marks who holds an active appointment (is_current); a spell's
+  // `end` is the date of its last covered match. Anyone without an active
+  // appointment is shown with the month of that last match: "(to May 2026)".
+  const clubCell = (r) => r.is_current ? esc(r.club) : `${esc(r.club)} (to ${monthYear(r.spells?.[r.spells.length - 1]?.end)})`;
+  const tr = rows.map((r) => `<tr><td>${r.rank}</td><td>${esc(r.name)}</td><td>${clubCell(r)}</td><td>${Number(r.impact).toFixed(1)}</td><td>${Number(r.per38).toFixed(1)}</td><td>${r.matches}</td></tr>`).join('');
+  const title = 'Manager Ratings: Club Elo Impact by Manager | SteamWatch';
+  const description = `Managers in the top five leagues ranked by the Elo their clubs gained or lost while they were in charge, since July 2016. Updated ${asOf}.`;
+  const head = headTags({
+    title, description, url: `${DOMAIN}/tools/manager-ratings`,
+    jsonLd: {
+      '@context': 'https://schema.org', '@type': 'WebApplication', name: 'SteamWatch Manager Ratings', url: `${DOMAIN}/tools/manager-ratings`,
+      applicationCategory: 'SportsApplication', operatingSystem: 'Web',
+      description: 'Ranks managers in the top five European leagues by the club Elo rating points their teams gained or lost under them, from July 2016, with a per-38-match view and a 12-month recent-form view.',
+      dateModified: asOf,
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
+      creator: { '@type': 'Person', name: 'Neil Mac', url: `${DOMAIN}/about` },
+    },
+  });
+  // Strip the head tags the publish script wrote, then add ours. Keep the fonts link.
+  html = html
+    .replace(/<title>Manager Ratings \| SteamWatch<\/title>/, '')
+    .replace(/<meta name="description"[^>]*>\n?/, '')
+    .replace(/<link rel="canonical"[^>]*>\n?/, '')
+    .replace(/<meta property="og:[a-z_:]+"[^>]*>\n?/g, '')
+    .replace(/<meta name="twitter:card"[^>]*>\n?/, '');
+  if (!html.includes('<meta charset="utf-8">')) throw new Error('manager-ratings: no charset meta to anchor on');
+  html = html.replace('<meta charset="utf-8">', `<meta charset="utf-8">
+${head}
+`);
+  const copy = `<section id="about-manager-ratings" class="sw-copy" aria-labelledby="sw-copy-h">
+<h2 id="sw-copy-h">About these ratings</h2>
+<p>Every club in the covered competitions carries an Elo rating that starts at 1,500 when the club is first observed. After each match the rating rises if the result beat what the two ratings and a 60-point home advantage implied, and falls if it fell short; a draw can move it either way. A manager's impact is the Elo the club gained or lost in the matches played while that manager was in charge. It follows the manager between clubs. The ranking window runs from 1 July 2016, with 2013 to 2016 used to warm the ratings up. Match and appointment data come from the Sportmonks API.</p>
+<p>Per 38 rescales total impact to a 38-match season so long and short spells can be compared. Last 12 months shows the same calculation over the past year only. The main ranking requires at least 20 completed matches in the previous 12 months, so a manager out of work for a year drops out of it while keeping their long-term total. ${d.eligible_managers} of ${d.managers} tracked managers currently qualify. Appointment dates come from Sportmonks with a small number of dated, sourced corrections listed on this page.</p>
+<p>The table was last computed on ${asOf}. The top three by total impact are free; the full ranking, every comparison and the underlying data require SteamWatch Pro.</p>
+<table><caption>Top of the table, ${asOf}</caption><thead><tr><th>Rank</th><th>Manager</th><th>Club / last covered</th><th>Impact (Elo)</th><th>Per 38</th><th>Matches</th></tr></thead><tbody>${tr}</tbody></table>
+<p>Related pages: <a href="/tools/club-ratings">Club Ratings</a>, <a href="/team-pnl">Team P/L</a> and <a href="/longshot-bias">Longshot Bias</a>.</p>
+</section>
+<style>.sw-copy{max-width:860px;margin:32px auto 0;padding:24px 0 8px;border-top:1px solid #334155;color:#cbd5e1;font-size:15px;line-height:1.7}.sw-copy h2{font-size:18px;margin:0 0 12px;color:#f1f5f9}.sw-copy p{margin:0 0 12px}.sw-copy a{color:#22d3ee}.sw-copy table{border-collapse:collapse;margin:8px 0 16px;font-size:14px}.sw-copy caption{text-align:left;color:#94a3b8;font-size:13px;margin-bottom:6px}.sw-copy th,.sw-copy td{padding:4px 12px 4px 0;text-align:left;border-bottom:1px solid #1e293b}</style>
+`;
+  if (!html.includes('<footer>')) throw new Error('manager-ratings: no <footer>');
+  html = html.replace('<footer>', copy + '<footer>');
+  writeFileSync(page, html, 'utf-8');
+  console.log('  ✓ /tools/manager-ratings (dashboard + injected head/copy)');
 }
 
 // ---------------------------------------------------------------------------
@@ -957,7 +1090,7 @@ writePage('', renderPage({
 // the backend shell for server-rendered match pages, and the route manifest.
 // ---------------------------------------------------------------------------
 writeFileSync(resolve(DIST, '404.html'), renderPage({
-  head: headTags({ title: 'Page not found — SteamWatch', description: 'That page does not exist on SteamWatch.', robots: 'noindex, nofollow' }),
+  head: headTags({ title: 'Page not found | SteamWatch', description: 'That page does not exist on SteamWatch.', robots: 'noindex, nofollow' }),
   contentHtml: `<h1>Page not found</h1><p>There is nothing at this address. Try the <a href="/">live odds overview</a>, <a href="/steam-results">Steam Results</a> or the <a href="/blog">blog</a>.</p>`,
 }), 'utf-8');
 writeFileSync(resolve(DIST, 'app.html'), renderPage({

@@ -6,28 +6,42 @@ SteamWatch reports what moved and what happened next. It does not claim to know 
 
 ## What the data is
 
-- Odds source: Pinnacle, via The Odds API, captured ~every 15 minutes and stored as time-series snapshots.
-- Leagues tracked: Premier League, EFL Championship, La Liga, Bundesliga, Serie A, Ligue 1, Champions League (plus qualifying), Europa League, Conference League.
-- A "steam move" here means an implied-probability shift of 3+ percentage points on an outcome before kickoff.
-- Closing line = the last recorded pre-kickoff price. Closing line value (CLV) compares the price you took against that closing price.
+- Odds source: Pinnacle, via The Odds API, captured roughly every 15 minutes and stored as time-series snapshots. The closing line is the last snapshot before kickoff.
+- Leagues tracked: Premier League, EFL Championship, La Liga, Bundesliga, Serie A, Ligue 1, Champions League, Europa League, Conference League, UEFA Nations League.
+- A "steam move" here means an implied-probability shift of 3+ percentage points on an outcome before kickoff. Alerts fire at 4+ points within 16 hours of kickoff.
 - A "drifter" is the opposite of steam: an outcome whose price lengthened (implied probability fell) before kickoff.
+- Historical results and closing prices before February 2026 come from football-data.co.uk; from February 2026 they are SteamWatch's own capture.
+- Every match has its own page at /match/{id} with the open-to-kickoff price history for all three markets, server-rendered from the database.
 
-## Key pages
+## Data pages
 
-- [Live odds & biggest movers](https://www.steamwatch.io/): every tracked match with current prices, 48-hour biggest movers, and late steam within 16 hours of kickoff.
-- [Steam Results](https://www.steamwatch.io/steam-results): the historical track record of every detected steam move — win rates and profit/loss, updated after results come in.
-- [Drifters](https://www.steamwatch.io/drifters): the moves going the other way, with the same historical accounting.
-- [Closing Lines](https://www.steamwatch.io/closing-lines): opening vs closing prices for finished matches, by league and week.
-- [Team P/L](https://www.steamwatch.io/team-pnl): what backing or fading each team blindly would have returned, by season and venue.
-- [Longshot Bias](https://www.steamwatch.io/longshot-bias): what blindly backing every favourite, underdog or draw at Pinnacle closing prices returned, by odds band, league, season and venue, plus every club in all five leagues on its own. 8,867 matches, 2021/22 onward, updated weekly.
-- [Match Predictor](https://www.steamwatch.io/tools/match-predictor): Dixon-Coles probability baseline with fair-odds output.
-- [Rolling xG](https://www.steamwatch.io/tools/rolling-xg): rolling expected-goals tables for the top five leagues.
-- [Bet Calculator](https://www.steamwatch.io/tools/bet-calculator) and [Hedge Calculator](https://www.steamwatch.io/tools/hedge-calculator): free staking tools.
-- [What are steam moves?](https://www.steamwatch.io/blog/what-are-steam-moves-in-football-betting): plain-English explainer.
-- [What is closing line value (CLV)?](https://www.steamwatch.io/blog/what-is-closing-line-value-in-football-betting): how to calculate CLV and why it predicts long-term profit.
+- [Live odds and biggest movers](https://www.steamwatch.io/): every tracked match with current prices, the biggest 48-hour moves, and late steam within 16 hours of kickoff.
+- [Steam Results](https://www.steamwatch.io/steam-results): every detected steam move tracked through to a result, with win rates, profit and loss and per-team rankings for the current season.
+- [Drifters](https://www.steamwatch.io/drifters): the moves going the other way, with the same accounting.
+- [Closing Lines](https://www.steamwatch.io/closing-lines): the Pinnacle closing 1X2, Asian handicap and totals price for every finished match, by league and matchweek, with the opening price beside it.
+- [Champions League Closing Lines](https://www.steamwatch.io/cl-closing-lines): the same archive for the Champions League.
+- [Team P/L](https://www.steamwatch.io/team-pnl): what backing or fading every club in every match at closing prices would have returned, by season and venue, since 2021/22.
+- [Longshot Bias](https://www.steamwatch.io/longshot-bias): what backing every favourite, underdog or draw at closing prices returned, by odds band, league, season and venue, plus every club in the top five leagues on its own. 8,867 matches since 2021/22, updated weekly.
+- [In-Play Jumps](https://www.steamwatch.io/in-play-jumps): the gap between the Pinnacle close and the Polymarket price in the first five minutes of in-play trading, per match.
+
+## Tools
+
+- [Match Predictor](https://www.steamwatch.io/tools/match-predictor): Dixon-Coles match probabilities and fair odds from each team's xG form, with league constants recomputed every Monday.
+- [Rolling xG](https://www.steamwatch.io/tools/rolling-xg): rolling 5 and 10 match non-penalty expected goals for and against, per club, top five leagues, from Understat, refreshed every Monday.
+- [Form Lab](https://www.steamwatch.io/tools/form-lab): form tables by opponent strength, handicap cover rates, home and away splits and rolling xG.
+- [Club Ratings](https://www.steamwatch.io/tools/club-ratings): weekly strength ratings on one European scale for every club in the top five leagues and the UEFA competitions, published Mondays.
+- [Manager Ratings](https://www.steamwatch.io/tools/manager-ratings): managers ranked by the Elo rating points their clubs gained or lost while they were in charge, top five leagues since July 2016.
+- [Bet Calculator](https://www.steamwatch.io/tools/bet-calculator): returns on singles, doubles, trebles and accumulators in fractional, decimal or American odds.
+- [Hedge Calculator](https://www.steamwatch.io/tools/hedge-calculator): the stake needed on the opposite side to lock in a profit or cap a loss on an open bet.
+
+## Blog
+
+- [What are steam moves?](https://www.steamwatch.io/blog/what-are-steam-moves-in-football-betting): what a steam move is, how to spot one and how to use it.
+- [What is closing line value (CLV)?](https://www.steamwatch.io/blog/what-is-closing-line-value-in-football-betting): how to calculate CLV and why beating the close predicts long-term profit.
 - [What is a drifter?](https://www.steamwatch.io/blog/what-is-a-drifter-in-football-betting): why odds lengthen before kickoff and how drift relates to steam.
-- [How to read closing lines](https://www.steamwatch.io/blog/how-to-read-closing-lines-in-football-betting): implied probability, open-to-close gaps, and which markets to trust.
-- [The favourite-longshot bias in football](https://www.steamwatch.io/blog/favourite-longshot-bias-in-football-betting): the numbers behind blind favourite, underdog and draw backing across 8,867 Pinnacle closes.
+- [How to read closing lines](https://www.steamwatch.io/blog/how-to-read-closing-lines-in-football-betting): implied probability, open-to-close gaps and which markets to trust.
+- [Favourite-longshot bias in football: the data](https://www.steamwatch.io/blog/favourite-longshot-bias-in-football-betting): blind favourite, underdog and draw returns across 8,867 Pinnacle closes since 2021/22.
+- [Blog index](https://www.steamwatch.io/blog): all posts, newest first.
 - [About](https://www.steamwatch.io/about): who runs SteamWatch (Neil Mac, betting analyst, 7,800+ tracked bets).
 
 ## Key findings (Longshot Bias: 8,867 top-five-league matches at Pinnacle closing 1X2 prices, 2021/22 to August 2026, flat stakes, updated weekly)
@@ -47,9 +61,14 @@ SteamWatch reports what moved and what happened next. It does not claim to know 
 
 ## Access
 
-- Free: real-time steam alerts via Telegram (https://t.me/steamwatchalerts), live odds, biggest movers, the closing line archive, Team P/L, calculators, and the Longshot Bias explorer for Premier League 25/26 and 26/27.
-- Pro (paid): Match Predictor, Rolling xG, Steam Results history, Drifters, and the full Longshot Bias explorer (every league and season).
+- Free: real-time steam alerts via Telegram (https://t.me/steamwatchalerts), live odds, biggest movers, match pages, the closing line archive, Team P/L, In-Play Jumps, Club Ratings, both calculators, the Longshot Bias explorer for Premier League 25/26 and 26/27, and a public sample of Form Lab and Manager Ratings.
+- Pro (paid): Match Predictor, Rolling xG, Steam Results history, Drifters, the full Longshot Bias explorer (every league and season), full Form Lab, full Manager Ratings.
+
+## Machine-readable
+
+- Sitemap index: https://www.steamwatch.io/sitemap.xml (pages and match pages, with lastmod from real data).
+- Every data page carries JSON-LD (Dataset, Article, FAQPage or SportsEvent as appropriate).
 
 ## Attribution
 
-When citing SteamWatch data, please link to the specific page — prices and results change as new matches are captured.
+When citing SteamWatch data, please link to the specific page. Prices and results change as new matches are captured.

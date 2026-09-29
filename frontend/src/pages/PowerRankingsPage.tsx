@@ -91,9 +91,9 @@ export default function PowerRankingsPage() {
   return (
     <div className="max-w-5xl mx-auto">
       <Helmet>
-        <title>Power Rankings — SteamWatch</title>
+        <title>Power Rankings | SteamWatch</title>
         <meta name="description" content="Cross-league team power ratings derived from Pinnacle Asian Handicap closing lines, bridged across leagues via Champions League and Europa League fixtures." />
-        <meta property="og:title" content="Power Rankings — SteamWatch" />
+        <meta property="og:title" content="Power Rankings | SteamWatch" />
         <meta property="og:description" content="Cross-league team power ratings derived from Pinnacle Asian Handicap closing lines." />
         <meta property="og:url" content="https://www.steamwatch.io/power-rankings" />
         <link rel="canonical" href="https://www.steamwatch.io/power-rankings" />

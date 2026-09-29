@@ -108,9 +108,9 @@ export default function ClosingLinesPage() {
   return (
     <div>
       <Helmet>
-        <title>Pinnacle Closing Lines Archive: Opening vs Closing Football Odds — SteamWatch</title>
+        <title>Pinnacle Closing Lines Archive: Opening vs Closing Football Odds | SteamWatch</title>
         <meta name="description" content="Pinnacle 1X2, Asian Handicap and Totals closing lines for every tracked European football match, grouped by matchweek." />
-        <meta property="og:title" content="Closing Lines — SteamWatch" />
+        <meta property="og:title" content="Closing Lines | SteamWatch" />
         <meta property="og:url" content="https://www.steamwatch.io/closing-lines" />
         <link rel="canonical" href="https://www.steamwatch.io/closing-lines" />
       </Helmet>

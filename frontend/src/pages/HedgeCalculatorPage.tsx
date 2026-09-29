@@ -83,9 +83,9 @@ export default function HedgeCalculatorPage() {
   return (
     <div className="max-w-2xl mx-auto">
       <Helmet>
-        <title>Football Hedge Calculator — SteamWatch</title>
+        <title>Football Hedge Calculator | SteamWatch</title>
         <meta name="description" content="Calculate optimal hedge bet sizes for football wagers with real-time calculations." />
-        <meta property="og:title" content="Football Hedge Calculator — SteamWatch" />
+        <meta property="og:title" content="Football Hedge Calculator | SteamWatch" />
         <meta property="og:description" content="Calculate optimal hedge bet sizes for football wagers with real-time calculations." />
         <meta property="og:url" content="https://www.steamwatch.io/tools/hedge-calculator" />
         <link rel="canonical" href="https://www.steamwatch.io/tools/hedge-calculator" />

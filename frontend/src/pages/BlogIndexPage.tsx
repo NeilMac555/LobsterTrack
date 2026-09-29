@@ -6,9 +6,9 @@ export default function BlogIndexPage() {
   return (
     <div className="max-w-3xl mx-auto">
       <Helmet>
-        <title>Blog — SteamWatch</title>
+        <title>Blog | SteamWatch</title>
         <meta name="description" content="Articles on sharp money movement, steam moves, closing line value, and football betting strategy from SteamWatch." />
-        <meta property="og:title" content="Blog — SteamWatch" />
+        <meta property="og:title" content="Blog | SteamWatch" />
         <meta property="og:description" content="Articles on sharp money movement, steam moves, closing line value, and football betting strategy." />
         <meta property="og:url" content="https://www.steamwatch.io/blog" />
         <link rel="canonical" href="https://www.steamwatch.io/blog" />

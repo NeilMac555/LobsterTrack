@@ -708,9 +708,9 @@ export const BLOG_POSTS: BlogPost[] = [
   },
   {
     slug: 'favourite-longshot-bias-in-football-betting',
-    title: 'The Favourite-Longshot Bias in Football: Five Seasons of Pinnacle Closing Prices',
+    title: 'Favourite-Longshot Bias in Football: The Data',
     description:
-      'What blindly backing every favourite, underdog and draw at Pinnacle closing prices returned across 8,867 top-five-league matches from 2021/22 to August 2026. Favourites near enough level, underdogs -10.5%, and the one venue split worth remembering.',
+      'Backing every favourite, underdog and draw at Pinnacle closing prices over 8,867 top-five-league matches since 2021/22. Favourites level, dogs -10.5%.',
     author: 'Neil Macdonald',
     datePublished: '2026-09-02',
     dateFormatted: 'September 2, 2026',
@@ -737,7 +737,7 @@ export const BLOG_POSTS: BlogPost[] = [
           'Blindly backing the draw in every match at Pinnacle closing prices returned -2.0% across 8,867 top-five-league matches, so it sits between favourites and underdogs. The Bundesliga (+1.1%) and Serie A (+0.4%) were the only leagues where the draw came out ahead.',
       },
     ],
-    noscriptHtml: `<h1>The Favourite-Longshot Bias in Football: Five Seasons of Pinnacle Closing Prices</h1>
+    noscriptHtml: `<h1>Favourite-Longshot Bias in Football: The Data</h1>
 <p>By Neil Macdonald - September 2, 2026</p>
 <p>Every punter has heard that the market overprices longshots. I wanted to see what that looks like in football with real closing prices rather than a paper from 2004, so I ran every Pinnacle closing 1X2 price we hold across the top 5 leagues, 2021/22 through to the end of August 2026. 8,867 matches. Flat 1 unit on the favourite in every one of them, 1 unit on the dog, 1 unit on the draw, and see what comes back.</p>
 <h2>What blind backing returns</h2>
