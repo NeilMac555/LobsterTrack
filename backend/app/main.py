@@ -236,7 +236,7 @@ if os.path.exists(static_dir):
             with open(os.path.join(static_dir, "routes.json"), encoding="utf-8") as f:
                 return _json.load(f)
         except (FileNotFoundError, ValueError):
-            return {"public": [], "dynamic": [], "internal": [], "redirects": [], "static_only": []}
+            return {"public": [], "dynamic": [], "internal": [], "redirects": [], "static_only": [], "server_rendered": []}
 
     def _not_found_response():
         page = os.path.join(static_dir, "404.html")
@@ -288,7 +288,9 @@ if os.path.exists(static_dir):
           1. exact static file (robots.txt, sitemap.xml, images...)
           2. build-time prerendered page: <path>/index.html (homepage,
              blog index, posts, static pages, static-only pages)
-          3. /match/<id>: server-rendered from the DB (services/match_page)
+          3. server-rendered from the DB per request: /dropping-odds
+             (services/dropping_odds_page) and /match/<id>
+             (services/match_page)
           4. internal + legacy-redirect routes: bare app shell (noindex)
           5. anything else: real HTTP 404 with the noindex 404 page
         """
@@ -300,6 +302,16 @@ if os.path.exists(static_dir):
         prerendered = safe_static_path(static_dir, str(Path(path) / "index.html")) if path else Path(static_dir) / "index.html"
         if os.path.isfile(prerendered):
             return FileResponse(prerendered)
+
+        if path == "dropping-odds":
+            from app.models.database import SessionLocal
+            from app.services.dropping_odds_page import render_dropping_odds_page
+            db = SessionLocal()
+            try:
+                html = render_dropping_odds_page(db)
+            finally:
+                db.close()
+            return HTMLResponse(html, headers={"Cache-Control": "public, max-age=300"})
 
         if path.startswith("match/") and path.count("/") == 1:
             from app.models.database import SessionLocal

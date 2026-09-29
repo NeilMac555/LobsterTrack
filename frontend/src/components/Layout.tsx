@@ -13,6 +13,7 @@ const leagues = VISIBLE_LEAGUES;
 
 const results = [
   { name: 'Steam Results', path: '/steam-results', icon: '⚡' },
+  { name: 'Dropping Odds', path: '/dropping-odds', icon: '↓' },
   { name: 'Drifter Results', path: '/drifters', icon: '↑' },
   { name: 'Team P/L', path: '/team-pnl', icon: '£' },
   { name: 'Longshot Bias', path: '/longshot-bias', icon: '⚖' },
@@ -96,7 +97,8 @@ export default function Layout() {
   const isTeamPLPage = location.pathname === '/team-pnl';
   const isPowerRankingsPage = location.pathname === '/power-rankings';
   const isLongshotBiasPage = location.pathname === '/longshot-bias';
-  const isResultsPage = isSteamResultsPage || isDriftersPage || isTeamPLPage || isLongshotBiasPage;
+  const isDroppingOddsPage = location.pathname === '/dropping-odds';
+  const isResultsPage = isSteamResultsPage || isDroppingOddsPage || isDriftersPage || isTeamPLPage || isLongshotBiasPage;
   const isOverviewPage = !location.hash && !currentLeague && !isToolsPage && !isSteamResultsPage && !isDriftersPage && !isClosingLinesPage && !isTeamPLPage && !isPowerRankingsPage && !isLongshotBiasPage && location.pathname === '/';
 
   const navItemClass = (active: boolean) =>

@@ -1,5 +1,5 @@
 {
-  "_comment": "Single source of truth for site routes. App.tsx must declare exactly public + dynamic + internal + redirects (the build fails otherwise, see scripts/prerender-blog.mjs). The backend reads the built copy (static/routes.json) to decide what is a real 404. Paths have no leading slash; '' is the homepage. static_only pages have no React route and are served as pure prerendered HTML.",
+  "_comment": "Single source of truth for site routes. App.tsx must declare exactly public + dynamic + internal + redirects (the build fails otherwise, see scripts/prerender-blog.mjs). The backend reads the built copy (static/routes.json) to decide what is a real 404. Paths have no leading slash; '' is the homepage. static_only pages have no React route and are served as pure prerendered HTML. server_rendered pages have a React route but no prerender entry: the backend renders the document per request from the DB (services/*_page.py), like match pages.",
   "public": [
     "",
     "steam-results",
@@ -34,5 +34,8 @@
   ],
   "static_only": [
     "tools/manager-ratings"
+  ],
+  "server_rendered": [
+    "dropping-odds"
   ]
 }

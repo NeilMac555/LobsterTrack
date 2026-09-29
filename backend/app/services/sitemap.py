@@ -14,7 +14,8 @@ Dynamic XML sitemaps (2026-09-29).
                           lists each part.
 
 Only pages that are indexable and self-canonical are listed: public routes
-from routes.json (the single route source), static-only pages, and blog
+from routes.json (the single route source), static-only pages,
+server-rendered pages (lastmod = now, they track the feed), and blog
 posts that were actually prerendered. Redirect and internal routes never
 appear. No <changefreq>/<priority>: Google ignores both.
 
@@ -90,9 +91,12 @@ def _build_time() -> str:
 
 
 def _page_entries() -> list[tuple[str, str]]:
-    routes = _read_json("routes.json", {"public": [], "static_only": []})
+    routes = _read_json("routes.json", {"public": [], "static_only": [], "server_rendered": []})
     built = _build_time()
     paths = list(routes.get("public", [])) + list(routes.get("static_only", []))
+    # Server-rendered pages change with the odds feed, not the build.
+    live = {p: _iso(None) for p in routes.get("server_rendered", [])}
+    paths += list(live)
     # Blog posts: whatever the prerender actually wrote under static/blog/
     blog_dir = os.path.join(_static_dir(), "blog")
     if os.path.isdir(blog_dir):
@@ -104,7 +108,7 @@ def _page_entries() -> list[tuple[str, str]]:
         if p in seen:
             continue
         seen.add(p)
-        out.append((f"{DOMAIN}/{p}" if p else f"{DOMAIN}/", built))
+        out.append((f"{DOMAIN}/{p}" if p else f"{DOMAIN}/", live.get(p, built)))
     return out
 
 

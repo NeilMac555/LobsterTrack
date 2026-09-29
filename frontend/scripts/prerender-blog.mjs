@@ -775,7 +775,7 @@ const ROUTES = JSON.parse(readFileSync(resolve(__dirname, '..', 'src', 'routes.j
     if (raw === '/') continue; // the <Layout /> wrapper route, not a page
     declared.add(raw.replace(/\/:[^/]+$/, '/*'));
   }
-  const expected = new Set([...ROUTES.public, ...ROUTES.dynamic, ...ROUTES.internal, ...ROUTES.redirects]);
+  const expected = new Set([...ROUTES.public, ...ROUTES.dynamic, ...ROUTES.internal, ...ROUTES.redirects, ...(ROUTES.server_rendered || [])]);
   const missingFromRoutes = [...declared].filter((r) => !expected.has(r));
   const missingFromApp = [...expected].filter((r) => !declared.has(r));
   if (missingFromRoutes.length || missingFromApp.length) {
@@ -801,6 +801,7 @@ const ROUTES = JSON.parse(readFileSync(resolve(__dirname, '..', 'src', 'routes.j
 const NAV_LINKS = [
   ['/', 'Overview'],
   ['/steam-results', 'Steam Results'],
+  ['/dropping-odds', 'Dropping Odds'],
   ['/closing-lines', 'Closing Lines'],
   ['/drifters', 'Drifters'],
   ['/team-pnl', 'Team P/L'],
@@ -866,7 +867,7 @@ const NAV_HTML = `<header class="pr-header"><div class="pr-wrap pr-bar">
 </div></header>`;
 
 const FOOTER_HTML = `<footer class="pr-footer"><div class="pr-cols">
-<div><h4>Data</h4>${[['/', 'Live odds & biggest movers'], ['/steam-results', 'Steam Results'], ['/drifters', 'Drifters'], ['/closing-lines', 'Closing Lines'], ['/cl-closing-lines', 'Champions League Closing Lines'], ['/team-pnl', 'Team P/L'], ['/longshot-bias', 'Longshot Bias']].map(([h, t]) => `<a href="${h}">${t}</a>`).join('')}</div>
+<div><h4>Data</h4>${[['/', 'Live odds & biggest movers'], ['/steam-results', 'Steam Results'], ['/dropping-odds', 'Dropping Odds'], ['/drifters', 'Drifters'], ['/closing-lines', 'Closing Lines'], ['/cl-closing-lines', 'Champions League Closing Lines'], ['/team-pnl', 'Team P/L'], ['/longshot-bias', 'Longshot Bias']].map(([h, t]) => `<a href="${h}">${t}</a>`).join('')}</div>
 <div><h4>Tools</h4>${TOOL_LINKS.map(([h, t]) => `<a href="${h}">${t}</a>`).join('')}</div>
 <div><h4>Blog</h4>${POSTS.map((p) => `<a href="/blog/${p.slug}">${esc(p.title)}</a>`).join('')}<a href="/blog">All posts</a></div>
 <div><h4>SteamWatch</h4><a href="/about">About Neil Mac</a><a href="https://t.me/steamwatchalerts">Free Telegram alerts</a><a href="https://x.com/Steamwatchio">@Steamwatchio on X</a></div>

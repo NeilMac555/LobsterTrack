@@ -912,7 +912,17 @@ async def get_biggest_movers(
     cached = _cache_get(cache_key)
     if cached is not None:
         return cached
+    response = compute_biggest_movers(db, limit, sport_key)
+    _cache_put(cache_key, response)
+    return response
 
+
+def compute_biggest_movers(db: Session, limit: int = 4, sport_key: Optional[str] = None, with_sparkline: bool = True) -> list[BiggestMover]:
+    """The biggest-movers computation, shared by the /biggest-movers endpoint
+    and the server-rendered /dropping-odds page (services/dropping_odds_page).
+    One shortening move per upcoming match, biggest across 1X2 and totals,
+    measured against the price ~48h ago (or the opening price for matches
+    listed more recently). No caching here; callers cache."""
     now = datetime.utcnow()
     cutoff_48h = now - timedelta(hours=48)
 
@@ -1181,7 +1191,7 @@ async def get_biggest_movers(
         last = len(values) - 1
         return [values[round(i * last / (SPARK_DISPLAY_POINTS - 1))] for i in range(SPARK_DISPLAY_POINTS)]
 
-    for m in top_movers:
+    for m in (top_movers if with_sparkline else []):
         match_id = m['match'].id
         series: list[float] = []
         if m['market'] == '1x2':
@@ -1240,7 +1250,6 @@ async def get_biggest_movers(
         )
         for m in top_movers
     ]
-    _cache_put(cache_key, response)
     return response
 
 
