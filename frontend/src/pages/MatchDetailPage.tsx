@@ -168,13 +168,16 @@ export default function MatchDetailPage() {
   const isBetfairSourced = match.current_odds_bookmaker === 'betfair_ex_eu';
 
   const metaDesc = `${match.home_team} vs ${match.away_team}: how the 1X2, Asian handicap and totals prices moved from open to kickoff.`;
+  // Same string the server-rendered HTML carries, so crawlers that run JS
+  // see one consistent title (see backend/app/services/match_page.py).
+  const pageTitle = `${match.home_team} vs ${match.away_team} Odds Movement, ${match.league_name} ${format(matchDate, 'd MMM yyyy')} | SteamWatch`;
 
   return (
     <div>
       <Helmet>
-        <title>{`${match.home_team} vs ${match.away_team} — SteamWatch`}</title>
+        <title>{pageTitle}</title>
         <meta name="description" content={metaDesc} />
-        <meta property="og:title" content={`${match.home_team} vs ${match.away_team} — SteamWatch`} />
+        <meta property="og:title" content={pageTitle} />
         <meta property="og:description" content={metaDesc} />
         <meta property="og:url" content={`https://www.steamwatch.io/match/${matchId}`} />
         <link rel="canonical" href={`https://www.steamwatch.io/match/${matchId}`} />
