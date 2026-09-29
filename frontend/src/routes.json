@@ -13,12 +13,26 @@
     "tools/bet-calculator",
     "tools/match-predictor",
     "tools/rolling-xg",
+    "tools/form-lab",
     "tools/club-ratings",
     "about",
     "blog"
   ],
-  "dynamic": ["match/*", "blog/*"],
-  "internal": ["auth/verify", "admin/emails"],
-  "redirects": ["power-rankings", "favs-dogs", "tools/forecast", "tools/world-cup"],
-  "static_only": ["tools/manager-ratings"]
+  "dynamic": [
+    "match/*",
+    "blog/*"
+  ],
+  "internal": [
+    "auth/verify",
+    "admin/emails"
+  ],
+  "redirects": [
+    "power-rankings",
+    "favs-dogs",
+    "tools/forecast",
+    "tools/world-cup"
+  ],
+  "static_only": [
+    "tools/manager-ratings"
+  ]
 }

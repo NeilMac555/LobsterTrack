@@ -635,6 +635,32 @@ PAGES.push(
 <p>Each selection's decimal odds are multiplied together to give the combined price, and the stake is multiplied by that combined price to give the return. Fractional odds convert to decimal by dividing the numerator by the denominator and adding 1 (5/2 is 3.50). Positive American odds convert as odds divided by 100 plus 1 (+150 is 2.50); negative American odds as 100 divided by the absolute value plus 1 (-200 is 1.50).</p>
 <p>Also on SteamWatch: the <a href="${DOMAIN}/tools/hedge-calculator">Hedge Calculator</a> for locking in a profit or limiting a loss on an open bet.</p>`,
   },
+  {
+    path: 'tools/form-lab',
+    title: 'Form Lab: Football Form, Handicap Cover Rates and Home/Away Splits — SteamWatch',
+    description:
+      'Compare football form across the top leagues: results by opponent strength, goal patterns, Asian handicap cover rates, home and away splits, and rolling expected goals, built from Pinnacle closing prices.',
+    ogType: 'website',
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'Dataset',
+      name: 'SteamWatch Form Lab',
+      url: `${DOMAIN}/tools/form-lab`,
+      description: 'League-wide form tables with opponent-strength filters, handicap cover rates, home/away splits and rolling expected goals for the top European leagues.',
+      creator: { '@type': 'Organization', name: 'SteamWatch', url: DOMAIN },
+      keywords: ['football form', 'Asian handicap cover', 'home away split', 'expected goals'],
+    },
+    noscriptHtml: `<h1>Form Lab</h1>
+<p class="pr-lead">Form, the way the market measures it. Form Lab lays out every club's recent results against the closing price it was given: how often it covered the Asian handicap, how it did against strong and weak opposition, its home and away splits, its goal patterns, and its rolling expected goals.</p>
+<h2>What you can compare</h2>
+<ul>
+  <li>Results and handicap cover rates over the last 5, 10 or 20 league matches, sortable by any column.</li>
+  <li>An opponent-strength filter based on rolling 20-match strength, so a run against the bottom half reads differently from a run against the top six.</li>
+  <li>Home and away splits side by side, with promoted clubs marked and their samples limited to the current season.</li>
+  <li>Rolling non-penalty expected goals for and against.</li>
+</ul>
+<p>A public sample is free; every competition, filter and view is available with SteamWatch Pro. See also <a href="/tools/rolling-xg">Rolling xG</a>, <a href="/team-pnl">Team P/L</a> and <a href="/longshot-bias">Longshot Bias</a>.</p>`,
+  },
 );
 
 // ---------------------------------------------------------------------------
@@ -691,6 +717,7 @@ const TOOL_LINKS = [
   ['/tools/hedge-calculator', 'Hedging Calculator'],
   ['/tools/match-predictor', 'Match Model'],
   ['/tools/rolling-xg', 'Rolling xG'],
+  ['/tools/form-lab', 'Form Lab'],
   ['/tools/club-ratings', 'Club Ratings'],
   ['/tools/manager-ratings', 'Manager Ratings'],
   ['/in-play-jumps', 'In-Play Jumps'],
