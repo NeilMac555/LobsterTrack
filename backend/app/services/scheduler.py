@@ -341,6 +341,17 @@ class OddsScheduler:
         except Exception as e:
             logger.error("xG refresh failed", error=str(e))
 
+    async def xg_goals_refresh_job(self):
+        """Weekly goals-vs-xG refresh (services/xg_goals) for the
+        /goals-coming-soon page: current and previous season, all five
+        leagues. Independent of the rolling-xG refresher above."""
+        try:
+            from app.services.xg_goals import refresh_async
+            summary = await refresh_async()
+            logger.info("xG goals refresh done", rows=summary.get("rows"), errors=summary.get("errors"))
+        except Exception as e:
+            logger.error("xG goals refresh failed", error=str(e))
+
     async def league_constants_refresh_job(self):
         """
         Weekly recompute of avgGoalsPerTeam/homeAwayRatio per league from
@@ -582,6 +593,18 @@ class OddsScheduler:
             trigger=CronTrigger(day_of_week="mon", hour=3, minute=0),
             id="xg_refresh_weekly",
             name="Weekly xG refresh from Understat",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
+
+        # Goals vs xG (Understat) for /goals-coming-soon: Monday 03:30 UTC,
+        # after the rolling-xG refresh above.
+        self.scheduler.add_job(
+            self.xg_goals_refresh_job,
+            trigger=CronTrigger(day_of_week="mon", hour=3, minute=30),
+            id="xg_goals_refresh_weekly",
+            name="Weekly goals vs xG refresh from Understat",
             replace_existing=True,
             max_instances=1,
             coalesce=True,

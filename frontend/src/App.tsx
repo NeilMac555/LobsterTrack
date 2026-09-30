@@ -12,6 +12,7 @@ import MatchPredictorPage from './pages/MatchPredictorPage';
 import SteamResultsPage from './pages/SteamResultsPage';
 import DriftersPage from './pages/DriftersPage';
 import DroppingOddsPage from './pages/DroppingOddsPage';
+import GoalsComingSoonPage from './pages/GoalsComingSoonPage';
 import ClosingLinesPage from './pages/ClosingLinesPage';
 import CLClosingLinesPage from './pages/CLClosingLinesPage';
 import AdminEmailsPage from './pages/AdminEmailsPage';
@@ -41,6 +42,7 @@ function App() {
               <Route path="match/:matchId" element={<MatchDetailPage />} />
               <Route path="steam-results" element={<SteamResultsPage />} />
               <Route path="dropping-odds" element={<DroppingOddsPage />} />
+              <Route path="goals-coming-soon" element={<GoalsComingSoonPage />} />
               <Route path="drifters" element={<DriftersPage />} />
               <Route path="closing-lines" element={<ClosingLinesPage />} />
               <Route path="cl-closing-lines" element={<CLClosingLinesPage />} />

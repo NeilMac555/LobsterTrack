@@ -118,6 +118,31 @@ def render_match_page(db: Session, match_id: str) -> tuple[str, int]:
     return html_out, 200
 
 
+XG_NOTE_MIN_GAP = 3.0
+
+
+def _xg_note(db: Session, match: Match) -> str:
+    """One sentence per side on goals vs expected goals over the last 12
+    months (services/xg_goals), linking to /goals-coming-soon. Only for
+    clubs the data can name with confidence and gaps of 3+ goals; never
+    lets a data problem break a match page. XgGapNote.tsx mirrors it."""
+    try:
+        from app.services.xg_goals import club_gap
+        lines = []
+        for team in (match.home_team, match.away_team):
+            r = club_gap(db, match.sport_key, team)
+            if not r or abs(r["gap"]) < XG_NOTE_MIN_GAP:
+                continue
+            word = "fewer" if r["gap"] < 0 else "more"
+            lines.append(f"{_esc(team)} have scored {abs(r['gap']):.1f} goals {word} than their expected goals over the "
+                         f"last 12 months ({r['matches']} league matches).")
+        if not lines:
+            return ""
+        return f"<p class=\"pr-note\">{' '.join(lines)} See <a href=\"/goals-coming-soon\">Goals Coming Soon</a>.</p>"
+    except Exception:  # noqa: BLE001
+        return ""
+
+
 def _render(db: Session, match: Match) -> str:
     kickoff = _naive_utc(match.commence_time)
     finished = datetime.utcnow() >= kickoff
@@ -229,11 +254,13 @@ def _render(db: Session, match: Match) -> str:
                 f"last {_time_label(last.fetched_at)}</p>") if snaps else ""
 
     league_link = f"/?league={_esc(match.sport_key)}"
+    xg_note = _xg_note(db, match)
     body = (
         f"<p class=\"pr-meta\">{_esc(competition)} · kickoff {_time_label(kickoff)}</p>"
         f"<h1>{_esc(home)} vs {_esc(away)}: odds movement</h1>"
         f"<p class=\"pr-lead\">{_esc(lead)}</p>"
         f"{notes}"
+        f"{xg_note}"
         f"<h2>Pinnacle prices, open to {'close' if finished else 'now'}</h2>"
         f"{table}{recorded}"
         f"<p>Implied change is the movement in implied probability (100 divided by the decimal price) from open to {'close' if finished else 'now'}, in percentage points. "

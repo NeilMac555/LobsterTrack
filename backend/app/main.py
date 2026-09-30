@@ -208,6 +208,9 @@ app.include_router(router, prefix="/api")
 from app.api.manager_ratings import manager_ratings_router
 app.include_router(manager_ratings_router, prefix="/api")
 
+from app.api.xg_goals_routes import xg_goals_router
+app.include_router(xg_goals_router, prefix="/api")
+
 from app.api.form_lab import router as form_lab_router
 app.include_router(form_lab_router, prefix="/api")
 
@@ -289,7 +292,8 @@ if os.path.exists(static_dir):
           2. build-time prerendered page: <path>/index.html (homepage,
              blog index, posts, static pages, static-only pages)
           3. server-rendered from the DB per request: /dropping-odds
-             (services/dropping_odds_page) and /match/<id>
+             (services/dropping_odds_page), /goals-coming-soon
+             (services/goals_coming_soon_page) and /match/<id>
              (services/match_page)
           4. internal + legacy-redirect routes: bare app shell (noindex)
           5. anything else: real HTTP 404 with the noindex 404 page
@@ -302,6 +306,16 @@ if os.path.exists(static_dir):
         prerendered = safe_static_path(static_dir, str(Path(path) / "index.html")) if path else Path(static_dir) / "index.html"
         if os.path.isfile(prerendered):
             return FileResponse(prerendered)
+
+        if path == "goals-coming-soon":
+            from app.models.database import SessionLocal
+            from app.services.goals_coming_soon_page import render_goals_coming_soon_page
+            db = SessionLocal()
+            try:
+                html = render_goals_coming_soon_page(db)
+            finally:
+                db.close()
+            return HTMLResponse(html, headers={"Cache-Control": "public, max-age=600"})
 
         if path == "dropping-odds":
             from app.models.database import SessionLocal

@@ -307,6 +307,57 @@ export interface XGDataPoint {
   match_date: string;
 }
 
+export interface XgTableRow {
+  league: string;
+  league_name: string;
+  team: string;
+  matches: number;
+  goals: number;
+  xg: number;
+  gap: number;
+  gap_per_match: number;
+  conceded: number;
+  xga: number;
+  def_gap: number;
+  def_gap_per_match: number;
+  last_match: string;
+}
+
+export interface XgTableResponse {
+  months: number;
+  window_days: number;
+  since: string;
+  latest_match: string | null;
+  refreshed_at: string | null;
+  min_matches: number;
+  clubs_in_window: number;
+  rows: XgTableRow[];
+}
+
+export interface XgUndershootingRow {
+  league: string;
+  league_name: string;
+  team: string;
+  matches: number;
+  goals: number;
+  xg: number;
+  gap: number;
+  gap_per_match: number;
+  conceded: number;
+  xga: number;
+  last_match: string;
+}
+
+export interface XgUndershootingResponse {
+  months: number;
+  window_days: number;
+  since: string;
+  latest_match: string | null;
+  min_matches: number;
+  clubs_in_window: number;
+  rows: XgUndershootingRow[];
+}
+
 export interface XGDataResponse {
   team_name: string;
   league: string;

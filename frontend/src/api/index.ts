@@ -1,4 +1,4 @@
-import type { MatchSummary, MatchDetail, LeagueSummary, Stats, BiggestMover, MatchTotals, SyndicateMove, MatchSpreads, SteamResultsData, ClosingLinesResponse, MatchClosingLinesResponse, XGDataResponse, TeamPLResponse, InPlayJumpsResponse, LateSteamResponse, LeagueConstantsResponse, ForecastRegistry, ForecastResponse, RecentForecastsResponse, PowerRatingsResponse, PowerRatingHistoryResponse, FavDogData, FavDogTeamData, FavDogTeamsData } from '../types';
+import type { MatchSummary, MatchDetail, LeagueSummary, Stats, BiggestMover, MatchTotals, SyndicateMove, MatchSpreads, SteamResultsData, ClosingLinesResponse, MatchClosingLinesResponse, XGDataResponse, XgUndershootingResponse, XgTableResponse, XgTableRow, TeamPLResponse, InPlayJumpsResponse, LateSteamResponse, LeagueConstantsResponse, ForecastRegistry, ForecastResponse, RecentForecastsResponse, PowerRatingsResponse, PowerRatingHistoryResponse, FavDogData, FavDogTeamData, FavDogTeamsData } from '../types';
 
 const API_BASE = '/api';
 
@@ -170,6 +170,18 @@ export async function getClosingLinesGrouped(params?: {
 
 export async function getXGTeams(league: string): Promise<{ teams: string[] }> {
   return fetchJson<{ teams: string[] }>(`${API_BASE}/xg-data/teams?league=${encodeURIComponent(league)}`);
+}
+
+export async function getXgTable(months: 6 | 12 = 12): Promise<XgTableResponse> {
+  return fetchJson<XgTableResponse>(`${API_BASE}/xg-goals/table?months=${months}`);
+}
+
+export async function getXgClub(league: string, team: string, months: 6 | 12 = 12): Promise<{ row: XgTableRow | null }> {
+  return fetchJson<{ row: XgTableRow | null }>(`${API_BASE}/xg-goals/club?league=${encodeURIComponent(league)}&team=${encodeURIComponent(team)}&months=${months}`);
+}
+
+export async function getXgUndershooting(months: 6 | 12 = 12, limit = 10): Promise<XgUndershootingResponse> {
+  return fetchJson<XgUndershootingResponse>(`${API_BASE}/xg-goals/undershooting?months=${months}&limit=${limit}`);
 }
 
 export async function getXGData(league: string, team: string): Promise<XGDataResponse> {

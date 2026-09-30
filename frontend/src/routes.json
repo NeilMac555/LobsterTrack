@@ -36,6 +36,7 @@
     "tools/manager-ratings"
   ],
   "server_rendered": [
-    "dropping-odds"
+    "dropping-odds",
+    "goals-coming-soon"
   ]
 }

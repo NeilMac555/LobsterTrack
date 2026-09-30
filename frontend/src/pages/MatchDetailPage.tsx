@@ -14,6 +14,7 @@ import LeagueLogo from '../components/LeagueLogo';
 import Sparkline from '../components/Sparkline';
 import { countryFlagImgUrl } from '../utils/countryFlags';
 import Bet105Button from '../components/Bet105Button';
+import XgGapNote from '../components/XgGapNote';
 import { parseUtc, formatKickoff } from '../utils/time';
 import { useTimePreference } from '../contexts/TimePreferenceContext';
 import { useOddsFormat } from '../contexts/OddsFormatContext';
@@ -266,6 +267,8 @@ export default function MatchDetailPage() {
             </div>
           </div>
         </div>
+
+        <XgGapNote league={match.sport_key} home={match.home_team} away={match.away_team} />
 
         {/* 3-column 1X2 odds book with per-outcome sparklines */}
         <div className="grid grid-cols-3">

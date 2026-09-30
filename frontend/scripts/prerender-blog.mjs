@@ -511,7 +511,7 @@ const PAGES = [
 <h2>How the numbers are calculated</h2>
 <p>The rolling figure at any match is the plain average of the previous five or ten matches' non-penalty xG for, and separately against. To keep the window full at the start of a season, the full previous season is joined on to the front of each club's series and marked on the chart, so a five-game window on matchday two includes the last three games of the season before. Promoted clubs have no top-flight history and start from their first match. The trend line is a least-squares fit over the plotted window.</p>
 <h2>Current coverage</h2>
-<p>{{HEADLINE}} Rolling xG is a form view and feeds no odds calculation on this site. The closing prices the market set for the same matches are in the <a href="/closing-lines">closing-line archive</a>.</p>`,
+<p>{{HEADLINE}} Rolling xG is a form view and feeds no odds calculation on this site. The closing prices the market set for the same matches are in the <a href="/closing-lines">closing-line archive</a>. Which clubs are scoring above or below their chances is on <a href="/goals-coming-soon">Goals Coming Soon</a>.</p>`,
   },
   {
     path: 'drifters',
@@ -802,6 +802,7 @@ const NAV_LINKS = [
   ['/', 'Overview'],
   ['/steam-results', 'Steam Results'],
   ['/dropping-odds', 'Dropping Odds'],
+  ['/goals-coming-soon', 'Goals Coming Soon'],
   ['/closing-lines', 'Closing Lines'],
   ['/drifters', 'Drifters'],
   ['/team-pnl', 'Team P/L'],
@@ -867,7 +868,7 @@ const NAV_HTML = `<header class="pr-header"><div class="pr-wrap pr-bar">
 </div></header>`;
 
 const FOOTER_HTML = `<footer class="pr-footer"><div class="pr-cols">
-<div><h4>Data</h4>${[['/', 'Live odds & biggest movers'], ['/steam-results', 'Steam Results'], ['/dropping-odds', 'Dropping Odds'], ['/drifters', 'Drifters'], ['/closing-lines', 'Closing Lines'], ['/cl-closing-lines', 'Champions League Closing Lines'], ['/team-pnl', 'Team P/L'], ['/longshot-bias', 'Longshot Bias']].map(([h, t]) => `<a href="${h}">${t}</a>`).join('')}</div>
+<div><h4>Data</h4>${[['/', 'Live odds & biggest movers'], ['/steam-results', 'Steam Results'], ['/dropping-odds', 'Dropping Odds'], ['/goals-coming-soon', 'Goals Coming Soon'], ['/drifters', 'Drifters'], ['/closing-lines', 'Closing Lines'], ['/cl-closing-lines', 'Champions League Closing Lines'], ['/team-pnl', 'Team P/L'], ['/longshot-bias', 'Longshot Bias']].map(([h, t]) => `<a href="${h}">${t}</a>`).join('')}</div>
 <div><h4>Tools</h4>${TOOL_LINKS.map(([h, t]) => `<a href="${h}">${t}</a>`).join('')}</div>
 <div><h4>Blog</h4>${POSTS.map((p) => `<a href="/blog/${p.slug}">${esc(p.title)}</a>`).join('')}<a href="/blog">All posts</a></div>
 <div><h4>SteamWatch</h4><a href="/about">About Neil Mac</a><a href="https://t.me/steamwatchalerts">Free Telegram alerts</a><a href="https://x.com/Steamwatchio">@Steamwatchio on X</a></div>

@@ -1,6 +1,7 @@
 import EuropeanRollingXG from '../components/EuropeanRollingXG';
 import { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { Link } from 'react-router-dom';
 import {
   ComposedChart,
   Line,
@@ -275,6 +276,9 @@ function DomesticRollingXGPage() {
           <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Rolling xG</h1>
           <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em]">
             Non-penalty Expected Goals &middot; Team Form Tracker
+          </p>
+          <p className="text-xs text-slate-400 mt-1">
+            Which clubs are scoring above or below their chances? See <Link to="/goals-coming-soon" className="text-cyan-400 hover:underline">Goals Coming Soon</Link>.
           </p>
         </div>
       </div>
