@@ -30,6 +30,8 @@ class XGTeamResult(Base):
     xg_against = Column(Float, nullable=False)
     npxg_for = Column(Float, nullable=False)
     npxg_against = Column(Float, nullable=False)
+    points = Column(Integer, nullable=True)              # 3/1/0 for the club in this match
+    xpts = Column(Float, nullable=True)                  # Understat expected points for this match
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     __table_args__ = (

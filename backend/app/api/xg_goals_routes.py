@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.models.database import get_db
-from app.services.xg_goals import club_gap, table, undershooting
+from app.services.xg_goals import club_gap, justice, table, undershooting
 
 xg_goals_router = APIRouter(prefix="/xg-goals", tags=["xg-goals"])
 
@@ -31,3 +31,11 @@ def get_club(db: Session = Depends(get_db), league: str = Query(...), team: str 
     """One club's window row, looked up by our (Odds API) team name.
     Returns {"row": null} when the club can't be matched with confidence."""
     return {"row": club_gap(db, league, team, months)}
+
+
+@xg_goals_router.get("/justice")
+def get_justice(db: Session = Depends(get_db), months: int = Query(12, description="Rolling window: 12 or 6 months")):
+    """Per league: points and expected points for every club over the
+    window, sorted on expected points with the rank on real points
+    alongside (the justice table)."""
+    return justice(db, months=months)

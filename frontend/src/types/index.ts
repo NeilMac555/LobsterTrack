@@ -307,6 +307,46 @@ export interface XGDataPoint {
   match_date: string;
 }
 
+export interface JusticeRow {
+  league: string;
+  league_name: string;
+  team: string;
+  matches: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  goals: number;
+  conceded: number;
+  points: number;
+  xpts: number;
+  gap: number;
+  pos: number;
+  xpos: number;
+  move: number;
+}
+
+export interface JusticeSummary {
+  clubs: number;
+  season?: string;
+  season_label?: string;
+  mean_abs_places: number;
+  within_two: number;
+  max_gap: number;
+  max_gap_club: string;
+}
+
+export interface JusticeResponse {
+  months: number;
+  window_days: number;
+  since: string;
+  min_matches: number;
+  previous_label: string;
+  latest_match: string | null;
+  refreshed_at: string | null;
+  leagues: Record<string, JusticeRow[]>;
+  previous_summary: JusticeSummary;
+}
+
 export interface XgTableRow {
   league: string;
   league_name: string;

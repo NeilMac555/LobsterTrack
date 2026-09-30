@@ -15,6 +15,7 @@ const results = [
   { name: 'Steam Results', path: '/steam-results', icon: '⚡' },
   { name: 'Dropping Odds', path: '/dropping-odds', icon: '↓' },
   { name: 'Goals Coming Soon', path: '/goals-coming-soon', icon: '⚽' },
+  { name: 'Justice Table', path: '/justice-table', icon: '⚖' },
   { name: 'Drifter Results', path: '/drifters', icon: '↑' },
   { name: 'Team P/L', path: '/team-pnl', icon: '£' },
   { name: 'Longshot Bias', path: '/longshot-bias', icon: '⚖' },
@@ -100,7 +101,8 @@ export default function Layout() {
   const isLongshotBiasPage = location.pathname === '/longshot-bias';
   const isDroppingOddsPage = location.pathname === '/dropping-odds';
   const isGoalsComingSoonPage = location.pathname === '/goals-coming-soon';
-  const isResultsPage = isSteamResultsPage || isDroppingOddsPage || isGoalsComingSoonPage || isDriftersPage || isTeamPLPage || isLongshotBiasPage;
+  const isJusticeTablePage = location.pathname === '/justice-table';
+  const isResultsPage = isSteamResultsPage || isDroppingOddsPage || isGoalsComingSoonPage || isJusticeTablePage || isDriftersPage || isTeamPLPage || isLongshotBiasPage;
   const isOverviewPage = !location.hash && !currentLeague && !isToolsPage && !isSteamResultsPage && !isDriftersPage && !isClosingLinesPage && !isTeamPLPage && !isPowerRankingsPage && !isLongshotBiasPage && location.pathname === '/';
 
   const navItemClass = (active: boolean) =>

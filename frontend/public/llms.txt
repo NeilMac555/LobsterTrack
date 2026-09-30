@@ -18,6 +18,7 @@ SteamWatch reports what moved and what happened next. It does not claim to know 
 - [Live odds and biggest movers](https://www.steamwatch.io/): every tracked match with current prices, the biggest 48-hour moves, and late steam within 16 hours of kickoff.
 - [Dropping Odds](https://www.steamwatch.io/dropping-odds): the upcoming fixtures whose Pinnacle price shortened most in the last 48 hours, with opening price, current price and implied-probability change, server-rendered from the latest snapshot.
 - [Goals Coming Soon](https://www.steamwatch.io/goals-coming-soon): the ten clubs in the top five leagues whose goals have fallen furthest short of their expected goals over the last 12 months (6-month view available), Understat data, updated weekly.
+- [Justice Table](https://www.steamwatch.io/justice-table): each top-five league table rebuilt on expected points (xPts), over a rolling 12 months (6-month view available), sorted on expected points with the rank on real points alongside, Understat data, updated weekly.
 - [Steam Results](https://www.steamwatch.io/steam-results): every detected steam move tracked through to a result, with win rates, profit and loss and per-team rankings for the current season.
 - [Drifters](https://www.steamwatch.io/drifters): the moves going the other way, with the same accounting.
 - [Closing Lines](https://www.steamwatch.io/closing-lines): the Pinnacle closing 1X2, Asian handicap and totals price for every finished match, by league and matchweek, with the opening price beside it.

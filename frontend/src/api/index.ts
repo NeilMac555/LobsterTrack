@@ -1,4 +1,4 @@
-import type { MatchSummary, MatchDetail, LeagueSummary, Stats, BiggestMover, MatchTotals, SyndicateMove, MatchSpreads, SteamResultsData, ClosingLinesResponse, MatchClosingLinesResponse, XGDataResponse, XgUndershootingResponse, XgTableResponse, XgTableRow, TeamPLResponse, InPlayJumpsResponse, LateSteamResponse, LeagueConstantsResponse, ForecastRegistry, ForecastResponse, RecentForecastsResponse, PowerRatingsResponse, PowerRatingHistoryResponse, FavDogData, FavDogTeamData, FavDogTeamsData } from '../types';
+import type { MatchSummary, MatchDetail, LeagueSummary, Stats, BiggestMover, MatchTotals, SyndicateMove, MatchSpreads, SteamResultsData, ClosingLinesResponse, MatchClosingLinesResponse, XGDataResponse, XgUndershootingResponse, XgTableResponse, XgTableRow, JusticeResponse, TeamPLResponse, InPlayJumpsResponse, LateSteamResponse, LeagueConstantsResponse, ForecastRegistry, ForecastResponse, RecentForecastsResponse, PowerRatingsResponse, PowerRatingHistoryResponse, FavDogData, FavDogTeamData, FavDogTeamsData } from '../types';
 
 const API_BASE = '/api';
 
@@ -170,6 +170,10 @@ export async function getClosingLinesGrouped(params?: {
 
 export async function getXGTeams(league: string): Promise<{ teams: string[] }> {
   return fetchJson<{ teams: string[] }>(`${API_BASE}/xg-data/teams?league=${encodeURIComponent(league)}`);
+}
+
+export async function getJusticeTable(months: 6 | 12 = 12): Promise<JusticeResponse> {
+  return fetchJson<JusticeResponse>(`${API_BASE}/xg-goals/justice?months=${months}`);
 }
 
 export async function getXgTable(months: 6 | 12 = 12): Promise<XgTableResponse> {

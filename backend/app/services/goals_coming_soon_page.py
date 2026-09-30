@@ -219,7 +219,8 @@ def _render(db: Session) -> str:
         + method_html()
         + f"<h2 id=\"faq\">Questions</h2>{faq_html}"
         "<h2>More on SteamWatch</h2>"
-        "<ul><li><a href=\"/tools/rolling-xg\">Rolling xG: each club's last 5 and 10 matches, non-penalty</a></li>"
+        "<ul><li><a href=\"/justice-table\">The Justice Table: every league table rebuilt on expected points</a></li>"
+        "<li><a href=\"/tools/rolling-xg\">Rolling xG: each club's last 5 and 10 matches, non-penalty</a></li>"
         "<li><a href=\"/team-pnl\">Team P/L: what backing each club at closing prices returned</a></li>"
         "<li><a href=\"/tools/match-predictor\">Match Predictor: fair odds from xG form</a></li>"
         "<li><a href=\"/dropping-odds\">Dropping Odds: where the market is moving today</a></li></ul>"

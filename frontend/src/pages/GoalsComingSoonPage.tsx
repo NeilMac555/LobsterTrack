@@ -180,6 +180,7 @@ export default function GoalsComingSoonPage() {
 
       <H2>More on SteamWatch</H2>
       <ul className="list-disc pl-5 text-slate-300 text-sm space-y-1">
+        <li><Link to="/justice-table" className={a}>The Justice Table: every league table rebuilt on expected points</Link></li>
         <li><Link to="/tools/rolling-xg" className={a}>Rolling xG: each club's last 5 and 10 matches, non-penalty</Link></li>
         <li><Link to="/team-pnl" className={a}>Team P/L: what backing each club at closing prices returned</Link></li>
         <li><Link to="/tools/match-predictor" className={a}>Match Predictor: fair odds from xG form</Link></li>
