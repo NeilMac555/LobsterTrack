@@ -70,7 +70,7 @@ SteamWatch reports what moved and what happened next. It does not claim to know 
 ## Machine-readable
 
 - Sitemap index: https://www.steamwatch.io/sitemap.xml (pages and match pages, with lastmod from real data).
-- Every data page carries JSON-LD (Dataset, Article, FAQPage or SportsEvent as appropriate).
+- Every data page carries JSON-LD (Dataset, Article, FAQPage or WebPage as appropriate).
 
 ## Attribution
 

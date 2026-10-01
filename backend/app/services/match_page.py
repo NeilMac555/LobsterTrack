@@ -13,7 +13,7 @@ on every other page.
 Content rules (Neil's brief): observed market movement only. No model
 probabilities, no claims about why a price moved. Title, description,
 an answer-first paragraph on the biggest open-to-now move, a real
-<table> of prices, SportsEvent JSON-LD only, and links back to the
+<table> of prices, WebPage JSON-LD, and links back to the
 league view, Steam Results and Closing Lines.
 
 Indexing: a match with no odds snapshots is served with a noindex robots
@@ -271,18 +271,21 @@ def _render(db: Session, match: Match) -> str:
         f"<li><a href=\"/closing-lines\">Closing Lines: the Pinnacle close for every finished match</a></li></ul>"
     )
 
+    # This is an odds-analysis page, not an event attendance listing. Our
+    # match feed has no verified venue/address. Do not emit incomplete events
+    # (including a nested league event) or invent venue/ticket information.
     json_ld = {
         "@context": "https://schema.org",
-        "@type": "SportsEvent",
-        "name": f"{home} vs {away}",
-        "sport": "Soccer",
-        "startDate": kickoff.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
-        "homeTeam": {"@type": "SportsTeam", "name": home},
-        "awayTeam": {"@type": "SportsTeam", "name": away},
+        "@type": "WebPage",
+        "name": title,
+        "description": description,
         "url": url,
+        "about": [
+            {"@type": "SportsTeam", "name": home},
+            {"@type": "SportsTeam", "name": away},
+        ],
+        "isPartOf": {"@type": "WebSite", "name": "SteamWatch", "url": DOMAIN},
     }
-    if competition:
-        json_ld["superEvent"] = {"@type": "SportsEvent", "name": competition}
 
     head_parts = [
         f"<title data-prerender=\"1\">{_esc(title)}</title>",
