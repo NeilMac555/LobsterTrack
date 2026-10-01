@@ -7,6 +7,7 @@ import { useTimePreference } from '../contexts/TimePreferenceContext';
 import { useOddsFormat } from '../contexts/OddsFormatContext';
 import LoginModal from './LoginModal';
 import CheckoutSuccessBanner from './CheckoutSuccessBanner';
+import ProSessionIntro from './ProSessionIntro';
 import AmIUpCTA from './AmIUpCTA';
 
 const leagues = VISIBLE_LEAGUES;
@@ -651,6 +652,7 @@ export default function Layout() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+        <ProSessionIntro />
         <CheckoutSuccessBanner />
         <Outlet />
       </main>

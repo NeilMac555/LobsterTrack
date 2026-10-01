@@ -743,3 +743,7 @@ decisions that shape the build, with the recommendation at the time:
 
 - Added /pro with verified Stripe pricing (€19.99/month), six researched feature benefits, FAQs, member state and existing checkout integration. Header/mobile Go Pro, homepage CTA and paywalls now lead to the benefits page; footer link, canonical and prerender/sitemap route included.
 - Validation: production frontend build and route-manifest checks; browser preview and guest checkout-modal check.
+
+## Done — 2026-10-01: Session membership introduction
+
+- Non-Pro visitors see /pro once per tab session after authentication resolves; refreshes retain dismissal. Continue browsing restores the original URL, including filters. Sign-in, admin and checkout returns are excluded.

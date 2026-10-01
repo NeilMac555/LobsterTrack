@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../contexts/AuthContext';
 import LoginModal from '../components/LoginModal';
@@ -16,6 +16,9 @@ const inclusions = ['Full Form Lab access', 'Full Steam Results team rankings', 
 const buttonStyle = 'inline-flex items-center justify-center rounded-xl bg-cyan-400 px-6 py-4 font-bold text-slate-950 transition hover:bg-cyan-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-300 disabled:opacity-50';
 
 export default function ProPage() {
+  const location = useLocation();
+  const returnTo = location.state?.proIntroReturnTo;
+  const safeReturnTo = typeof returnTo === 'string' && returnTo.startsWith('/') && !returnTo.startsWith('//') ? returnTo : '/';
   const { user, isSubscribed, isLoading, subscribe } = useAuth();
   const [modal, setModal] = useState<'signin' | 'subscribe' | null>(null);
   const [busy, setBusy] = useState(false);
@@ -30,6 +33,10 @@ export default function ProPage() {
     : <button className={buttonStyle + ' w-full'} disabled={busy || isLoading} onClick={checkout}>{busy ? 'Opening secure checkout…' : 'Get SteamWatch Pro →'}</button>;
   return <div className="max-w-6xl mx-auto pb-12">
     <Helmet><title>SteamWatch Pro | €19.99 per month</title><meta name="description" content="Go deeper with SteamWatch Pro. Unlock Form Lab, full Steam Results team rankings, rolling xG and match model results for €19.99 per month." /><link rel="canonical" href="https://www.steamwatch.io/pro" /><meta property="og:title" content="SteamWatch Pro — Go beyond the move." /><meta property="og:description" content="Football research with more context. Form Lab, team rankings, rolling xG and model results. €19.99 per month." /><meta property="og:url" content="https://www.steamwatch.io/pro" /></Helmet>
+    {returnTo && <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-700 bg-slate-800/70 px-4 py-3">
+      <p className="text-sm text-slate-300">A quick look at Pro. Just once this session.</p>
+      <Link to={safeReturnTo} replace className="rounded-lg border border-slate-500 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">Continue browsing →</Link>
+    </div>}
     <section className="relative overflow-hidden rounded-3xl border border-slate-700 bg-slate-900 p-6 sm:p-10 lg:p-14">
       <div aria-hidden="true" className="pointer-events-none absolute -top-40 right-0 h-96 w-96 rounded-full bg-cyan-500/10 blur-3xl" />
       <div className="relative grid gap-10 lg:grid-cols-[1.3fr_1fr] lg:items-center">
