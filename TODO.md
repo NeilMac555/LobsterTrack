@@ -746,4 +746,6 @@ decisions that shape the build, with the recommendation at the time:
 
 ## Done — 2026-10-01: Session membership introduction
 
+- `9bf2192` — Once-per-session Pro introduction with a direct return to browsing; build and refresh/dismissal checks passed.
+
 - Non-Pro visitors see /pro once per tab session after authentication resolves; refreshes retain dismissal. Continue browsing restores the original URL, including filters. Sign-in, admin and checkout returns are excluded.
