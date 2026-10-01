@@ -224,6 +224,8 @@ decisions that shape the build, with the recommendation at the time:
 
 ## Done
 
+- 2026-10-01: Removed the Telegram profit graph at user request; existing profit totals and settled alerts remain. Production build passed.
+
 - 2026-10-01: Added cumulative 1u Telegram alert profit graph using the full filtered settled ledger; verified totals and production build.
 
 - 2026-10-01: Match odds pages use WebPage metadata instead of incomplete SportsEvent and nested league events; verified rendered JSON-LD for the three Search Console examples. See commit fix(match-pages): use page metadata instead of incomplete event markup.

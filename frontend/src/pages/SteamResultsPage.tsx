@@ -7,7 +7,6 @@ import LeagueLogo from '../components/LeagueLogo';
 import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../contexts/AuthContext';
 import PaywallOverlay from '../components/PaywallOverlay';
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine } from 'recharts';
 
 type SortField = 'profit_loss' | 'total_moves' | 'wins' | 'win_rate' | 'avg_move_size';
 type SortDir = 'asc' | 'desc';
@@ -527,29 +526,6 @@ export default function SteamResultsPage() {
           </div>
         </div>
       )}
-
-      <section className="mt-6 mb-6 bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 sm:p-6" aria-label="Cumulative Telegram alert profit">
-        <div className="flex flex-wrap justify-between gap-3 mb-4">
-          <div><h2 className="text-lg font-semibold text-white">Telegram alert profit</h2><p className="text-xs text-slate-400 mt-1">Cumulative P/L | 1 unit per settled alert at the odds sent</p></div>
-          <div className="text-right"><p className={`text-2xl font-mono font-bold ${plColor(data.profit_units ?? 0)}`}>{formatPL(data.profit_units ?? 0)}</p><p className="text-xs text-slate-400">{data.total_moves} settled | {data.roi_percent == null ? '-' : `${data.roi_percent.toFixed(2)}%`} ROI</p></div>
-        </div>
-        {data.profit_history?.length ? <div className="h-64 sm:h-72">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={[{ date: 'Start', profit_units: 0, settled_alerts: 0 }, ...data.profit_history]} margin={{ top: 12, right: 16, left: 0, bottom: 8 }}>
-              <CartesianGrid stroke="#334155" strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} minTickGap={40} tickFormatter={value => value === 'Start' ? value : new Date(`${value}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })} />
-              <YAxis stroke="#94a3b8" fontSize={11} width={65} tickFormatter={value => `${value}u`} domain={['auto', 'auto']} />
-              <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="4 4" />
-              <Tooltip content={({ active, payload }) => {
-                const point = payload?.[0]?.payload;
-                return active && point ? <div className="rounded-lg border border-slate-600 bg-slate-900 p-3 text-sm"><p className="text-slate-400">{point.date === 'Start' ? 'Starting balance' : `${point.date} UTC`}</p><p className={plColor(point.profit_units)}>{formatPL(point.profit_units)}</p><p className="text-slate-400">{point.settled_alerts} settled alerts</p></div> : null;
-              }} />
-              <Line type="linear" dataKey="profit_units" stroke="#22d3ee" strokeWidth={2.5} dot={data.profit_history.length === 1} activeDot={{ r: 5 }} isAnimationActive={false} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div> : <p className="py-12 text-center text-slate-400">No settled alerts in this period yet.</p>}
-        <p className="text-xs text-slate-500 mt-3">All settled alerts in the selected league and period, grouped by date sent (UTC). Pending alerts excluded. Each selected period starts at 0u.</p>
-      </section>
 
       <section className="mt-6 mb-6 bg-slate-800/50 rounded-xl p-4 overflow-x-auto">
         <h2 className="text-lg font-semibold text-white mb-3">Recent settled Telegram alerts</h2>
