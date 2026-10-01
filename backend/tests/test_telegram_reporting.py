@@ -25,6 +25,8 @@ class TelegramReportingTests(unittest.TestCase):
   self.assertEqual(report.total_moves,3);self.assertEqual(report.total_wins,2)
   self.assertAlmostEqual(report.profit_units,2.41);self.assertEqual(len(report.moves),1)
   self.assertEqual(report.source,'telegram')
+  self.assertEqual(report.profit_history[-1].settled_alerts,3)
+  self.assertAlmostEqual(report.profit_history[-1].profit_units,report.profit_units)
   stats=asyncio.run(get_steam_moves(db=self.db));self.assertEqual(stats.total_moves,4)
  def test_missing_results_not_losses_and_filter(self):
   self.add('pending',score=None)
@@ -32,6 +34,7 @@ class TelegramReportingTests(unittest.TestCase):
   self.assertEqual(alert_moves(self.db,until=self.now-timedelta(days=1)),[])
   report=asyncio.run(get_steam_results(db=self.db,league=None,limit=200,days=None))
   self.assertEqual(report.total_moves,0);self.assertEqual(report.profit_units,0)
+  self.assertEqual(report.profit_history,[])
  def test_telegram_only_fixture_gets_settled(self):
   self.add('telegram_only',score=None)
   class FakeResponse:

@@ -132,6 +132,12 @@ class TeamSteamRanking(BaseModel):
     profit_loss: Optional[float] = None
 
 
+class SteamProfitPoint(BaseModel):
+    date: str
+    profit_units: float
+    settled_alerts: int
+
+
 class SteamResultsResponse(BaseModel):
     """Public steam results with stats and full move history.
     Scoped to the current season (2026-08-22): season_label says which,
@@ -143,6 +149,7 @@ class SteamResultsResponse(BaseModel):
     total_alerts: int = 0
     pending_alerts: int = 0
     profit_units: float = 0
+    profit_history: list[SteamProfitPoint] = []
     roi_percent: Optional[float] = None
     total_moves: int
     total_wins: int

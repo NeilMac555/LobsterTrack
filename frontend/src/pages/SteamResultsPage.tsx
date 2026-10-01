@@ -7,6 +7,7 @@ import LeagueLogo from '../components/LeagueLogo';
 import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../contexts/AuthContext';
 import PaywallOverlay from '../components/PaywallOverlay';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine } from 'recharts';
 
 type SortField = 'profit_loss' | 'total_moves' | 'wins' | 'win_rate' | 'avg_move_size';
 type SortDir = 'asc' | 'desc';
@@ -47,7 +48,7 @@ export default function SteamResultsPage() {
   const league = searchParams.get('league');
 
   // A league that's since been marked `hidden` in LEAGUE_CONFIG (season
-  // or tournament ended) has no fresh steam moves — an old bookmark or
+  // or tournament ended) has no fresh steam moves â€” an old bookmark or
   // shared link would otherwise dead-end. Bounce back to unfiltered.
   useEffect(() => {
     if (league && LEAGUE_CONFIG[league]?.hidden) {
@@ -153,7 +154,7 @@ export default function SteamResultsPage() {
       {/* Page Header */}
       <div className="mb-6 sm:mb-8">
         <div className="flex items-center gap-3 mb-2">
-          {/* Vertical amber accent bar — matches the terminal rhythm */}
+          {/* Vertical amber accent bar â€” matches the terminal rhythm */}
           <div className="w-1 h-8 sm:h-10 rounded-full bg-gradient-to-b from-amber-400 to-amber-600 flex-shrink-0" />
           <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0">
             <svg className="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -172,11 +173,11 @@ export default function SteamResultsPage() {
 
       <div className="mb-5 text-sm text-slate-400 space-y-2">
         <p>Flat 1u per confirmed Telegram alert at the price sent. Draw selections are included; a draw bet wins when the match is drawn. Filters use the date the alert was sent.</p>
-        <p>{data.total_alerts ?? data.total_moves} alerts � {data.total_moves} settled � {data.pending_alerts ?? 0} awaiting results.</p>
-        <p className="text-white">Net P/L: {formatPL(data.profit_units ?? 0)} � ROI: {data.roi_percent == null ? '�' : `${data.roi_percent.toFixed(2)}%`}</p>
+        <p>{data.total_alerts ?? data.total_moves} alerts Â· {data.total_moves} settled Â· {data.pending_alerts ?? 0} awaiting results.</p>
+        <p className="text-white">Net P/L: {formatPL(data.profit_units ?? 0)} Â· ROI: {data.roi_percent == null ? 'Â·' : `${data.roi_percent.toFixed(2)}%`}</p>
         <p>Team rankings cover home/away selections only. Overall totals include every settled alert, including draws.</p>
       </div>
-      {/* Stats Banner — terminal stat strip */}
+      {/* Stats Banner â€” terminal stat strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4 sm:mb-6">
         <div className="bg-slate-800/80 rounded-xl border border-slate-700/60 px-3 sm:px-4 py-2.5 sm:py-3">
           <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">Settled alerts</div>
@@ -188,7 +189,7 @@ export default function SteamResultsPage() {
         <div className="bg-slate-800/80 rounded-xl border border-emerald-500/30 px-3 sm:px-4 py-2.5 sm:py-3">
           <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-emerald-400/80 font-semibold">Win Rate</div>
           <div className="text-2xl sm:text-3xl font-mono font-bold tabular-nums tracking-tight text-emerald-400 leading-none mt-1.5">
-            {data.win_rate !== null ? `${data.win_rate}%` : '—'}
+            {data.win_rate !== null ? `${data.win_rate}%` : 'â€”'}
           </div>
           <div className="text-[10px] sm:text-xs text-slate-500 mt-1">at the alerted price</div>
         </div>
@@ -196,23 +197,23 @@ export default function SteamResultsPage() {
           <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">W / D / L</div>
           <div className="text-2xl sm:text-3xl font-mono font-bold tabular-nums tracking-tight leading-none mt-1.5">
             <span className="text-emerald-400">{data.total_wins}</span>
-            <span className="text-slate-600 mx-1">·</span>
+            <span className="text-slate-600 mx-1">Â·</span>
             <span className="text-yellow-400">{data.total_draws}</span>
-            <span className="text-slate-600 mx-1">·</span>
+            <span className="text-slate-600 mx-1">Â·</span>
             <span className="text-red-400">{data.total_losses}</span>
           </div>
-          <div className="text-[10px] sm:text-xs text-slate-500 mt-1">wins · draws · losses</div>
+          <div className="text-[10px] sm:text-xs text-slate-500 mt-1">wins Â· draws Â· losses</div>
         </div>
         <div className="bg-slate-800/80 rounded-xl border border-slate-700/60 px-3 sm:px-4 py-2.5 sm:py-3">
           <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-amber-400/80 font-semibold">Avg Move</div>
           <div className="text-2xl sm:text-3xl font-mono font-bold tabular-nums tracking-tight text-amber-400 leading-none mt-1.5">
-            {data.avg_movement_percent !== null ? `${data.avg_movement_percent}%` : '—'}
+            {data.avg_movement_percent !== null ? `${data.avg_movement_percent}%` : 'â€”'}
           </div>
           <div className="text-[10px] sm:text-xs text-slate-500 mt-1">steam size</div>
         </div>
       </div>
 
-      {/* Win Rate Bar — terminal distribution readout */}
+      {/* Win Rate Bar â€” terminal distribution readout */}
       {data.total_moves > 0 && (
         <div className="bg-slate-800/80 rounded-xl border border-slate-700/60 p-4 mb-4 sm:mb-6">
           <div className="flex items-center justify-between mb-2">
@@ -221,9 +222,9 @@ export default function SteamResultsPage() {
             </span>
             <span className="text-[10px] font-mono tabular-nums text-slate-400">
               <span className="text-emerald-400 font-bold">{((data.total_wins / data.total_moves) * 100).toFixed(0)}%</span>
-              <span className="text-slate-600 mx-1">·</span>
+              <span className="text-slate-600 mx-1">Â·</span>
               <span className="text-yellow-400 font-bold">{((data.total_draws / data.total_moves) * 100).toFixed(0)}%</span>
-              <span className="text-slate-600 mx-1">·</span>
+              <span className="text-slate-600 mx-1">Â·</span>
               <span className="text-red-400 font-bold">{((data.total_losses / data.total_moves) * 100).toFixed(0)}%</span>
             </span>
           </div>
@@ -244,7 +245,7 @@ export default function SteamResultsPage() {
         </div>
       )}
 
-      {/* League Filter — mono chip row */}
+      {/* League Filter â€” mono chip row */}
       <div className="flex flex-wrap gap-1.5 mb-4 sm:mb-6">
         <button
           onClick={() => setSearchParams({})}
@@ -318,7 +319,7 @@ export default function SteamResultsPage() {
             </div>
           </div>
 
-          {/* Filter Controls — segmented mono row */}
+          {/* Filter Controls â€” segmented mono row */}
           <div className="px-4 sm:px-6 py-3 border-b border-slate-700/50 flex flex-wrap items-center gap-3 sm:gap-4 bg-slate-900/30">
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">Min moves</span>
@@ -352,7 +353,7 @@ export default function SteamResultsPage() {
               Last 30d
             </button>
             <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 ml-auto tabular-nums">
-              {data.season_label ? `${data.season_label} · ` : ''}{filteredRankings.length} {filteredRankings.length === 1 ? 'team' : 'teams'} · {data.min_moves_for_rankings ?? 3}+ moves to rank
+              {data.season_label ? `${data.season_label} Â· ` : ''}{filteredRankings.length} {filteredRankings.length === 1 ? 'team' : 'teams'} Â· {data.min_moves_for_rankings ?? 3}+ moves to rank
             </span>
           </div>
 
@@ -448,12 +449,12 @@ export default function SteamResultsPage() {
                       </td>
                       <td className="px-3 py-2.5 text-center">
                         <span className={`font-mono font-bold text-sm tabular-nums ${winRateColor(team.win_rate)}`}>
-                          {team.win_rate !== null ? `${team.win_rate}%` : '—'}
+                          {team.win_rate !== null ? `${team.win_rate}%` : 'â€”'}
                         </span>
                       </td>
                       <td className="px-3 py-2.5 text-center">
                         <span className="font-mono font-bold text-sm tabular-nums text-slate-300">
-                          {team.avg_move_size !== null ? `${team.avg_move_size}%` : '—'}
+                          {team.avg_move_size !== null ? `${team.avg_move_size}%` : 'â€”'}
                         </span>
                       </td>
                       <td className="px-3 py-2.5 text-center">
@@ -500,21 +501,21 @@ export default function SteamResultsPage() {
                       <div className="text-[10px] font-mono tabular-nums mt-1">
                         <span className="text-amber-400 font-bold">{team.total_moves}</span>
                         <span className="text-slate-500 mx-0.5">moves</span>
-                        <span className="text-slate-600 mx-1">·</span>
+                        <span className="text-slate-600 mx-1">Â·</span>
                         <span className="text-emerald-400 font-bold">{team.wins}</span>
-                        <span className="text-slate-600 mx-0.5">·</span>
+                        <span className="text-slate-600 mx-0.5">Â·</span>
                         <span className="text-yellow-400 font-bold">{team.draws}</span>
-                        <span className="text-slate-600 mx-0.5">·</span>
+                        <span className="text-slate-600 mx-0.5">Â·</span>
                         <span className="text-red-400 font-bold">{team.losses}</span>
                       </div>
                       <div className="text-[10px] font-mono tabular-nums mt-0.5">
                         <span className={`font-bold ${winRateColor(team.win_rate)}`}>
-                          {team.win_rate !== null ? `${team.win_rate}%` : '—'}
+                          {team.win_rate !== null ? `${team.win_rate}%` : 'â€”'}
                         </span>
                         <span className="text-slate-500 mx-1">win</span>
-                        <span className="text-slate-600 mx-1">·</span>
+                        <span className="text-slate-600 mx-1">Â·</span>
                         <span className="text-slate-300 font-bold">
-                          {team.avg_move_size !== null ? `${team.avg_move_size}%` : '—'}
+                          {team.avg_move_size !== null ? `${team.avg_move_size}%` : 'â€”'}
                         </span>
                         <span className="text-slate-500 mx-1">move</span>
                       </div>
@@ -527,6 +528,29 @@ export default function SteamResultsPage() {
         </div>
       )}
 
+      <section className="mt-6 mb-6 bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 sm:p-6" aria-label="Cumulative Telegram alert profit">
+        <div className="flex flex-wrap justify-between gap-3 mb-4">
+          <div><h2 className="text-lg font-semibold text-white">Telegram alert profit</h2><p className="text-xs text-slate-400 mt-1">Cumulative P/L | 1 unit per settled alert at the odds sent</p></div>
+          <div className="text-right"><p className={`text-2xl font-mono font-bold ${plColor(data.profit_units ?? 0)}`}>{formatPL(data.profit_units ?? 0)}</p><p className="text-xs text-slate-400">{data.total_moves} settled | {data.roi_percent == null ? '-' : `${data.roi_percent.toFixed(2)}%`} ROI</p></div>
+        </div>
+        {data.profit_history?.length ? <div className="h-64 sm:h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={[{ date: 'Start', profit_units: 0, settled_alerts: 0 }, ...data.profit_history]} margin={{ top: 12, right: 16, left: 0, bottom: 8 }}>
+              <CartesianGrid stroke="#334155" strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} minTickGap={40} tickFormatter={value => value === 'Start' ? value : new Date(`${value}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })} />
+              <YAxis stroke="#94a3b8" fontSize={11} width={65} tickFormatter={value => `${value}u`} domain={['auto', 'auto']} />
+              <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="4 4" />
+              <Tooltip content={({ active, payload }) => {
+                const point = payload?.[0]?.payload;
+                return active && point ? <div className="rounded-lg border border-slate-600 bg-slate-900 p-3 text-sm"><p className="text-slate-400">{point.date === 'Start' ? 'Starting balance' : `${point.date} UTC`}</p><p className={plColor(point.profit_units)}>{formatPL(point.profit_units)}</p><p className="text-slate-400">{point.settled_alerts} settled alerts</p></div> : null;
+              }} />
+              <Line type="linear" dataKey="profit_units" stroke="#22d3ee" strokeWidth={2.5} dot={data.profit_history.length === 1} activeDot={{ r: 5 }} isAnimationActive={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div> : <p className="py-12 text-center text-slate-400">No settled alerts in this period yet.</p>}
+        <p className="text-xs text-slate-500 mt-3">All settled alerts in the selected league and period, grouped by date sent (UTC). Pending alerts excluded. Each selected period starts at 0u.</p>
+      </section>
+
       <section className="mt-6 mb-6 bg-slate-800/50 rounded-xl p-4 overflow-x-auto">
         <h2 className="text-lg font-semibold text-white mb-3">Recent settled Telegram alerts</h2>
         <table className="w-full text-sm text-left">
@@ -535,7 +559,7 @@ export default function SteamResultsPage() {
             <td className="p-2 text-slate-400">{new Date(move.detected_at.endsWith('Z') ? move.detected_at : `${move.detected_at}Z`).toLocaleString()}</td>
             <td className="p-2"><Link className="text-cyan-400" to={`/match/${move.match_id}`}>{move.team_name}</Link></td>
             <td className="p-2 text-white">{move.current_odds.toFixed(2)}</td>
-            <td className="p-2 text-slate-300">{move.won ? 'Won' : 'Lost'} ({move.home_score}�{move.away_score})</td>
+            <td className="p-2 text-slate-300">{move.won ? 'Won' : 'Lost'} ({move.home_score}Â·{move.away_score})</td>
             <td className={`p-2 ${move.won ? 'text-emerald-400' : 'text-red-400'}`}>{formatPL(move.won ? move.current_odds-1 : -1)}</td>
           </tr>)}</tbody>
         </table>
@@ -555,7 +579,7 @@ export default function SteamResultsPage() {
           </p>
           <p className="text-slate-500 text-sm mt-2">
             Rankings reset each season. A team earns a row once it has{' '}
-            {data.min_moves_for_rankings ?? 3}+ finished steam moves this season — one or two
+            {data.min_moves_for_rankings ?? 3}+ finished steam moves this season â€” one or two
             results is noise, not a record.
             {data.teams_below_min
               ? ` ${data.teams_below_min} ${data.teams_below_min === 1 ? 'team is' : 'teams are'} building a sample now.`

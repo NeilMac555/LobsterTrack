@@ -157,6 +157,7 @@ export interface SteamResultsData {
   total_alerts?: number;
   pending_alerts?: number;
   profit_units?: number;
+  profit_history?: { date: string; profit_units: number; settled_alerts: number }[];
   roi_percent?: number | null;
   total_moves: number;
   total_wins: number;

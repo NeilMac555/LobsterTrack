@@ -1401,7 +1401,22 @@ async def get_steam_results(
     limited_moves = deduped_moves[:limit]
 
     profit = sum(m.current_odds - 1 if m.won else -1 for m in deduped_moves)
+    # Use the entire filtered ledger, not the limited recent-alert table.
+    daily = {}
+    for move in deduped_moves:
+        date = move.detected_at.date().isoformat()
+        bucket = daily.setdefault(date, [0.0, 0])
+        bucket[0] += move.current_odds - 1 if move.won else -1
+        bucket[1] += 1
+    history = []
+    running_profit, running_count = 0.0, 0
+    for date, (day_profit, day_count) in sorted(daily.items()):
+        running_profit += day_profit
+        running_count += day_count
+        history.append(dict(date=date, profit_units=round(running_profit, 4), settled_alerts=running_count))
+
     return SteamResultsResponse(
+        profit_history=history,
         total_alerts=len(all_moves), pending_alerts=len(all_moves)-len(deduped_moves),
         profit_units=round(profit, 4), roi_percent=round(100*profit/len(deduped_moves), 2) if deduped_moves else None,
         source='telegram',
