@@ -736,3 +736,8 @@ decisions that shape the build, with the recommendation at the time:
 - home advantage symmetric split — `d4b0d48`
 - CL/UEL hidden — `b902e63`
 - report-hygiene rule — `b902e63`
+
+## Done — 2026-10-01: Pro membership page
+
+- Added /pro with verified Stripe pricing (€19.99/month), six researched feature benefits, FAQs, member state and existing checkout integration. Header/mobile Go Pro, homepage CTA and paywalls now lead to the benefits page; footer link, canonical and prerender/sitemap route included.
+- Validation: production frontend build and route-manifest checks; browser preview and guest checkout-modal check.

@@ -16,7 +16,8 @@
     "tools/form-lab",
     "tools/club-ratings",
     "about",
-    "blog"
+    "blog",
+    "pro"
   ],
   "dynamic": [
     "match/*",

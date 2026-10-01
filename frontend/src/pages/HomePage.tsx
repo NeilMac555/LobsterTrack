@@ -219,14 +219,7 @@ export default function HomePage() {
             </a>
             {!isSubscribed && (
               <button
-                onClick={async () => {
-                  if (!user) {
-                    setShowLoginFromCTA(true);
-                  } else {
-                    setSubscribing(true);
-                    try { await subscribe(); } catch { setSubscribing(false); }
-                  }
-                }}
+                onClick={() => { window.location.href = "/pro"; }}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/10 font-mono text-xs sm:text-sm font-bold uppercase tracking-[0.12em] transition-colors"
               >
                 {subscribing ? 'Redirecting to Stripe…' : 'Explore SteamWatch Pro'}

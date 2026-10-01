@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { TimePreferenceProvider } from './contexts/TimePreferenceContext';
 import { OddsFormatProvider } from './contexts/OddsFormatContext';
 import Layout from './components/Layout';
+import ProPage from './pages/ProPage';
 import HomePage from './pages/HomePage';
 import MatchDetailPage from './pages/MatchDetailPage';
 import HedgeCalculatorPage from './pages/HedgeCalculatorPage';
@@ -40,6 +41,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Layout />}>
               <Route index element={<HomePage />} />
+              <Route path="pro" element={<ProPage />} />
               <Route path="match/:matchId" element={<MatchDetailPage />} />
               <Route path="steam-results" element={<SteamResultsPage />} />
               <Route path="dropping-odds" element={<DroppingOddsPage />} />

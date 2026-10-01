@@ -1,6 +1,4 @@
-import { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import LoginModal from './LoginModal';
+import { Link } from 'react-router-dom';
 
 interface PaywallOverlayProps {
   title?: string;
@@ -8,19 +6,6 @@ interface PaywallOverlayProps {
 }
 
 export default function PaywallOverlay({ title, description }: PaywallOverlayProps = {}) {
-  const { user, isLoading, subscribe } = useAuth();
-  const [showLogin, setShowLogin] = useState(false);
-  const [subscribing, setSubscribing] = useState(false);
-
-  const handleSubscribe = async () => {
-    setSubscribing(true);
-    try {
-      await subscribe();
-    } catch {
-      setSubscribing(false);
-    }
-  };
-
   return (
     <>
       <div className="bg-slate-800 rounded-xl border border-slate-600 p-5 sm:p-8 animate-in fade-in slide-in-from-bottom-3 duration-400">
@@ -53,36 +38,10 @@ export default function PaywallOverlay({ title, description }: PaywallOverlayPro
             {description || 'Get Dixon-Coles probability baselines, fair odds, and full calculation breakdowns with a SteamWatch Pro subscription.'}
           </p>
 
-          {isLoading ? (
-            <div className="text-slate-400 text-sm">Loading...</div>
-          ) : !user ? (
-            <div className="space-y-3">
-              <button
-                onClick={() => setShowLogin(true)}
-                className="w-full max-w-xs mx-auto block bg-gradient-to-br from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 text-white font-bold py-3 rounded-lg transition-all duration-200"
-              >
-                Subscribe Now
-              </button>
-              <p className="text-xs text-slate-500">Your account is created automatically at checkout</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <button
-                onClick={handleSubscribe}
-                disabled={subscribing}
-                className="w-full max-w-xs mx-auto block bg-gradient-to-br from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 disabled:from-slate-600 disabled:to-slate-700 text-white font-bold py-3 rounded-lg transition-all duration-200"
-              >
-                {subscribing ? 'Redirecting to Stripe...' : 'Subscribe Now'}
-              </button>
-              <p className="text-xs text-slate-500">
-                Signed in as {user.email}
-              </p>
-            </div>
-          )}
+          <Link to="/pro" className="block rounded-lg bg-cyan-400 px-6 py-3 font-bold text-slate-950 hover:bg-cyan-300">Explore Pro — €19.99 / month →</Link>
+          <p className="mt-3 text-xs text-slate-400">See everything included in your membership</p>
         </div>
       </div>
-
-      <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} mode="subscribe" />
     </>
   );
 }

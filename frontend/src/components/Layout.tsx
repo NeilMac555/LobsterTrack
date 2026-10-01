@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { VISIBLE_LEAGUES } from '../types';
 import LeagueLogo from './LeagueLogo';
 import { useAuth } from '../contexts/AuthContext';
@@ -55,10 +55,10 @@ const tools: Array<{
 
 export default function Layout() {
   const location = useLocation();
-  const { user, logout, manageSubscription, isSubscribed, subscribe } = useAuth();
+  const { user, logout, manageSubscription, isSubscribed } = useAuth();
   const { mode: timeMode, toggle: toggleTimeMode } = useTimePreference();
   const { format: oddsFormat, toggle: toggleOddsFormat } = useOddsFormat();
-  const [subscribing, setSubscribing] = useState(false);
+  const navigate = useNavigate();
   const [showLogin, setShowLogin] = useState(false);
   const [loginMode, setLoginMode] = useState<'signin' | 'subscribe'>('signin');
   const currentLeague = new URLSearchParams(location.search).get('league');
@@ -254,25 +254,13 @@ export default function Layout() {
                 Live · Pinnacle
               </span>
 
-              {/* Primary CTA: Go Pro for anyone who isn't subscribed.
-                  Anonymous users trigger the email-modal which flows straight
-                  into Stripe public checkout. Signed-in non-subscribers use
-                  the authenticated subscribe() flow directly. */}
+              {/* Explain membership benefits before checkout. */}
               {!isSubscribed && (
                 <button
-                  onClick={async () => {
-                    if (!user) {
-                      setLoginMode('subscribe');
-                      setShowLogin(true);
-                    } else {
-                      setSubscribing(true);
-                      try { await subscribe(); } catch { setSubscribing(false); }
-                    }
-                  }}
-                  disabled={subscribing}
+                  onClick={() => { setMobileMenuOpen(false); navigate("/pro"); }}
                   className="px-3.5 py-1.5 rounded-md font-mono text-[11px] font-bold uppercase tracking-[0.1em] bg-gradient-to-br from-cyan-400 to-cyan-500 text-slate-900 hover:brightness-110 transition-all shadow-sm shadow-cyan-500/40 disabled:opacity-70"
                 >
-                  {subscribing ? 'Redirecting…' : 'Go Pro →'}
+                  Go Pro →
                 </button>
               )}
 
@@ -478,15 +466,10 @@ export default function Layout() {
                     </div>
                     {!isSubscribed && (
                       <button
-                        onClick={async () => {
-                          setMobileMenuOpen(false);
-                          setSubscribing(true);
-                          try { await subscribe(); } catch { setSubscribing(false); }
-                        }}
-                        disabled={subscribing}
+                        onClick={() => { setMobileMenuOpen(false); navigate("/pro"); }}
                         className="w-full text-center px-4 py-3 rounded-xl text-sm font-bold uppercase tracking-wider bg-gradient-to-br from-cyan-400 to-cyan-500 text-slate-900 hover:brightness-110 transition-all disabled:opacity-70"
                       >
-                        {subscribing ? 'Redirecting…' : 'Go Pro →'}
+                        Go Pro →
                       </button>
                     )}
                     {isSubscribed && (
@@ -517,20 +500,10 @@ export default function Layout() {
                       Sign In
                     </button>
                     <button
-                      onClick={async () => {
-                        setMobileMenuOpen(false);
-                        if (!user) {
-                          setLoginMode('subscribe');
-                          setShowLogin(true);
-                        } else {
-                          setSubscribing(true);
-                          try { await subscribe(); } catch { setSubscribing(false); }
-                        }
-                      }}
-                      disabled={subscribing}
+                      onClick={() => { setMobileMenuOpen(false); navigate("/pro"); }}
                       className="px-4 py-3 rounded-xl text-sm font-bold uppercase tracking-wider bg-gradient-to-br from-cyan-400 to-cyan-500 text-slate-900 hover:brightness-110 transition-all disabled:opacity-70"
                     >
-                      {subscribing ? '…' : 'Go Pro →'}
+                      Go Pro →
                     </button>
                   </div>
                 )}
@@ -686,6 +659,7 @@ export default function Layout() {
       <footer className="bg-slate-800/50 border-t border-slate-700/50 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-4">
           <AmIUpCTA placement="footer" />
+          <div className="text-center my-4"><Link to="/pro" className="text-sm text-cyan-300 hover:text-white">SteamWatch Pro membership →</Link></div>
           <p className="text-center text-slate-500 text-xs sm:text-sm font-medium">
             Pinnacle odds via The Odds API • Updates every 15 minutes
           </p>

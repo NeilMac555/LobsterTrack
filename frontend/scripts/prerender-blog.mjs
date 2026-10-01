@@ -296,6 +296,7 @@ function faqSchema(post) {
 // Static pages — data (path, meta, JSON-LD, page HTML in `noscriptHtml`)
 // ---------------------------------------------------------------------------
 const PAGES = [
+  { path: 'pro', title: 'SteamWatch Pro | €19.99 per month', description: 'Unlock Form Lab, full Steam Results team rankings, rolling xG and match model results with SteamWatch Pro.', noscriptHtml: '<h1>SteamWatch Pro</h1><p>€19.99 per month, renewing automatically.</p><h2>Spot the move. Build your view.</h2><p>Unlock full Form Lab access, Steam Results team rankings, rolling xG across available teams and Match Predictor model results.</p><p>Secure checkout through Stripe. Your account is created after payment.</p>' },
   {
     path: 'steam-results',
     title: 'Football Steam Move Results and ROI | SteamWatch',
