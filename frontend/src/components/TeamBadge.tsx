@@ -20,9 +20,9 @@ function initials(team: string) {
 }
 
 export default function TeamBadge({ team, badgeUrl, size = 'sm', className = '' }: TeamBadgeProps) {
-  const [failed, setFailed] = useState(false);
+  const [failedSources, setFailedSources] = useState<string[]>([]);
   const countryFlag = countryFlagImgUrl(team, size === 'lg' ? 40 : size === 'md' ? 24 : 20);
-  const src = !failed ? badgeUrl || countryFlag : null;
+  const src = [countryFlag, badgeUrl].find(url => url && !failedSources.includes(url));
 
   if (src) {
     return (
@@ -31,7 +31,7 @@ export default function TeamBadge({ team, badgeUrl, size = 'sm', className = '' 
         alt=""
         title={team}
         loading="lazy"
-        onError={() => setFailed(true)}
+        onError={() => setFailedSources(previous => [...previous, src])}
         className={`${sizes[size]} ${className} object-contain flex-shrink-0`}
       />
     );

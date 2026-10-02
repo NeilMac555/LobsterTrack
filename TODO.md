@@ -749,3 +749,8 @@ decisions that shape the build, with the recommendation at the time:
 - `9bf2192` — Once-per-session Pro introduction with a direct return to browsing; build and refresh/dismissal checks passed.
 
 - Non-Pro visitors see /pro once per tab session after authentication resolves; refreshes retain dismissal. Continue browsing restores the original URL, including filters. Sign-in, admin and checkout returns are excluded.
+
+## Done — 2026-10-02: Complete UEFA country flags
+
+- Added 20 missing UEFA country mappings and provider aliases. Team badges prefer national flags and fall back to supplied badges on image failure. Verified all 55 UEFA flag URLs return HTTP 200; frontend build passed.
+
