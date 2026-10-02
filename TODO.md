@@ -752,5 +752,4 @@ decisions that shape the build, with the recommendation at the time:
 
 ## Done — 2026-10-02: Complete UEFA country flags
 
-- Added 20 missing UEFA country mappings and provider aliases. Team badges prefer national flags and fall back to supplied badges on image failure. Verified all 55 UEFA flag URLs return HTTP 200; frontend build passed.
-
+- `c68eae4` — Added 20 missing UEFA country mappings and provider aliases. Team badges prefer national flags and fall back to supplied badges on image failure. Verified all 55 UEFA flag URLs return HTTP 200; frontend build passed.
