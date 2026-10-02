@@ -1,3 +1,4 @@
+import '../research-ui.css';
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { getSteamResults } from '../api';
@@ -47,7 +48,7 @@ export default function SteamResultsPage() {
   const league = searchParams.get('league');
 
   // A league that's since been marked `hidden` in LEAGUE_CONFIG (season
-  // or tournament ended) has no fresh steam moves â€” an old bookmark or
+  // or tournament ended) has no fresh steam moves — an old bookmark or
   // shared link would otherwise dead-end. Bounce back to unfiltered.
   useEffect(() => {
     if (league && LEAGUE_CONFIG[league]?.hidden) {
@@ -140,7 +141,7 @@ export default function SteamResultsPage() {
   };
 
   return (
-    <div>
+    <div className="steam-results">
       <Helmet>
         <title>Football Steam Move Results and ROI | SteamWatch</title>
         <meta name="description" content="Historical performance data for tracked football steam moves across major European leagues, including win rates and P/L." />
@@ -153,7 +154,7 @@ export default function SteamResultsPage() {
       {/* Page Header */}
       <div className="mb-6 sm:mb-8">
         <div className="flex items-center gap-3 mb-2">
-          {/* Vertical amber accent bar â€” matches the terminal rhythm */}
+          {/* Vertical amber accent bar — matches the terminal rhythm */}
           <div className="w-1 h-8 sm:h-10 rounded-full bg-gradient-to-b from-amber-400 to-amber-600 flex-shrink-0" />
           <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0">
             <svg className="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -172,11 +173,11 @@ export default function SteamResultsPage() {
 
       <div className="mb-5 text-sm text-slate-400 space-y-2">
         <p>Flat 1u per confirmed Telegram alert at the price sent. Draw selections are included; a draw bet wins when the match is drawn. Filters use the date the alert was sent.</p>
-        <p>{data.total_alerts ?? data.total_moves} alerts Â· {data.total_moves} settled Â· {data.pending_alerts ?? 0} awaiting results.</p>
-        <p className="text-white">Net P/L: {formatPL(data.profit_units ?? 0)} Â· ROI: {data.roi_percent == null ? 'Â·' : `${data.roi_percent.toFixed(2)}%`}</p>
+        <p>{data.total_alerts ?? data.total_moves} alerts · {data.total_moves} settled · {data.pending_alerts ?? 0} awaiting results.</p>
+        <p className="text-white">Net P/L: {formatPL(data.profit_units ?? 0)} · ROI: {data.roi_percent == null ? '·' : `${data.roi_percent.toFixed(2)}%`}</p>
         <p>Team rankings cover home/away selections only. Overall totals include every settled alert, including draws.</p>
       </div>
-      {/* Stats Banner â€” terminal stat strip */}
+      {/* Stats Banner — terminal stat strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4 sm:mb-6">
         <div className="bg-slate-800/80 rounded-xl border border-slate-700/60 px-3 sm:px-4 py-2.5 sm:py-3">
           <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">Settled alerts</div>
@@ -188,7 +189,7 @@ export default function SteamResultsPage() {
         <div className="bg-slate-800/80 rounded-xl border border-emerald-500/30 px-3 sm:px-4 py-2.5 sm:py-3">
           <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-emerald-400/80 font-semibold">Win Rate</div>
           <div className="text-2xl sm:text-3xl font-mono font-bold tabular-nums tracking-tight text-emerald-400 leading-none mt-1.5">
-            {data.win_rate !== null ? `${data.win_rate}%` : 'â€”'}
+            {data.win_rate !== null ? `${data.win_rate}%` : '—'}
           </div>
           <div className="text-[10px] sm:text-xs text-slate-500 mt-1">at the alerted price</div>
         </div>
@@ -196,23 +197,23 @@ export default function SteamResultsPage() {
           <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">W / D / L</div>
           <div className="text-2xl sm:text-3xl font-mono font-bold tabular-nums tracking-tight leading-none mt-1.5">
             <span className="text-emerald-400">{data.total_wins}</span>
-            <span className="text-slate-600 mx-1">Â·</span>
+            <span className="text-slate-600 mx-1">·</span>
             <span className="text-yellow-400">{data.total_draws}</span>
-            <span className="text-slate-600 mx-1">Â·</span>
+            <span className="text-slate-600 mx-1">·</span>
             <span className="text-red-400">{data.total_losses}</span>
           </div>
-          <div className="text-[10px] sm:text-xs text-slate-500 mt-1">wins Â· draws Â· losses</div>
+          <div className="text-[10px] sm:text-xs text-slate-500 mt-1">wins · draws · losses</div>
         </div>
         <div className="bg-slate-800/80 rounded-xl border border-slate-700/60 px-3 sm:px-4 py-2.5 sm:py-3">
           <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-amber-400/80 font-semibold">Avg Move</div>
           <div className="text-2xl sm:text-3xl font-mono font-bold tabular-nums tracking-tight text-amber-400 leading-none mt-1.5">
-            {data.avg_movement_percent !== null ? `${data.avg_movement_percent}%` : 'â€”'}
+            {data.avg_movement_percent !== null ? `${data.avg_movement_percent}%` : '—'}
           </div>
           <div className="text-[10px] sm:text-xs text-slate-500 mt-1">steam size</div>
         </div>
       </div>
 
-      {/* Win Rate Bar â€” terminal distribution readout */}
+      {/* Win Rate Bar — terminal distribution readout */}
       {data.total_moves > 0 && (
         <div className="bg-slate-800/80 rounded-xl border border-slate-700/60 p-4 mb-4 sm:mb-6">
           <div className="flex items-center justify-between mb-2">
@@ -221,9 +222,9 @@ export default function SteamResultsPage() {
             </span>
             <span className="text-[10px] font-mono tabular-nums text-slate-400">
               <span className="text-emerald-400 font-bold">{((data.total_wins / data.total_moves) * 100).toFixed(0)}%</span>
-              <span className="text-slate-600 mx-1">Â·</span>
+              <span className="text-slate-600 mx-1">·</span>
               <span className="text-yellow-400 font-bold">{((data.total_draws / data.total_moves) * 100).toFixed(0)}%</span>
-              <span className="text-slate-600 mx-1">Â·</span>
+              <span className="text-slate-600 mx-1">·</span>
               <span className="text-red-400 font-bold">{((data.total_losses / data.total_moves) * 100).toFixed(0)}%</span>
             </span>
           </div>
@@ -244,7 +245,7 @@ export default function SteamResultsPage() {
         </div>
       )}
 
-      {/* League Filter â€” mono chip row */}
+      {/* League Filter — mono chip row */}
       <div className="flex flex-wrap gap-1.5 mb-4 sm:mb-6">
         <button
           onClick={() => setSearchParams({})}
@@ -318,7 +319,7 @@ export default function SteamResultsPage() {
             </div>
           </div>
 
-          {/* Filter Controls â€” segmented mono row */}
+          {/* Filter Controls — segmented mono row */}
           <div className="px-4 sm:px-6 py-3 border-b border-slate-700/50 flex flex-wrap items-center gap-3 sm:gap-4 bg-slate-900/30">
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">Min moves</span>
@@ -352,7 +353,7 @@ export default function SteamResultsPage() {
               Last 30d
             </button>
             <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 ml-auto tabular-nums">
-              {data.season_label ? `${data.season_label} Â· ` : ''}{filteredRankings.length} {filteredRankings.length === 1 ? 'team' : 'teams'} Â· {data.min_moves_for_rankings ?? 3}+ moves to rank
+              {data.season_label ? `${data.season_label} · ` : ''}{filteredRankings.length} {filteredRankings.length === 1 ? 'team' : 'teams'} · {data.min_moves_for_rankings ?? 3}+ moves to rank
             </span>
           </div>
 
@@ -448,12 +449,12 @@ export default function SteamResultsPage() {
                       </td>
                       <td className="px-3 py-2.5 text-center">
                         <span className={`font-mono font-bold text-sm tabular-nums ${winRateColor(team.win_rate)}`}>
-                          {team.win_rate !== null ? `${team.win_rate}%` : 'â€”'}
+                          {team.win_rate !== null ? `${team.win_rate}%` : '—'}
                         </span>
                       </td>
                       <td className="px-3 py-2.5 text-center">
                         <span className="font-mono font-bold text-sm tabular-nums text-slate-300">
-                          {team.avg_move_size !== null ? `${team.avg_move_size}%` : 'â€”'}
+                          {team.avg_move_size !== null ? `${team.avg_move_size}%` : '—'}
                         </span>
                       </td>
                       <td className="px-3 py-2.5 text-center">
@@ -500,21 +501,21 @@ export default function SteamResultsPage() {
                       <div className="text-[10px] font-mono tabular-nums mt-1">
                         <span className="text-amber-400 font-bold">{team.total_moves}</span>
                         <span className="text-slate-500 mx-0.5">moves</span>
-                        <span className="text-slate-600 mx-1">Â·</span>
+                        <span className="text-slate-600 mx-1">·</span>
                         <span className="text-emerald-400 font-bold">{team.wins}</span>
-                        <span className="text-slate-600 mx-0.5">Â·</span>
+                        <span className="text-slate-600 mx-0.5">·</span>
                         <span className="text-yellow-400 font-bold">{team.draws}</span>
-                        <span className="text-slate-600 mx-0.5">Â·</span>
+                        <span className="text-slate-600 mx-0.5">·</span>
                         <span className="text-red-400 font-bold">{team.losses}</span>
                       </div>
                       <div className="text-[10px] font-mono tabular-nums mt-0.5">
                         <span className={`font-bold ${winRateColor(team.win_rate)}`}>
-                          {team.win_rate !== null ? `${team.win_rate}%` : 'â€”'}
+                          {team.win_rate !== null ? `${team.win_rate}%` : '—'}
                         </span>
                         <span className="text-slate-500 mx-1">win</span>
-                        <span className="text-slate-600 mx-1">Â·</span>
+                        <span className="text-slate-600 mx-1">·</span>
                         <span className="text-slate-300 font-bold">
-                          {team.avg_move_size !== null ? `${team.avg_move_size}%` : 'â€”'}
+                          {team.avg_move_size !== null ? `${team.avg_move_size}%` : '—'}
                         </span>
                         <span className="text-slate-500 mx-1">move</span>
                       </div>
@@ -535,7 +536,7 @@ export default function SteamResultsPage() {
             <td className="p-2 text-slate-400">{new Date(move.detected_at.endsWith('Z') ? move.detected_at : `${move.detected_at}Z`).toLocaleString()}</td>
             <td className="p-2"><Link className="text-cyan-400" to={`/match/${move.match_id}`}>{move.team_name}</Link></td>
             <td className="p-2 text-white">{move.current_odds.toFixed(2)}</td>
-            <td className="p-2 text-slate-300">{move.won ? 'Won' : 'Lost'} ({move.home_score}Â·{move.away_score})</td>
+            <td className="p-2 text-slate-300">{move.won ? 'Won' : 'Lost'} ({move.home_score}·{move.away_score})</td>
             <td className={`p-2 ${move.won ? 'text-emerald-400' : 'text-red-400'}`}>{formatPL(move.won ? move.current_odds-1 : -1)}</td>
           </tr>)}</tbody>
         </table>
@@ -555,7 +556,7 @@ export default function SteamResultsPage() {
           </p>
           <p className="text-slate-500 text-sm mt-2">
             Rankings reset each season. A team earns a row once it has{' '}
-            {data.min_moves_for_rankings ?? 3}+ finished steam moves this season â€” one or two
+            {data.min_moves_for_rankings ?? 3}+ finished steam moves this season — one or two
             results is noise, not a record.
             {data.teams_below_min
               ? ` ${data.teams_below_min} ${data.teams_below_min === 1 ? 'team is' : 'teams are'} building a sample now.`

@@ -1,0 +1,32 @@
+.pro-page { --pro-line: #334155; }
+.pro-page ::selection { background: #67e8f9; color: #0f172a; }
+.pro-page h1, .pro-page h2, .pro-page h3 { text-wrap: balance; }
+.pro-page a:focus-visible, .pro-page button:focus-visible, .pro-page summary:focus-visible { outline: 2px solid #67e8f9; outline-offset: 5px; }
+.pro-hero { border: 0; border-radius: 0; background: transparent; padding: 32px 0 48px; }
+.pro-hero > [aria-hidden] { display: none; }
+.pro-hero h1 { font-size: clamp(2.8rem, 5vw, 4.75rem); letter-spacing: -.035em; }
+.pro-price { border: 0; border-radius: 16px; background: #1e293b; box-shadow: 0 18px 48px #02061766; }
+.pro-price ul { border-top: 1px solid var(--pro-line); padding-top: 24px; }
+.pro-price li { line-height: 1.6; }
+.pro-price a, .pro-price button { min-height: 48px; }
+.pro-features { border-top: 1px solid var(--pro-line); }
+.pro-features > p { display: none; }
+.pro-features > div { gap: 0 48px; }
+.pro-feature { display: flex; flex-direction: column; border: 0; border-bottom: 1px solid var(--pro-line); border-radius: 0; background: transparent; padding: 32px 0; }
+.pro-feature > div:first-child { font-family: inherit; font-size: 14px; font-weight: 600; text-transform: none; letter-spacing: 0; }
+.pro-feature > div:first-child > span:last-child { display: none; }
+.pro-feature h3 { margin-top: 12px; font-size: 24px; letter-spacing: -.02em; }
+.pro-feature p { color: #cbd5e1; max-width: 60ch; }
+.pro-feature > div:nth-last-child(2) { gap: 8px 16px; }
+.pro-feature > div:nth-last-child(2) span { border: 0; border-radius: 0; padding: 0; color: #94a3b8; }
+.pro-feature > a { align-self: flex-start; margin-top: auto; padding-top: 24px; padding-bottom: 8px; text-underline-offset: 5px; }
+.pro-feature > a:hover { text-decoration: underline; }
+.pro-page summary { padding: 4px 0; min-height: 36px; }
+@media (max-width: 639px) {
+  .pro-hero { padding-top: 16px; padding-bottom: 36px; }
+  .pro-hero > div:last-child { gap: 32px; }
+  .pro-hero h1 { font-size: clamp(2.25rem, 10vw, 3rem); }
+  .pro-price { padding: 24px; }
+  .pro-features { padding-top: 36px; padding-bottom: 36px; }
+  .pro-feature { padding: 28px 0; }
+}

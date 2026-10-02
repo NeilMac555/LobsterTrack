@@ -1,3 +1,4 @@
+import '../research-ui.css';
 import { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useSearchParams, Link } from 'react-router-dom';
@@ -827,7 +828,7 @@ export default function HomePage() {
               <div className="w-1 h-6 sm:h-7 rounded-full bg-gradient-to-b from-amber-400 to-amber-600 flex-shrink-0" />
               <div>
                 <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">Telegram Alerts</h2>
-                <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em] font-semibold">Confirmed sent alerts � odds at time sent</p>
+                <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em] font-semibold">Confirmed sent alerts · odds at time sent</p>
               </div>
             </div>
             <span className="hidden sm:inline-block text-[10px] font-mono uppercase tracking-[0.12em] text-amber-400/80 font-semibold">Within 16h · 4pp+ move</span>

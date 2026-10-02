@@ -1,3 +1,4 @@
+import '../research-ui.css';
 import { useState } from 'react';
 import {
   ComposedChart,
@@ -14,8 +15,8 @@ import {
 // Shared typography for all chart text — matches the site's terminal feel.
 const MONO_STACK = '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace';
 const AXIS_TICK = {
-  fill: '#94a3b8',
-  fontSize: 10,
+  fill: '#cbd5e1',
+  fontSize: 12,
   fontFamily: MONO_STACK,
   letterSpacing: '-0.02em',
 };
@@ -172,7 +173,7 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
   const isImpliedView = viewMode === 'implied';
 
   return (
-    <div className="h-full w-full flex flex-col">
+    <div className="research-chart h-full w-full flex flex-col">
       {/* Controls row */}
       <div className="flex flex-col gap-2 mb-3">
         {/* Top row: View Toggle + Hint */}
@@ -266,8 +267,8 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
       {/* Chart */}
       <div className="flex-1 min-h-0 relative">
         {/* Watermark — visible in screenshots, subtle in-app */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-10">
-          <span className="text-white/10 text-5xl sm:text-7xl font-black tracking-widest -rotate-12 whitespace-nowrap">
+        <div className="absolute bottom-0 right-3 pointer-events-none select-none z-10">
+          <span className="text-slate-500 text-xs font-medium whitespace-nowrap">
             steamwatch.io
           </span>
         </div>
@@ -279,15 +280,15 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
             {/* Gradient defs — subtle colored glow under each line */}
             <defs>
               <linearGradient id="oddsArea-home" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={COLOR_HOME} stopOpacity={0.28} />
+                <stop offset="0%" stopColor={COLOR_HOME} stopOpacity={0.045} />
                 <stop offset="100%" stopColor={COLOR_HOME} stopOpacity={0} />
               </linearGradient>
               <linearGradient id="oddsArea-draw" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={COLOR_DRAW} stopOpacity={0.24} />
+                <stop offset="0%" stopColor={COLOR_DRAW} stopOpacity={0.045} />
                 <stop offset="100%" stopColor={COLOR_DRAW} stopOpacity={0} />
               </linearGradient>
               <linearGradient id="oddsArea-away" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={COLOR_AWAY} stopOpacity={0.28} />
+                <stop offset="0%" stopColor={COLOR_AWAY} stopOpacity={0.045} />
                 <stop offset="100%" stopColor={COLOR_AWAY} stopOpacity={0} />
               </linearGradient>
             </defs>
@@ -306,7 +307,7 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
               tickLine={false}
               axisLine={{ stroke: '#334155', strokeWidth: 1 }}
               interval="preserveStartEnd"
-              minTickGap={30}
+              minTickGap={60}
             />
             <YAxis
               stroke="#475569"
@@ -391,7 +392,7 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
                 dataKey={isImpliedView ? 'home_impl' : isPercentView ? 'home_pct' : 'home_odds'}
                 name={homeTeam}
                 stroke={COLOR_HOME}
-                strokeWidth={2.2}
+                strokeWidth={2.6}
                 dot={false}
                 activeDot={{ r: 5, fill: COLOR_HOME, stroke: '#0f172a', strokeWidth: 2 }}
                 animationDuration={300}
@@ -402,8 +403,9 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
                 type="monotone"
                 dataKey={isImpliedView ? 'draw_impl' : isPercentView ? 'draw_pct' : 'draw_odds'}
                 name="Draw"
+                strokeDasharray="7 4"
                 stroke={COLOR_DRAW}
-                strokeWidth={2.2}
+                strokeWidth={2.6}
                 dot={false}
                 activeDot={{ r: 5, fill: COLOR_DRAW, stroke: '#0f172a', strokeWidth: 2 }}
                 animationDuration={300}
@@ -414,8 +416,9 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
                 type="monotone"
                 dataKey={isImpliedView ? 'away_impl' : isPercentView ? 'away_pct' : 'away_odds'}
                 name={awayTeam}
+                strokeDasharray="3 3"
                 stroke={COLOR_AWAY}
-                strokeWidth={2.2}
+                strokeWidth={2.6}
                 dot={false}
                 activeDot={{ r: 5, fill: COLOR_AWAY, stroke: '#0f172a', strokeWidth: 2 }}
                 animationDuration={300}

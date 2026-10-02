@@ -1,0 +1,20 @@
+/* Research surfaces: stronger data hierarchy within the existing dark theme. */
+#market-movers { background: #172235; border-color: #334155; }
+#market-movers thead th, .steam-results thead th { font-size: 12px; letter-spacing: .04em; color: #cbd5e1; padding-top: 16px; padding-bottom: 16px; }
+#market-movers tbody tr:nth-child(even), .steam-results tbody tr:nth-child(even) { background: #0f172a40; }
+#market-movers tbody tr:hover, .steam-results tbody tr:hover { background: #33415570; }
+#market-movers td:nth-child(3) span:last-child { color: #f8fafc; font-weight: 650; max-width: 180px; }
+#market-movers td:nth-child(5) span { color: #94a3b8; }
+#market-movers td:nth-child(6) { background: #22d3ee08; }
+#market-movers td:nth-child(6) span { font-size: 24px; color: #a5f3fc; }
+#market-movers td:nth-child(4) > div::after { content: 'shorter'; display: block; color: #cbd5e1; font: 11px 'Inter', sans-serif; margin-left: 8px; }
+.steam-results td { padding-top: 15px; padding-bottom: 15px; }
+.steam-results td:last-child { background: #22d3ee08; }
+.steam-results td:last-child span { font-size: 17px; }
+.steam-results button, .research-chart button { min-height: 36px; }
+.steam-results button:focus-visible, .research-chart button:focus-visible, #market-movers a:focus-visible { outline: 2px solid #67e8f9; outline-offset: 3px; }
+.research-chart button { font-size: 12px; }
+@media (max-width: 767px) {
+  #market-movers a { display: block; }
+  .research-chart button { min-height: 40px; }
+}
