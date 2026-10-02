@@ -5,3 +5,50 @@
 .fl-toolbar{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:center}.fl-compact{display:flex;gap:8px;align-items:center}.fl-compact>span{font-size:11px;color:#94a3b8}.fl-compact .fl-tabs button{padding:7px 10px}.fl-options{margin-top:14px;color:#94a3b8;font-size:12px}.fl-options summary{cursor:pointer;padding:6px 0}.fl-options[open]>summary{margin-bottom:10px}.form-lab header{margin-bottom:16px}.form-lab h1{font-size:30px}.fl-controls .fl-grid.two{margin-bottom:14px}
 
 .fl-sort{display:inline-flex;align-items:center;gap:5px;cursor:pointer;text-align:left}.fl-sort:hover,.fl-sort:focus-visible{color:#67e8f9}.fl-sort:focus-visible{outline:2px solid #22d3ee;outline-offset:4px}.fl-sort span{font-size:11px}th[aria-sort="ascending"],th[aria-sort="descending"]{color:#67e8f9}
+
+/* Form standings: aligned controls, readable figures and a stable team column. */
+.fl-panel.fl-league-table{padding:0;overflow:hidden;margin-bottom:24px;background:#162235}
+.fl-table-heading{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:24px 24px 20px}
+.fl-table-heading h2{font-size:20px;line-height:1.3;margin:0 0 6px;letter-spacing:-.3px}
+.fl-table-heading p{font-size:13px;color:#aab9cc;margin:0}
+.fl-selection-legend{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:12px;font-size:12px;font-weight:600}
+.fl-selection-legend>span{display:flex;align-items:center;gap:8px}
+.fl-selection-legend small{font-size:11px;font-weight:400;border:1px solid currentColor;border-radius:4px;padding:2px 5px}
+.fl-legend-home{color:#67e8f9}.fl-legend-away{color:#fcd34d}
+.fl-table-controls{display:flex;align-items:end;gap:24px;flex-wrap:wrap;padding:0 24px 20px;border-bottom:1px solid #344258}
+.fl-table-controls label,.fl-table-controls legend{font-size:12px;letter-spacing:0;text-transform:none;color:#b4c2d4;font-weight:500}
+.fl-view-control{flex:1;min-width:200px;max-width:300px}
+.fl-table-controls select{height:42px;margin-top:8px;font-size:14px;padding:8px 12px}
+.fl-table-controls fieldset{min-width:0}.fl-table-controls legend{margin-bottom:8px}
+.fl-segmented{display:flex;gap:2px;background:#101b2c;border:1px solid #344258;padding:3px;border-radius:7px}
+.fl-segmented button{min-width:38px;min-height:34px;padding:6px 12px;border-radius:4px;font-size:13px;color:#b4c2d4;font-weight:600;transition:background-color .15s,color .15s}
+.fl-segmented button:hover{background:#263a50;color:#fff}.fl-segmented button[aria-pressed=true]{background:#206279;color:#e2fcff}
+.fl-league-table button:focus-visible,.fl-league-table summary:focus-visible,.fl-data-scroll:focus-visible{outline:2px solid #67e8f9;outline-offset:3px}
+.fl-xg-mode{margin-left:auto}
+.fl-table-context{padding:14px 24px;display:flex;align-items:start;justify-content:space-between;gap:16px;font-size:12px;color:#b4c2d4}
+.fl-table-context p{margin:0}.fl-table-context p>span{display:block;color:#9cacc2;margin-top:4px;font-size:11px}
+.fl-table-help{max-width:420px}.fl-table-help summary{cursor:pointer;white-space:nowrap;color:#b4c2d4}.fl-table-help p{line-height:1.65;margin-top:10px}
+.fl-data-scroll{max-height:760px;scrollbar-color:#52667e #111c2e;scrollbar-width:thin}
+.form-lab .fl-data-table{font-size:13px;font-variant-numeric:tabular-nums;min-width:760px;border-collapse:separate;border-spacing:0}
+.form-lab .fl-data-table th,.form-lab .fl-data-table td{padding:13px 16px;text-align:right;border-bottom:1px solid #2a394d}
+.form-lab .fl-data-table th:first-child,.form-lab .fl-data-table td:first-child{text-align:center;width:80px;color:#aab9cc}
+.form-lab .fl-data-table thead th{position:sticky;top:0;background:#111c2e;z-index:2;font-size:12px;font-weight:500}
+.form-lab .fl-data-table thead th:nth-child(2),.form-lab .fl-data-table .fl-team-cell{position:sticky;left:0;text-align:left;min-width:220px;background:#162235;z-index:1}
+.form-lab .fl-data-table thead th:nth-child(2){z-index:3;background:#111c2e}
+.form-lab .fl-data-table .fl-team-cell{font-weight:600;color:#e2e8f0}
+.fl-team-cell small{display:block;color:#aab9cc;font-size:11px;font-weight:400;margin-top:3px}
+.fl-data-table .fl-sort{justify-content:flex-end;width:100%;min-height:24px;gap:6px;white-space:nowrap}
+.fl-data-table th:nth-child(2) .fl-sort{justify-content:flex-start}
+.fl-data-table .fl-sort svg{opacity:.4;flex-shrink:0}.fl-data-table th[aria-sort=ascending] svg,.fl-data-table th[aria-sort=descending] svg{opacity:1}
+.fl-data-table .fl-sorted-cell{font-weight:650;background:#20314766}
+.form-lab .fl-data-table tbody tr:hover td,.form-lab .fl-data-table tbody tr:hover .fl-team-cell{background:#223349}
+.fl-data-table .fl-home-row,.fl-data-table .fl-away-row{color:#e2e8f0}
+.form-lab .fl-data-table .fl-home-row .fl-team-cell{color:#67e8f9;background:#19384a}.form-lab .fl-data-table .fl-away-row .fl-team-cell{color:#fcd34d;background:#393127}
+.fl-data-table .fl-positive{color:#78dfb4}.fl-data-table .fl-negative{color:#fda4af}
+.form-lab .fl-data-table .fl-sample-divider td{padding:12px 24px;background:#111c2e;color:#c0ccdb;text-align:left;font-size:12px;font-weight:600}
+.fl-sample-divider span{font-weight:400;color:#9cacc2;margin-left:12px}
+.fl-table-footnote{padding:16px 24px;color:#aab9cc;font-size:12px;line-height:1.6}
+.fl-table-state{padding:48px 24px;text-align:center;color:#b4c2d4;font-size:14px}.fl-table-state button{color:#67e8f9;text-decoration:underline;margin-left:8px}
+.fl-league-table ::selection{background:#206279;color:#fff}
+@media(max-width:700px){.fl-table-heading{align-items:start;flex-direction:column;padding:20px 16px 16px;gap:12px}.fl-selection-legend{justify-content:flex-start}.fl-table-controls{gap:16px;padding:0 16px 16px}.fl-view-control{flex-basis:100%;max-width:none}.fl-xg-mode{margin-left:0}.fl-table-context{padding:14px 16px;flex-direction:column;gap:10px}.fl-table-help{max-width:none}.form-lab .fl-data-table th,.form-lab .fl-data-table td{padding:12px}.form-lab .fl-data-table .fl-team-cell,.form-lab .fl-data-table thead th:nth-child(2){min-width:170px;max-width:190px;white-space:normal}.fl-table-footnote{padding:16px}.fl-segmented button{min-height:38px}.form-lab{padding-left:0;padding-right:0}.fl-sample-divider span{display:block;margin:4px 0 0}}
+@media(prefers-reduced-motion:reduce){.fl-segmented button{transition:none}}
