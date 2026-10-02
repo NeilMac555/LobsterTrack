@@ -155,7 +155,7 @@ export default function MatchDetailPage() {
       <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-6 sm:p-8 text-center">
         {holdingHelmet}
         <p className="text-red-400 text-base sm:text-lg">{error || 'Match not found'}</p>
-        <Link to="/" className="text-blue-400 hover:text-blue-300 mt-4 inline-block font-medium">
+        <Link to="/" className="text-cyan-300 hover:text-cyan-200 mt-4 inline-block font-medium">
           ← Back to matches
         </Link>
       </div>
@@ -431,7 +431,7 @@ function OddsHistoryTable({ oddsHistory, showChangesOnly, onToggleShowChanges }:
           onClick={onToggleShowChanges}
           className={`flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 ${
             showChangesOnly
-              ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
+              ? 'bg-cyan-400/15 text-cyan-200 border border-cyan-400/30'
               : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
           }`}
         >

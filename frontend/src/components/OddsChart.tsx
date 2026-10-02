@@ -183,7 +183,7 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
               onClick={() => setViewMode('odds')}
               className={`px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.1em] transition-colors border-r border-slate-700/60 ${
                 viewMode === 'odds'
-                  ? 'bg-blue-500/20 text-blue-300'
+                  ? 'bg-cyan-400/15 text-cyan-200'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
               }`}
             >
@@ -193,7 +193,7 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
               onClick={() => setViewMode('percent')}
               className={`px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.1em] transition-colors border-r border-slate-700/60 ${
                 viewMode === 'percent'
-                  ? 'bg-blue-500/20 text-blue-300'
+                  ? 'bg-cyan-400/15 text-cyan-200'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
               }`}
             >
@@ -203,7 +203,7 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
               onClick={() => setViewMode('implied')}
               className={`px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.1em] transition-colors ${
                 viewMode === 'implied'
-                  ? 'bg-blue-500/20 text-blue-300'
+                  ? 'bg-cyan-400/15 text-cyan-200'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
               }`}
             >
@@ -226,7 +226,7 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
             onClick={() => handleLegendClick('home')}
             className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full border text-xs font-medium cursor-pointer transition-all duration-200 ${
               selectedOutcome === 'home'
-                ? 'bg-emerald-500/30 border-emerald-500/60 text-emerald-300 shadow-sm shadow-emerald-500/20'
+                ? 'bg-slate-700/70 border-slate-400/60 text-white'
                 : selectedOutcome === 'all'
                 ? 'bg-slate-800/80 border-slate-600/50 text-slate-300 hover:bg-slate-700 hover:border-slate-500 hover:scale-105'
                 : 'bg-slate-800/40 border-slate-700/30 text-slate-500 hover:bg-slate-700/50 hover:text-slate-400'
@@ -239,7 +239,7 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
             onClick={() => handleLegendClick('draw')}
             className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full border text-xs font-medium cursor-pointer transition-all duration-200 ${
               selectedOutcome === 'draw'
-                ? 'bg-yellow-500/30 border-yellow-500/60 text-yellow-300 shadow-sm shadow-yellow-500/20'
+                ? 'bg-slate-700/70 border-slate-400/60 text-white'
                 : selectedOutcome === 'all'
                 ? 'bg-slate-800/80 border-slate-600/50 text-slate-300 hover:bg-slate-700 hover:border-slate-500 hover:scale-105'
                 : 'bg-slate-800/40 border-slate-700/30 text-slate-500 hover:bg-slate-700/50 hover:text-slate-400'
@@ -252,7 +252,7 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
             onClick={() => handleLegendClick('away')}
             className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full border text-xs font-medium cursor-pointer transition-all duration-200 ${
               selectedOutcome === 'away'
-                ? 'bg-red-500/30 border-red-500/60 text-red-300 shadow-sm shadow-red-500/20'
+                ? 'bg-slate-700/70 border-slate-400/60 text-white'
                 : selectedOutcome === 'all'
                 ? 'bg-slate-800/80 border-slate-600/50 text-slate-300 hover:bg-slate-700 hover:border-slate-500 hover:scale-105'
                 : 'bg-slate-800/40 border-slate-700/30 text-slate-500 hover:bg-slate-700/50 hover:text-slate-400'
