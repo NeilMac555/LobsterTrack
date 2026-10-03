@@ -224,6 +224,8 @@ decisions that shape the build, with the recommendation at the time:
 
 ## Done
 
+- Match Predictor guide refreshed to the current inputs, settings and markets; four-page PDF visually checked and download versioned (475be93).
+
 - 2026-10-01: Removed the Telegram profit graph at user request; existing profit totals and settled alerts remain. Production build passed.
 
 - 2026-10-01: Added cumulative 1u Telegram alert profit graph using the full filtered settled ledger; verified totals and production build.
