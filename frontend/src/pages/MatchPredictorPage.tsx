@@ -924,7 +924,7 @@ export default function MatchPredictorPage() {
               <p className="text-xs text-slate-500">How the Dixon-Coles pipeline works, where to find data, and tips</p>
             </div>
             <a
-              href="/SteamWatch_Match_Model_Guide.pdf"
+              href="/SteamWatch_Match_Model_Guide.pdf?v=2026-10-03"
               download
               className="flex items-center gap-2 px-4 py-2 bg-red-500/15 border border-red-500/30 rounded-lg text-red-400 text-sm font-medium hover:bg-red-500/25 hover:border-red-500/50 transition-colors"
             >
