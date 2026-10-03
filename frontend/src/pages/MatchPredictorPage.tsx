@@ -162,73 +162,38 @@ function Field({ label, value, onChange, step, min, placeholder, type = 'number'
   );
 }
 
-// ===== DATA SOURCES SECTION =====
-function DataSourcesSection() {
-  const [open, setOpen] = useState(false);
-  const SourceLink = ({ href, name }: { href: string; name: string }) => (
-    <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 hover:underline font-medium">{name}</a>
-  );
-  return (
-    <div className={`bg-slate-800/50 rounded-xl border transition-all duration-200 ${open ? 'border-slate-600' : 'border-slate-700/50 hover:border-slate-600'}`}>
-      <button onClick={() => setOpen(!open)} className="w-full flex items-center px-4 sm:px-5 py-3 text-left">
-        <span className={`inline-flex items-center justify-center w-5 h-5 mr-3 text-[10px] rounded bg-slate-700/50 text-slate-400 transition-transform duration-200 ${open ? 'rotate-90' : ''}`}>&#9656;</span>
-        <span className="flex-1 font-semibold text-slate-300 text-xs sm:text-sm">Where to Find the Data</span>
-      </button>
-      {open && (
-        <div className="px-4 sm:px-5 pb-4 sm:pb-5 space-y-5">
-          {/* Core Stats */}
-          <div>
-            <h4 className="text-xs font-bold text-red-400 uppercase tracking-wider mb-2 pb-1.5 border-b border-red-500/15">Core Stats</h4>
-            <table className="w-full text-xs sm:text-sm">
-              <thead><tr className="text-slate-500 text-[10px] uppercase tracking-wider"><th className="text-left py-1 px-1.5">Stat</th><th className="text-left py-1 px-1.5">Source</th><th className="text-left py-1 px-1.5">Where to Find</th></tr></thead>
-              <tbody className="text-slate-400">
-                <tr className="border-b border-slate-700/30"><td className="py-1.5 px-1.5 text-white font-medium">Goals For / Against</td><td className="py-1.5 px-1.5"><SourceLink href="https://theanalyst.com/football/stats" name="OPTA Analyst" /></td><td className="py-1.5 px-1.5 text-slate-500 text-[11px] italic">Football &gt; Stats &gt; Team stats &gt; Goals per match</td></tr>
-                <tr className="border-b border-slate-700/30"><td className="py-1.5 px-1.5 text-white font-medium">xG For / Against</td><td className="py-1.5 px-1.5"><SourceLink href="https://theanalyst.com/football/stats" name="OPTA Analyst" /></td><td className="py-1.5 px-1.5 text-slate-500 text-[11px] italic">Football &gt; Stats &gt; Team stats &gt; xG per match</td></tr>
-                <tr><td className="py-1.5 px-1.5 text-white font-medium">Penalties Received / Conceded</td><td className="py-1.5 px-1.5"><SourceLink href="https://www.transfermarkt.com" name="Transfermarkt" /></td><td className="py-1.5 px-1.5 text-slate-500 text-[11px] italic">Team page &gt; Detailed stats &gt; Penalties</td></tr>
-              </tbody>
-            </table>
-          </div>
-          {/* Advanced Inputs */}
-          <div>
-            <h4 className="text-xs font-bold text-red-400 uppercase tracking-wider mb-2 pb-1.5 border-b border-red-500/15">Advanced Inputs</h4>
-            <table className="w-full text-xs sm:text-sm">
-              <thead><tr className="text-slate-500 text-[10px] uppercase tracking-wider"><th className="text-left py-1 px-1.5">Stat</th><th className="text-left py-1 px-1.5">Source</th><th className="text-left py-1 px-1.5">Where to Find</th></tr></thead>
-              <tbody className="text-slate-400">
-                <tr className="border-b border-slate-700/30"><td className="py-1.5 px-1.5 text-white font-medium">Shots For / Against</td><td className="py-1.5 px-1.5"><SourceLink href="https://fbref.com" name="FBref" /></td><td className="py-1.5 px-1.5 text-slate-500 text-[11px] italic">Team page &gt; Shooting &gt; Sh/90</td></tr>
-                <tr className="border-b border-slate-700/30"><td className="py-1.5 px-1.5 text-white font-medium">Open Play xG</td><td className="py-1.5 px-1.5"><SourceLink href="https://theanalyst.com/football/stats" name="OPTA Analyst" /></td><td className="py-1.5 px-1.5 text-slate-500 text-[11px] italic">Team stats &gt; total xG minus set piece xG</td></tr>
-                <tr className="border-b border-slate-700/30"><td className="py-1.5 px-1.5 text-white font-medium">Set Piece xG</td><td className="py-1.5 px-1.5"><SourceLink href="https://theanalyst.com/football/stats" name="OPTA Analyst" /></td><td className="py-1.5 px-1.5 text-slate-500 text-[11px] italic">Team stats &gt; Dead ball xG</td></tr>
-                <tr className="border-b border-slate-700/30"><td className="py-1.5 px-1.5 text-white font-medium">Danger Poss. Lost (LOS)</td><td className="py-1.5 px-1.5"><SourceLink href="https://markstats.club" name="MarkStats" /></td><td className="py-1.5 px-1.5 text-slate-500 text-[11px] italic">Select league &gt; Team &gt; LOS</td></tr>
-                <tr><td className="py-1.5 px-1.5 text-white font-medium">Open-play Poss. Lost (OLOS)</td><td className="py-1.5 px-1.5"><SourceLink href="https://markstats.club" name="MarkStats" /></td><td className="py-1.5 px-1.5 text-slate-500 text-[11px] italic">Select league &gt; Team &gt; OLOS</td></tr>
-              </tbody>
-            </table>
-          </div>
-          {/* Form Data */}
-          <div>
-            <h4 className="text-xs font-bold text-red-400 uppercase tracking-wider mb-2 pb-1.5 border-b border-red-500/15">Form Data</h4>
-            <table className="w-full text-xs sm:text-sm">
-              <thead><tr className="text-slate-500 text-[10px] uppercase tracking-wider"><th className="text-left py-1 px-1.5">Stat</th><th className="text-left py-1 px-1.5">Source</th><th className="text-left py-1 px-1.5">Where to Find</th></tr></thead>
-              <tbody className="text-slate-400">
-                <tr><td className="py-1.5 px-1.5 text-white font-medium">Last 6 xG For / Against</td><td className="py-1.5 px-1.5"><SourceLink href="https://theanalyst.com/football/stats" name="OPTA Analyst" /></td><td className="py-1.5 px-1.5 text-slate-500 text-[11px] italic">Match-by-match xG &gt; sum last 6 &gt; divide by 6</td></tr>
-              </tbody>
-            </table>
-          </div>
-          {/* Context */}
-          <div>
-            <h4 className="text-xs font-bold text-red-400 uppercase tracking-wider mb-2 pb-1.5 border-b border-red-500/15">Context & Adjustments</h4>
-            <table className="w-full text-xs sm:text-sm">
-              <thead><tr className="text-slate-500 text-[10px] uppercase tracking-wider"><th className="text-left py-1 px-1.5">Stat</th><th className="text-left py-1 px-1.5">Source</th><th className="text-left py-1 px-1.5">Where to Find</th></tr></thead>
-              <tbody className="text-slate-400">
-                <tr><td className="py-1.5 px-1.5 text-white font-medium">Absence Severity</td><td className="py-1.5 px-1.5 text-slate-400">Subjective</td><td className="py-1.5 px-1.5 text-slate-500 text-[11px] italic">Check injury news, rate None / Weakened / Severely weakened</td></tr>
-              </tbody>
-            </table>
-          </div>
-          <div className="text-[11px] text-slate-500 italic bg-black/15 rounded-lg p-3 leading-relaxed">
-            <strong className="text-slate-400 not-italic">Tip:</strong> OPTA Analyst for all goals & xG. FBref for shots. MarkStats for LOS/OLOS. Transfermarkt for penalties. Absence severity is subjective.
-          </div>
-        </div>
-      )}
+// Shared by the desktop sidebar and the expandable mobile guide.
+const MODEL_DATA_SOURCES = [
+  { title: 'Season goals & xG', name: 'Opta Analyst', href: 'https://theanalyst.com/sport/football', text: 'Open your competition and team statistics. Use matches played, goals conceded, xG and xGA. Divide totals by matches played; keep the same season and provider for both teams.' },
+  { title: 'Match-by-match xG', name: 'Understat', href: 'https://understat.com/', text: 'Choose the league, season and team. For recent form, total xG for and against over the last six completed league games, then divide each by six. Check that the current season is available.' },
+  { title: 'Penalties received & conceded', name: 'Transfermarkt', href: 'https://www.transfermarkt.com/premier-league/elfmeterstatistiken/wettbewerb/GB1', text: 'Open Penalty statistics and switch to your competition and season. Count all penalties awarded and conceded, including misses. Enter counts, not per-match rates.' },
+  { title: 'Shots & xG breakdown', name: 'Wyscout (subscription)', href: 'https://wyscout.hudl.com/app/', text: 'Find the team and filter its statistics or reports to the same competition and dates. Use shots for/against and available open-play/set-piece xG, all per match. Coverage depends on your subscription.' },
+  { title: 'Absence severity', name: 'Transfermarkt injuries', href: 'https://www.transfermarkt.com/', text: 'Use injury and suspension lists as a starting point, then confirm with official club news and lineups. Choose None, Weakened or Severely weakened yourself; this is not a player-value input.' },
+];
+function ModelDataSources() {
+  return <div className="space-y-4 text-xs leading-relaxed text-slate-300">
+    <p>Use one xG provider and matching competition/date filters for both teams.</p>
+    <div className="divide-y divide-slate-700/60">
+      {MODEL_DATA_SOURCES.map(source => <section key={source.title} className="py-3 first:pt-0">
+        <h4 className="font-semibold text-white mb-1">{source.title}</h4>
+        <a href={source.href} target="_blank" rel="noopener noreferrer" className="inline-block text-cyan-300 underline underline-offset-4 hover:text-cyan-200 focus-visible:outline-2 focus-visible:outline-cyan-300 focus-visible:outline-offset-4">{source.name}</a>
+        <p className="mt-2">{source.text}</p>
+      </section>)}
     </div>
-  );
+    <div className="border-t border-slate-700 pt-3 space-y-2">
+      <h4 className="font-semibold text-white">Before you calculate</h4>
+      <p>No last-six data? Set Form Weight to 0; blank fields count as zero.</p>
+      <p>Shots only affect prices when xG/Shot Quality Weight is above 0. Leave unavailable xG breakdowns blank.</p>
+      <p>Using non-penalty xG? Set penalty counts to 0 to avoid subtracting twice. This skips the standard retained penalty contribution.</p>
+      <a href="/SteamWatch_Match_Model_Guide.pdf?v=2026-10-03" target="_blank" rel="noopener noreferrer" className="inline-block text-cyan-300 underline underline-offset-4 hover:text-cyan-200">Read the updated model guide (PDF)</a>
+    </div>
+  </div>;
+}
+function DataSourcesSection() {
+  return <details className="bg-slate-800/50 rounded-xl border border-slate-700/50">
+    <summary className="cursor-pointer px-4 py-3 font-semibold text-slate-200 text-sm focus-visible:outline-2 focus-visible:outline-cyan-300">Where to Find the Data</summary>
+    <div className="px-4 pb-4"><ModelDataSources /></div>
+  </details>;
 }
 
 // ===== MAIN COMPONENT =====
@@ -473,109 +438,10 @@ export default function MatchPredictorPage() {
       <div className="flex gap-6">
       {/* Data Sources Sidebar */}
       <aside className="hidden lg:block w-72 flex-shrink-0">
-        <div className="sticky top-4 space-y-4">
-          {/* Where to find data */}
+        <div className="space-y-4">
           <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-slate-300 mb-3 flex items-center gap-2">
-              <span className="text-amber-400">📊</span> Where to Find the Data
-            </h3>
-
-            <div className="space-y-3">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-400 mb-1">OPTA Analyst</p>
-                <a href="https://theanalyst.com" target="_blank" rel="noopener noreferrer" className="text-[11px] text-blue-400 hover:text-blue-300 underline underline-offset-2">theanalyst.com</a>
-                <ul className="mt-1 space-y-0.5">
-                  <li className="text-[11px] text-slate-400">• Goals Against per match</li>
-                  <li className="text-[11px] text-slate-400">• xG For / Against per match</li>
-                  <li className="text-[11px] text-slate-400">• Open Play xG</li>
-                  <li className="text-[11px] text-slate-400">• Set Piece xG</li>
-                  <li className="text-[11px] text-slate-400">• Non-penalty xG</li>
-                  <li className="text-[11px] text-slate-400">• Last 6 xG For / Against</li>
-                </ul>
-              </div>
-
-              <div className="border-t border-slate-700/40 pt-2">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-amber-400 mb-1">Transfermarkt</p>
-                <a href="https://www.transfermarkt.com" target="_blank" rel="noopener noreferrer" className="text-[11px] text-blue-400 hover:text-blue-300 underline underline-offset-2">transfermarkt.com</a>
-                <ul className="mt-1 space-y-0.5">
-                  <li className="text-[11px] text-slate-400">• Penalties Received (season)</li>
-                  <li className="text-[11px] text-slate-400">• Penalties Conceded (season)</li>
-                </ul>
-              </div>
-
-              <div className="border-t border-slate-700/40 pt-2">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-blue-400 mb-1">FBref</p>
-                <a href="https://fbref.com" target="_blank" rel="noopener noreferrer" className="text-[11px] text-blue-400 hover:text-blue-300 underline underline-offset-2">fbref.com</a>
-                <ul className="mt-1 space-y-0.5">
-                  <li className="text-[11px] text-slate-400">• Shots For / Against</li>
-                  <li className="text-[11px] text-slate-400">• Last 6 Shots per match</li>
-                </ul>
-              </div>
-
-              <div className="border-t border-slate-700/40 pt-2">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-purple-400 mb-1">MarkStats</p>
-                <a href="https://markstats.club" target="_blank" rel="noopener noreferrer" className="text-[11px] text-blue-400 hover:text-blue-300 underline underline-offset-2">markstats.club</a>
-                <ul className="mt-1 space-y-0.5">
-                  <li className="text-[11px] text-slate-400">• Danger Possession Lost (LOS/OLOS)</li>
-                </ul>
-              </div>
-
-              <div className="border-t border-slate-700/40 pt-2">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Subjective</p>
-                <ul className="mt-1 space-y-0.5">
-                  <li className="text-[11px] text-slate-500">• Absence severity (per team)</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          {/* Useful reference sites */}
-          <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-slate-300 mb-3 flex items-center gap-2">
-              <span className="text-amber-400">🔗</span> Useful Reference Sites
-            </h3>
-            <div className="space-y-2">
-              <a href="https://theanalyst.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] text-slate-400 hover:text-white transition-colors group">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                <span className="group-hover:underline">OPTA Analyst</span>
-                <span className="text-slate-600 ml-auto">xG, goals</span>
-              </a>
-              <a href="https://fbref.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] text-slate-400 hover:text-white transition-colors group">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                <span className="group-hover:underline">FBref</span>
-                <span className="text-slate-600 ml-auto">shots, stats</span>
-              </a>
-              <a href="https://www.whoscored.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] text-slate-400 hover:text-white transition-colors group">
-                <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
-                <span className="group-hover:underline">WhoScored</span>
-                <span className="text-slate-600 ml-auto">ratings, form</span>
-              </a>
-              <a href="https://www.transfermarkt.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] text-slate-400 hover:text-white transition-colors group">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                <span className="group-hover:underline">Transfermarkt</span>
-                <span className="text-slate-600 ml-auto">pens, injuries</span>
-              </a>
-              <a href="https://scoreroom.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] text-slate-400 hover:text-white transition-colors group">
-                <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
-                <span className="group-hover:underline">Scoreroom</span>
-                <span className="text-slate-600 ml-auto">cards, discipline</span>
-              </a>
-              <a href="https://www.footystats.org" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] text-slate-400 hover:text-white transition-colors group">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                <span className="group-hover:underline">FootyStats</span>
-                <span className="text-slate-600 ml-auto">league stats</span>
-              </a>
-              <a href="https://www.wyscout.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] text-slate-400 hover:text-white transition-colors group">
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>
-                <span className="group-hover:underline">Wyscout</span>
-                <span className="text-slate-600 ml-auto">advanced metrics</span>
-              </a>
-              <a href="https://markstats.club" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[11px] text-slate-400 hover:text-white transition-colors group">
-                <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
-                <span className="group-hover:underline">MarkStats</span>
-                <span className="text-slate-600 ml-auto">possession loss</span>
-              </a>
-            </div>
+            <h3 className="text-sm font-bold text-white mb-4">Where to Find the Data</h3>
+            <ModelDataSources />
           </div>
 
           {/* Telegram Feedback */}
