@@ -96,7 +96,7 @@ function makeDefaultTeam(league: string): TeamInputs {
   return {
     goalsAgainst: d.ga.toFixed(2),
     xgFor: d.xgf.toFixed(2), xgAgainst: d.xga.toFixed(2),
-    matchesPlayed: '19', penaltiesReceived: '3', penaltiesConceded: '3',
+    matchesPlayed: '20', penaltiesReceived: '3', penaltiesConceded: '3',
     // Advanced inputs — blank by default so Step 0b (SP discount) and
     // Step 1b (quality) are no-ops until the user opts in.
     shotsFor: '', shotsAgainst: '',
@@ -152,15 +152,15 @@ function Field({ label, value, onChange, step, min, placeholder, type = 'number'
 
 // Shared by the desktop sidebar and the expandable mobile guide.
 const MODEL_DATA_SOURCES = [
-  { title: 'Season & recent xG', name: 'Understat', href: 'https://understat.com/', text: 'Matches the league baseline provider. Choose your league, season and team. Divide season totals by matches played. For recent form, total xG for and against over the last six completed league games, then divide each by six.' },
-  { title: 'Alternative team statistics', name: 'Opta Analyst', href: 'https://theanalyst.com/sport/football', text: 'Find goals conceded, xG and xGA for your competition. Divide totals by matches played. Keep season and recent inputs with one provider; Opta xG can differ from the Understat league reference.' },
-  { title: 'Penalties received & conceded', name: 'Transfermarkt', href: 'https://www.transfermarkt.com/premier-league/elfmeterstatistiken/wettbewerb/GB1', text: 'Open Penalty statistics and switch to your competition and season. Count all penalties awarded and conceded, including misses. Enter counts, not per-match rates.' },
+  { title: '20-match xG sample', name: 'Understat', href: 'https://understat.com/', text: 'Matches the league baseline provider. Use each team’s last 20 completed league games across all venues, continuing into the previous season if needed. Divide xG totals by games in that sample. For optional recent form, use the last six league games separately.' },
+  { title: 'Alternative team statistics', name: 'Opta Analyst', href: 'https://theanalyst.com/sport/football', text: 'Find goals conceded, xG and xGA for the same 20-game sample. Divide totals by games in that sample. Keep core and recent inputs with one provider; Opta xG can differ from the Understat league reference.' },
+  { title: 'Penalties received & conceded', name: 'Transfermarkt', href: 'https://www.transfermarkt.com/premier-league/elfmeterstatistiken/wettbewerb/GB1', text: 'Open Penalty statistics and count only penalties from the same games as your core stats, including misses. Check both seasons when the sample crosses a season boundary. Enter counts, not per-match rates.' },
   { title: 'Shots & xG breakdown', name: 'Wyscout (subscription)', href: 'https://wyscout.hudl.com/app/', text: 'Find the team and filter its statistics or reports to the same competition and dates. Use shots for/against and available open-play/set-piece xG, all per match. Coverage depends on your subscription.' },
   { title: 'Absence severity', name: 'Transfermarkt injuries', href: 'https://www.transfermarkt.com/', text: 'Use injury and suspension lists as a starting point, then confirm with official club news and lineups. Choose None, Weakened or Severely weakened yourself; this is not a player-value input.' },
 ];
 function ModelDataSources() {
   return <div className="space-y-4 text-xs leading-relaxed text-slate-300">
-    <p>Use one xG provider and matching competition/date filters for both teams.</p>
+    <p>Use the last 20 league games for each team, all venues, with one xG provider. Keep every core statistic on that team’s same sample.</p>
     <div className="divide-y divide-slate-700/60">
       {MODEL_DATA_SOURCES.map(source => <section key={source.title} className="py-3 first:pt-0">
         <h4 className="font-semibold text-white mb-1">{source.title}</h4>
@@ -355,9 +355,9 @@ export default function MatchPredictorPage() {
         <Field label="Goals Against / match" value={team.goalsAgainst} onChange={v => update('goalsAgainst', v)} step="0.01" min="0" />
         <Field label="xG For / match" value={team.xgFor} onChange={v => update('xgFor', v)} step="0.01" min="0" />
         <Field label="xG Against / match" value={team.xgAgainst} onChange={v => update('xgAgainst', v)} step="0.01" min="0" />
-        <Field label="Matches Played" value={team.matchesPlayed} onChange={v => update('matchesPlayed', v)} step="1" min="1" />
-        <Field label="Penalties Received (season)" value={team.penaltiesReceived} onChange={v => update('penaltiesReceived', v)} step="1" min="0" />
-        <Field label="Penalties Conceded (season)" value={team.penaltiesConceded} onChange={v => update('penaltiesConceded', v)} step="1" min="0" />
+        <Field label="Matches in sample" value={team.matchesPlayed} onChange={v => update('matchesPlayed', v)} step="1" min="1" />
+        <Field label="Penalties Received (sample)" value={team.penaltiesReceived} onChange={v => update('penaltiesReceived', v)} step="1" min="0" />
+        <Field label="Penalties Conceded (sample)" value={team.penaltiesConceded} onChange={v => update('penaltiesConceded', v)} step="1" min="0" />
       </div>
     );
   };
@@ -500,7 +500,7 @@ export default function MatchPredictorPage() {
               <p className="mt-2 leading-relaxed">
                 Current-season matches carry {(effectiveLeague.baseline.current_weight * 100).toFixed(0)}% of the scoring baseline.
                 {' '}The previous season contributes up to 100 equivalent matches, so recent results gain influence as the sample grows.
-                {' '}Team strengths are measured against goals and xG from the same season as the team inputs (20{effectiveLeague.baseline.reference_season.slice(0, 2)}/{effectiveLeague.baseline.reference_season.slice(2)}), so a league-wide rise is not counted again as stronger teams.
+                {' '}Team strengths use the 20{effectiveLeague.baseline.reference_season.slice(0, 2)}/{effectiveLeague.baseline.reference_season.slice(2)} goals and xG references. These references do not automatically change when your input sample spans seasons.
                 {' '}Home advantage uses the separate, more stable league home/away ratio.
                 {' '}Use all-venue team averages from one provider; Understat aligns with these references. No extra tempo boost is added.
               </p>
@@ -529,6 +529,18 @@ export default function MatchPredictorPage() {
         />
       </div>
 
+      <section aria-labelledby="sample-guidance-title" className="mb-5 rounded-xl border border-cyan-400/25 bg-slate-800/60 p-4 sm:p-5">
+        <h2 id="sample-guidance-title" className="text-base font-semibold text-cyan-300">Recommended sample: last 20 league matches</h2>
+        <p className="mt-2 text-sm leading-relaxed text-slate-200">
+          Use each team’s last 20 completed games in the selected league, <strong>home and away combined</strong>.
+          {' '}Continue into the previous season when needed, so a young season does not leave you relying on only a few games.
+        </p>
+        <p className="mt-2 text-sm leading-relaxed text-slate-300">
+          Enter goals conceded, xG and penalty counts from those same games. Divide totals by the actual number of matches for per-match fields.
+          {' '}For promoted teams, use this season’s league games only and enter the smaller sample size.
+        </p>
+      </section>
+
       {/* Sections */}
       <div className="space-y-3">
         <Section title="Core Stats" defaultOpen={true}>
@@ -547,6 +559,7 @@ export default function MatchPredictorPage() {
         </Section>
 
         <Section title="Form Data">
+          <p className="mb-4 text-sm leading-relaxed text-slate-300">Optional recent-form adjustment: use the last six league games here. Keep the core stats on your 20-game sample. If recent-form data is unavailable, set Form Weight to 0 in Advanced Settings.</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {renderFormFields(home, updateHome, 'home')}
             {renderFormFields(away, updateAway, 'away')}
