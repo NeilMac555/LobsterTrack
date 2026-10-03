@@ -2,6 +2,10 @@ import type { MatchSummary, MatchDetail, LeagueSummary, Stats, BiggestMover, Mat
 
 const API_BASE = '/api';
 
+export async function getPredictorBaselines(): Promise<import('../types').PredictorBaselinesResponse> {
+  return fetchJson<import('../types').PredictorBaselinesResponse>(`${API_BASE}/predictor-baselines`);
+}
+
 async function fetchJson<T>(url: string): Promise<T> {
   const response = await fetch(url);
   if (!response.ok) {

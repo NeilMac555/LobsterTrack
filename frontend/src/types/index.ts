@@ -417,6 +417,37 @@ export interface LeagueConstantsResponse {
   constants: LeagueConstantsItem[];
 }
 
+export interface PredictorBaseline {
+  league: string;
+  avg_goals_per_team: number;
+  avg_goals_reference: number;
+  avg_xg: number;
+  avg_penalty_xg: number;
+  home_away_ratio: number;
+  sample_matches: number;
+  current_season: string;
+  previous_season: string;
+  current_matches: number;
+  previous_matches: number;
+  current_weight: number;
+  reference_season: string;
+  reference_matches: number;
+  prior_equivalent_matches: number;
+  current_goals_per_match: number | null;
+  previous_goals_per_match: number | null;
+  latest_match: string;
+  data_status: 'current_season' | 'previous_season_only';
+  source: string;
+  method: string;
+  home_ratio_computed_at: string;
+  computed_at: string;
+}
+
+export interface PredictorBaselinesResponse {
+  baselines: PredictorBaseline[];
+  unavailable: string[];
+}
+
 export interface PowerRatingItem {
   team: string;
   league: string;

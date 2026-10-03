@@ -4,8 +4,8 @@ import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import PaywallOverlay from '../components/PaywallOverlay';
 import { runModel, type ModelOutput, type TeamModelInputs, type LeagueParams } from '../model/valorModel';
-import { getLeagueConstants } from '../api';
-import type { LeagueConstantsItem } from '../types';
+import { getLeagueConstants, getPredictorBaselines } from '../api';
+import type { LeagueConstantsItem, PredictorBaseline } from '../types';
 
 // ===== TYPES =====
 interface TeamInputs {
@@ -41,22 +41,10 @@ interface AdvancedSettings {
 type PredictionResult = ModelOutput;
 
 // ===== LEAGUE CONSTANTS =====
-// avgGoalsPerTeam + homeAwayRatio replace the old flat `homeAdv` multiplier
-// (see calculate() Step 4). homeAwayRatio = (league-average home goals) /
-// (league-average away goals) for a league-average matchup; the pipeline
-// derives symmetric home/away multipliers from it so the expected match
-// total is preserved regardless of how strong the ratio is.
-//
-// FALLBACK ONLY as of the live league constants job: avgGoalsPerTeam and
-// homeAwayRatio for PL/BL/LL/SA/L1 are now normally sourced live from
-// GET /league-constants (backend/app/services/league_constants_refresher.py,
-// recomputed weekly from our own historical_matches data — see
-// docs/calibration for the weighting methodology). These hardcoded values
-// are the values that constants job replaced (2025/26 full-season
-// empirical snapshot) and are used only when the live fetch fails, or for
-// a league that's never cleared the refresher's minimum-sample guard —
-// see effectiveLeague below. avgGoals/avgXG/avgShotsPerGame are NOT part
-// of the live job (unrelated to this feature) and stay hardcoded either way.
+// The predictor uses matched goals/xG season baselines from Understat.
+// Home advantage remains the more stable historical league ratio. If the
+// new endpoint is unavailable, preserve the legacy calculation and clearly
+// label it as a fallback. The optional shots reference remains fixed.
 //
 // TODO: Champions League and Europa League are NOT yet empirically
 // calibrated — avgGoalsPerTeam reuses the old avgXG figure and
@@ -164,8 +152,8 @@ function Field({ label, value, onChange, step, min, placeholder, type = 'number'
 
 // Shared by the desktop sidebar and the expandable mobile guide.
 const MODEL_DATA_SOURCES = [
-  { title: 'Season goals & xG', name: 'Opta Analyst', href: 'https://theanalyst.com/sport/football', text: 'Open your competition and team statistics. Use matches played, goals conceded, xG and xGA. Divide totals by matches played; keep the same season and provider for both teams.' },
-  { title: 'Match-by-match xG', name: 'Understat', href: 'https://understat.com/', text: 'Choose the league, season and team. For recent form, total xG for and against over the last six completed league games, then divide each by six. Check that the current season is available.' },
+  { title: 'Season & recent xG', name: 'Understat', href: 'https://understat.com/', text: 'Matches the league baseline provider. Choose your league, season and team. Divide season totals by matches played. For recent form, total xG for and against over the last six completed league games, then divide each by six.' },
+  { title: 'Alternative team statistics', name: 'Opta Analyst', href: 'https://theanalyst.com/sport/football', text: 'Find goals conceded, xG and xGA for your competition. Divide totals by matches played. Keep season and recent inputs with one provider; Opta xG can differ from the Understat league reference.' },
   { title: 'Penalties received & conceded', name: 'Transfermarkt', href: 'https://www.transfermarkt.com/premier-league/elfmeterstatistiken/wettbewerb/GB1', text: 'Open Penalty statistics and switch to your competition and season. Count all penalties awarded and conceded, including misses. Enter counts, not per-match rates.' },
   { title: 'Shots & xG breakdown', name: 'Wyscout (subscription)', href: 'https://wyscout.hudl.com/app/', text: 'Find the team and filter its statistics or reports to the same competition and dates. Use shots for/against and available open-play/set-piece xG, all per match. Coverage depends on your subscription.' },
   { title: 'Absence severity', name: 'Transfermarkt injuries', href: 'https://www.transfermarkt.com/', text: 'Use injury and suspension lists as a starting point, then confirm with official club news and lineups. Choose None, Weakened or Severely weakened yourself; this is not a player-value input.' },
@@ -185,7 +173,7 @@ function ModelDataSources() {
       <p>No last-six data? Set Form Weight to 0; blank fields count as zero.</p>
       <p>Shots only affect prices when xG/Shot Quality Weight is above 0. Leave unavailable xG breakdowns blank.</p>
       <p>Using non-penalty xG? Set penalty counts to 0 to avoid subtracting twice. This skips the standard retained penalty contribution.</p>
-      <a href="/SteamWatch_Match_Model_Guide.pdf?v=2026-10-03" target="_blank" rel="noopener noreferrer" className="inline-block text-cyan-300 underline underline-offset-4 hover:text-cyan-200">Read the updated model guide (PDF)</a>
+      <a href="/SteamWatch_Match_Model_Guide.pdf?v=2026-10-03-baselines" target="_blank" rel="noopener noreferrer" className="inline-block text-cyan-300 underline underline-offset-4 hover:text-cyan-200">Read the updated model guide (PDF)</a>
     </div>
   </div>;
 }
@@ -211,47 +199,62 @@ export default function MatchPredictorPage() {
   const pendingResult = useRef<PredictionResult | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
 
-  // Live league constants (avgGoalsPerTeam/homeAwayRatio), fetched once on
-  // mount. Keyed by sport_key. null while loading; stays null forever (and
-  // every league falls back to FALLBACK_LEAGUES) if the fetch fails — no
-  // error surfaced to the user beyond the "Constants: fallback defaults"
-  // note, per spec.
   const [liveConstants, setLiveConstants] = useState<Record<string, LeagueConstantsItem> | null>(null);
+  const [baselines, setBaselines] = useState<Record<string, PredictorBaseline>>({});
+  const [baselinesLoading, setBaselinesLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
-    getLeagueConstants()
-      .then((res) => {
+    Promise.allSettled([getLeagueConstants(), getPredictorBaselines()])
+      .then(([legacy, current]) => {
         if (cancelled) return;
-        const byLeague: Record<string, LeagueConstantsItem> = {};
-        res.constants.forEach((c) => { byLeague[c.league] = c; });
-        setLiveConstants(byLeague);
-      })
-      .catch(() => {
-        // Fetch failed (network error, backend down, etc.) — leave
-        // liveConstants null so every league falls back to
-        // FALLBACK_LEAGUES. No error UI; this is an expected, handled path.
+        if (legacy.status === 'fulfilled') {
+          setLiveConstants(Object.fromEntries(legacy.value.constants.map(c => [c.league, c])));
+        }
+        if (current.status === 'fulfilled') {
+          setBaselines(Object.fromEntries(current.value.baselines.map(c => [c.league, c])));
+        }
+        setBaselinesLoading(false);
       });
     return () => { cancelled = true; };
   }, []);
 
-  // Resolves the currently-selected league to either its live-computed
-  // constants (if the fetch succeeded AND this league has a row — CL/UEL
-  // never do) or the hardcoded FALLBACK_LEAGUES defaults.
   const effectiveLeague = useMemo(() => {
     const fallback = FALLBACK_LEAGUES[league];
     const sportKey = SPORT_KEY_BY_LEAGUE[league];
     const live = sportKey ? liveConstants?.[sportKey] : undefined;
+    const baseline = sportKey ? baselines[sportKey] : undefined;
+    if (baseline) {
+      return {
+        params: {
+          ...fallback,
+          avgGoals: baseline.avg_goals_reference,
+          avgGoalsPerTeam: baseline.avg_goals_per_team,
+          avgXG: baseline.avg_xg,
+          avgPenaltyXG: baseline.avg_penalty_xg,
+          homeAwayRatio: baseline.home_away_ratio,
+          baselineLabel: `${baseline.source} ${baseline.method}; season ${baseline.current_season}; ${baseline.current_matches} current matches; current weight ${(baseline.current_weight * 100).toFixed(1)}%; data through ${baseline.latest_match}`,
+        } as LeagueParams,
+        source: 'responsive' as const,
+        baseline,
+      };
+    }
     if (live) {
       return {
         params: { ...fallback, avgGoalsPerTeam: live.avg_goals_per_team, homeAwayRatio: live.home_away_ratio } as LeagueParams,
-        source: 'live' as const,
-        computedAt: live.computed_at,
-        sampleMatches: live.sample_matches,
+        source: 'legacy' as const,
+        baseline: null,
       };
     }
-    return { params: fallback as LeagueParams, source: 'fallback' as const, computedAt: null as string | null, sampleMatches: null as number | null };
-  }, [league, liveConstants]);
+    return { params: fallback as LeagueParams, source: 'fallback' as const, baseline: null };
+  }, [league, liveConstants, baselines]);
+
+  // A new league or asynchronously loaded reference invalidates old prices.
+  useEffect(() => {
+    setResult(null);
+    pendingResult.current = null;
+    setShowPaywall(false);
+  }, [effectiveLeague]);
 
   // After successful Stripe checkout, refresh user subscription status
   useEffect(() => {
@@ -480,6 +483,39 @@ export default function MatchPredictorPage() {
         </button>
       </div>
 
+      <div className="mb-6 rounded-xl border border-slate-700/60 bg-slate-900/40 p-4 text-sm" aria-live="polite">
+        <p className="font-semibold text-slate-100">League scoring baseline</p>
+        {effectiveLeague.baseline ? (
+          <>
+            <p className="mt-2 text-slate-300">
+              <strong className="text-cyan-300">{(effectiveLeague.params.avgGoalsPerTeam * 2).toFixed(2)} goals per match</strong>
+              {' · '}{effectiveLeague.params.avgXG.toFixed(2)} xG per team
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-slate-400">
+              Understat · {effectiveLeague.baseline.current_matches} matches in 20{effectiveLeague.baseline.current_season.slice(0, 2)}/{effectiveLeague.baseline.current_season.slice(2)}
+              {' · '}<span className="whitespace-nowrap">Latest match: {effectiveLeague.baseline.latest_match}</span>
+            </p>
+            <details className="mt-2 text-xs text-slate-400">
+              <summary className="cursor-pointer text-cyan-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400">How this baseline adapts</summary>
+              <p className="mt-2 leading-relaxed">
+                Current-season matches carry {(effectiveLeague.baseline.current_weight * 100).toFixed(0)}% of the scoring baseline.
+                {' '}The previous season contributes up to 100 equivalent matches, so recent results gain influence as the sample grows.
+                {' '}Team strengths are measured against goals and xG from the same season as the team inputs (20{effectiveLeague.baseline.reference_season.slice(0, 2)}/{effectiveLeague.baseline.reference_season.slice(2)}), so a league-wide rise is not counted again as stronger teams.
+                {' '}Home advantage uses the separate, more stable league home/away ratio.
+                {' '}Use all-venue team averages from one provider; Understat aligns with these references. No extra tempo boost is added.
+              </p>
+            </details>
+            {effectiveLeague.baseline.data_status === 'previous_season_only' && (
+              <p className="mt-2 text-xs text-amber-300">Current-season data is not available yet. This baseline uses the previous season.</p>
+            )}
+          </>
+        ) : (
+          <p className="mt-2 text-xs text-amber-300">
+            {baselinesLoading ? 'Loading league data…' : 'Recent goals/xG baseline unavailable. Using older reference values; current scoring trends may not be reflected.'}
+          </p>
+        )}
+      </div>
+
       {/* Team Names */}
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-5 mb-6">
         <input
@@ -523,7 +559,7 @@ export default function MatchPredictorPage() {
             {renderContextFields(away, updateAway, 'away')}
           </div>
           <p className="mt-4 pt-4 border-t border-slate-700/40 text-[11px] text-slate-500 italic text-center">
-            Home advantage is now a fitted per-league constant (derived from each league's actual home/away goals ratio), applied symmetrically so it shifts the balance between the teams without inflating the expected match total. It's no longer a per-match setting.
+            Home advantage uses the league's historical home/away goals ratio. For two league-average teams, the venue multipliers preserve the league scoring baseline. Use all-venue inputs to avoid counting home advantage twice.
           </p>
         </Section>
 
@@ -560,15 +596,6 @@ export default function MatchPredictorPage() {
                 className="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-blue-500 transition-colors" />
             </div>
           </div>
-          <p className="mt-4 pt-4 border-t border-slate-700/40 text-[11px] text-center">
-            {effectiveLeague.source === 'live' ? (
-              <span className="text-emerald-400/80">
-                Constants: live, computed {effectiveLeague.computedAt ? effectiveLeague.computedAt.slice(0, 10) : ''}, {Math.round(effectiveLeague.sampleMatches ?? 0)} matches
-              </span>
-            ) : (
-              <span className="text-slate-500">Constants: fallback defaults</span>
-            )}
-          </p>
         </Section>
       </div>
 
@@ -790,7 +817,7 @@ export default function MatchPredictorPage() {
               <p className="text-xs text-slate-500">How the Dixon-Coles pipeline works, where to find data, and tips</p>
             </div>
             <a
-              href="/SteamWatch_Match_Model_Guide.pdf?v=2026-10-03"
+              href="/SteamWatch_Match_Model_Guide.pdf?v=2026-10-03-baselines"
               download
               className="flex items-center gap-2 px-4 py-2 bg-red-500/15 border border-red-500/30 rounded-lg text-red-400 text-sm font-medium hover:bg-red-500/25 hover:border-red-500/50 transition-colors"
             >

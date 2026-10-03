@@ -53,6 +53,10 @@ export interface LeagueParams {
   avgShotsPerGame: number;
   avgGoalsPerTeam: number;
   homeAwayRatio: number;
+  // When present, normalise against league xG after the same penalty/form
+  // treatment as team inputs. Undefined preserves historical/fallback runs.
+  avgPenaltyXG?: number;
+  baselineLabel?: string;
 }
 
 export interface ModelParams {
@@ -207,6 +211,7 @@ export function runModel(inputs: ModelInputs, params: ModelParams): ModelOutput 
   const lg = params.league;
   const h = inputs.home, a = inputs.away;
   const log: string[] = [];
+  if (lg.baselineLabel) log.push(`League baseline: ${lg.baselineLabel}`);
 
   // Step 0: Penalty xG Adjustment
   function penAdjXGFor(t: TeamModelInputs) {
@@ -304,13 +309,19 @@ export function runModel(inputs: ModelInputs, params: ModelParams): ModelOutput 
   }
 
   // Step 2: Attack strength
-  const atkH = exH / lg.avgXG, atkA = exA / lg.avgXG;
+  // Season inputs retain half of penalty xG; recent-form inputs are raw xG.
+  // Apply that same blend to the live league reference so an average team
+  // stays average as the league scoring environment changes.
+  const referenceXG = lg.avgPenaltyXG === undefined ? lg.avgXG
+    : Math.max(0.05, lg.avgXG - 0.5 * lg.avgPenaltyXG * (1 - formWeight));
+  const atkH = exH / referenceXG, atkA = exA / referenceXG;
+  log.push(`League references: xG=${lg.avgXG.toFixed(3)} adjusted xG=${referenceXG.toFixed(3)} goals=${lg.avgGoals.toFixed(3)}`);
   log.push(`Step 2 — Attack Strength: H=${atkH.toFixed(3)} A=${atkA.toFixed(3)}`);
 
   // Step 3: Defence strength (80/20 blend)
   const dbH = 0.80 * eaH + 0.20 * h.goalsAgainst;
   const dbA = 0.80 * eaA + 0.20 * a.goalsAgainst;
-  const avgDB = 0.80 * lg.avgXG + 0.20 * lg.avgGoals;
+  const avgDB = 0.80 * referenceXG + 0.20 * lg.avgGoals;
   const defH = dbH / avgDB, defA = dbA / avgDB;
   log.push(`Step 3 — Defence Strength: H=${defH.toFixed(3)} A=${defA.toFixed(3)}`);
 
