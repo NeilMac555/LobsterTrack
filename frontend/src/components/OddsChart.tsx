@@ -1,4 +1,3 @@
-import '../research-ui.css';
 import { useState } from 'react';
 import {
   ComposedChart,
@@ -15,8 +14,8 @@ import {
 // Shared typography for all chart text — matches the site's terminal feel.
 const MONO_STACK = '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace';
 const AXIS_TICK = {
-  fill: '#cbd5e1',
-  fontSize: 12,
+  fill: '#94a3b8',
+  fontSize: 10,
   fontFamily: MONO_STACK,
   letterSpacing: '-0.02em',
 };
@@ -173,7 +172,7 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
   const isImpliedView = viewMode === 'implied';
 
   return (
-    <div className="research-chart h-full w-full flex flex-col">
+    <div className="h-full w-full flex flex-col">
       {/* Controls row */}
       <div className="flex flex-col gap-2 mb-3">
         {/* Top row: View Toggle + Hint */}
@@ -183,7 +182,7 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
               onClick={() => setViewMode('odds')}
               className={`px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.1em] transition-colors border-r border-slate-700/60 ${
                 viewMode === 'odds'
-                  ? 'bg-cyan-400/15 text-cyan-200'
+                  ? 'bg-blue-500/20 text-blue-300'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
               }`}
             >
@@ -193,7 +192,7 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
               onClick={() => setViewMode('percent')}
               className={`px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.1em] transition-colors border-r border-slate-700/60 ${
                 viewMode === 'percent'
-                  ? 'bg-cyan-400/15 text-cyan-200'
+                  ? 'bg-blue-500/20 text-blue-300'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
               }`}
             >
@@ -203,7 +202,7 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
               onClick={() => setViewMode('implied')}
               className={`px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.1em] transition-colors ${
                 viewMode === 'implied'
-                  ? 'bg-cyan-400/15 text-cyan-200'
+                  ? 'bg-blue-500/20 text-blue-300'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
               }`}
             >
@@ -226,7 +225,7 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
             onClick={() => handleLegendClick('home')}
             className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full border text-xs font-medium cursor-pointer transition-all duration-200 ${
               selectedOutcome === 'home'
-                ? 'bg-slate-700/70 border-slate-400/60 text-white'
+                ? 'bg-emerald-500/30 border-emerald-500/60 text-emerald-300 shadow-sm shadow-emerald-500/20'
                 : selectedOutcome === 'all'
                 ? 'bg-slate-800/80 border-slate-600/50 text-slate-300 hover:bg-slate-700 hover:border-slate-500 hover:scale-105'
                 : 'bg-slate-800/40 border-slate-700/30 text-slate-500 hover:bg-slate-700/50 hover:text-slate-400'
@@ -239,7 +238,7 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
             onClick={() => handleLegendClick('draw')}
             className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full border text-xs font-medium cursor-pointer transition-all duration-200 ${
               selectedOutcome === 'draw'
-                ? 'bg-slate-700/70 border-slate-400/60 text-white'
+                ? 'bg-yellow-500/30 border-yellow-500/60 text-yellow-300 shadow-sm shadow-yellow-500/20'
                 : selectedOutcome === 'all'
                 ? 'bg-slate-800/80 border-slate-600/50 text-slate-300 hover:bg-slate-700 hover:border-slate-500 hover:scale-105'
                 : 'bg-slate-800/40 border-slate-700/30 text-slate-500 hover:bg-slate-700/50 hover:text-slate-400'
@@ -252,7 +251,7 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
             onClick={() => handleLegendClick('away')}
             className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full border text-xs font-medium cursor-pointer transition-all duration-200 ${
               selectedOutcome === 'away'
-                ? 'bg-slate-700/70 border-slate-400/60 text-white'
+                ? 'bg-red-500/30 border-red-500/60 text-red-300 shadow-sm shadow-red-500/20'
                 : selectedOutcome === 'all'
                 ? 'bg-slate-800/80 border-slate-600/50 text-slate-300 hover:bg-slate-700 hover:border-slate-500 hover:scale-105'
                 : 'bg-slate-800/40 border-slate-700/30 text-slate-500 hover:bg-slate-700/50 hover:text-slate-400'
@@ -267,8 +266,8 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
       {/* Chart */}
       <div className="flex-1 min-h-0 relative">
         {/* Watermark — visible in screenshots, subtle in-app */}
-        <div className="absolute bottom-0 right-3 pointer-events-none select-none z-10">
-          <span className="text-slate-500 text-xs font-medium whitespace-nowrap">
+        <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none select-none z-10">
+          <span className="text-white/10 text-5xl sm:text-7xl font-black tracking-widest -rotate-12 whitespace-nowrap">
             steamwatch.io
           </span>
         </div>
@@ -280,15 +279,15 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
             {/* Gradient defs — subtle colored glow under each line */}
             <defs>
               <linearGradient id="oddsArea-home" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={COLOR_HOME} stopOpacity={0.045} />
+                <stop offset="0%" stopColor={COLOR_HOME} stopOpacity={0.28} />
                 <stop offset="100%" stopColor={COLOR_HOME} stopOpacity={0} />
               </linearGradient>
               <linearGradient id="oddsArea-draw" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={COLOR_DRAW} stopOpacity={0.045} />
+                <stop offset="0%" stopColor={COLOR_DRAW} stopOpacity={0.24} />
                 <stop offset="100%" stopColor={COLOR_DRAW} stopOpacity={0} />
               </linearGradient>
               <linearGradient id="oddsArea-away" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={COLOR_AWAY} stopOpacity={0.045} />
+                <stop offset="0%" stopColor={COLOR_AWAY} stopOpacity={0.28} />
                 <stop offset="100%" stopColor={COLOR_AWAY} stopOpacity={0} />
               </linearGradient>
             </defs>
@@ -307,7 +306,7 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
               tickLine={false}
               axisLine={{ stroke: '#334155', strokeWidth: 1 }}
               interval="preserveStartEnd"
-              minTickGap={60}
+              minTickGap={30}
             />
             <YAxis
               stroke="#475569"
@@ -392,7 +391,7 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
                 dataKey={isImpliedView ? 'home_impl' : isPercentView ? 'home_pct' : 'home_odds'}
                 name={homeTeam}
                 stroke={COLOR_HOME}
-                strokeWidth={2.6}
+                strokeWidth={2.2}
                 dot={false}
                 activeDot={{ r: 5, fill: COLOR_HOME, stroke: '#0f172a', strokeWidth: 2 }}
                 animationDuration={300}
@@ -403,9 +402,8 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
                 type="monotone"
                 dataKey={isImpliedView ? 'draw_impl' : isPercentView ? 'draw_pct' : 'draw_odds'}
                 name="Draw"
-                strokeDasharray="7 4"
                 stroke={COLOR_DRAW}
-                strokeWidth={2.6}
+                strokeWidth={2.2}
                 dot={false}
                 activeDot={{ r: 5, fill: COLOR_DRAW, stroke: '#0f172a', strokeWidth: 2 }}
                 animationDuration={300}
@@ -416,9 +414,8 @@ export default function OddsChart({ data, homeTeam, awayTeam, timeFrame = 'all' 
                 type="monotone"
                 dataKey={isImpliedView ? 'away_impl' : isPercentView ? 'away_pct' : 'away_odds'}
                 name={awayTeam}
-                strokeDasharray="3 3"
                 stroke={COLOR_AWAY}
-                strokeWidth={2.6}
+                strokeWidth={2.2}
                 dot={false}
                 activeDot={{ r: 5, fill: COLOR_AWAY, stroke: '#0f172a', strokeWidth: 2 }}
                 animationDuration={300}

@@ -46,9 +46,9 @@ export default function TimeFrameFilter({ value, onChange }: TimeFrameFilterProp
           key={opt.value}
           onClick={() => onChange(opt.value)}
           aria-pressed={value === opt.value}
-          className={`px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs font-semibold rounded-md transition-colors ${
+          className={`px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs font-semibold rounded-md transition-all ${
             value === opt.value
-              ? 'bg-cyan-400/15 text-cyan-200 ring-1 ring-cyan-400/30'
+              ? 'bg-blue-600 text-white shadow-sm'
               : 'text-slate-400 hover:text-white'
           }`}
         >
