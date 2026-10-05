@@ -1,8 +1,8 @@
 {
-  "as_of": "2026-09-28 11:27:10",
+  "as_of": "2026-10-05 12:00:27",
   "ranking_start": "2016-07-01",
-  "recent_start": "2025-09-28",
-  "eligible_managers": 92,
+  "recent_start": "2025-10-05",
+  "eligible_managers": 90,
   "current_managers": 96,
   "managers": 129,
   "imported_completed_fixtures": 33919,
@@ -778,8 +778,8 @@
       "name": "Unai Emery",
       "impact": 336.0,
       "per38": 27.5,
-      "recent": 29.8,
-      "recent_games": 53,
+      "recent": 14.7,
+      "recent_games": 51,
       "matches": 465,
       "clubs": 4,
       "positive_spells": 4,
@@ -4138,8 +4138,8 @@
       "name": "Antonio Conte",
       "impact": 324.4,
       "per38": 38.3,
-      "recent": -29.0,
-      "recent_games": 39,
+      "recent": -24.1,
+      "recent_games": 37,
       "matches": 322,
       "clubs": 4,
       "positive_spells": 5,
@@ -6561,8 +6561,8 @@
       "name": "Andoni Iraola",
       "impact": 294.5,
       "per38": 52.8,
-      "recent": 63.4,
-      "recent_games": 38,
+      "recent": 55.7,
+      "recent_games": 37,
       "matches": 212,
       "clubs": 4,
       "positive_spells": 2,
@@ -8134,8 +8134,8 @@
       "name": "Mikel Arteta",
       "impact": 251.8,
       "per38": 30.6,
-      "recent": 62.1,
-      "recent_games": 52,
+      "recent": 48.4,
+      "recent_games": 49,
       "matches": 313,
       "clubs": 1,
       "positive_spells": 1,
@@ -10366,8 +10366,8 @@
       "name": "Gian Gasperini",
       "impact": 249.4,
       "per38": 20.6,
-      "recent": 10.4,
-      "recent_games": 48,
+      "recent": 21.1,
+      "recent_games": 46,
       "matches": 460,
       "clubs": 2,
       "positive_spells": 2,
@@ -13643,8 +13643,8 @@
       "name": "Marcelino",
       "impact": 240.5,
       "per38": 33.4,
-      "recent": -46.2,
-      "recent_games": 38,
+      "recent": -40.7,
+      "recent_games": 36,
       "matches": 274,
       "clubs": 4,
       "positive_spells": 3,
@@ -15698,8 +15698,8 @@
       "name": "Marco Da Silva",
       "impact": 221.8,
       "per38": 33.2,
-      "recent": 17.8,
-      "recent_games": 40,
+      "recent": 31.4,
+      "recent_games": 38,
       "matches": 254,
       "clubs": 5,
       "positive_spells": 2,
@@ -19567,8 +19567,8 @@
       "name": "Hans-Dieter Flick",
       "impact": 191.9,
       "per38": 38.8,
-      "recent": 24.2,
-      "recent_games": 51,
+      "recent": 33.9,
+      "recent_games": 49,
       "matches": 188,
       "clubs": 2,
       "positive_spells": 2,
@@ -20972,8 +20972,8 @@
       "name": "Nuno Espírito Santo",
       "impact": 190.7,
       "per38": 29.0,
-      "recent": 23.6,
-      "recent_games": 33,
+      "recent": 22.6,
+      "recent_games": 31,
       "matches": 250,
       "clubs": 5,
       "positive_spells": 2,
@@ -22843,8 +22843,8 @@
       "name": "Régis Le Bris",
       "impact": 186.7,
       "per38": 61.2,
-      "recent": 125.3,
-      "recent_games": 38,
+      "recent": 129.2,
+      "recent_games": 37,
       "matches": 116,
       "clubs": 2,
       "positive_spells": 2,
@@ -23712,8 +23712,8 @@
       "name": "Franck Haise",
       "impact": 177.9,
       "per38": 27.8,
-      "recent": -15.4,
-      "recent_games": 34,
+      "recent": -4.3,
+      "recent_games": 32,
       "matches": 243,
       "clubs": 4,
       "positive_spells": 1,
@@ -25518,8 +25518,8 @@
       "name": "Ole Werner",
       "impact": 174.6,
       "per38": 48.4,
-      "recent": 23.8,
-      "recent_games": 29,
+      "recent": 19.5,
+      "recent_games": 28,
       "matches": 137,
       "clubs": 2,
       "positive_spells": 2,
@@ -26550,8 +26550,8 @@
       "name": "Manuel Pellegrini Ripamonti",
       "impact": 168.6,
       "per38": 18.3,
-      "recent": 54.3,
-      "recent_games": 51,
+      "recent": 39.1,
+      "recent_games": 49,
       "matches": 350,
       "clubs": 2,
       "positive_spells": 1,
@@ -29089,8 +29089,8 @@
       "name": "Xabi Alonso",
       "impact": 164.7,
       "per38": 39.9,
-      "recent": -11.6,
-      "recent_games": 22,
+      "recent": -19.8,
+      "recent_games": 20,
       "matches": 157,
       "clubs": 3,
       "positive_spells": 1,
@@ -30261,8 +30261,8 @@
       "name": "Oliver Glasner",
       "impact": 163.6,
       "per38": 22.1,
-      "recent": -62.1,
-      "recent_games": 51,
+      "recent": -68.5,
+      "recent_games": 50,
       "matches": 281,
       "clubs": 5,
       "positive_spells": 2,
@@ -32959,8 +32959,8 @@
       "name": "Pierre Sage",
       "impact": 153.3,
       "per38": 67.8,
-      "recent": 41.4,
-      "recent_games": 35,
+      "recent": 33.1,
+      "recent_games": 33,
       "matches": 86,
       "clubs": 3,
       "positive_spells": 2,
@@ -33634,8 +33634,8 @@
       "name": "Niko Kovač",
       "impact": 151.4,
       "per38": 18.1,
-      "recent": 25.0,
-      "recent_games": 43,
+      "recent": 23.2,
+      "recent_games": 41,
       "matches": 318,
       "clubs": 5,
       "positive_spells": 2,
@@ -35965,8 +35965,8 @@
       "name": "Vincenzo Italiano",
       "impact": 151.3,
       "per38": 20.2,
-      "recent": 40.7,
-      "recent_games": 53,
+      "recent": 46.3,
+      "recent_games": 51,
       "matches": 285,
       "clubs": 4,
       "positive_spells": 1,
@@ -38049,8 +38049,8 @@
       "name": "Pep Guardiola",
       "impact": 149.2,
       "per38": 11.7,
-      "recent": 15.4,
-      "recent_games": 40,
+      "recent": 17.4,
+      "recent_games": 39,
       "matches": 484,
       "clubs": 1,
       "positive_spells": 0,
@@ -41494,8 +41494,8 @@
       "name": "Sebastian Hoeneß",
       "impact": 140.0,
       "per38": 25.3,
-      "recent": 24.7,
-      "recent_games": 46,
+      "recent": 25.2,
+      "recent_games": 44,
       "matches": 210,
       "clubs": 2,
       "positive_spells": 1,
@@ -43021,8 +43021,8 @@
       "name": "Adolf Hütter",
       "impact": 135.4,
       "per38": 18.5,
-      "recent": -0.0,
-      "recent_games": 6,
+      "recent": -2.0,
+      "recent_games": 5,
       "matches": 278,
       "clubs": 4,
       "positive_spells": 2,
@@ -45120,8 +45120,8 @@
       "name": "Thomas Frank",
       "impact": 135.3,
       "per38": 27.6,
-      "recent": -15.1,
-      "recent_games": 27,
+      "recent": -24.0,
+      "recent_games": 25,
       "matches": 186,
       "clubs": 2,
       "positive_spells": 1,
@@ -49654,8 +49654,8 @@
       "name": "Eddie Howe",
       "impact": 124.7,
       "per38": 13.6,
-      "recent": -17.5,
-      "recent_games": 44,
+      "recent": -19.2,
+      "recent_games": 42,
       "matches": 349,
       "clubs": 2,
       "positive_spells": 1,
@@ -52170,8 +52170,8 @@
       "name": "David Moyes",
       "impact": 118.4,
       "per38": 13.5,
-      "recent": -3.8,
-      "recent_games": 37,
+      "recent": -0.2,
+      "recent_games": 36,
       "matches": 333,
       "clubs": 3,
       "positive_spells": 3,
@@ -54606,8 +54606,8 @@
       "name": "Paulo Rodrigues Fonseca",
       "impact": 118.2,
       "per38": 15.1,
-      "recent": 6.6,
-      "recent_games": 43,
+      "recent": -10.8,
+      "recent_games": 41,
       "matches": 297,
       "clubs": 5,
       "positive_spells": 4,
@@ -56870,8 +56870,8 @@
       "name": "José Bordalás Jiménez",
       "impact": 111.5,
       "per38": 13.0,
-      "recent": 0.6,
-      "recent_games": 37,
+      "recent": 7.6,
+      "recent_games": 36,
       "matches": 326,
       "clubs": 2,
       "positive_spells": 3,
@@ -59257,8 +59257,8 @@
       "name": "Bruno Génésio",
       "impact": 106.1,
       "per38": 11.2,
-      "recent": -61.9,
-      "recent_games": 44,
+      "recent": -63.7,
+      "recent_games": 42,
       "matches": 361,
       "clubs": 4,
       "positive_spells": 2,
@@ -64447,8 +64447,8 @@
       "name": "Davide Nicola",
       "impact": 97.0,
       "per38": 15.4,
-      "recent": -41.3,
-      "recent_games": 24,
+      "recent": -39.4,
+      "recent_games": 23,
       "matches": 239,
       "clubs": 8,
       "positive_spells": 4,
@@ -66273,8 +66273,8 @@
       "name": "Vincent Kompany",
       "impact": 94.3,
       "per38": 25.2,
-      "recent": 71.2,
-      "recent_games": 46,
+      "recent": 60.8,
+      "recent_games": 44,
       "matches": 142,
       "clubs": 3,
       "positive_spells": 1,
@@ -67356,8 +67356,8 @@
       "name": "Julian Schuster",
       "impact": 92.5,
       "per38": 39.9,
-      "recent": 45.0,
-      "recent_games": 49,
+      "recent": 46.6,
+      "recent_games": 47,
       "matches": 88,
       "clubs": 1,
       "positive_spells": 2,
@@ -69544,8 +69544,8 @@
       "name": "Liam Rosenior",
       "impact": 89.4,
       "per38": 41.9,
-      "recent": -7.1,
-      "recent_games": 39,
+      "recent": -15.3,
+      "recent_games": 38,
       "matches": 81,
       "clubs": 3,
       "positive_spells": 1,
@@ -72230,8 +72230,8 @@
       "name": "Alexandre Dujeux",
       "impact": 85.2,
       "per38": 37.6,
-      "recent": 9.3,
-      "recent_games": 34,
+      "recent": 17.1,
+      "recent_games": 33,
       "matches": 86,
       "clubs": 2,
       "positive_spells": 1,
@@ -72921,8 +72921,8 @@
       "name": "Enzo Maresca",
       "impact": 83.3,
       "per38": 39.1,
-      "recent": 37.6,
-      "recent_games": 22,
+      "recent": 18.9,
+      "recent_games": 20,
       "matches": 81,
       "clubs": 2,
       "positive_spells": 1,
@@ -74190,8 +74190,8 @@
       "name": "Iñigo Pérez",
       "impact": 77.0,
       "per38": 26.1,
-      "recent": 12.5,
-      "recent_games": 53,
+      "recent": 19.2,
+      "recent_games": 51,
       "matches": 112,
       "clubs": 2,
       "positive_spells": 1,
@@ -75031,8 +75031,8 @@
       "name": "Arne Slot",
       "impact": 76.4,
       "per38": 19.5,
-      "recent": -122.9,
-      "recent_games": 43,
+      "recent": -95.9,
+      "recent_games": 41,
       "matches": 149,
       "clubs": 3,
       "positive_spells": 2,
@@ -77733,12 +77733,12 @@
       "appointment_ambiguous": false,
       "employment": "Current top-five manager",
       "is_current": true,
-      "eligible": true,
+      "eligible": false,
       "name": "Ruben Amorim",
       "impact": 70.7,
       "per38": 28.0,
-      "recent": 29.8,
-      "recent_games": 20,
+      "recent": 26.0,
+      "recent_games": 19,
       "matches": 96,
       "clubs": 3,
       "positive_spells": 1,
@@ -81773,8 +81773,8 @@
       "name": "Luis Enrique",
       "impact": 59.9,
       "per38": 11.7,
-      "recent": -10.9,
-      "recent_games": 49,
+      "recent": -23.1,
+      "recent_games": 48,
       "matches": 195,
       "clubs": 2,
       "positive_spells": 1,
@@ -83227,8 +83227,8 @@
       "name": "Claudio Giráldez",
       "impact": 58.3,
       "per38": 20.0,
-      "recent": 17.4,
-      "recent_games": 53,
+      "recent": 18.9,
+      "recent_games": 51,
       "matches": 111,
       "clubs": 1,
       "positive_spells": 1,
@@ -84061,8 +84061,8 @@
       "name": "Daniel Farke",
       "impact": 55.4,
       "per38": 16.7,
-      "recent": 104.3,
-      "recent_games": 37,
+      "recent": 112.3,
+      "recent_games": 36,
       "matches": 126,
       "clubs": 3,
       "positive_spells": 1,
@@ -85032,8 +85032,8 @@
       "name": "Cristian Chivu",
       "impact": 54.4,
       "per38": 31.8,
-      "recent": -1.4,
-      "recent_games": 47,
+      "recent": -6.3,
+      "recent_games": 45,
       "matches": 65,
       "clubs": 2,
       "positive_spells": 0,
@@ -86092,8 +86092,8 @@
       "name": "Merlin Polzin",
       "impact": 51.7,
       "per38": 51.7,
-      "recent": 49.9,
-      "recent_games": 34,
+      "recent": 45.4,
+      "recent_games": 33,
       "matches": 38,
       "clubs": 1,
       "positive_spells": 1,
@@ -86480,17 +86480,17 @@
       "id": 1552945,
       "team_id": 398,
       "club": "Parma",
-      "league": "Serie A",
-      "appointment": "2025-07-01",
+      "league": "Other / previous club",
+      "appointment": null,
       "appointment_ambiguous": false,
-      "employment": "Current top-five manager",
-      "is_current": true,
+      "employment": "Current employment unverified",
+      "is_current": false,
       "eligible": true,
       "name": "Carlos Antón Cuesta",
       "impact": 49.1,
       "per38": 43.4,
-      "recent": 52.5,
-      "recent_games": 39,
+      "recent": 53.1,
+      "recent_games": 37,
       "matches": 43,
       "clubs": 1,
       "positive_spells": 1,
@@ -87137,6 +87137,567 @@
       ]
     },
     {
+      "id": 127771,
+      "team_id": 398,
+      "club": "Parma",
+      "league": "Serie A",
+      "appointment": "2026-09-29",
+      "appointment_ambiguous": false,
+      "employment": "Current top-five manager",
+      "is_current": true,
+      "eligible": false,
+      "name": "Alberto Gilardino",
+      "impact": 41.9,
+      "per38": 22.1,
+      "recent": -9.6,
+      "recent_games": 17,
+      "matches": 72,
+      "clubs": 2,
+      "positive_spells": 1,
+      "eligible_spells": 1,
+      "spells": [
+        {
+          "coach_id": 127771,
+          "team_id": 102,
+          "club": "Genoa",
+          "start": "2023-08-19",
+          "end": "2024-11-07 19:45:00",
+          "inherited": 1463.2995355799212,
+          "prior_games": 342,
+          "impact": 61.50614929802132,
+          "games": 50,
+          "league_games": 50,
+          "gain20": 31.747745114193613,
+          "gain40": 101.15539795771875,
+          "left_truncated": false,
+          "observed_at_import_start": false
+        },
+        {
+          "coach_id": 127771,
+          "team_id": 1072,
+          "club": "Pisa",
+          "start": "2025-08-24",
+          "end": "2026-01-23 19:45:00",
+          "inherited": 1500.0,
+          "prior_games": 0,
+          "impact": -19.64686737909431,
+          "games": 22,
+          "league_games": 22,
+          "gain20": null,
+          "gain40": null,
+          "left_truncated": false,
+          "observed_at_import_start": true
+        }
+      ],
+      "rank": 62,
+      "trajectory": [
+        {
+          "date": "2023-08-19",
+          "impact": -7.16,
+          "delta": -7.156284060677085,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2023-08-27",
+          "impact": 9.21,
+          "delta": 16.36700371862965,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2023-09-03",
+          "impact": 3.46,
+          "delta": -5.748459059407085,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2023-09-16",
+          "impact": 9.68,
+          "delta": 6.217147863637127,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2023-09-22",
+          "impact": 2.13,
+          "delta": -7.544597603941914,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2023-09-28",
+          "impact": 15.3,
+          "delta": 13.166064718407515,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2023-10-01",
+          "impact": 17.73,
+          "delta": 2.428276784699952,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2023-10-07",
+          "impact": 12.96,
+          "delta": -4.769490909327186,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2023-10-22",
+          "impact": 8.9,
+          "delta": -4.0597476836537805,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2023-10-27",
+          "impact": 17.33,
+          "delta": 8.42668600537708,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2023-11-05",
+          "impact": 8.04,
+          "delta": -9.281936206042085,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2023-11-10",
+          "impact": 16.61,
+          "delta": 8.563795977841657,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2023-11-26",
+          "impact": 6.91,
+          "delta": -9.69812203695701,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2023-12-02",
+          "impact": 5.71,
+          "delta": -1.1971507618594823,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2023-12-10",
+          "impact": -0.03,
+          "delta": -5.743760150657633,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2023-12-15",
+          "impact": 5.68,
+          "delta": 5.712398042731404,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2023-12-22",
+          "impact": 18.87,
+          "delta": 13.187451849570742,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2023-12-29",
+          "impact": 25.5,
+          "delta": 6.626104352482991,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2024-01-05",
+          "impact": 30.68,
+          "delta": 5.186832514625667,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2024-01-13",
+          "impact": 31.75,
+          "delta": 1.065531758713083,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2024-01-21",
+          "impact": 42.89,
+          "delta": 11.143405313739958,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2024-01-28",
+          "impact": 50.57,
+          "delta": 7.679314736247987,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2024-02-03",
+          "impact": 51.36,
+          "delta": 0.7919393663451602,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2024-02-11",
+          "impact": 44.06,
+          "delta": -7.301057742046839,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2024-02-17",
+          "impact": 50.42,
+          "delta": 6.359758817244748,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2024-02-24",
+          "impact": 59.06,
+          "delta": 8.64183714553634,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2024-03-04",
+          "impact": 57.16,
+          "delta": -1.9000414262936571,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2024-03-09",
+          "impact": 46.9,
+          "delta": -10.261498913623857,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2024-03-17",
+          "impact": 53.39,
+          "delta": 6.4858868991337175,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2024-03-30",
+          "impact": 48.72,
+          "delta": -4.670410621410168,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2024-04-07",
+          "impact": 59.74,
+          "delta": 11.019192667253531,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2024-04-15",
+          "impact": 63.99,
+          "delta": 4.2582333688267955,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2024-04-19",
+          "impact": 55.66,
+          "delta": -8.336877907115701,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2024-04-29",
+          "impact": 63.15,
+          "delta": 7.496591250176925,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2024-05-05",
+          "impact": 69.49,
+          "delta": 6.332463679105993,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2024-05-12",
+          "impact": 76.44,
+          "delta": 6.949458224109271,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2024-05-19",
+          "impact": 71.75,
+          "delta": -4.68613210044224,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2024-05-24",
+          "impact": 84.02,
+          "delta": 12.269332469740215,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2024-08-17",
+          "impact": 89.79,
+          "delta": 5.766636931319409,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2024-08-24",
+          "impact": 101.16,
+          "delta": 11.36962068567753,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2024-09-01",
+          "impact": 88.06,
+          "delta": -13.09562980191377,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2024-09-15",
+          "impact": 89.45,
+          "delta": 1.390016375761961,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2024-09-21",
+          "impact": 77.6,
+          "delta": -11.849786991064954,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2024-09-28",
+          "impact": 70.6,
+          "delta": -7.003261392539313,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2024-10-05",
+          "impact": 66.42,
+          "delta": -4.1727795418356255,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2024-10-19",
+          "impact": 67.76,
+          "delta": 1.3390054746114388,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2024-10-27",
+          "impact": 63.11,
+          "delta": -4.652283106343436,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2024-10-31",
+          "impact": 55.44,
+          "delta": -7.672772399498436,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2024-11-04",
+          "impact": 64.27,
+          "delta": 8.828951882430662,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2024-11-07",
+          "impact": 61.51,
+          "delta": -2.760709159305952,
+          "team_id": 102,
+          "club": "Genoa"
+        },
+        {
+          "date": "2025-08-24",
+          "impact": 68.06,
+          "delta": 6.551443910973811,
+          "team_id": 1072,
+          "club": "Pisa"
+        },
+        {
+          "date": "2025-08-30",
+          "impact": 62.55,
+          "delta": -5.50804224025562,
+          "team_id": 1072,
+          "club": "Pisa"
+        },
+        {
+          "date": "2025-09-14",
+          "impact": 51.69,
+          "delta": -10.860718777919589,
+          "team_id": 1072,
+          "club": "Pisa"
+        },
+        {
+          "date": "2025-09-22",
+          "impact": 48.93,
+          "delta": -2.7596784845234468,
+          "team_id": 1072,
+          "club": "Pisa"
+        },
+        {
+          "date": "2025-09-28",
+          "impact": 51.46,
+          "delta": 2.531821691326953,
+          "team_id": 1072,
+          "club": "Pisa"
+        },
+        {
+          "date": "2025-10-05",
+          "impact": 46.82,
+          "delta": -4.637800493092432,
+          "team_id": 1072,
+          "club": "Pisa"
+        },
+        {
+          "date": "2025-10-18",
+          "impact": 45.02,
+          "delta": -1.8035028295153843,
+          "team_id": 1072,
+          "club": "Pisa"
+        },
+        {
+          "date": "2025-10-24",
+          "impact": 51.7,
+          "delta": 6.6778491303294825,
+          "team_id": 1072,
+          "club": "Pisa"
+        },
+        {
+          "date": "2025-10-30",
+          "impact": 54.94,
+          "delta": 3.2410650832715393,
+          "team_id": 1072,
+          "club": "Pisa"
+        },
+        {
+          "date": "2025-11-02",
+          "impact": 59.05,
+          "delta": 4.113455969991106,
+          "team_id": 1072,
+          "club": "Pisa"
+        },
+        {
+          "date": "2025-11-07",
+          "impact": 67.38,
+          "delta": 8.32351509803226,
+          "team_id": 1072,
+          "club": "Pisa"
+        },
+        {
+          "date": "2025-11-24",
+          "impact": 69.07,
+          "delta": 1.6950790120165515,
+          "team_id": 1072,
+          "club": "Pisa"
+        },
+        {
+          "date": "2025-11-30",
+          "impact": 65.18,
+          "delta": -3.88969472866316,
+          "team_id": 1072,
+          "club": "Pisa"
+        },
+        {
+          "date": "2025-12-08",
+          "impact": 52.43,
+          "delta": -12.752446082701685,
+          "team_id": 1072,
+          "club": "Pisa"
+        },
+        {
+          "date": "2025-12-12",
+          "impact": 43.79,
+          "delta": -8.639686254573416,
+          "team_id": 1072,
+          "club": "Pisa"
+        },
+        {
+          "date": "2025-12-21",
+          "impact": 45.73,
+          "delta": 1.936961233755492,
+          "team_id": 1072,
+          "club": "Pisa"
+        },
+        {
+          "date": "2025-12-27",
+          "impact": 40.7,
+          "delta": -5.025372036555171,
+          "team_id": 1072,
+          "club": "Pisa"
+        },
+        {
+          "date": "2026-01-03",
+          "impact": 43.45,
+          "delta": 2.7486076577405494,
+          "team_id": 1072,
+          "club": "Pisa"
+        },
+        {
+          "date": "2026-01-06",
+          "impact": 35.58,
+          "delta": -7.865220581404058,
+          "team_id": 1072,
+          "club": "Pisa"
+        },
+        {
+          "date": "2026-01-10",
+          "impact": 39.05,
+          "delta": 3.468222838615058,
+          "team_id": 1072,
+          "club": "Pisa"
+        },
+        {
+          "date": "2026-01-16",
+          "impact": 43.69,
+          "delta": 4.642944009907276,
+          "team_id": 1072,
+          "club": "Pisa"
+        },
+        {
+          "date": "2026-01-23",
+          "impact": 41.86,
+          "delta": -1.8356705058504286,
+          "team_id": 1072,
+          "club": "Pisa"
+        }
+      ]
+    },
+    {
       "id": 127965,
       "team_id": 43,
       "club": "Lazio",
@@ -87269,7 +87830,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 62,
+      "rank": 63,
       "trajectory": [
         {
           "date": "2017-12-03",
@@ -88684,7 +89245,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 63,
+      "rank": 64,
       "trajectory": [
         {
           "date": "2024-07-25",
@@ -88800,7 +89361,7 @@
       "impact": 37.4,
       "per38": 14.7,
       "recent": 4.2,
-      "recent_games": 34,
+      "recent_games": 33,
       "matches": 97,
       "clubs": 2,
       "positive_spells": 2,
@@ -88839,7 +89400,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 64,
+      "rank": 65,
       "trajectory": [
         {
           "date": "2023-01-11",
@@ -89607,7 +90168,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 65,
+      "rank": 66,
       "trajectory": [
         {
           "date": "2022-10-15",
@@ -90338,8 +90899,8 @@
       "name": "Roberto De Zerbi",
       "impact": 34.8,
       "per38": 4.2,
-      "recent": -18.7,
-      "recent_games": 34,
+      "recent": -31.2,
+      "recent_games": 32,
       "matches": 317,
       "clubs": 7,
       "positive_spells": 3,
@@ -90458,7 +91019,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 66,
+      "rank": 67,
       "trajectory": [
         {
           "date": "2016-09-10",
@@ -92694,8 +93255,8 @@
       "name": "José Mourinho",
       "impact": 33.5,
       "per38": 3.5,
-      "recent": -9.6,
-      "recent_games": 16,
+      "recent": -2.0,
+      "recent_games": 15,
       "matches": 359,
       "clubs": 6,
       "positive_spells": 2,
@@ -92798,7 +93359,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 67,
+      "rank": 68,
       "trajectory": [
         {
           "date": "2016-08-14",
@@ -95352,7 +95913,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 68,
+      "rank": 69,
       "trajectory": [
         {
           "date": "2025-08-17",
@@ -95670,8 +96231,8 @@
       "name": "Míchel",
       "impact": 33.2,
       "per38": 5.9,
-      "recent": 66.4,
-      "recent_games": 37,
+      "recent": 56.1,
+      "recent_games": 36,
       "matches": 212,
       "clubs": 4,
       "positive_spells": 1,
@@ -95742,7 +96303,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 69,
+      "rank": 70,
       "trajectory": [
         {
           "date": "2018-08-19",
@@ -97243,8 +97804,8 @@
       "name": "Ivan Juric",
       "impact": 30.4,
       "per38": 4.0,
-      "recent": -28.5,
-      "recent_games": 14,
+      "recent": -30.7,
+      "recent_games": 12,
       "matches": 286,
       "clubs": 7,
       "positive_spells": 2,
@@ -97395,7 +97956,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 70,
+      "rank": 71,
       "trajectory": [
         {
           "date": "2016-08-21",
@@ -99438,7 +99999,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 71,
+      "rank": 72,
       "trajectory": [
         {
           "date": "2026-08-17",
@@ -99504,8 +100065,8 @@
       "name": "Riera",
       "impact": 26.7,
       "per38": 19.9,
-      "recent": 0.2,
-      "recent_games": 21,
+      "recent": -7.7,
+      "recent_games": 20,
       "matches": 51,
       "clubs": 4,
       "positive_spells": 1,
@@ -99592,7 +100153,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 72,
+      "rank": 73,
       "trajectory": [
         {
           "date": "2022-07-21",
@@ -99966,8 +100527,8 @@
       "name": "Carlos Corberán Vallet",
       "impact": 24.8,
       "per38": 9.1,
-      "recent": -21.7,
-      "recent_games": 37,
+      "recent": 2.7,
+      "recent_games": 35,
       "matches": 104,
       "clubs": 2,
       "positive_spells": 1,
@@ -100022,7 +100583,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 73,
+      "rank": 74,
       "trajectory": [
         {
           "date": "2016-08-22",
@@ -100768,7 +101329,7 @@
       "impact": 24.5,
       "per38": 19.0,
       "recent": -5.5,
-      "recent_games": 28,
+      "recent_games": 27,
       "matches": 49,
       "clubs": 2,
       "positive_spells": 1,
@@ -100823,7 +101384,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 74,
+      "rank": 75,
       "trajectory": [
         {
           "date": "2016-08-27",
@@ -101223,7 +101784,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 75,
+      "rank": 76,
       "trajectory": [
         {
           "date": "2021-08-17",
@@ -101425,7 +101986,7 @@
           "observed_at_import_start": true
         }
       ],
-      "rank": 76,
+      "rank": 77,
       "trajectory": [
         {
           "date": "2026-08-29",
@@ -101470,8 +102031,8 @@
       "name": "Christian Ilzer",
       "impact": 22.1,
       "per38": 8.4,
-      "recent": 37.9,
-      "recent_games": 34,
+      "recent": 46.5,
+      "recent_games": 32,
       "matches": 100,
       "clubs": 3,
       "positive_spells": 1,
@@ -101542,7 +102103,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 77,
+      "rank": 78,
       "trajectory": [
         {
           "date": "2019-08-08",
@@ -102259,8 +102820,8 @@
       "name": "Luís Ferreira de Castro",
       "impact": 21.2,
       "per38": 19.1,
-      "recent": 22.8,
-      "recent_games": 36,
+      "recent": 18.6,
+      "recent_games": 35,
       "matches": 42,
       "clubs": 2,
       "positive_spells": 0,
@@ -102315,7 +102876,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 78,
+      "rank": 79,
       "trajectory": [
         {
           "date": "2025-08-17",
@@ -102746,7 +103307,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 79,
+      "rank": 80,
       "trajectory": [
         {
           "date": "2019-03-03",
@@ -103452,7 +104013,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 80,
+      "rank": 81,
       "trajectory": [
         {
           "date": "2026-08-29",
@@ -103497,8 +104058,8 @@
       "name": "Christophe Pélissier",
       "impact": 14.1,
       "per38": 2.2,
-      "recent": 9.5,
-      "recent_games": 28,
+      "recent": 17.9,
+      "recent_games": 27,
       "matches": 246,
       "clubs": 3,
       "positive_spells": 2,
@@ -103569,7 +104130,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 81,
+      "rank": 82,
       "trajectory": [
         {
           "date": "2017-08-05",
@@ -105308,8 +105869,8 @@
       "name": "Olivier Pantaloni",
       "impact": 13.7,
       "per38": 6.6,
-      "recent": 51.9,
-      "recent_games": 33,
+      "recent": 59.4,
+      "recent_games": 32,
       "matches": 79,
       "clubs": 3,
       "positive_spells": 1,
@@ -105380,7 +105941,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 82,
+      "rank": 83,
       "trajectory": [
         {
           "date": "2016-08-13",
@@ -105990,7 +106551,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 83,
+      "rank": 84,
       "trajectory": [
         {
           "date": "2024-01-20",
@@ -106488,7 +107049,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 84,
+      "rank": 85,
       "trajectory": [
         {
           "date": "2016-08-20",
@@ -107124,7 +107685,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 85,
+      "rank": 86,
       "trajectory": [
         {
           "date": "2026-08-23",
@@ -107200,7 +107761,7 @@
           "observed_at_import_start": true
         }
       ],
-      "rank": 86,
+      "rank": 87,
       "trajectory": [
         {
           "date": "2026-08-22",
@@ -107252,8 +107813,8 @@
       "name": "Alexander Blessin",
       "impact": 6.3,
       "per38": 2.5,
-      "recent": -52.4,
-      "recent_games": 29,
+      "recent": -46.2,
+      "recent_games": 28,
       "matches": 96,
       "clubs": 3,
       "positive_spells": 0,
@@ -107308,7 +107869,7 @@
           "observed_at_import_start": true
         }
       ],
-      "rank": 87,
+      "rank": 88,
       "trajectory": [
         {
           "date": "2022-01-22",
@@ -108037,7 +108598,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 88,
+      "rank": 89,
       "trajectory": [
         {
           "date": "2026-03-07",
@@ -108197,7 +108758,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 89,
+      "rank": 90,
       "trajectory": [
         {
           "date": "2025-09-21",
@@ -108476,7 +109037,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 90,
+      "rank": 91,
       "trajectory": [
         {
           "date": "2026-08-22",
@@ -108528,8 +109089,8 @@
       "name": "Ernesto Valverde Tejedor",
       "impact": 4.4,
       "per38": 0.5,
-      "recent": -82.2,
-      "recent_games": 38,
+      "recent": -81.1,
+      "recent_games": 36,
       "matches": 337,
       "clubs": 2,
       "positive_spells": 1,
@@ -108584,7 +109145,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 91,
+      "rank": 92,
       "trajectory": [
         {
           "date": "2016-08-21",
@@ -110960,8 +111521,8 @@
       "name": "Kosta Runjaic",
       "impact": 3.3,
       "per38": 1.3,
-      "recent": 6.9,
-      "recent_games": 39,
+      "recent": 17.0,
+      "recent_games": 38,
       "matches": 96,
       "clubs": 3,
       "positive_spells": 1,
@@ -111016,7 +111577,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 92,
+      "rank": 93,
       "trajectory": [
         {
           "date": "2021-07-22",
@@ -111705,8 +112266,8 @@
       "name": "Maurizio Sarri",
       "impact": 1.6,
       "per38": 0.2,
-      "recent": -33.6,
-      "recent_games": 40,
+      "recent": -37.7,
+      "recent_games": 38,
       "matches": 366,
       "clubs": 5,
       "positive_spells": 2,
@@ -111825,7 +112386,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 93,
+      "rank": 94,
       "trajectory": [
         {
           "date": "2016-08-21",
@@ -114428,7 +114989,7 @@
           "observed_at_import_start": true
         }
       ],
-      "rank": 94,
+      "rank": 95,
       "trajectory": [
         {
           "date": "2026-08-16",
@@ -114494,8 +115055,8 @@
       "name": "Stéphane Gilli",
       "impact": -1.2,
       "per38": -1.6,
-      "recent": 2.1,
-      "recent_games": 23,
+      "recent": -9.1,
+      "recent_games": 21,
       "matches": 28,
       "clubs": 2,
       "positive_spells": 0,
@@ -114534,7 +115095,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 95,
+      "rank": 96,
       "trajectory": [
         {
           "date": "2025-08-17",
@@ -114771,7 +115332,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 96,
+      "rank": 97,
       "trajectory": [
         {
           "date": "2025-12-20",
@@ -114966,7 +115527,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 97,
+      "rank": 98,
       "trajectory": [
         {
           "date": "2026-08-21",
@@ -115042,7 +115603,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 98,
+      "rank": 99,
       "trajectory": [
         {
           "date": "2026-08-23",
@@ -115125,7 +115686,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 99,
+      "rank": 100,
       "trajectory": [
         {
           "date": "2026-08-24",
@@ -115231,7 +115792,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 100,
+      "rank": 101,
       "trajectory": [
         {
           "date": "2016-08-19",
@@ -115337,7 +115898,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 101,
+      "rank": 102,
       "trajectory": [
         {
           "date": "2026-08-22",
@@ -115389,8 +115950,8 @@
       "name": "Kasper Hjulmand",
       "impact": -5.6,
       "per38": -4.3,
-      "recent": -31.7,
-      "recent_games": 39,
+      "recent": -31.3,
+      "recent_games": 37,
       "matches": 49,
       "clubs": 2,
       "positive_spells": 0,
@@ -115445,7 +116006,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 102,
+      "rank": 103,
       "trajectory": [
         {
           "date": "2018-07-12",
@@ -115829,7 +116390,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 103,
+      "rank": 104,
       "trajectory": [
         {
           "date": "2026-08-23",
@@ -115905,7 +116466,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 104,
+      "rank": 105,
       "trajectory": [
         {
           "date": "2026-08-19",
@@ -116027,7 +116588,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 105,
+      "rank": 106,
       "trajectory": [
         {
           "date": "2016-12-17",
@@ -116896,7 +117457,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 106,
+      "rank": 107,
       "trajectory": [
         {
           "date": "2026-09-18",
@@ -116920,8 +117481,8 @@
       "name": "Lukas Kwasniok",
       "impact": -8.0,
       "per38": -11.3,
-      "recent": -30.4,
-      "recent_games": 23,
+      "recent": -34.1,
+      "recent_games": 21,
       "matches": 27,
       "clubs": 1,
       "positive_spells": 0,
@@ -116944,7 +117505,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 107,
+      "rank": 108,
       "trajectory": [
         {
           "date": "2025-08-24",
@@ -117238,7 +117799,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 108,
+      "rank": 109,
       "trajectory": [
         {
           "date": "2022-09-17",
@@ -118079,7 +118640,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 109,
+      "rank": 110,
       "trajectory": [
         {
           "date": "2025-01-30",
@@ -118166,8 +118727,8 @@
       "name": "Dino Toppmöller",
       "impact": -10.5,
       "per38": -2.9,
-      "recent": -47.3,
-      "recent_games": 23,
+      "recent": -34.4,
+      "recent_games": 21,
       "matches": 137,
       "clubs": 3,
       "positive_spells": 1,
@@ -118222,7 +118783,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 110,
+      "rank": 111,
       "trajectory": [
         {
           "date": "2016-07-12",
@@ -119222,7 +119783,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 111,
+      "rank": 112,
       "trajectory": [
         {
           "date": "2026-02-07",
@@ -119405,7 +119966,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 112,
+      "rank": 113,
       "trajectory": [
         {
           "date": "2020-08-20",
@@ -119464,8 +120025,8 @@
       "name": "D. Simeone",
       "impact": -16.2,
       "per38": -1.3,
-      "recent": -5.6,
-      "recent_games": 53,
+      "recent": -12.2,
+      "recent_games": 52,
       "matches": 488,
       "clubs": 1,
       "positive_spells": 0,
@@ -119504,7 +120065,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 113,
+      "rank": 114,
       "trajectory": [
         {
           "date": "2016-08-21",
@@ -122977,7 +123538,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 114,
+      "rank": 115,
       "trajectory": [
         {
           "date": "2022-08-14",
@@ -123179,7 +123740,7 @@
           "observed_at_import_start": true
         }
       ],
-      "rank": 115,
+      "rank": 116,
       "trajectory": [
         {
           "date": "2023-08-19",
@@ -123997,7 +124558,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 116,
+      "rank": 117,
       "trajectory": [
         {
           "date": "2026-08-29",
@@ -124042,8 +124603,8 @@
       "name": "Steffen Baumgart",
       "impact": -25.6,
       "per38": -5.6,
-      "recent": -25.6,
-      "recent_games": 25,
+      "recent": -17.3,
+      "recent_games": 23,
       "matches": 173,
       "clubs": 3,
       "positive_spells": 2,
@@ -124114,7 +124675,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 117,
+      "rank": 118,
       "trajectory": [
         {
           "date": "2019-08-17",
@@ -125430,7 +125991,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 118,
+      "rank": 119,
       "trajectory": [
         {
           "date": "2024-08-17",
@@ -125965,8 +126526,8 @@
       "name": "Fabio Grosso",
       "impact": -29.8,
       "per38": -21.4,
-      "recent": 18.0,
-      "recent_games": 36,
+      "recent": -4.2,
+      "recent_games": 34,
       "matches": 53,
       "clubs": 4,
       "positive_spells": 1,
@@ -126069,7 +126630,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 119,
+      "rank": 120,
       "trajectory": [
         {
           "date": "2019-11-09",
@@ -126457,8 +127018,8 @@
       "name": "Alessio Lisci",
       "impact": -32.2,
       "per38": -18.2,
-      "recent": -61.7,
-      "recent_games": 38,
+      "recent": -62.1,
+      "recent_games": 36,
       "matches": 67,
       "clubs": 3,
       "positive_spells": 1,
@@ -126513,7 +127074,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 120,
+      "rank": 121,
       "trajectory": [
         {
           "date": "2021-12-05",
@@ -126999,8 +127560,8 @@
       "name": "Sebastien Pocognoli",
       "impact": -34.0,
       "per38": -26.9,
-      "recent": -23.8,
-      "recent_games": 36,
+      "recent": -14.4,
+      "recent_games": 35,
       "matches": 48,
       "clubs": 2,
       "positive_spells": 0,
@@ -127039,7 +127600,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 121,
+      "rank": 122,
       "trajectory": [
         {
           "date": "2024-08-07",
@@ -127432,7 +127993,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 122,
+      "rank": 123,
       "trajectory": [
         {
           "date": "2026-01-17",
@@ -127713,7 +128274,7 @@
           "observed_at_import_start": false
         }
       ],
-      "rank": 123,
+      "rank": 124,
       "trajectory": [
         {
           "date": "2023-08-12",
@@ -128173,1403 +128734,6 @@
       ]
     },
     {
-      "id": 455848,
-      "team_id": 613,
-      "club": "Torino",
-      "league": "Other / previous club",
-      "appointment": null,
-      "appointment_ambiguous": false,
-      "employment": "Current employment unverified",
-      "is_current": false,
-      "eligible": true,
-      "name": "Marco Baroni",
-      "impact": -62.2,
-      "per38": -13.1,
-      "recent": -44.2,
-      "recent_games": 21,
-      "matches": 180,
-      "clubs": 6,
-      "positive_spells": 3,
-      "eligible_spells": 4,
-      "spells": [
-        {
-          "coach_id": 455848,
-          "team_id": 563,
-          "club": "Benevento",
-          "start": "2017-08-20",
-          "end": "2017-10-22 13:00:00",
-          "inherited": 1500.0,
-          "prior_games": 0,
-          "impact": -71.25105620426058,
-          "games": 9,
-          "league_games": 9,
-          "gain20": null,
-          "gain40": null,
-          "left_truncated": false,
-          "observed_at_import_start": true
-        },
-        {
-          "coach_id": 455848,
-          "team_id": 4070,
-          "club": "Frosinone",
-          "start": "2018-12-22",
-          "end": "2019-05-25 16:00:00",
-          "inherited": 1398.3268266521538,
-          "prior_games": 54,
-          "impact": -9.242104804457615,
-          "games": 22,
-          "league_games": 22,
-          "gain20": -4.641657938047108,
-          "gain40": null,
-          "left_truncated": false,
-          "observed_at_import_start": false
-        },
-        {
-          "coach_id": 455848,
-          "team_id": 7790,
-          "club": "Lecce",
-          "start": "2022-08-13",
-          "end": "2023-06-04 19:00:00",
-          "inherited": 1455.4544197848338,
-          "prior_games": 38,
-          "impact": 12.824833396058576,
-          "games": 38,
-          "league_games": 38,
-          "gain20": 18.192586936113983,
-          "gain40": null,
-          "left_truncated": false,
-          "observed_at_import_start": false
-        },
-        {
-          "coach_id": 455848,
-          "team_id": 1123,
-          "club": "Hellas Verona",
-          "start": "2023-08-19",
-          "end": "2024-05-26 18:45:00",
-          "inherited": 1500.8066826602349,
-          "prior_games": 305,
-          "impact": 6.459620504525834,
-          "games": 38,
-          "league_games": 38,
-          "gain20": -24.841803086840066,
-          "gain40": null,
-          "left_truncated": false,
-          "observed_at_import_start": false
-        },
-        {
-          "coach_id": 455848,
-          "team_id": 43,
-          "club": "Lazio",
-          "start": "2024-08-18",
-          "end": "2025-05-18 18:45:00",
-          "inherited": 1661.3667573561481,
-          "prior_games": 498,
-          "impact": 36.82501978266177,
-          "games": 48,
-          "league_games": 37,
-          "gain20": 34.46549805021181,
-          "gain40": null,
-          "left_truncated": false,
-          "observed_at_import_start": false
-        },
-        {
-          "coach_id": 455848,
-          "team_id": 613,
-          "club": "Torino",
-          "start": "2025-08-25",
-          "end": "2025-11-02 14:00:00",
-          "inherited": 1561.754999869074,
-          "prior_games": 476,
-          "impact": 19.47317152082678,
-          "games": 10,
-          "league_games": 10,
-          "gain20": null,
-          "gain40": null,
-          "left_truncated": false,
-          "observed_at_import_start": false
-        },
-        {
-          "coach_id": 455848,
-          "team_id": 613,
-          "club": "Torino",
-          "start": "2025-11-24",
-          "end": "2026-02-22 11:30:00",
-          "inherited": 1586.2455579404143,
-          "prior_games": 487,
-          "impact": -57.26071457632196,
-          "games": 15,
-          "league_games": 15,
-          "gain20": null,
-          "gain40": null,
-          "left_truncated": false,
-          "observed_at_import_start": false
-        }
-      ],
-      "rank": 124,
-      "trajectory": [
-        {
-          "date": "2017-08-20",
-          "impact": -8.31,
-          "delta": -8.313173782700417,
-          "team_id": 563,
-          "club": "Benevento"
-        },
-        {
-          "date": "2017-08-26",
-          "impact": -21.14,
-          "delta": -12.831001133544632,
-          "team_id": 563,
-          "club": "Benevento"
-        },
-        {
-          "date": "2017-09-10",
-          "impact": -30.96,
-          "delta": -9.81723965189695,
-          "team_id": 563,
-          "club": "Benevento"
-        },
-        {
-          "date": "2017-09-17",
-          "impact": -33.39,
-          "delta": -2.425592193546957,
-          "team_id": 563,
-          "club": "Benevento"
-        },
-        {
-          "date": "2017-09-20",
-          "impact": -38.4,
-          "delta": -5.010706337036676,
-          "team_id": 563,
-          "club": "Benevento"
-        },
-        {
-          "date": "2017-09-24",
-          "impact": -47.27,
-          "delta": -8.871434767822734,
-          "team_id": 563,
-          "club": "Benevento"
-        },
-        {
-          "date": "2017-10-01",
-          "impact": -54.53,
-          "delta": -7.260949335192313,
-          "team_id": 563,
-          "club": "Benevento"
-        },
-        {
-          "date": "2017-10-16",
-          "impact": -63.4,
-          "delta": -8.870267788485855,
-          "team_id": 563,
-          "club": "Benevento"
-        },
-        {
-          "date": "2017-10-22",
-          "impact": -71.25,
-          "delta": -7.850691214034055,
-          "team_id": 563,
-          "club": "Benevento"
-        },
-        {
-          "date": "2018-12-22",
-          "impact": -68.35,
-          "delta": 2.9052009017589353,
-          "team_id": 4070,
-          "club": "Frosinone"
-        },
-        {
-          "date": "2018-12-26",
-          "impact": -64.11,
-          "delta": 4.234539826452059,
-          "team_id": 4070,
-          "club": "Frosinone"
-        },
-        {
-          "date": "2018-12-29",
-          "impact": -71.78,
-          "delta": -7.666967002553116,
-          "team_id": 4070,
-          "club": "Frosinone"
-        },
-        {
-          "date": "2019-01-20",
-          "impact": -77.47,
-          "delta": -5.694163755356097,
-          "team_id": 4070,
-          "club": "Frosinone"
-        },
-        {
-          "date": "2019-01-27",
-          "impact": -64.98,
-          "delta": 12.488626747668409,
-          "team_id": 4070,
-          "club": "Frosinone"
-        },
-        {
-          "date": "2019-02-04",
-          "impact": -70.89,
-          "delta": -5.910249266792643,
-          "team_id": 4070,
-          "club": "Frosinone"
-        },
-        {
-          "date": "2019-02-10",
-          "impact": -55.39,
-          "delta": 15.505992827070035,
-          "team_id": 4070,
-          "club": "Frosinone"
-        },
-        {
-          "date": "2019-02-15",
-          "impact": -56.4,
-          "delta": -1.0156165266690653,
-          "team_id": 4070,
-          "club": "Frosinone"
-        },
-        {
-          "date": "2019-02-23",
-          "impact": -60.69,
-          "delta": -4.287367578847622,
-          "team_id": 4070,
-          "club": "Frosinone"
-        },
-        {
-          "date": "2019-03-03",
-          "impact": -57.15,
-          "delta": 3.5380410590273614,
-          "team_id": 4070,
-          "club": "Frosinone"
-        },
-        {
-          "date": "2019-03-10",
-          "impact": -63.39,
-          "delta": -6.23636706182495,
-          "team_id": 4070,
-          "club": "Frosinone"
-        },
-        {
-          "date": "2019-03-17",
-          "impact": -71.48,
-          "delta": -8.095010333808762,
-          "team_id": 4070,
-          "club": "Frosinone"
-        },
-        {
-          "date": "2019-03-31",
-          "impact": -81.23,
-          "delta": -9.74933884055705,
-          "team_id": 4070,
-          "club": "Frosinone"
-        },
-        {
-          "date": "2019-04-03",
-          "impact": -71.08,
-          "delta": 10.151627565091033,
-          "team_id": 4070,
-          "club": "Frosinone"
-        },
-        {
-          "date": "2019-04-07",
-          "impact": -55.11,
-          "delta": 15.97653898245638,
-          "team_id": 4070,
-          "club": "Frosinone"
-        },
-        {
-          "date": "2019-04-14",
-          "impact": -60.46,
-          "delta": -5.350943404884015,
-          "team_id": 4070,
-          "club": "Frosinone"
-        },
-        {
-          "date": "2019-04-20",
-          "impact": -66.58,
-          "delta": -6.122341298766772,
-          "team_id": 4070,
-          "club": "Frosinone"
-        },
-        {
-          "date": "2019-04-28",
-          "impact": -70.47,
-          "delta": -3.886747950488542,
-          "team_id": 4070,
-          "club": "Frosinone"
-        },
-        {
-          "date": "2019-05-05",
-          "impact": -65.76,
-          "delta": 4.707458298583614,
-          "team_id": 4070,
-          "club": "Frosinone"
-        },
-        {
-          "date": "2019-05-12",
-          "impact": -75.89,
-          "delta": -10.1345711256063,
-          "team_id": 4070,
-          "club": "Frosinone"
-        },
-        {
-          "date": "2019-05-19",
-          "impact": -78.86,
-          "delta": -2.9697574746365984,
-          "team_id": 4070,
-          "club": "Frosinone"
-        },
-        {
-          "date": "2019-05-25",
-          "impact": -80.49,
-          "delta": -1.6306893917739074,
-          "team_id": 4070,
-          "club": "Frosinone"
-        },
-        {
-          "date": "2022-08-13",
-          "impact": -83.85,
-          "delta": -3.357902662979051,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2022-08-20",
-          "impact": -88.99,
-          "delta": -5.139723115504433,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2022-08-28",
-          "impact": -89.85,
-          "delta": -0.8587383691623396,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2022-08-31",
-          "impact": -82.35,
-          "delta": 7.496408080584578,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2022-09-05",
-          "impact": -87.81,
-          "delta": -5.459820034616771,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2022-09-11",
-          "impact": -89.01,
-          "delta": -1.1982312645021098,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2022-09-16",
-          "impact": -76.2,
-          "delta": 12.806944193907452,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2022-10-02",
-          "impact": -77.38,
-          "delta": -1.179396777012236,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2022-10-09",
-          "impact": -80.93,
-          "delta": -3.54561738257535,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2022-10-17",
-          "impact": -79.26,
-          "delta": 1.6678417836208914,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2022-10-23",
-          "impact": -86.43,
-          "delta": -7.169952325445255,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2022-10-29",
-          "impact": -92.14,
-          "delta": -5.70620853535396,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2022-11-04",
-          "impact": -86.87,
-          "delta": 5.269899709060615,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2022-11-09",
-          "impact": -72.4,
-          "delta": 14.469903597471415,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2022-11-12",
-          "impact": -61.24,
-          "delta": 11.153987185471934,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2023-01-04",
-          "impact": -47.9,
-          "delta": 13.343238618085696,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2023-01-08",
-          "impact": -46.81,
-          "delta": 1.0879263316284793,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2023-01-14",
-          "impact": -41.39,
-          "delta": 5.417867313957582,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2023-01-21",
-          "impact": -50.22,
-          "delta": -8.820696771645249,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2023-01-27",
-          "impact": -62.3,
-          "delta": -12.0851426388779,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2023-02-04",
-          "impact": -51.44,
-          "delta": 10.855585721433519,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2023-02-11",
-          "impact": -47.54,
-          "delta": 3.9066459632997796,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2023-02-19",
-          "impact": -31.57,
-          "delta": 15.963962705213374,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2023-02-25",
-          "impact": -41.86,
-          "delta": -10.28805393639518,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2023-03-05",
-          "impact": -44.49,
-          "delta": -2.6248162736911707,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2023-03-12",
-          "impact": -54.14,
-          "delta": -9.657138124793729,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2023-03-19",
-          "impact": -58.79,
-          "delta": -4.642644986802493,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2023-04-03",
-          "impact": -66.47,
-          "delta": -7.683864866736205,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2023-04-07",
-          "impact": -69.65,
-          "delta": -3.1748412732967397,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2023-04-16",
-          "impact": -72.67,
-          "delta": -3.0234944011565057,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2023-04-23",
-          "impact": -75.3,
-          "delta": -2.627503165685696,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2023-04-28",
-          "impact": -64.2,
-          "delta": 11.101178125445221,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2023-05-03",
-          "impact": -67.41,
-          "delta": -3.2124209462616005,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2023-05-07",
-          "impact": -78.27,
-          "delta": -10.866978189372404,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2023-05-12",
-          "impact": -71.93,
-          "delta": 6.342175803494394,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2023-05-21",
-          "impact": -73.58,
-          "delta": -1.650033773008266,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2023-05-28",
-          "impact": -58.75,
-          "delta": 14.831820765601728,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2023-06-04",
-          "impact": -67.67,
-          "delta": -8.917332687343439,
-          "team_id": 7790,
-          "club": "Lecce"
-        },
-        {
-          "date": "2023-08-19",
-          "impact": -55.54,
-          "delta": 12.130522332497648,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2023-08-26",
-          "impact": -43.47,
-          "delta": 12.064016522395992,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2023-09-01",
-          "impact": -51.47,
-          "delta": -7.998857608292087,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2023-09-18",
-          "impact": -51.21,
-          "delta": 0.2583849537731653,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2023-09-23",
-          "impact": -54.71,
-          "delta": -3.491524950029148,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2023-09-27",
-          "impact": -62.71,
-          "delta": -7.999841274970866,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2023-10-02",
-          "impact": -59.05,
-          "delta": 3.657967746572257,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2023-10-08",
-          "impact": -69.8,
-          "delta": -10.753254050210623,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2023-10-21",
-          "impact": -74.62,
-          "delta": -4.821811813787086,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2023-10-28",
-          "impact": -77.88,
-          "delta": -3.256868539452722,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2023-11-05",
-          "impact": -87.38,
-          "delta": -9.497449782394238,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2023-11-10",
-          "impact": -95.94,
-          "delta": -8.563795977841657,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2023-11-27",
-          "impact": -97.13,
-          "delta": -1.185296457287477,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2023-12-03",
-          "impact": -94.13,
-          "delta": 3.000107271106607,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2023-12-09",
-          "impact": -90.66,
-          "delta": 3.4666585278538244,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2023-12-17",
-          "impact": -94.98,
-          "delta": -4.317228552108949,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2023-12-23",
-          "impact": -87.1,
-          "delta": 7.8787150255113625,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2023-12-30",
-          "impact": -99.11,
-          "delta": -12.007281244785116,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2024-01-06",
-          "impact": -100.89,
-          "delta": -1.7876218179777248,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2024-01-13",
-          "impact": -92.51,
-          "delta": 8.382656602586778,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2024-01-20",
-          "impact": -96.7,
-          "delta": -4.189371986396653,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2024-01-28",
-          "impact": -99.68,
-          "delta": -2.981506031617218,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2024-02-04",
-          "impact": -102.64,
-          "delta": -2.9546656467598797,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2024-02-11",
-          "impact": -98.39,
-          "delta": 4.24082384708033,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2024-02-17",
-          "impact": -93.11,
-          "delta": 5.2801826479349145,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2024-02-23",
-          "impact": -97.29,
-          "delta": -4.175114648007121,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2024-03-03",
-          "impact": -88.68,
-          "delta": 8.610662464386431,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2024-03-10",
-          "impact": -77.08,
-          "delta": 11.596104478506064,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2024-03-17",
-          "impact": -81.99,
-          "delta": -4.91113880112139,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2024-04-01",
-          "impact": -80.92,
-          "delta": 1.0693172379546634,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2024-04-07",
-          "impact": -91.94,
-          "delta": -11.019192667253531,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2024-04-15",
-          "impact": -85.35,
-          "delta": 6.596613142612253,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2024-04-20",
-          "impact": -76.13,
-          "delta": 9.222180345089646,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2024-04-27",
-          "impact": -80.49,
-          "delta": -4.365784955838561,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2024-05-05",
-          "impact": -68.01,
-          "delta": 12.480940462217859,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2024-05-12",
-          "impact": -77.28,
-          "delta": -9.268872904665876,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2024-05-20",
-          "impact": -67.91,
-          "delta": 9.367089804957216,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2024-05-26",
-          "impact": -61.21,
-          "delta": 6.703156802286747,
-          "team_id": 1123,
-          "club": "Hellas Verona"
-        },
-        {
-          "date": "2024-08-18",
-          "impact": -58.0,
-          "delta": 3.2094098294456885,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2024-08-24",
-          "impact": -70.04,
-          "delta": -12.037727640404757,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2024-08-31",
-          "impact": -70.9,
-          "delta": -0.8623342987016347,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2024-09-16",
-          "impact": -65.78,
-          "delta": 5.120147315217283,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2024-09-22",
-          "impact": -74.98,
-          "delta": -9.19759853889456,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2024-09-25",
-          "impact": -67.14,
-          "delta": 7.833311064925679,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2024-09-29",
-          "impact": -56.2,
-          "delta": 10.938867202993983,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2024-10-03",
-          "impact": -49.73,
-          "delta": 6.477600186646875,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2024-10-06",
-          "impact": -44.82,
-          "delta": 4.908750595230263,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2024-10-19",
-          "impact": -51.96,
-          "delta": -7.1374751156649,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2024-10-24",
-          "impact": -44.16,
-          "delta": 7.7938474897935155,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2024-10-27",
-          "impact": -39.51,
-          "delta": 4.652283106343436,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2024-10-31",
-          "impact": -32.82,
-          "delta": 6.686685049785903,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2024-11-04",
-          "impact": -29.42,
-          "delta": 3.407454278883042,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2024-11-07",
-          "impact": -21.46,
-          "delta": 7.952201595648367,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2024-11-10",
-          "impact": -14.73,
-          "delta": 6.733254221547721,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2024-11-24",
-          "impact": -8.19,
-          "delta": 6.539332316937038,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2024-11-28",
-          "impact": -14.2,
-          "delta": -6.009820097515545,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2024-12-01",
-          "impact": -30.01,
-          "delta": -15.80517722877853,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2024-12-08",
-          "impact": -17.86,
-          "delta": 12.146863200043445,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2024-12-12",
-          "impact": -6.98,
-          "delta": 10.879863980006766,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2024-12-16",
-          "impact": -15.07,
-          "delta": -8.092487476416856,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2024-12-21",
-          "impact": -9.26,
-          "delta": 5.810520666718211,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2024-12-28",
-          "impact": -9.52,
-          "delta": -0.2598920062086685,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2025-01-05",
-          "impact": -20.42,
-          "delta": -10.894890277518412,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2025-01-10",
-          "impact": -26.74,
-          "delta": -6.327491369851542,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2025-01-19",
-          "impact": -20.7,
-          "delta": 6.03912554473119,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2025-01-23",
-          "impact": -14.24,
-          "delta": 6.460342025613899,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2025-01-26",
-          "impact": -27.64,
-          "delta": -13.40043098881444,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2025-01-30",
-          "impact": -38.67,
-          "delta": -11.024570862652883,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2025-02-03",
-          "impact": -32.39,
-          "delta": 6.2782450049248215,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2025-02-09",
-          "impact": -29.18,
-          "delta": 3.2132468446574647,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2025-02-15",
-          "impact": -29.57,
-          "delta": -0.3952653597202116,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2025-02-22",
-          "impact": -35.17,
-          "delta": -5.5961190218298364,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2025-03-02",
-          "impact": -23.9,
-          "delta": 11.264931108354695,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2025-03-06",
-          "impact": -13.53,
-          "delta": 10.374712867420984,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2025-03-10",
-          "impact": -18.85,
-          "delta": -5.317503036864792,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2025-03-13",
-          "impact": -22.23,
-          "delta": -3.384275078549286,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2025-03-16",
-          "impact": -31.37,
-          "delta": -9.143992268123121,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2025-03-31",
-          "impact": -35.46,
-          "delta": -4.087790576801882,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2025-04-06",
-          "impact": -23.06,
-          "delta": 12.401651259469679,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2025-04-10",
-          "impact": -33.65,
-          "delta": -10.58740412303045,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2025-04-13",
-          "impact": -35.2,
-          "delta": -1.555626342943217,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2025-04-23",
-          "impact": -27.21,
-          "delta": 7.990120351965632,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2025-04-28",
-          "impact": -34.22,
-          "delta": -7.004308474995318,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2025-05-04",
-          "impact": -28.71,
-          "delta": 5.505763114319593,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2025-05-10",
-          "impact": -29.77,
-          "delta": -1.0564740682168394,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2025-05-18",
-          "impact": -24.38,
-          "delta": 5.385143813534299,
-          "team_id": 43,
-          "club": "Lazio"
-        },
-        {
-          "date": "2025-08-25",
-          "impact": -26.98,
-          "delta": -2.5973844017285375,
-          "team_id": 613,
-          "club": "Torino"
-        },
-        {
-          "date": "2025-08-31",
-          "impact": -25.76,
-          "delta": 1.2228262329591189,
-          "team_id": 613,
-          "club": "Torino"
-        },
-        {
-          "date": "2025-09-14",
-          "impact": -9.78,
-          "delta": 15.97982757475858,
-          "team_id": 613,
-          "club": "Torino"
-        },
-        {
-          "date": "2025-09-21",
-          "impact": -17.98,
-          "delta": -8.20302247721626,
-          "team_id": 613,
-          "club": "Torino"
-        },
-        {
-          "date": "2025-09-29",
-          "impact": -29.26,
-          "delta": -11.278245917400183,
-          "team_id": 613,
-          "club": "Torino"
-        },
-        {
-          "date": "2025-10-04",
-          "impact": -24.93,
-          "delta": 4.332633442723884,
-          "team_id": 613,
-          "club": "Torino"
-        },
-        {
-          "date": "2025-10-18",
-          "impact": -11.39,
-          "delta": 13.536343183510748,
-          "team_id": 613,
-          "club": "Torino"
-        },
-        {
-          "date": "2025-10-26",
-          "impact": -4.6,
-          "delta": 6.786067464625307,
-          "team_id": 613,
-          "club": "Torino"
-        },
-        {
-          "date": "2025-10-29",
-          "impact": -0.8,
-          "delta": 3.8075823885852267,
-          "team_id": 613,
-          "club": "Torino"
-        },
-        {
-          "date": "2025-11-02",
-          "impact": -4.91,
-          "delta": -4.113455969991106,
-          "team_id": 613,
-          "club": "Torino"
-        },
-        {
-          "date": "2025-11-24",
-          "impact": -16.39,
-          "delta": -11.47826360617849,
-          "team_id": 613,
-          "club": "Torino"
-        },
-        {
-          "date": "2025-11-30",
-          "impact": -27.52,
-          "delta": -11.133407735104,
-          "team_id": 613,
-          "club": "Torino"
-        },
-        {
-          "date": "2025-12-08",
-          "impact": -34.68,
-          "delta": -7.162182411791045,
-          "team_id": 613,
-          "club": "Torino"
-        },
-        {
-          "date": "2025-12-13",
-          "impact": -27.68,
-          "delta": 7.0089512239080864,
-          "team_id": 613,
-          "club": "Torino"
-        },
-        {
-          "date": "2025-12-21",
-          "impact": -17.33,
-          "delta": 10.34624805699876,
-          "team_id": 613,
-          "club": "Torino"
-        },
-        {
-          "date": "2025-12-27",
-          "impact": -31.28,
-          "delta": -13.954751761438857,
-          "team_id": 613,
-          "club": "Torino"
-        },
-        {
-          "date": "2026-01-04",
-          "impact": -21.78,
-          "delta": 9.505832214035873,
-          "team_id": 613,
-          "club": "Torino"
-        },
-        {
-          "date": "2026-01-07",
-          "impact": -34.64,
-          "delta": -12.866287558253486,
-          "team_id": 613,
-          "club": "Torino"
-        },
-        {
-          "date": "2026-01-10",
-          "impact": -39.22,
-          "delta": -4.574866907473705,
-          "team_id": 613,
-          "club": "Torino"
-        },
-        {
-          "date": "2026-01-18",
-          "impact": -46.22,
-          "delta": -7.002482767786765,
-          "team_id": 613,
-          "club": "Torino"
-        },
-        {
-          "date": "2026-01-24",
-          "impact": -52.32,
-          "delta": -6.102977010465526,
-          "team_id": 613,
-          "club": "Torino"
-        },
-        {
-          "date": "2026-02-01",
-          "impact": -45.93,
-          "delta": 6.391933896416438,
-          "team_id": 613,
-          "club": "Torino"
-        },
-        {
-          "date": "2026-02-07",
-          "impact": -43.73,
-          "delta": 2.201007700750379,
-          "team_id": 613,
-          "club": "Torino"
-        },
-        {
-          "date": "2026-02-15",
-          "impact": -53.64,
-          "delta": -9.905186644290529,
-          "team_id": 613,
-          "club": "Torino"
-        },
-        {
-          "date": "2026-02-22",
-          "impact": -62.17,
-          "delta": -8.534281265649089,
-          "team_id": 613,
-          "club": "Torino"
-        }
-      ]
-    },
-    {
       "id": 455957,
       "team_id": 597,
       "club": "Napoli",
@@ -129582,8 +128746,8 @@
       "name": "Massimiliano Allegri",
       "impact": -69.8,
       "per38": -8.3,
-      "recent": -7.1,
-      "recent_games": 38,
+      "recent": -17.3,
+      "recent_games": 37,
       "matches": 321,
       "clubs": 3,
       "positive_spells": 0,
@@ -131966,8 +131130,8 @@
       "name": "Eusebio Di Francesco",
       "impact": -104.4,
       "per38": -14.1,
-      "recent": 29.3,
-      "recent_games": 38,
+      "recent": 14.0,
+      "recent_games": 36,
       "matches": 282,
       "clubs": 8,
       "positive_spells": 3,
