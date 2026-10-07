@@ -11,6 +11,7 @@ from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy import text
 
 from app.config import get_settings
+from app.canonical_host import CanonicalHostMiddleware
 from app.models.database import Base, engine
 from app.api import router
 from app.services.scheduler import odds_scheduler
@@ -208,6 +209,7 @@ async def redirect_trailing_slash(request: Request, call_next):
     return await call_next(request)
 
 # Include API routes
+app.add_middleware(CanonicalHostMiddleware)
 app.include_router(router, prefix="/api")
 from app.api.manager_ratings import manager_ratings_router
 app.include_router(manager_ratings_router, prefix="/api")

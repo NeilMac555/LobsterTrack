@@ -16,6 +16,7 @@ import { fileURLToPath } from 'url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DIST = resolve(__dirname, '..', 'dist');
 const DOMAIN = 'https://www.steamwatch.io';
+const PRO = JSON.parse(readFileSync(resolve(__dirname, '..', 'src', 'content', 'pro.json'), 'utf-8'));
 
 // ---------------------------------------------------------------------------
 // Blog post metadata — keep in sync with src/blog/posts.tsx
@@ -296,7 +297,20 @@ function faqSchema(post) {
 // Static pages — data (path, meta, JSON-LD, page HTML in `noscriptHtml`)
 // ---------------------------------------------------------------------------
 const PAGES = [
-  { path: 'pro', title: 'SteamWatch Pro | €19.99 per month', description: 'Unlock Form Lab, full Steam Results team rankings, rolling xG and match model results with SteamWatch Pro.', noscriptHtml: '<h1>SteamWatch Pro</h1><p>€19.99 per month, renewing automatically.</p><h2>Spot the move. Build your view.</h2><p>Unlock full Form Lab access, Steam Results team rankings, rolling xG across available teams and Match Predictor model results.</p><p>Secure checkout through Stripe. Your account is created after payment.</p>' },
+  {
+    path: 'pro', title: PRO.title, description: PRO.description,
+    noscriptHtml: `<h1>SteamWatch Pro: football research membership</h1>
+<p>€19.99 per month. Monthly subscription, renewing automatically. Secure checkout with Stripe.</p>
+<h2>Spot the move. Build your view.</h2>
+<p>The market tells you what moved. Pro gives you the tools to investigate why. Bring team form, expected goals, historical results and model pricing into your football research.</p>
+<h2>Inside your membership</h2>
+<ul>${PRO.inclusions.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>
+${PRO.benefits.map((b) => `<section><h2><a href="${b.href}">${esc(b.name)}</a></h2><h3>${esc(b.title)}</h3><p>${esc(b.text)}</p></section>`).join('\n')}
+<h2>Free to explore</h2><p>Follow the odds overview, join the free Telegram alerts and explore public results and tool previews.</p>
+<h2>Pro adds the detail</h2><p>Research form in depth, compare underlying performances, examine full team rankings and generate model prices.</p>
+<h2>Before you join</h2>
+${PRO.faqs.map(([q, a]) => `<h3>${esc(q)}</h3><p>${esc(a)}</p>`).join('\n')}`,
+  },
   {
     path: 'steam-results',
     title: 'Football Steam Move Results and ROI | SteamWatch',
@@ -812,6 +826,7 @@ const NAV_LINKS = [
   ['/tools/match-predictor', 'Tools'],
   ['/blog', 'Blog'],
   ['/about', 'About'],
+  ['/pro', 'SteamWatch Pro'],
 ];
 const TOOL_LINKS = [
   ['/tools/bet-calculator', 'Bet Calculator'],
@@ -873,7 +888,7 @@ const FOOTER_HTML = `<footer class="pr-footer"><div class="pr-cols">
 <div><h4>Data</h4>${[['/', 'Live odds & biggest movers'], ['/steam-results', 'Steam Results'], ['/dropping-odds', 'Dropping Odds'], ['/goals-coming-soon', 'Goals Coming Soon'], ['/justice-table', 'Justice Table'], ['/drifters', 'Drifters'], ['/closing-lines', 'Closing Lines'], ['/cl-closing-lines', 'Champions League Closing Lines'], ['/team-pnl', 'Team P/L'], ['/longshot-bias', 'Longshot Bias']].map(([h, t]) => `<a href="${h}">${t}</a>`).join('')}</div>
 <div><h4>Tools</h4>${TOOL_LINKS.map(([h, t]) => `<a href="${h}">${t}</a>`).join('')}</div>
 <div><h4>Blog</h4>${POSTS.map((p) => `<a href="/blog/${p.slug}">${esc(p.title)}</a>`).join('')}<a href="/blog">All posts</a></div>
-<div><h4>SteamWatch</h4><a href="/about">About Neil Mac</a><a href="https://t.me/steamwatchalerts">Free Telegram alerts</a><a href="https://x.com/Steamwatchio">@Steamwatchio on X</a></div>
+<div><h4>SteamWatch</h4><a href="/pro">SteamWatch Pro membership</a><a href="/about">About Neil Mac</a><a href="https://t.me/steamwatchalerts">Free Telegram alerts</a><a href="https://x.com/Steamwatchio">@Steamwatchio on X</a></div>
 </div><p class="pr-note">Pinnacle odds via The Odds API · updated every 15 minutes</p></footer>`;
 
 // The Vite template, read once BEFORE the homepage overwrites dist/index.html.

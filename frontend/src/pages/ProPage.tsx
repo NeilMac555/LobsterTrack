@@ -4,16 +4,9 @@ import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../contexts/AuthContext';
 import LoginModal from '../components/LoginModal';
 import './ProPage.css';
+import proContent from '../content/pro.json';
 
-const benefits = [
-  { n: '05', name: 'Drifter Results', title: 'See the other side of the market.', text: 'Review teams whose prices drift before kickoff, with full rankings, win rates and recorded profit or loss. Investigate what happens when the market moves against a team.', href: '/drifters', tags: ['Price drifts', 'Team rankings', 'Historical results'] },
-  { n: '06', name: 'Longshot Bias', title: 'Test the story against the numbers.', text: 'Explore favourites, underdogs and draws across all five available leagues and seasons back to 2021/22, including all-time views and home / away splits.', href: '/longshot-bias', tags: ['Odds bands', 'Five leagues', 'Season comparisons'] },
-  { n: '01', name: 'Form Lab', title: 'Look beyond the last result.', text: 'Compare sortable form tables, home and away splits, opponent strength, handicap margins and xG. Find the context behind a team’s form.', href: '/tools/form-lab', tags: ['Opponent strength', 'Home / away', 'xG tables'] },
-  { n: '02', name: 'Steam Results', title: 'Follow the evidence.', text: 'Unlock full team rankings to see how often teams attract steam, their win rates and recorded profit or loss. Review the results behind the moves.', href: '/steam-results', tags: ['Team rankings', 'Win rates', 'P/L tracking'] },
-  { n: '03', name: 'Rolling xG', title: 'Separate performances from scorelines.', text: 'Explore the available teams beyond the free preview. Compare rolling expected-goals trends to see how underlying performances are changing.', href: '/tools/rolling-xg', tags: ['Team selection', 'Underlying form', 'Trend comparison'] },
-  { n: '04', name: 'Match Predictor', title: 'Put a price on your view.', text: 'Unlock Dixon–Coles model probabilities, fair odds and calculation breakdowns. Explore how your assumptions change the numbers.', href: '/tools/match-predictor', tags: ['Fair odds', 'Probabilities', 'Model breakdowns'] },
-].sort((a, b) => a.n.localeCompare(b.n));
-const inclusions = ['Full Form Lab access', 'Full Steam Results team rankings', 'Rolling xG across available teams', 'Match Predictor model results', 'Drifter rankings & full Longshot Bias access'];
+const { benefits, inclusions, faqs } = proContent;
 const buttonStyle = 'inline-flex items-center justify-center rounded-xl bg-cyan-400 px-6 py-4 font-bold text-slate-950 transition hover:bg-cyan-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-300 disabled:opacity-50';
 
 export default function ProPage() {
@@ -33,7 +26,7 @@ export default function ProPage() {
     ? <Link className={buttonStyle + ' w-full'} to="/tools/form-lab">Open Form Lab →</Link>
     : <button className={buttonStyle + ' w-full'} disabled={busy || isLoading} onClick={checkout}>{busy ? 'Opening secure checkout…' : 'Get SteamWatch Pro →'}</button>;
   return <div className="pro-page max-w-6xl mx-auto pb-12">
-    <Helmet><title>SteamWatch Pro | €19.99 per month</title><meta name="description" content="Go deeper with SteamWatch Pro. Unlock Form Lab, full Steam Results team rankings, rolling xG and match model results for €19.99 per month." /><link rel="canonical" href="https://www.steamwatch.io/pro" /><meta property="og:title" content="SteamWatch Pro — Go beyond the move." /><meta property="og:description" content="Football research with more context. Form Lab, team rankings, rolling xG and model results. €19.99 per month." /><meta property="og:url" content="https://www.steamwatch.io/pro" /></Helmet>
+    <Helmet><title>{proContent.title}</title><meta name="description" content={proContent.description} /><link rel="canonical" href="https://www.steamwatch.io/pro" /><meta property="og:title" content="SteamWatch Pro — Go beyond the move." /><meta property="og:description" content="Football research with more context. Form Lab, team rankings, rolling xG and model results. €19.99 per month." /><meta property="og:url" content="https://www.steamwatch.io/pro" /></Helmet>
     {returnTo && <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-700 bg-slate-800/70 px-4 py-3">
       <p className="text-sm text-slate-300">A quick look at Pro. Just once this session.</p>
       <Link to={safeReturnTo} replace className="rounded-lg border border-slate-500 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">Continue browsing →</Link>
@@ -64,12 +57,7 @@ export default function ProPage() {
       <div className="mt-8 grid gap-5 md:grid-cols-2">{benefits.map(b => <article key={b.n} className="pro-feature rounded-2xl border border-slate-700/80 bg-slate-800/50 p-6 sm:p-8"><div className="flex justify-between text-xs font-mono uppercase tracking-widest"><span className="text-cyan-300">{b.name}</span><span className="text-slate-500">{b.n}</span></div><h3 className="mt-5 text-xl font-bold text-white">{b.title}</h3><p className="mt-3 leading-relaxed text-slate-400">{b.text}</p><div className="mt-5 flex flex-wrap gap-2">{b.tags.map(t => <span key={t} className="rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-300">{t}</span>)}</div><Link to={b.href} className="mt-6 inline-block text-sm font-semibold text-cyan-300 hover:text-white">Explore {b.name} →</Link></article>)}</div>
     </section>
     <section className="rounded-2xl border border-slate-700 bg-slate-900 p-6 sm:p-9"><h2 className="text-2xl font-bold text-white">Start with the move. Go deeper with Pro.</h2><div className="mt-6 grid gap-6 md:grid-cols-2"><div><h3 className="font-semibold text-slate-200">Free to explore</h3><p className="mt-2 leading-relaxed text-slate-400">Follow the odds overview, join the free Telegram alerts and explore public results and tool previews.</p></div><div className="md:border-l md:border-slate-700 md:pl-6"><h3 className="font-semibold text-cyan-300">Pro adds the detail</h3><p className="mt-2 leading-relaxed text-slate-300">Research form in depth, compare underlying performances, examine full team rankings and generate model prices.</p></div></div></section>
-    <section className="mx-auto max-w-3xl py-14"><h2 className="mb-6 text-2xl font-bold text-white">Before you join</h2>{[
-      ['How do I get access?', 'Enter your email and complete the Stripe checkout. Your account is created after payment and we email you a sign-in link. Existing members can sign in with their membership email.'],
-      ['Is this a monthly payment?', 'Yes. SteamWatch Pro is €19.99 per month and renews automatically. You can manage your subscription through the account menu. The checkout shows the final billing details before you pay.'],
-      ['Are Telegram alerts included in the price?', 'The SteamWatch Telegram alerts channel is free. Pro pays for the additional research tools and detailed views described above.'],
-      ['Does Pro tell me what to bet?', 'Pro helps you research and compare. Model prices depend on your inputs, data coverage varies by competition, and past results do not guarantee future profit. You remain in control of your decisions.'],
-    ].map(([q,a]) => <details key={q} className="border-b border-slate-700 py-5"><summary className="cursor-pointer font-semibold text-slate-200">{q}</summary><p className="mt-3 leading-relaxed text-slate-400">{a}</p></details>)}</section>
+    <section className="mx-auto max-w-3xl py-14"><h2 className="mb-6 text-2xl font-bold text-white">Before you join</h2>{faqs.map(([q,a]) => <details key={q} className="border-b border-slate-700 py-5"><summary className="cursor-pointer font-semibold text-slate-200">{q}</summary><p className="mt-3 leading-relaxed text-slate-400">{a}</p></details>)}</section>
     <section className="rounded-2xl border border-cyan-500/20 bg-cyan-500/5 p-7 sm:p-10 text-center"><h2 className="text-3xl font-bold text-white">Give your research more depth.</h2><p className="mt-3 text-slate-400">SteamWatch Pro. €19.99 per month.</p><div className="mx-auto mt-6 max-w-sm">{cta}</div></section>
     {modal && <LoginModal key={modal} isOpen onClose={() => setModal(null)} mode={modal} />}
   </div>;

@@ -1,0 +1,103 @@
+{
+  "title": "SteamWatch Pro: Football Research Tools | €19.99/month",
+  "description": "Compare SteamWatch Pro features: Form Lab, rolling xG, Dixon–Coles pricing, Steam Results, Drifters and Longshot Bias. €19.99 per month.",
+  "benefits": [
+    {
+      "n": "01",
+      "name": "Form Lab",
+      "title": "Look beyond the last result.",
+      "text": "Compare sortable form tables, home and away splits, opponent strength, handicap margins and xG. Find the context behind a team’s form.",
+      "href": "/tools/form-lab",
+      "tags": [
+        "Opponent strength",
+        "Home / away",
+        "xG tables"
+      ]
+    },
+    {
+      "n": "02",
+      "name": "Steam Results",
+      "title": "Follow the evidence.",
+      "text": "Unlock full team rankings to see how often teams attract steam, their win rates and recorded profit or loss. Review the results behind the moves.",
+      "href": "/steam-results",
+      "tags": [
+        "Team rankings",
+        "Win rates",
+        "P/L tracking"
+      ]
+    },
+    {
+      "n": "03",
+      "name": "Rolling xG",
+      "title": "Separate performances from scorelines.",
+      "text": "Explore the available teams beyond the free preview. Compare rolling expected-goals trends to see how underlying performances are changing.",
+      "href": "/tools/rolling-xg",
+      "tags": [
+        "Team selection",
+        "Underlying form",
+        "Trend comparison"
+      ]
+    },
+    {
+      "n": "04",
+      "name": "Match Predictor",
+      "title": "Put a price on your view.",
+      "text": "Unlock Dixon–Coles model probabilities, fair odds and calculation breakdowns. Explore how your assumptions change the numbers.",
+      "href": "/tools/match-predictor",
+      "tags": [
+        "Fair odds",
+        "Probabilities",
+        "Model breakdowns"
+      ]
+    },
+    {
+      "n": "05",
+      "name": "Drifter Results",
+      "title": "See the other side of the market.",
+      "text": "Review teams whose prices drift before kickoff, with full rankings, win rates and recorded profit or loss. Investigate what happens when the market moves against a team.",
+      "href": "/drifters",
+      "tags": [
+        "Price drifts",
+        "Team rankings",
+        "Historical results"
+      ]
+    },
+    {
+      "n": "06",
+      "name": "Longshot Bias",
+      "title": "Test the story against the numbers.",
+      "text": "Explore favourites, underdogs and draws across all five available leagues and seasons back to 2021/22, including all-time views and home / away splits.",
+      "href": "/longshot-bias",
+      "tags": [
+        "Odds bands",
+        "Five leagues",
+        "Season comparisons"
+      ]
+    }
+  ],
+  "inclusions": [
+    "Full Form Lab access",
+    "Full Steam Results team rankings",
+    "Rolling xG across available teams",
+    "Match Predictor model results",
+    "Drifter rankings & full Longshot Bias access"
+  ],
+  "faqs": [
+    [
+      "How do I get access?",
+      "Enter your email and complete the Stripe checkout. Your account is created after payment and we email you a sign-in link. Existing members can sign in with their membership email."
+    ],
+    [
+      "Is this a monthly payment?",
+      "Yes. SteamWatch Pro is €19.99 per month and renews automatically. You can manage your subscription through the account menu. The checkout shows the final billing details before you pay."
+    ],
+    [
+      "Are Telegram alerts included in the price?",
+      "The SteamWatch Telegram alerts channel is free. Pro pays for the additional research tools and detailed views described above."
+    ],
+    [
+      "Does Pro tell me what to bet?",
+      "Pro helps you research and compare. Model prices depend on your inputs, data coverage varies by competition, and past results do not guarantee future profit. You remain in control of your decisions."
+    ]
+  ]
+}
