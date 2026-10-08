@@ -36,6 +36,13 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy Mega Drive revamp: low-res integer-scaled framebuffer,
+  512-colour palette quantization + palette-swap variants, bitmap fonts,
+  all-canvas MD UI (title, d-pad select, RPG level-up/chest/pause
+  windows, results tally), Sonic/SoR HUD, priority banner queue, pixel
+  FX, FM-synth music. Fixed multi-level-up giving one choice, boss
+  stuck white under fire, torch "glitch" line. Tested desktop/laptop/
+  touch phone/file:///bundle — `cba30f5`
 - Kill burst particles done properly: velocity+gravity pixel-square
   debris in per-enemy colours with white sparks, 8/16/26 per kill/
   elite/boss, 500-particle cap, 3.8ms/frame profiled — `8092b27`
