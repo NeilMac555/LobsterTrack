@@ -57,7 +57,10 @@ class Settings(BaseSettings):
         # "soccer_uefa_champs_league_qualification": "Champions League Qualifying",
         "soccer_uefa_europa_league": "Europa League",
         "soccer_uefa_europa_conference_league": "Conference League",
-        "soccer_uefa_nations_league": "UEFA Nations League",
+        # Nations League: October 2026 window finished 7 Oct. Removed from
+        # polling per Neil (2026-10-08) so an empty sport stops costing Odds
+        # API credits. Restore for the November window (matchdays 12-17 Nov).
+        # "soccer_uefa_nations_league": "UEFA Nations League",
         "soccer_fifa_world_cup": "FIFA World Cup",
     }
 
