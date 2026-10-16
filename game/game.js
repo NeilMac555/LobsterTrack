@@ -459,7 +459,30 @@ const IP = {           // icon palette
   K: '#000000', W: '#FFFFFF', L: '#B6B6B6', G: '#6D6D6D', D: '#494949',
   R: '#FF2400', Y: '#FFDB00', O: '#FF9200', N: '#24DB24', n: '#006D00',
   C: '#49DBFF', B: '#2449FF', P: '#B649FF', S: '#B66D24', s: '#6D2400',
+  T: '#DB9249', F: '#FFDB92',
 };
+// health food, Castlevania wall-meat style: fish 25%, floor chicken 50%, medipack 100%
+const FOOD_ROWS = {
+  fish: ['...KKKKKK...KK', '..KBBBBBBK.KCK', '.KCWKCCCBBKKCK', 'KCCKCCCCCCCCK.',
+    'KCCCCCLCCCCCK.', '.KLLLLLLLLKKCK', '..KLLLLLLK.KCK', '...KKKKKK...KK'],
+  chicken: ['..........KK..', '.........KWWK.', '....KKKK.KWK..', '..KKFFTTKTK...',
+    '.KFFTTTTTTK...', 'KFTTTTTTTTSK..', 'KTTTTTTTTSSK..', 'KTTTTTTSSSSK..',
+    '.KSSSSSSSssK..', 'KWWKKKKKKKKWWK', '.KLLLLLLLLLLK.', '..KKKKKKKKKK..'],
+  medkit: ['...KKKKKK...', '...KK..KK...', 'KKKKKKKKKKKK', 'KWWWWRRWWWWK',
+    'KWWWWRRWWWWK', 'KWWRRRRRRWWK', 'KWWRRRRRRWWK', 'KWWWWRRWWWWK',
+    'KLLLLRRLLLLK', 'KKKKKKKKKKKK'],
+};
+const FOOD = {
+  fish:    { name: 'FISH',          heal: 0.25, col: '#49DBFF' },
+  chicken: { name: 'FLOOR CHICKEN', heal: 0.50, col: '#FFB600' },
+  medkit:  { name: 'MEDIPACK',      heal: 1.00, col: '#24DB24' },
+};
+// mostly fish, sometimes chicken, rarely the full medipack
+function rollFood(rich = false) {
+  const r = Math.random();
+  if (rich) return r < 0.35 ? 'fish' : r < 0.8 ? 'chicken' : 'medkit';
+  return r < 0.6 ? 'fish' : r < 0.9 ? 'chicken' : 'medkit';
+}
 const ICON_ROWS = {
   optic: ['..........', '.KKKK.....', 'KRRRRKKKKK', 'KRWWRRRRRR', 'KRWWWWWWWW',
     'KRWWWWWWWW', 'KRWWRRRRRR', 'KRRRRKKKKK', '.KKKK.....', '..........'],
@@ -544,11 +567,12 @@ function pixmap(rows, pal, name) {
   });
   return c;
 }
-const ICONS = {}, GEMS = {};
+const ICONS = {}, GEMS = {}, FOOD_IMG = {};
 let COIN = [], BOMB = [], CHEST = null, ORB = null, CARD = [], CURSOR = null, CURSOR_SH = null;
 let SPK_ON = null, SPK_OFF = null, PAUSE_IC = null;
 function compilePixmaps() {
   for (const [k, rows] of Object.entries(ICON_ROWS)) ICONS[k] = pixmap(rows, IP, 'icon:' + k);
+  for (const [k, rows] of Object.entries(FOOD_ROWS)) FOOD_IMG[k] = pixmap(rows, IP, 'food:' + k);
   COIN = COIN_ROWS.map((r, i) => pixmap(r, IP, 'coin' + i));
   BOMB = BOMB_ROWS.map((r, i) => pixmap(r, IP, 'bomb' + i));
   CHEST = pixmap(CHEST_ROWS, IP, 'chest');
@@ -580,7 +604,8 @@ function pips(x, y, filled, next = filled, size = 1) {
 
 // ---------- assets: load, palette-quantize, palette-swap ----------
 const ASSET_FILES = ['warrior', 'wizard', 'ranger', 'rogue', 'cleric',
-  'slime', 'goblin', 'skeleton', 'orc', 'minotaur', 'tiles', 'biski'];
+  'slime', 'goblin', 'skeleton', 'orc', 'minotaur', 'tiles', 'biski',
+  'bat', 'imp', 'scarab', 'shaman', 'hound', 'guard', 'knight'];
 const assets = {};
 function loadAssets() {
   return Promise.all(ASSET_FILES.map(name => new Promise((res, rej) => {
@@ -641,15 +666,17 @@ function prepareSprites() {
     set.white = silhouette(set.base, C.white);
   }
   // palette-swapped variants, the way cartridges reused one sprite for a tougher foe
-  for (const f of ['slime', 'skeleton', 'goblin', 'orc']) {
+  for (const f of ['slime', 'skeleton', 'goblin', 'orc', 'bat', 'imp', 'scarab', 'shaman', 'guard']) {
     SPR[f].elite = bakeSheet(assets[f], 'saturate(2.2) brightness(1.15)');
   }
   SPR.minotaur.boss2 = bakeSheet(assets.minotaur, 'hue-rotate(140deg) saturate(1.4)');
   SPR.minotaur.boss3 = bakeSheet(assets.minotaur, 'hue-rotate(250deg) saturate(1.6)');
 }
 
-// Every sheet is 10 frames per row. rows map anim -> row index.
+// Sheets are 10 frames per row unless `frames` says otherwise; cells are square.
+// rows map anim -> row index.
 const STD = { idle: 0, walk: 2, attack: 3, death: 4 };
+const CAST = { idle: 0, cast: 1, walk: 2, attack: 3, death: 4 };
 const SHEETS = {
   warrior:  { file: 'warrior',  size: 32, rows: STD },
   wizard:   { file: 'wizard',   size: 32, rows: STD },
@@ -667,7 +694,16 @@ const SHEETS = {
   orc:      { file: 'orc',      size: 32, rows: { idle: 5, walk: 7, attack: 8, death: 9 } },
   minotaur: { file: 'minotaur', size: 48, rows: { idle: 0, walk: 1, attack: 3, death: 4 } },
   biski:    { file: 'biski',    size: 32, rows: STD }, // Shepardskin's CC0 cat, repacked
+  // the demon roster (see assets/CREDITS.md for sources + edits)
+  bat:      { file: 'bat',      size: 32, rows: STD },
+  imp:      { file: 'imp',      size: 32, rows: STD },
+  shaman:   { file: 'shaman',   size: 32, rows: CAST },
+  guard:    { file: 'guard',    size: 32, rows: STD },
+  scarab:   { file: 'scarab',   size: 36, rows: STD, frames: { idle: 1, walk: 6, attack: 6, death: 2 } },
+  hound:    { file: 'hound',    size: 68, rows: STD, frames: { idle: 6, walk: 5, attack: 6, death: 3 } },
+  knight:   { file: 'knight',   size: 64, rows: STD, frames: { idle: 4, walk: 8, attack: 5, death: 6 } },
 };
+const frameCount = (key, anim) => SHEETS[key].frames?.[anim] ?? 10;
 
 const SCALE = 2; // world units per sprite pixel (= 1 dot)
 
@@ -697,10 +733,12 @@ function drawSprite(sheetKey, anim, frame, wx, wgy, flip, wscale = SCALE, varian
     ctx.drawImage(img, frame * s, row * s, s, s, left, top, dw, dw);
   }
 }
-function animFrame(animT, anim) {
-  if (anim === 'death') return Math.min(9, Math.floor(animT * 12));
-  if (anim === 'attack') return Math.floor(animT * 20) % 10;
-  return Math.floor(animT * 10) % 10;
+// death plays once at 12fps; attack loops twice a second; idle/walk at 10fps
+function animFrame(animT, anim, key) {
+  const n = key ? frameCount(key, anim) : 10;
+  if (anim === 'death') return Math.min(n - 1, Math.floor(animT * 12));
+  if (anim === 'attack') return Math.floor(animT * n * 2) % n;
+  return Math.floor(animT * 10) % n;
 }
 
 // hard-edged half-dark ovals: the Mega Drive's shadow/highlight mode
@@ -813,8 +851,8 @@ function damageBrazier(bz, dmg) {
   brazierDead.add(bz.key);
   brazierDamageMap.delete(bz.key);
   const roll = Math.random();
-  if (roll < 0.45) pickups.push({ x: bz.x, y: bz.y, type: 'gold', v: randInt(15, 40) });
-  else if (roll < 0.70) pickups.push({ x: bz.x, y: bz.y, type: 'med' });
+  if (roll < 0.40) pickups.push({ x: bz.x, y: bz.y, type: 'gold', v: randInt(15, 40) });
+  else if (roll < 0.70) pickups.push({ x: bz.x, y: bz.y, type: 'food', food: rollFood(true) });
   else if (roll < 0.85) gems.push({ x: bz.x, y: bz.y, v: 8 });
   else if (roll < 0.96) pickups.push({ x: bz.x, y: bz.y, type: 'vac' });
   else pickups.push({ x: bz.x, y: bz.y, type: 'nuke' });
@@ -873,28 +911,28 @@ const state = {
   time: 0, kills: 0, level: 1, xp: 0, xpNeed: 5, gold: 0, goldShown: 0,
   spawnTimer: 0, bossesSpawned: 0, eventsFired: 0, elitesSpawned: 0,
   shake: 0, flash: 0, killTimes: [], streakTier: 0,
-  hitstop: 0, lastGemT: -9, gemCombo: 0, heartT: 0,
+  hitstop: 0, lastGemT: -9, gemCombo: 0, heartT: 0, foodT: 35,
 };
 
 // VS-style wave table: one entry per minute. `min` is the enemy-count quota —
 // below it the spawner force-fills, so the screen is never quiet.
 // Each minute headlines a NEW, visually distinct enemy (first type = most common).
 const WAVES = [
-  { types: ['slime'],                          min: 14,  interval: 0.9 },
-  { types: ['skeleton', 'slime'],              min: 24,  interval: 0.8 },
-  { types: ['goblin', 'skeleton'],             min: 34,  interval: 0.7 },
-  { types: ['blueslime', 'goblin', 'skeleton'], min: 45, interval: 0.6 },
-  { types: ['brute', 'blueslime', 'skeleton'], min: 56,  interval: 0.55 },
-  { types: ['brute', 'goblin', 'blueslime'],   min: 68,  interval: 0.5 },
-  { types: ['redslime', 'brute', 'skeleton'],  min: 80,  interval: 0.45 },
-  { types: ['raider', 'redslime', 'blueslime'], min: 92, interval: 0.42 },
-  { types: ['raider', 'brute', 'redslime'],    min: 105, interval: 0.4 },
-  { types: ['orc', 'raider', 'redslime'],      min: 120, interval: 0.36 },
-  { types: ['orc', 'raider', 'blueslime'],     min: 135, interval: 0.33 },
-  { types: ['voltslime', 'orc', 'raider'],     min: 150, interval: 0.3 },
-  { types: ['voltslime', 'orc', 'redslime'],   min: 165, interval: 0.28 },
-  { types: ['orc', 'voltslime', 'raider'],     min: 185, interval: 0.26 },
-  { types: ['voltslime', 'orc', 'redslime'],   min: 205, interval: 0.25 },
+  { types: ['slime'],                            min: 14,  interval: 0.9 },
+  { types: ['bat', 'slime'],                     min: 24,  interval: 0.8 },
+  { types: ['skeleton', 'bat', 'goblin'],        min: 34,  interval: 0.7 },
+  { types: ['imp', 'skeleton', 'goblin'],        min: 45,  interval: 0.6 },
+  { types: ['scarab', 'imp', 'bat'],             min: 56,  interval: 0.55 },
+  { types: ['blueslime', 'scarab', 'skeleton'],  min: 68,  interval: 0.5 },
+  { types: ['shaman', 'imp', 'redslime'],        min: 80,  interval: 0.45 },
+  { types: ['wolf', 'redslime', 'bat'],          min: 92,  interval: 0.42 },
+  { types: ['guard', 'wolf', 'imp'],             min: 105, interval: 0.4 },
+  { types: ['brute', 'guard', 'shaman'],         min: 120, interval: 0.36 },
+  { types: ['raider', 'scarab', 'wolf'],         min: 135, interval: 0.33 },
+  { types: ['knight', 'raider', 'imp'],          min: 150, interval: 0.3 },
+  { types: ['orc', 'guard', 'shaman', 'bat'],    min: 165, interval: 0.28 },
+  { types: ['voltslime', 'wolf', 'knight'],      min: 185, interval: 0.26 },
+  { types: ['knight', 'wolf', 'shaman', 'voltslime', 'guard'], min: 205, interval: 0.25 },
 ];
 function currentWave() { return WAVES[Math.min(WAVES.length - 1, Math.floor(state.time / 60))]; }
 
@@ -911,6 +949,7 @@ const player = {
 };
 
 const enemies = [], corpses = [], bullets = [], gems = [], effects = [], texts = [], pickups = [];
+const ebullets = [];   // enemy fireballs
 
 // ---------- kill burst particles ----------
 // pixel-square debris with velocity + gravity; every 4th particle is a white spark
@@ -1126,10 +1165,21 @@ function nearestEnemies(n) {
 }
 
 // ---------- enemies ----------
-// Nine visually distinct threats — one new face (and colour) per wave.
+// Sixteen visually distinct threats — one new face (and colour) per wave.
 // move: hop = pulsing lunges, zigzag = weaving, charge = windup then rush,
-//       orbit = circles you at mid range, then bleeds inward
+//       orbit = circles you at mid range, then bleeds inward,
+//       flutter = fast erratic weave (flies over props), skitter = dart-and-freeze,
+//       scuttle = slow sidelong crawl, caster = keeps its distance and lobs fireballs,
+//       pounce = crouch, then a long locked-direction leap
+// cap = most of that kind alive at once (big or ranged foes would swamp the screen)
 const ENEMY_TYPES = {
+  bat:      { sprite: 'bat',      name: 'BAT DEMON',       hp: 10,  speed: 115, dmg: 7,  r: 9,  xp: 1, move: 'flutter', pop: '#B692FF', fly: 14 },
+  imp:      { sprite: 'imp',      name: 'DEMON IMP',       hp: 22,  speed: 96,  dmg: 11, r: 10, xp: 2, move: 'skitter', pop: '#DB2424' },
+  scarab:   { sprite: 'scarab',   name: 'SCARAB DEMON',    hp: 40,  speed: 70,  dmg: 13, r: 12, xp: 3, move: 'scuttle', pop: '#FFB600' },
+  shaman:   { sprite: 'shaman',   name: 'FALLEN SHAMAN',   hp: 38,  speed: 62,  dmg: 10, r: 10, xp: 4, move: 'caster',  pop: '#2492B6', cap: 8 },
+  wolf:     { sprite: 'hound',    name: 'DEMON WOLF',      hp: 60,  speed: 92,  dmg: 17, r: 14, xp: 5, move: 'pounce',  pop: '#FF6D00', cap: 16 },
+  guard:    { sprite: 'guard',    name: 'INFERNAL GUARD',  hp: 120, speed: 58,  dmg: 20, r: 12, xp: 6, move: 'straight', pop: '#DB4949' },
+  knight:   { sprite: 'knight',   name: 'OBLIVION KNIGHT', hp: 320, speed: 44,  dmg: 30, r: 18, xp: 10, move: 'charge', pop: '#6D49B6', cap: 6 },
   slime:    { sprite: 'slime',    name: 'TRAINING OOZE', hp: 8,   speed: 60,  dmg: 8,  r: 10, xp: 1, move: 'hop', pop: '#49DB49' },
   skeleton: { sprite: 'skeleton', name: 'BONE WALKER',   hp: 26,  speed: 68,  dmg: 12, r: 11, xp: 2, move: 'zigzag', pop: '#DBDBDB' },
   goblin:   { sprite: 'goblin',   name: 'GREMLIN',       hp: 18,  speed: 92,  dmg: 10, r: 10, xp: 2, move: 'straight', pop: '#92B649' },
@@ -1172,8 +1222,21 @@ function makeEnemy(kind, x, y, opts = {}) {
     move: t.move, boss: false, elite: !!opts.elite, sweep: opts.sweep ?? null,
     flash: -1, animT: rand(0, 10), chargeT: rand(0, 4), pop: t.pop,
     orbitSign: Math.random() < 0.5 ? 1 : -1,
+    kind, fly: t.fly || 0,
+    castT: rand(1.5, 3), casting: 0,       // caster: cooldown, windup left
+    leapCd: rand(0.5, 2), leapT: 0, crouch: 0, lx: 0, ly: 0, // pounce
   };
 }
+const CAST_WINDUP = 0.6, LEAP_TIME = 0.42;
+function shootFireball(e) {
+  const dx = player.x - e.x, dy = player.y - (e.y - 8), d = Math.hypot(dx, dy) || 1;
+  const spd = 150;
+  if (ebullets.length > 60) return;
+  ebullets.push({ x: e.x + (dx > 0 ? 8 : -8), y: e.y - 8, vx: dx / d * spd, vy: dy / d * spd,
+    r: 6, dmg: e.dmg * 1.2, life: 3.5, t: 0 });
+  sfx(330, 0.18, 'sawtooth', 0.035, -200);
+}
+const countKind = kind => { let n = 0; for (const e of enemies) if (e.kind === kind) n++; return n; };
 
 const seenTypes = new Set();
 function announceType(kind) {
@@ -1190,6 +1253,11 @@ function pickWeighted(types) {
 
 function spawnEnemy(kind) {
   if (enemies.length > 500) return;
+  const cap = ENEMY_TYPES[kind].cap;
+  if (cap && countKind(kind) >= cap) {   // at its cap: send uncapped wave fodder instead
+    kind = currentWave().types.find(k => !ENEMY_TYPES[k].cap);
+    if (!kind) return;
+  }
   announceType(kind);
   const a = rand(0, TAU), d = spawnRadius();
   enemies.push(makeEnemy(kind, player.x + Math.cos(a) * d, player.y + Math.sin(a) * d));
@@ -1197,7 +1265,9 @@ function spawnEnemy(kind) {
 
 function spawnElite() {
   const wave = currentWave();
-  const kind = pick(wave.types);
+  // only sheets with a baked elite palette (the oversized wolf/knight never go 2x)
+  const ok = wave.types.filter(k => SPR[SHEETS[ENEMY_TYPES[k].sprite].file].elite);
+  const kind = pick(ok.length ? ok : ['skeleton']);
   const a = rand(0, TAU), d = spawnRadius();
   const e = makeEnemy(kind, player.x + Math.cos(a) * d, player.y + Math.sin(a) * d,
     { hpMul: 12, xpMul: 6, scale: SCALE * 2, rMul: 1.8, spdMul: 0.85, elite: true, variant: 'elite' });
@@ -1208,7 +1278,7 @@ function spawnElite() {
 // ring event: a circle of weak fodder closes in — carve your way out
 function spawnRing() {
   const wave = currentWave();
-  const kind = wave.types[0];
+  const kind = wave.types.find(k => !ENEMY_TYPES[k].cap); // no rings of casters/knights
   const n = 42, d = Math.min(VW, VH) / 2 + 60;
   for (let i = 0; i < n; i++) {
     const a = (TAU * i) / n;
@@ -1302,10 +1372,13 @@ function killEnemy(e) {
       gems.push({ x: e.x + Math.cos(a) * d, y: e.y + Math.sin(a) * d, v: Math.ceil(e.xp / 8) });
     }
     pickups.push({ x: e.x, y: e.y, type: 'chest' }); // jackpot time
+    if (e.elite && Math.random() < 0.5) pickups.push({ x: e.x + 22, y: e.y + 6, type: 'food', food: rollFood(true) });
     state.shake = 8;
   } else {
     gems.push({ x: e.x, y: e.y, v: e.xp });
-    if (Math.random() < 0.04) pickups.push({ x: e.x + rand(-8, 8), y: e.y + rand(-8, 8), type: 'gold', v: randInt(5, 15) });
+    const r = Math.random();
+    if (r < 0.04) pickups.push({ x: e.x + rand(-8, 8), y: e.y + rand(-8, 8), type: 'gold', v: randInt(5, 15) });
+    else if (r < 0.046 && !e.sweep) pickups.push({ x: e.x + rand(-8, 8), y: e.y + rand(-8, 8), type: 'food', food: rollFood() });
     if (gems.length > 450) {
       const old = gems.shift();
       gems[Math.floor(Math.random() * gems.length)].v += old.v;
@@ -1694,6 +1767,18 @@ function update(dt) {
     spawnBoss(BOSSES[state.bossesSpawned]);
     state.bossesSpawned++;
   }
+  // a snack turns up on the floor nearby every 40-55s (never more than 4 lying around)
+  state.foodT -= dt;
+  if (state.foodT <= 0) {
+    state.foodT = rand(40, 55);
+    if (pickups.filter(p => p.type === 'food').length < 4) {
+      const a = rand(0, TAU), d = rand(110, 190);
+      const p = { x: player.x + Math.cos(a) * d, y: player.y + Math.sin(a) * d, r: 10, type: 'food', food: rollFood() };
+      resolveObstacles(p);
+      pickups.push(p);
+      effects.push({ type: 'boom', x: p.x, y: p.y, radius: 16, life: 0.3, maxLife: 0.3 });
+    }
+  }
 
   // player movement + animation clocks
   const { mx, my } = moveInput();
@@ -1805,6 +1890,49 @@ function update(dt) {
         const nx = tx * (1 - inward) + px * inward, ny = ty * (1 - inward) + py * inward;
         const nl = Math.hypot(nx, ny) || 1;
         px = nx / nl; py = ny / nl;
+      } else if (e.move === 'flutter') {
+        // erratic bat flight: fast double-frequency weave
+        const sway = Math.sin(e.animT * 7 + e.orbitSign) * 0.8 + Math.sin(e.animT * 2.3) * 0.4;
+        const nx = px - py * sway, ny = py + px * sway;
+        const nl = Math.hypot(nx, ny) || 1;
+        px = nx / nl; py = ny / nl;
+      } else if (e.move === 'skitter') {
+        spd *= Math.sin(e.animT * 6 + e.orbitSign) > -0.3 ? 1.35 : 0.1; // dart... freeze... dart
+      } else if (e.move === 'scuttle') {
+        const sway = Math.sin(e.animT * 1.4) * 0.45 * e.orbitSign;   // crab-like sidelong crawl
+        const nx = px - py * sway, ny = py + px * sway;
+        const nl = Math.hypot(nx, ny) || 1;
+        px = nx / nl; py = ny / nl;
+      } else if (e.move === 'caster') {
+        // hold the 150-230 band, strafing; stand still to cast
+        if (d < 150) { px = -px; py = -py; spd *= 0.7; }
+        else if (d < 230) {
+          const tx = -py * e.orbitSign, ty = px * e.orbitSign;
+          px = tx; py = ty; spd *= 0.4;
+        }
+        e.castT -= dt;
+        if (e.casting > 0) {
+          spd = 0;
+          e.casting -= dt;
+          if (e.casting <= 0) shootFireball(e);
+        } else if (e.castT <= 0 && d < 330) {
+          e.casting = CAST_WINDUP;
+          e.castT = rand(2.4, 3.2);
+        }
+      } else if (e.move === 'pounce') {
+        e.leapCd -= dt;
+        if (e.leapT > 0) {                     // mid-air: locked heading, no steering
+          e.leapT -= dt;
+          px = e.lx; py = e.ly; spd *= 3.2;
+        } else if (e.crouch > 0) {             // telegraph: freeze for a beat
+          e.crouch -= dt;
+          spd = 0;
+          if (e.crouch <= 0) { e.leapT = LEAP_TIME; e.lx = px; e.ly = py; }
+        } else if (e.leapCd <= 0 && d < 160) {
+          e.crouch = 0.28;
+          e.leapCd = rand(2.0, 2.6);
+          spd = 0;
+        }
       }
       e.x += px * spd * dt;
       e.y += py * spd * dt;
@@ -1816,10 +1944,28 @@ function update(dt) {
       e.x = player.x + Math.cos(a) * sd;
       e.y = player.y + Math.sin(a) * sd;
     }
-    // solid obstacles push enemies out
-    resolveObstacles(e);
+    // solid obstacles push enemies out (fliers pass over)
+    if (!e.fly) resolveObstacles(e);
   }
   resolveObstacles(player);
+
+  // enemy fireballs: fly straight, burn on contact, fizzle on props
+  for (let i = ebullets.length - 1; i >= 0; i--) {
+    const b = ebullets[i];
+    b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt; b.t += dt;
+    let dead = b.life <= 0;
+    if (!dead && dist2(b.x, b.y, player.x, player.y) < (player.r + b.r) ** 2) {
+      hurtPlayer(b.dmg);
+      burstParticles(b.x, b.y, '#FF9200', 5);
+      dead = true;
+    }
+    if (!dead) {
+      for (const o of state.obsList || []) {
+        if (dist2(o.x, o.y, b.x, b.y) < (o.r + b.r) ** 2) { dead = true; break; }
+      }
+    }
+    if (dead) { ebullets[i] = ebullets[ebullets.length - 1]; ebullets.pop(); }
+  }
 
   // corpses play their death animation then flicker out
   for (let i = corpses.length - 1; i >= 0; i--) {
@@ -1867,11 +2013,21 @@ function update(dt) {
   for (let i = pickups.length - 1; i >= 0; i--) {
     const p = pickups[i];
     if (dist2(p.x, p.y, player.x, player.y) >= (player.r + 14) ** 2) continue;
+    // food waits on the floor until you actually need it
+    if (p.type === 'food' && player.hp >= player.maxHp) continue;
     pickups.splice(i, 1);
-    if (p.type === 'med') {
-      player.hp = Math.min(player.maxHp, player.hp + 40);
-      popText(player.x, player.y - 44, '+40 HP', C.green);
-      sfx(500, 0.15, 'sine', 0.06, 200);
+    if (p.type === 'food') {
+      const f = FOOD[p.food];
+      const gain = Math.min(player.maxHp - player.hp, Math.round(player.maxHp * f.heal));
+      player.hp += gain;
+      popText(player.x, player.y - 44, `${f.name} +${gain}`, C.green);
+      burstParticles(p.x, p.y - 4, f.col, p.food === 'medkit' ? 14 : 8);
+      sfx(440, 0.09, 'square', 0.05, 220);
+      setTimeout(() => sfx(660, 0.12, 'square', 0.05, 330), 80);
+      if (p.food === 'medkit') {
+        setTimeout(() => sfx(990, 0.18, 'square', 0.05, 200), 170);
+        state.flash = Math.max(state.flash, 0.2);
+      }
     } else if (p.type === 'gold') {
       state.gold += p.v;
       popText(player.x, player.y - 44, `+${p.v} GOLD`, C.yellow);
@@ -1888,6 +2044,7 @@ function update(dt) {
       sndNuke();
       announce('SYSTEM PURGE!', C.white, 1.4, 4);
       for (const e of [...enemies]) if (!e.boss) killEnemy(e);
+      ebullets.length = 0;
     } else if (p.type === 'chest') {
       pushMenu({ type: 'chest' });
     }
@@ -1941,8 +2098,12 @@ function renderWorld() {
     const x = toDX(p.x), y = toDY(p.y);
     if (x < -16 || x > W + 16 || y < -16 || y > H + 16) continue;
     const bob = Math.round(Math.sin(uiTime * 4 + p.x) * 1.5);
-    if (p.type === 'med') ctx.drawImage(ICONS.heal, x - 5, y - 5 + bob);
-    else if (p.type === 'gold') {
+    if (p.type === 'food') {
+      const img = FOOD_IMG[p.food];
+      drawShadowAt(p.x, p.y + 10, 7);
+      ctx.drawImage(img, x - (img.width >> 1), y - (img.height >> 1) + bob);
+      if ((Math.floor(uiTime * 6) + (p.x | 0)) % 11 === 0) rect(x - 3, y - (img.height >> 1) + bob, 1, 1, C.white);
+    } else if (p.type === 'gold') {
       const f = (((Math.floor(uiTime * 10) + (p.x | 0)) % 4) + 4) % 4;   // face, half, edge, half (mirrored)
       if (f === 3) {
         ctx.save(); ctx.translate(x + 4, y - 4 + bob); ctx.scale(-1, 1);
@@ -1964,7 +2125,7 @@ function renderWorld() {
   // corpses (death animations), flickering out like old hardware sprites
   for (const c of corpses) {
     if (c.animT > 0.85 && blink(15)) continue;
-    drawSprite(c.sprite, 'death', Math.min(9, Math.floor(c.animT * 12)), c.x, c.groundY, c.flip, c.scale, c.variant);
+    drawSprite(c.sprite, 'death', animFrame(c.animT, 'death', c.sprite), c.x, c.groundY, c.flip, c.scale, c.variant);
   }
 
   // shadows first, so no shadow ever lands on a sprite
@@ -1978,8 +2139,20 @@ function renderWorld() {
   for (const e of enemies) {
     drawables.push({ y: groundYOf(e), draw() {
       const near = dist2(e.x, e.y, player.x, player.y) < (e.r + player.r + 26) ** 2;
-      const anim = near ? 'attack' : 'walk';
-      drawSprite(e.sprite, anim, animFrame(e.animT, anim), e.x, groundYOf(e), player.x < e.x,
+      let anim = near ? 'attack' : 'walk', frame;
+      if (e.casting > 0) {                       // shaman windup: the fire-gesture row, once
+        anim = 'cast';
+        frame = Math.min(9, Math.floor((1 - e.casting / CAST_WINDUP) * 10));
+      } else if (e.leapT > 0 || e.crouch > 0) {  // wolf: jump row across crouch + leap
+        anim = 'attack';
+        const p = e.crouch > 0 ? 0 : 1 - e.leapT / LEAP_TIME;
+        frame = Math.min(5, 1 + Math.floor(p * 5)) * (e.crouch > 0 ? 0 : 1);
+      } else if (e.move === 'pounce' && anim === 'attack') {
+        anim = 'walk';                           // the jump row only plays for real leaps
+      }
+      if (frame === undefined) frame = animFrame(e.animT, anim, e.sprite);
+      const lift = e.fly ? e.fly + Math.round(Math.sin(e.animT * 9) * 3) : 0;
+      drawSprite(e.sprite, anim, frame, e.x, groundYOf(e) - lift, e.lx && e.leapT > 0 ? e.lx < 0 : player.x < e.x,
         e.scale, e.flash > 0 ? 'white' : e.variant);
     } });
   }
@@ -2013,6 +2186,20 @@ function renderWorld() {
       line(x - ux * 6, y - uy * 6, x, y, C.red, 2);
       rect(x, y, 2, 2, C.white);
     }
+  }
+  // shaman fireballs: flickering 3-ring core with an ember trail
+  for (const b of ebullets) {
+    const x = toDX(b.x), y = toDY(b.y);
+    if (x < -8 || x > W + 8 || y < -8 || y > H + 8) continue;
+    const sp = Math.hypot(b.vx, b.vy) || 1, ux = b.vx / sp, uy = b.vy / sp;
+    for (let k = 3; k >= 1; k--) {
+      if ((Math.floor(b.t * 20) + k) % 3 === 0) continue;
+      rect(x - ux * k * 3, y - uy * k * 3, 2, 2, k === 1 ? C.orange : C.red);
+    }
+    const flick = Math.floor(b.t * 15) % 2;
+    disc(x, y, 3 + flick, C.red);
+    disc(x, y, 2, C.orange);
+    rect(x - 1, y - 1, 2, 2, flick ? C.yellow : C.white);
   }
   for (const wp of player.weapons) {
     if (!wp.orbPos) continue;
@@ -2267,20 +2454,26 @@ function renderPause(m) {
 
 // ---------- render: title / select / results / boot ----------
 const PARADE = ['ranger', 'warrior', 'wizard', 'rogue', 'cleric', 'biski', null, null,
-  'slime', 'skeleton', 'goblin', 'slimeR', 'orcA'];
+  'slime', 'bat', 'imp', 'skeleton', 'scarab', 'shaman', 'hound', 'guard', 'knight'];
+// big sheets need more room in the line-up
+const paradeGap = key => (!key ? 26 : SHEETS[key].size > 40 ? 44 : SHEETS[key].size > 32 ? 32 : 26);
 function drawParade(gy) {
-  const spacing = 26, span = PARADE.length * spacing;
+  const span = PARADE.reduce((s, k) => s + paradeGap(k), 0);
   const head = (uiTime * 32) % (W + span);
+  let off = 0;
   PARADE.forEach((key, i) => {
+    const gap = paradeGap(key);
+    off += gap;
     if (!key) return;
-    const x = Math.round(head - i * spacing);
-    if (x < -24 || x > W + 24) return;
+    const x = Math.round(head - off + gap / 2);
+    if (x < -40 || x > W + 40) return;
     const def = SHEETS[key], img = SPR[def.file].base, s = def.size;
     const k = key === 'biski' ? 1.25 : 1, dw = Math.round(s * k);
-    const sh = shadowSprite(6);
+    const sh = shadowSprite(s > 40 ? 10 : 6);
     ctx.drawImage(sh, x - (sh.width >> 1), gy - (sh.height >> 1));
-    const frame = Math.floor(uiTime * 10 + i * 3) % 10;
-    ctx.drawImage(img, frame * s, def.rows.walk * s, s, s, x - (dw >> 1), gy - dw + Math.round(3 * k), dw, dw);
+    const frame = Math.floor(uiTime * 10 + i * 3) % frameCount(key, 'walk');
+    const lift = key === 'bat' ? 7 : 0;
+    ctx.drawImage(img, frame * s, def.rows.walk * s, s, s, x - (dw >> 1), gy - dw + Math.round(3 * k) - lift, dw, dw);
   });
 }
 // a clipped window onto the arena floor (tiles at 1x or 2x), optionally dimmed
@@ -2324,7 +2517,12 @@ function renderTitle() {
   drawText('THE DANGER ROOM HAS GONE ROGUE.', W / 2, ty, C.lgrey, { align: 'center' });
   drawText('SURVIVE INFERNO PROTOCOL FOR 15:00', W / 2, ty + 10, C.lgrey, { align: 'center' });
   if (blink(2)) drawText('PRESS START', W / 2, Math.round(H * 0.66), C.yellow, { align: 'center' });
-  drawText('ART: CALCIUMTRICE / BUCH / SHEPARDSKIN', W / 2, H - 10, C.grey, { align: 'center', shadow: false });
+  const credit = 'ART: CALCIUMTRICE / ANSIMUZ / REDSHRIKE / BUCH / SHEPARDSKIN';
+  if (credit.length * 6 < W - 8) drawText(credit, W / 2, H - 10, C.grey, { align: 'center', shadow: false });
+  else {
+    drawText('ART: CALCIUMTRICE / ANSIMUZ', W / 2, H - 20, C.grey, { align: 'center', shadow: false });
+    drawText('REDSHRIKE / BUCH / SHEPARDSKIN', W / 2, H - 10, C.grey, { align: 'center', shadow: false });
+  }
   addHit(0, 0, W, H, 'any');
 }
 function selectLayout() {
