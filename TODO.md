@@ -36,6 +36,14 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy skill art + theme: J. W. Bjerk's CC-BY painterly spell
+  icons replace the 10px glyphs (level-up cards with framed 32px icon,
+  name, POWER/TRAIT tag, inline description; 16px in chest/pause/HUD).
+  Original E-minor 90s-cartoon-style hero theme (orchestra-hit intro,
+  brass stabs, galloping FM bass, brass melody, power-chord bridge).
+  Fixed audio click (gain nodes defaulted to 1 before their envelope) —
+  `d05f939`
+
 - Mutant Academy food + demon roster: fish/floor chicken/medipack heal
   25/50/100% (brazier, elite, rare-kill and timed floor drops; food waits
   while HP is full). Seven new enemies from sourced CC-BY art (Calciumtrice,
