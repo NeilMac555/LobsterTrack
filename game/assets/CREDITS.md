@@ -46,3 +46,12 @@ right, re-cropped and repacked into this project's sheet layout.
 - `scarab.png` (Scarab Demon) — "3/4 view beetle" by
   **Stephen "Redshrike" Challener**, background keyed out and recoloured
   gold. Link back: https://opengameart.org/content/34-view-beetle
+
+## Skill icons
+
+`skills.png` is built from **Painterly Spell Icons** (parts 1–4) by
+**J. W. Bjerk (eleazzaar)** — www.jwbjerk.com — used under **CC-BY 3.0**
+(https://creativecommons.org/licenses/by/3.0/):
+https://opengameart.org/content/painterly-spell-icons-part-1 (and parts 2–4).
+Modifications: 14 icons selected, downscaled to 32x32 and 16x16 and packed
+into one sheet (the game then snaps them to the Mega Drive palette).

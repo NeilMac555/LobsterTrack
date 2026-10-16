@@ -129,50 +129,131 @@ const sndGameOver = () => jingle([392, 349, 311, 262, 196], 0.2);
 const sndClear = () => jingle([523, 659, 784, 1047, 784, 1047, 1319], 0.11);
 
 const music = { on: true, started: false, step: 0, nextT: 0, timer: null };
-// A harmonic minor flavour: dark, driving
-const M_BASS = [55, 55, 0, 55, 82.4, 0, 55, 0, 65.4, 65.4, 0, 65.4, 49, 0, 61.7, 0]; // A1 E2 C2 G1 B1
-const M_ARP = [220, 261.6, 329.6, 261.6, 220, 329.6, 392, 329.6,
-  261.6, 329.6, 415.3, 329.6, 246.9, 293.7, 370, 293.7]; // Am / C / E arps
-function musicTick() {
+// "Danger Room" — an original Saturday-morning-cartoon hero theme in E minor:
+// orchestra-hit intro, brass-stab pushes, galloping octave bass, a rising brass
+// melody, then a power-chord bridge. Written as 16th-note steps per bar.
+const NOTE_IDX = { C: 0, 'C#': 1, D: 2, 'D#': 3, E: 4, F: 5, 'F#': 6, G: 7, 'G#': 8, A: 9, 'A#': 10, B: 11 };
+const hz = n => { const m = /^([A-G]#?)(\d)$/.exec(n); return 440 * Math.pow(2, (NOTE_IDX[m[1]] + (+m[2] + 1) * 12 - 69) / 12); };
+// "E5:4 -:2 G5:6" -> [{ at, f, len }] (a "-" note is a rest)
+function phrase(str) {
+  let at = 0;
+  return str.trim().split(/\s+/).map(tok => {
+    const [n, l] = tok.split(':'), ev = { at, f: n === '-' ? 0 : hz(n), len: +l };
+    at += +l;
+    return ev;
+  }).filter(e => e.f);
+}
+const CHORDS = {   // bass root + stab triad
+  Em: { root: 'E2', tri: ['E4', 'G4', 'B4'] }, C: { root: 'C2', tri: ['C4', 'E4', 'G4'] },
+  D: { root: 'D2', tri: ['D4', 'F#4', 'A4'] }, B: { root: 'B1', tri: ['B3', 'D#4', 'F#4'] },
+  Am: { root: 'A1', tri: ['A3', 'C4', 'E4'] },
+};
+const MEL_A = ['E5:4 B4:2 E5:2 G5:6 F#5:2', 'E5:3 D5:3 B4:10', 'C5:4 E5:2 G5:2 C6:6 B5:2', 'G5:3 E5:3 G5:10',
+  'A5:4 F#5:2 D5:2 A5:4 B5:2 C6:2', 'D6:6 C6:2 B5:4 A5:4', 'B5:4 A5:2 F#5:2 D#5:4 F#5:4', 'B4:8 -:8'];
+const MEL_B = ['A4:2 C5:2 E5:4 D5:2 C5:2 B4:4', 'A4:6 E5:2 A5:8', 'G5:2 F#5:2 E5:4 B4:4 E5:4', 'G5:12 -:4',
+  'E5:2 G5:2 C6:4 B5:2 A5:2 G5:4', 'F#5:4 A5:4 D6:8', 'D#6:4 B5:4 A5:4 F#5:4', 'B5:8 -:8'];
+const STAB_INTRO = [0, 3, 6, 10, 12], STAB_PUSH = [14], STAB_END = [8, 11, 14];
+// arrangement: each bar = chord, melody phrase, stab steps, feel; the loop restarts at LOOP_AT
+const SONG = [];
+['Em', 'Em', 'C', 'B'].forEach((c, i) => SONG.push({ c, stabs: STAB_INTRO, hit: i % 2 === 0, fill: i === 3, sec: 'intro' }));
+const LOOP_AT = SONG.length;
+const A_CH = ['Em', 'Em', 'C', 'C', 'D', 'D', 'B', 'B'], B_CH = ['Am', 'Am', 'Em', 'Em', 'C', 'D', 'B', 'B'];
+A_CH.forEach((c, i) => SONG.push({ c, mel: phrase(MEL_A[i]), stabs: i === 7 ? STAB_END : STAB_PUSH, fill: i === 7, crash: i === 0, sec: 'A' }));
+B_CH.forEach((c, i) => SONG.push({ c, mel: phrase(MEL_B[i]), stabs: i === 7 ? STAB_END : [], fill: i === 7, crash: i === 0, gtr: true, sec: 'B' }));
+A_CH.forEach((c, i) => SONG.push({ c, mel: phrase(MEL_A[i]), stabs: i === 7 ? STAB_END : STAB_PUSH, fill: i === 7, crash: i === 0, oct: true, sec: 'A2' }));
+const BASS_GALLOP = [0, 0, 12, 0, 0, 12, 0, 12];   // semitone offsets on the 8ths
+
+function musicTick(ahead = 0.18) {   // ahead: how far to schedule (offline renders pass a long one)
   if (!music.on || muted || !audioCtx) return;
-  const bpm = 138, stepDur = 60 / bpm / 4;
+  const bpm = 152, sd = 60 / bpm / 4;
   // never play catch-up after mute/background throttling — snap to now
   if (music.nextT < audioCtx.currentTime - 0.1) music.nextT = audioCtx.currentTime + 0.05;
-  while (music.nextT < audioCtx.currentTime + 0.18) {
-    const s = music.step % 16, bar = Math.floor(music.step / 16) % 4;
-    const t = music.nextT;
-    if (s % 4 === 0) beep(t, 90, 0.11, 'sine', 0.16, -55);          // kick
-    if (s === 4 || s === 12) noiseHit(t, 0.07, 0.07);                 // snare
-    if (s % 2 === 1) noiseHit(t, 0.025, 0.02);                        // hats
-    const b = M_BASS[s];
-    if (b) fm(t, bar === 3 ? b * 0.75 : b, stepDur * 0.95, 0.13, 1, 2.4, 0.09);  // FM slap bass
+  while (music.nextT < audioCtx.currentTime + ahead) {
+    const total = music.step, s = total % 16;
+    let bi = Math.floor(total / 16);
+    if (bi >= SONG.length) bi = LOOP_AT + (bi - LOOP_AT) % (SONG.length - LOOP_AT);
+    const bar = SONG[bi], ch = CHORDS[bar.c], t = music.nextT;
     const intense = scene === 'play' && state.time > 300;
-    if (intense || s % 2 === 0) {
-      const a = M_ARP[(s + bar * 4) % 16];
-      fm(t, intense ? a * 2 : a, stepDur * 0.85, 0.045, 2, 1.4, 0.07);  // FM brass lead
+    // drums: driving rock beat, snare roll + tom run into each new section
+    if (bar.crash && s === 0) noiseHit(t, 0.45, 0.06);
+    if (s === 0 || s === 8 || s === 10 || (bar.sec !== 'intro' && s === 7)) beep(t, 90, 0.11, 'sine', 0.16, -55);
+    if (bar.fill && s >= 8) {
+      if (s % 2 === 0) beep(t, 200 - (s - 8) * 12, 0.14, 'sine', 0.12, -70);    // tom run
+      else noiseHit(t, 0.05, 0.05);
+    } else {
+      if (s === 4 || s === 12) noiseHit(t, 0.08, 0.075);                       // snare
+      if (s % 2 === 0) noiseHit(t, 0.02, s % 4 === 2 ? 0.03 : 0.018);         // hats
+    }
+    // orchestra hit: brassy low chord + noise burst
+    if (bar.hit && s === 0) {
+      noiseHit(t, 0.2, 0.08);
+      for (const n of ch.tri) fm(t, hz(n) / 2, 0.4, 0.04, 1.5, 4, 0.18);
+    }
+    // galloping octave FM bass on the 8ths
+    if (s % 2 === 0) {
+      const off = bar.sec === 'intro' ? 0 : BASS_GALLOP[s / 2];
+      fm(t, hz(ch.root) * Math.pow(2, off / 12), sd * 1.8, 0.12, 1, 2.4, 0.09);
+    }
+    // brass stabs: short bright triads
+    if (bar.stabs && bar.stabs.includes(s)) for (const n of ch.tri) fm(t, hz(n), sd * 1.6, 0.03, 1, 3.5, 0.06);
+    // bridge: buzzy palm-muted power chords (root + fifth) on the 8ths
+    if (bar.gtr && s % 2 === 0) {
+      const r = hz(ch.root) * 2;
+      fm(t, r, sd * 1.5, 0.028, 1, 6, 0.05);
+      fm(t, r * 1.4983, sd * 1.5, 0.022, 1, 6, 0.05);
+    }
+    // lead brass: two slightly detuned FM voices for a fat unison
+    if (bar.mel) {
+      for (const ev of bar.mel) {
+        if (ev.at !== s) continue;
+        const f = bar.oct ? ev.f * 2 : ev.f, dur = ev.len * sd * 0.95;
+        fm(t, f, dur, 0.036, 1, 2.2, 0.3, true);
+        fm(t, f * 1.004, dur, 0.026, 1, 1.6, 0.4, true);
+        if (bar.oct) fm(t, ev.f, dur, 0.022, 1, 1.8, 0.3, true);
+      }
+    }
+    // late game: a racing 16th arpeggio on top
+    if (intense && bar.sec !== 'intro') {
+      const n = ch.tri[[0, 1, 2, 1][s % 4]];
+      fm(t, hz(n) * 4, sd * 0.8, 0.018, 2, 1.4, 0.05);
     }
     music.step++;
-    music.nextT += stepDur;
+    music.nextT += sd;
   }
 }
 // 2-operator FM voice: a sine modulator bends a sine carrier; the modulation
 // index decays fast, giving the bright attack / mellow tail of Mega Drive FM.
-function fm(t, freq, dur, vol, ratio, index, decay) {
+// brass = horn envelope: quick swell, held body, brightness that follows the swell
+function fm(t, freq, dur, vol, ratio, index, decay, brass = false) {
   try {
     const out = audioOut();
     const car = audioCtx.createOscillator(), mod = audioCtx.createOscillator();
     const depth = audioCtx.createGain(), amp = audioCtx.createGain();
+    amp.gain.value = 0;   // gains default to 1: start silent or the first sample can pop
     car.frequency.setValueAtTime(freq, t);
     mod.frequency.setValueAtTime(freq * ratio, t);
     const d0 = freq * ratio * index;
-    depth.gain.setValueAtTime(d0, t);
-    depth.gain.exponentialRampToValueAtTime(Math.max(1, d0 * 0.12), t + decay);
-    amp.gain.setValueAtTime(vol, t);
-    amp.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    let end = t + dur;
+    if (brass) {
+      const hold = Math.max(t + 0.05, t + dur - 0.05);
+      depth.gain.setValueAtTime(d0 * 0.25, t);
+      depth.gain.linearRampToValueAtTime(d0, t + 0.04);
+      depth.gain.exponentialRampToValueAtTime(Math.max(1, d0 * 0.45), t + 0.04 + decay);
+      amp.gain.setValueAtTime(0.0001, t);
+      amp.gain.linearRampToValueAtTime(vol, t + 0.03);
+      amp.gain.linearRampToValueAtTime(vol * 0.7, hold);
+      amp.gain.exponentialRampToValueAtTime(0.001, hold + 0.09);
+      end = hold + 0.09;
+    } else {
+      depth.gain.setValueAtTime(d0, t);
+      depth.gain.exponentialRampToValueAtTime(Math.max(1, d0 * 0.12), t + decay);
+      amp.gain.setValueAtTime(vol, t);
+      amp.gain.exponentialRampToValueAtTime(0.001, end);
+    }
     mod.connect(depth); depth.connect(car.frequency);
     car.connect(amp); amp.connect(out);
     mod.start(t); car.start(t);
-    mod.stop(t + dur + 0.02); car.stop(t + dur + 0.02);
+    mod.stop(end + 0.02); car.stop(end + 0.02);
   } catch (e) {}
 }
 function beep(t, freq, dur, type, vol, slide = 0) {
@@ -181,6 +262,7 @@ function beep(t, freq, dur, type, vol, slide = 0) {
     const o = audioCtx.createOscillator(), g = audioCtx.createGain();
     o.type = type; o.frequency.setValueAtTime(freq, t);
     if (slide) o.frequency.linearRampToValueAtTime(Math.max(20, freq + slide), t + dur);
+    g.gain.value = 0;
     g.gain.setValueAtTime(vol, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + dur);
     o.connect(g); g.connect(out);
@@ -197,6 +279,7 @@ function noiseHit(t, dur, vol) {
     }
     const src = audioCtx.createBufferSource(), g = audioCtx.createGain();
     src.buffer = noiseBuf;
+    g.gain.value = 0;
     g.gain.setValueAtTime(vol, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + dur);
     src.connect(g); g.connect(audioOut());
@@ -605,7 +688,7 @@ function pips(x, y, filled, next = filled, size = 1) {
 // ---------- assets: load, palette-quantize, palette-swap ----------
 const ASSET_FILES = ['warrior', 'wizard', 'ranger', 'rogue', 'cleric',
   'slime', 'goblin', 'skeleton', 'orc', 'minotaur', 'tiles', 'biski',
-  'bat', 'imp', 'scarab', 'shaman', 'hound', 'guard', 'knight'];
+  'bat', 'imp', 'scarab', 'shaman', 'hound', 'guard', 'knight', 'skills'];
 const assets = {};
 function loadAssets() {
   return Promise.all(ASSET_FILES.map(name => new Promise((res, rej) => {
@@ -703,6 +786,20 @@ const SHEETS = {
   hound:    { file: 'hound',    size: 68, rows: STD, frames: { idle: 6, walk: 5, attack: 6, death: 3 } },
   knight:   { file: 'knight',   size: 64, rows: STD, frames: { idle: 4, walk: 8, attack: 5, death: 6 } },
 };
+// painted skill icons (assets/skills.png): row 0 = 32x32, row 1 = 16x16, in this order
+const SKILL_ORDER = ['optic', 'claws', 'storm', 'orbs', 'nova', 'cards', 'boots', 'vitality',
+  'regen', 'magnet', 'power', 'focus', 'plating', 'heal'];
+function drawSkill(id, x, y, size = 32) {
+  const i = SKILL_ORDER.indexOf(id);
+  if (i < 0 || !SPR.skills) {                 // gold etc. keep their pixel icons
+    const ic = ICONS[id];
+    if (ic) ctx.drawImage(ic, Math.round(x + (size - ic.width) / 2), Math.round(y + (size - ic.height) / 2));
+    return;
+  }
+  const img = SPR.skills.base;
+  if (size >= 32) ctx.drawImage(img, i * 32, 0, 32, 32, x, y, 32, 32);
+  else ctx.drawImage(img, i * 32, 32, 16, 16, x, y, 16, 16);
+}
 const frameCount = (key, anim) => SHEETS[key].frames?.[anim] ?? 10;
 
 const SCALE = 2; // world units per sprite pixel (= 1 dot)
@@ -2309,12 +2406,12 @@ function renderHUD() {
 
   // loadout: power icons, then trait icons, rank pips beneath
   let lx = 6;
-  const ly = H - 18;
+  const ly = H - 23;
   const slot = (key, rank) => {
-    rect(lx - 1, ly - 1, 12, 16, 'rgba(0,0,0,0.5)');
-    ctx.drawImage(ICONS[key], lx, ly);
-    pips(lx, ly + 12, rank);
-    lx += 13;
+    rect(lx - 1, ly - 1, 18, 22, 'rgba(0,0,0,0.5)');
+    drawSkill(key, lx, ly, 16);
+    pips(lx + 2, ly + 18, rank);
+    lx += 19;
   };
   for (const w of player.weapons) slot(w.id, w.level);
   if (Object.keys(player.passives).length) lx += 4;
@@ -2355,39 +2452,47 @@ function windowTitle(text, x, y, ww, grad) {
   drawText(text, x + ww / 2, y, C.white, { scale: sc, align: 'center', outline: C.black, grad });
   return 7 * sc;
 }
+// VS-style cards: a big framed painting per choice, its name, type and what it does
 function renderLevelUp(m) {
   dim();
-  const ww = menuWidth(280), x = Math.round((W - ww) / 2), rowH = 18;
-  const sel = m.choices[m.sel];
-  const lines = wrapText(optDef(sel).desc, ww - 16);
+  const ww = menuWidth(300), x = Math.round((W - ww) / 2);
+  const tx = x + 52, tw = ww - 60;
   const headH = 7 * (textW('LEVEL UP!', 2) <= ww - 12 ? 2 : 1);
-  const mainH = 8 + headH + 8 + m.choices.length * rowH + 4;
-  const descH = 8 + lines.length * 9 + 4;
-  const y = Math.max(6, Math.round((H - (mainH + 4 + descH)) / 2));
-  drawWindow(x, y, ww, mainH);
+  const rows = m.choices.map(o => {
+    const lines = wrapText(optDef(o).desc, tw).slice(0, 3);
+    return { o, lines, h: Math.max(40, 16 + lines.length * 9 + 4) };
+  });
+  const h = 8 + headH + 8 + rows.reduce((t, r) => t + r.h + 2, 0) + 4;
+  const y = Math.max(4, Math.round((H - h) / 2));
+  drawWindow(x, y, ww, h);
   windowTitle('LEVEL UP!', x, y + 7, ww, GOLD_GRAD);
   let ry = y + 8 + headH + 8;
-  m.choices.forEach((o, i) => {
+  rows.forEach(({ o, lines, h: rh }, i) => {
     const on = i === m.sel, def = optDef(o);
     if (on) {
-      rect(x + 3, ry, ww - 6, rowH - 2, C.selBar);
-      if (blink(3)) drawCursor(x + 5, ry + 4);
+      rect(x + 3, ry, ww - 6, rh, C.selBar);
+      if (blink(3)) drawCursor(x + 5, ry + Math.round(rh / 2) - 3);
     }
-    ctx.drawImage(ICONS[o.kind === 'heal' ? 'heal' : o.id], x + 13, ry + 3);
-    drawText(def.name, x + 28, ry + 5, on ? C.white : C.lgrey);
-    if (o.kind === 'heal') drawText('+50 HP', x + ww - 8, ry + 5, C.green, { align: 'right' });
-    else if (o.isNew) drawText('NEW!', x + ww - 8, ry + 5, blink(4) ? C.green : C.yellow, { align: 'right' });
-    else pips(x + ww - 27, ry + 6, o.rank, o.rank + 1, 3);
-    addHit(x + 3, ry, ww - 6, rowH - 2, 'row:' + i);
-    ry += rowH;
+    // icon frame: gold when selected, steel otherwise, like an MD item box
+    const ix = x + 13, iy = ry + Math.round((rh - 34) / 2);
+    rect(ix - 1, iy - 1, 36, 36, C.black);
+    rect(ix, iy, 34, 34, on ? C.yellow : C.grey);
+    drawSkill(o.kind === 'heal' ? 'heal' : o.id, ix + 1, iy + 1, 32);
+    drawText(def.name, tx, ry + 4, on ? C.white : C.lgrey);
+    const kind = o.kind === 'weapon' ? 'POWER' : o.kind === 'passive' ? 'TRAIT' : 'HEAL';
+    if (o.kind === 'heal') drawText('+50 HP', x + ww - 8, ry + 4, C.green, { align: 'right' });
+    else if (o.isNew) drawText('NEW!', x + ww - 8, ry + 4, blink(4) ? C.green : C.yellow, { align: 'right' });
+    else pips(x + ww - 27, ry + 5, o.rank, o.rank + 1, 3);
+    const nameEnd = tx + textW(norm(def.name)) + 6;
+    if (nameEnd + 30 < x + ww - 32) drawText(kind, nameEnd, ry + 4, o.kind === 'weapon' ? C.orange : C.cyan);
+    lines.forEach((ln, k) => drawText(ln, tx, ry + 15 + k * 9, on ? C.white : C.lgrey));
+    addHit(x + 3, ry, ww - 6, rh, 'row:' + i);
+    ry += rh + 2;
   });
-  const dy = y + mainH + 4;
-  drawWindow(x, dy, ww, descH);
-  lines.forEach((ln, i) => drawText(ln, x + 8, dy + 6 + i * 9, C.white));
 }
 function renderChest(m) {
   dim();
-  const ww = menuWidth(260), x = Math.round((W - ww) / 2), rowH = 14;
+  const ww = menuWidth(260), x = Math.round((W - ww) / 2), rowH = 18;
   const headH = 14;
   const h = 8 + headH + 8 + m.rewards.length * rowH + 6 + 10 + 12;
   const y = Math.max(6, Math.round((H - h) / 2));
@@ -2397,8 +2502,8 @@ function renderChest(m) {
   let ry = y + 8 + headH + 8;
   for (let i = 0; i < m.shown; i++) {
     const r = m.rewards[i];
-    ctx.drawImage(ICONS[r.icon], x + 10, ry);
-    drawText(r.name, x + 25, ry + 2, C.white);
+    drawSkill(r.icon, x + 8, ry - 3, 16);
+    drawText(r.name, x + 28, ry + 2, C.white);
     if (r.rank) pips(x + ww - 27, ry + 3, r.rank, r.rank, 3);
     ry += rowH;
   }
@@ -2416,30 +2521,30 @@ function renderPause(m) {
   const ws = player.weapons, ps = Object.entries(player.passives);
   const rows = two ? Math.max(ws.length, ps.length, 1) : ws.length + ps.length + 1;
   const opts = ['RESUME', `SOUND: ${muted ? 'OFF' : 'ON'}`, 'QUIT TO TITLE'];
-  const h = 8 + 14 + 8 + 10 + rows * 13 + 8 + opts.length * 14 + 4;
+  const h = 8 + 14 + 8 + 10 + rows * 18 + 8 + opts.length * 14 + 4;
   const y = Math.max(6, Math.round((H - h) / 2));
   drawWindow(x, y, ww, h);
   windowTitle('PAUSE', x, y + 7, ww, CYAN_GRAD);
   const top = y + 30;
   const cw = two ? Math.floor((ww - 16) / 2) : ww - 16;
   const entry = (cx, cy, icon, name, rank) => {
-    ctx.drawImage(ICONS[icon], cx, cy);
-    const room = Math.floor((cw - 13 - 32) / 6);
-    drawText(norm(name).slice(0, room), cx + 13, cy + 2, C.white);
+    drawSkill(icon, cx, cy - 3, 16);
+    const room = Math.floor((cw - 19 - 32) / 6);
+    drawText(norm(name).slice(0, room), cx + 19, cy + 2, C.white);
     pips(cx + cw - 28, cy + 3, rank, rank, 3);   // 8-dot gutter before the next column
   };
   if (two) {
     drawText('POWERS', x + 8, top, C.cyan);
     drawText('TRAITS', x + 8 + cw, top, C.cyan);
-    ws.forEach((w, i) => entry(x + 8, top + 10 + i * 13, w.id, WEAPON_DEFS[w.id].name, w.level));
-    ps.forEach(([id, r], i) => entry(x + 8 + cw, top + 10 + i * 13, id, PASSIVE_DEFS[id].name, r));
+    ws.forEach((w, i) => entry(x + 8, top + 14 + i * 18, w.id, WEAPON_DEFS[w.id].name, w.level));
+    ps.forEach(([id, r], i) => entry(x + 8 + cw, top + 14 + i * 18, id, PASSIVE_DEFS[id].name, r));
   } else {
     drawText('LOADOUT', x + 8, top, C.cyan);
     const all = ws.map(w => [w.id, WEAPON_DEFS[w.id].name, w.level])
       .concat(ps.map(([id, r]) => [id, PASSIVE_DEFS[id].name, r]));
-    all.forEach(([id, name, r], i) => entry(x + 8, top + 10 + i * 13, id, name, r));
+    all.forEach(([id, name, r], i) => entry(x + 8, top + 14 + i * 18, id, name, r));
   }
-  let oy = top + 10 + rows * 13 + 6;
+  let oy = top + 14 + rows * 18 + 2;
   opts.forEach((label, i) => {
     const on = i === m.sel;
     if (on) {
@@ -2517,10 +2622,10 @@ function renderTitle() {
   drawText('THE DANGER ROOM HAS GONE ROGUE.', W / 2, ty, C.lgrey, { align: 'center' });
   drawText('SURVIVE INFERNO PROTOCOL FOR 15:00', W / 2, ty + 10, C.lgrey, { align: 'center' });
   if (blink(2)) drawText('PRESS START', W / 2, Math.round(H * 0.66), C.yellow, { align: 'center' });
-  const credit = 'ART: CALCIUMTRICE / ANSIMUZ / REDSHRIKE / BUCH / SHEPARDSKIN';
+  const credit = 'ART: CALCIUMTRICE / ANSIMUZ / REDSHRIKE / BJERK / BUCH / SHEPARDSKIN';
   if (credit.length * 6 < W - 8) drawText(credit, W / 2, H - 10, C.grey, { align: 'center', shadow: false });
   else {
-    drawText('ART: CALCIUMTRICE / ANSIMUZ', W / 2, H - 20, C.grey, { align: 'center', shadow: false });
+    drawText('ART: CALCIUMTRICE / ANSIMUZ / BJERK', W / 2, H - 20, C.grey, { align: 'center', shadow: false });
     drawText('REDSHRIKE / BUCH / SHEPARDSKIN', W / 2, H - 10, C.grey, { align: 'center', shadow: false });
   }
   addHit(0, 0, W, H, 'any');
