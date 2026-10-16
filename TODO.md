@@ -36,6 +36,15 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy food + demon roster: fish/floor chicken/medipack heal
+  25/50/100% (brazier, elite, rare-kill and timed floor drops; food waits
+  while HP is full). Seven new enemies from sourced CC-BY art (Calciumtrice,
+  Merry Dream Games, ansimuz, Redshrike — repacked/recoloured, credited):
+  Bat Demon flier, Demon Imp, Scarab Demon, Fallen Shaman fireball caster,
+  Demon Wolf pouncer, Infernal Guard, Oblivion Knight tank. Per-sheet frame
+  counts/cell sizes, enemy projectiles, concurrency caps, new wave table.
+  Tested desktop/laptop/touch/bundle + dedicated demon/food test — `a1457bf`
+
 - Mutant Academy Mega Drive revamp: low-res integer-scaled framebuffer,
   512-colour palette quantization + palette-swap variants, bitmap fonts,
   all-canvas MD UI (title, d-pad select, RPG level-up/chest/pause
