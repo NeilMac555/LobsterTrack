@@ -36,6 +36,12 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy heroes Neil + Zoe: Neil (bald, beard, tee, jeans) with
+  Diablo II-style Blessed Hammer spiral; Zoe (10, pigtails, glasses, punk
+  black/red outfit) lobbing Exploding Sushi. LPC-generator art downscaled
+  to 40px (CC-BY-SA, per-part credits in CREDITS-LPC.md), own hurt voices,
+  4-wide select grid — `bfc4664`
+
 - Mutant Academy enemy batch 2 + hero voices: Feral Cat, Man-Eating
   Burger, Assassin (blink to flank), Lizard Doctor (heals monsters),
   Sentinel Mech (laser, explodes) — licensed art repacked/recoloured,
