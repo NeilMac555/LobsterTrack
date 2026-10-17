@@ -55,3 +55,29 @@ right, re-cropped and repacked into this project's sheet layout.
 https://opengameart.org/content/painterly-spell-icons-part-1 (and parts 2–4).
 Modifications: 14 icons selected, downscaled to 32x32 and 16x16 and packed
 into one sheet (the game then snaps them to the Mega Drive palette).
+
+## Second enemy batch
+
+- `assassin.png` (Assassin) — "Assassin" by **Merry Dream Games**, based on
+  Calciumtrice's animated rogue, **CC-BY 3.0**:
+  https://opengameart.org/content/assassin — cloak recoloured midnight violet.
+- `mech.png` (Sentinel Mech) — "Animated Robot" (daxbot) by **Amon**, **CC0**:
+  https://opengameart.org/content/animated-robot — frames repacked.
+- `burger.png` (Man-Eating Burger) — "A Cheeseburger" by **Anvilhouse**, **CC0**:
+  https://opengameart.org/content/a-cheeseburger — downscaled; chomping jaw,
+  teeth, tongue and eyes added for this game.
+- `lizdoc.png` (Lizard Doctor) — "Medical Examiner" by **ChasersGaming**, **CC0**:
+  https://opengameart.org/content/medical-examiner — skin recoloured to green
+  scales, tail added, frames repacked.
+- `feral.png` (Feral Cat) — derived from `biski.png` (Shepardskin's CC0 "Cat
+  sprites", see above), recoloured as a ginger tabby.
+
+## Sound effects (hero hurt voices, `sfx/`)
+
+Trimmed, pitch-adjusted for some heroes, normalised and re-encoded as MP3:
+
+- `hurt-visor`, `hurt-wildcat`, `hurt-ace` — "Grunts: Male Death and Pain" by
+  **thebardofblasphemy**, **CC0**: https://opengameart.org/content/grunts-male-death-and-pain
+- `hurt-skywitch`, `hurt-mender` — "Female Hurt Grunts & Groans" by
+  **NocturnalVanguard**, **CC0**: https://opengameart.org/content/female-hurt-grunts-groans
+- `hurt-biski` — "Meow" by **IgnasD**, **CC0**: https://opengameart.org/content/meow

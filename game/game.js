@@ -115,6 +115,42 @@ function jingle(notes, step = 0.12, vol = 0.06) {
 }
 const sndHit = () => sfx(rand(180, 240), 0.06, 'square', 0.025);
 const sndHurt = () => sfx(110, 0.2, 'sawtooth', 0.08, -40);
+
+// Sampled hurt voices, one per hero (Biski meows) — see assets/CREDITS.md.
+// Decoded once audio is unlocked; until then (or on file:// pages) the synth thud stands in.
+const VOICE_FILES = ['visor', 'wildcat', 'skywitch', 'ace', 'mender', 'biski'];
+const voiceBuf = {};
+let voicesRequested = false, lastVoiceT = -9;
+function loadVoices() {
+  if (voicesRequested || !audioCtx) return;
+  voicesRequested = true;
+  for (const id of VOICE_FILES) {
+    const key = 'sfx/hurt-' + id;
+    const url = (typeof EMBEDDED_ASSETS !== 'undefined' && EMBEDDED_ASSETS[key]) || ('assets/' + key + '.mp3');
+    fetch(url).then(r => r.arrayBuffer())
+      .then(buf => new Promise((res, rej) => audioCtx.decodeAudioData(buf, res, rej)))
+      .then(decoded => { voiceBuf[id] = decoded; })
+      .catch(() => {});
+  }
+}
+function hurtVoice(id) {
+  try {
+    if (muted) return;
+    const out = audioOut();
+    loadVoices();
+    sfx(90, 0.12, 'square', 0.05, -30);                     // body-hit thud under the voice
+    const buf = voiceBuf[id], now = audioCtx.currentTime;
+    if (!buf) { sndHurt(); return; }
+    if (now - lastVoiceT < 0.4) return;                      // never stack voices
+    lastVoiceT = now;
+    const src = audioCtx.createBufferSource(), g = audioCtx.createGain();
+    src.buffer = buf;
+    src.playbackRate.value = rand(0.95, 1.06);               // a little variety per hit
+    g.gain.value = 0.7;
+    src.connect(g); g.connect(out);
+    src.start();
+  } catch (e) {}
+}
 const sndCoin = () => { sfx(988, 0.06, 'square', 0.05); setTimeout(() => sfx(1319, 0.14, 'square', 0.05), 60); };
 const sndCrit = () => sfx(150, 0.12, 'square', 0.07, -60);
 const sndLevel = () => jingle([440, 660, 880], 0.09);
@@ -297,6 +333,7 @@ function startMusic() {
     music.nextT = audioCtx.currentTime + 0.1;
     music.timer = setInterval(musicTick, 60);
   } catch (e) {}
+  loadVoices();
 }
 function stopMusic() {
   if (music.timer) { clearInterval(music.timer); music.timer = null; }
@@ -688,7 +725,8 @@ function pips(x, y, filled, next = filled, size = 1) {
 // ---------- assets: load, palette-quantize, palette-swap ----------
 const ASSET_FILES = ['warrior', 'wizard', 'ranger', 'rogue', 'cleric',
   'slime', 'goblin', 'skeleton', 'orc', 'minotaur', 'tiles', 'biski',
-  'bat', 'imp', 'scarab', 'shaman', 'hound', 'guard', 'knight', 'skills'];
+  'bat', 'imp', 'scarab', 'shaman', 'hound', 'guard', 'knight', 'skills',
+  'assassin', 'mech', 'burger', 'lizdoc', 'feral'];
 const assets = {};
 function loadAssets() {
   return Promise.all(ASSET_FILES.map(name => new Promise((res, rej) => {
@@ -750,7 +788,8 @@ function prepareSprites() {
     set.shade = silhouette(set.base, '#000000');   // bestiary: not met yet
   }
   // palette-swapped variants, the way cartridges reused one sprite for a tougher foe
-  for (const f of ['slime', 'skeleton', 'goblin', 'orc', 'bat', 'imp', 'scarab', 'shaman', 'guard']) {
+  for (const f of ['slime', 'skeleton', 'goblin', 'orc', 'bat', 'imp', 'scarab', 'shaman', 'guard',
+    'assassin', 'burger', 'lizdoc', 'feral']) {
     SPR[f].elite = bakeSheet(assets[f], 'saturate(2.2) brightness(1.15)');
   }
   SPR.minotaur.boss2 = bakeSheet(assets.minotaur, 'hue-rotate(140deg) saturate(1.4)');
@@ -786,6 +825,11 @@ const SHEETS = {
   scarab:   { file: 'scarab',   size: 36, rows: STD, frames: { idle: 1, walk: 6, attack: 6, death: 2 } },
   hound:    { file: 'hound',    size: 68, rows: STD, frames: { idle: 6, walk: 5, attack: 6, death: 3 } },
   knight:   { file: 'knight',   size: 64, rows: STD, frames: { idle: 4, walk: 8, attack: 5, death: 6 } },
+  assassin: { file: 'assassin', size: 32, rows: STD },
+  mech:     { file: 'mech',     size: 72, rows: STD, frames: { idle: 1, walk: 6, attack: 3, death: 2 } },
+  burger:   { file: 'burger',   size: 40, rows: STD, frames: { idle: 1, walk: 6, attack: 6, death: 4 } },
+  lizdoc:   { file: 'lizdoc',   size: 32, rows: STD, frames: { idle: 2, walk: 6, attack: 4, death: 2 } },
+  feral:    { file: 'feral',    size: 32, rows: STD },
 };
 // painted skill icons (assets/skills.png): row 0 = 32x32, row 1 = 16x16, in this order
 const SKILL_ORDER = ['optic', 'claws', 'storm', 'orbs', 'nova', 'cards', 'boots', 'vitality',
@@ -1019,19 +1063,19 @@ const WAVES = [
   // the opening minutes ease you in; the quota ramps to full pressure by 5:00
   { types: ['slime'],                            min: 9,   interval: 1.3 },
   { types: ['bat', 'slime'],                     min: 14,  interval: 1.15 },
-  { types: ['skeleton', 'bat', 'goblin'],        min: 22,  interval: 0.95 },
+  { types: ['feral', 'skeleton', 'bat'],         min: 22,  interval: 0.95 },
   { types: ['imp', 'skeleton', 'goblin'],        min: 36,  interval: 0.7 },
-  { types: ['scarab', 'imp', 'bat'],             min: 50,  interval: 0.6 },
-  { types: ['blueslime', 'scarab', 'skeleton'],  min: 68,  interval: 0.5 },
-  { types: ['shaman', 'imp', 'redslime'],        min: 80,  interval: 0.45 },
-  { types: ['wolf', 'redslime', 'bat'],          min: 92,  interval: 0.42 },
-  { types: ['guard', 'wolf', 'imp'],             min: 105, interval: 0.4 },
-  { types: ['brute', 'guard', 'shaman'],         min: 120, interval: 0.36 },
-  { types: ['raider', 'scarab', 'wolf'],         min: 135, interval: 0.33 },
-  { types: ['knight', 'raider', 'imp'],          min: 150, interval: 0.3 },
-  { types: ['orc', 'guard', 'shaman', 'bat'],    min: 165, interval: 0.28 },
-  { types: ['voltslime', 'wolf', 'knight'],      min: 185, interval: 0.26 },
-  { types: ['knight', 'wolf', 'shaman', 'voltslime', 'guard'], min: 205, interval: 0.25 },
+  { types: ['burger', 'scarab', 'imp'],          min: 50,  interval: 0.6 },
+  { types: ['blueslime', 'burger', 'scarab'],    min: 68,  interval: 0.5 },
+  { types: ['shaman', 'imp', 'feral'],           min: 80,  interval: 0.45 },
+  { types: ['wolf', 'redslime', 'assassin'],     min: 92,  interval: 0.42 },
+  { types: ['lizdoc', 'guard', 'wolf'],          min: 105, interval: 0.4 },
+  { types: ['brute', 'lizdoc', 'shaman'],        min: 120, interval: 0.36 },
+  { types: ['raider', 'assassin', 'scarab'],     min: 135, interval: 0.33 },
+  { types: ['knight', 'raider', 'burger'],       min: 150, interval: 0.3 },
+  { types: ['mech', 'orc', 'guard', 'bat'],      min: 165, interval: 0.28 },
+  { types: ['voltslime', 'wolf', 'knight', 'assassin'], min: 185, interval: 0.26 },
+  { types: ['mech', 'knight', 'wolf', 'shaman', 'lizdoc', 'voltslime'], min: 205, interval: 0.25 },
 ];
 function currentWave() { return WAVES[Math.min(WAVES.length - 1, Math.floor(state.time / 60))]; }
 
@@ -1269,7 +1313,9 @@ function nearestEnemies(n) {
 //       orbit = circles you at mid range, then bleeds inward,
 //       flutter = fast erratic weave (flies over props), skitter = dart-and-freeze,
 //       scuttle = slow sidelong crawl, caster = keeps its distance and lobs fireballs,
-//       pounce = crouch, then a long locked-direction leap
+//       pounce = crouch, then a long locked-direction leap,
+//       blink = teleports to your flank after a puff of smoke
+// healer = patches up nearby enemies; bolt = what a caster shoots
 // cap = most of that kind alive at once (big or ranged foes would swamp the screen)
 const ENEMY_TYPES = {
   bat:      { sprite: 'bat',      name: 'BAT DEMON',       hp: 10,  speed: 115, dmg: 7,  r: 9,  xp: 1, move: 'flutter', pop: '#B692FF', fly: 14 },
@@ -1279,6 +1325,11 @@ const ENEMY_TYPES = {
   wolf:     { sprite: 'hound',    name: 'DEMON WOLF',      hp: 60,  speed: 92,  dmg: 17, r: 14, xp: 5, move: 'pounce',  pop: '#FF6D00', cap: 16 },
   guard:    { sprite: 'guard',    name: 'INFERNAL GUARD',  hp: 120, speed: 58,  dmg: 20, r: 12, xp: 6, move: 'straight', pop: '#DB4949' },
   knight:   { sprite: 'knight',   name: 'OBLIVION KNIGHT', hp: 320, speed: 44,  dmg: 30, r: 18, xp: 10, move: 'charge', pop: '#6D49B6', cap: 6 },
+  feral:    { sprite: 'feral',    name: 'FERAL CAT',       hp: 16,  speed: 120, dmg: 9,  r: 9,  xp: 2, move: 'pounce',  pop: '#FF9224' },
+  burger:   { sprite: 'burger',   name: 'MAN-EATING BURGER', hp: 55, speed: 78, dmg: 15, r: 12, xp: 4, move: 'hop',     pop: '#DBB66D' },
+  assassin: { sprite: 'assassin', name: 'ASSASSIN',        hp: 45,  speed: 100, dmg: 20, r: 10, xp: 5, move: 'blink',   pop: '#6D49B6', cap: 10 },
+  lizdoc:   { sprite: 'lizdoc',   name: 'LIZARD DOCTOR',   hp: 80,  speed: 66,  dmg: 12, r: 10, xp: 6, move: 'zigzag',  pop: '#49DB49', cap: 6, healer: true },
+  mech:     { sprite: 'mech',     name: 'SENTINEL MECH',   hp: 420, speed: 40,  dmg: 22, r: 18, xp: 12, move: 'caster', pop: '#2449FF', cap: 4, bolt: 'laser' },
   slime:    { sprite: 'slime',    name: 'TRAINING OOZE', hp: 8,   speed: 60,  dmg: 8,  r: 10, xp: 1, move: 'hop', pop: '#49DB49' },
   skeleton: { sprite: 'skeleton', name: 'BONE WALKER',   hp: 26,  speed: 68,  dmg: 12, r: 11, xp: 2, move: 'zigzag', pop: '#DBDBDB' },
   goblin:   { sprite: 'goblin',   name: 'GREMLIN',       hp: 18,  speed: 92,  dmg: 10, r: 10, xp: 2, move: 'straight', pop: '#92B649' },
@@ -1344,6 +1395,11 @@ const BEST_DESC = {
   knight: 'A giant of living stone. Winds up, then charges through anything.',
   orc: 'Heavy charger with a brutal hit. Respect the wind-up.',
   voltslime: 'Fast, crackling ooze. Late-game swarm filler.',
+  feral: 'Half-starved alley cats. Fast, fragile, and they pounce in packs.',
+  burger: 'A cheeseburger that bites back. Chomps forward in hungry hops.',
+  assassin: 'Stalks in, vanishes in smoke and reappears at your back. Keep moving.',
+  lizdoc: 'Mad reptile surgeon. Heals every monster near it: kill it first.',
+  mech: 'Heavy combat robot. Keeps its distance and fires laser bolts. Explodes.',
   boss0: 'The first protocol boss. Tramples in at 5:00. Drops a treasure chest.',
   boss1: 'Upgraded Minotaur with far more armour. Arrives at 10:00.',
   boss2: 'The final protocol. Three times the size. Arrives at 14:00.',
@@ -1376,16 +1432,18 @@ function makeEnemy(kind, x, y, opts = {}) {
     kind, fly: t.fly || 0,
     castT: rand(1.5, 3), casting: 0,       // caster: cooldown, windup left
     leapCd: rand(0.5, 2), leapT: 0, crouch: 0, lx: 0, ly: 0, // pounce
+    blinkCd: rand(2, 4), fade: 0, healT: rand(1, 3), bolt: t.bolt || 'fire', healer: !!t.healer,
   };
 }
 const CAST_WINDUP = 0.6, LEAP_TIME = 0.42;
-function shootFireball(e) {
-  const dx = player.x - e.x, dy = player.y - (e.y - 8), d = Math.hypot(dx, dy) || 1;
-  const spd = 150;
+function shootFireball(e) {   // shaman fireball, or a mech's laser bolt
+  const laser = e.bolt === 'laser', hy = laser ? 30 : 8;
+  const dx = player.x - e.x, dy = player.y - (e.y - hy), d = Math.hypot(dx, dy) || 1;
+  const spd = laser ? 230 : 150;
   if (ebullets.length > 60) return;
-  ebullets.push({ x: e.x + (dx > 0 ? 8 : -8), y: e.y - 8, vx: dx / d * spd, vy: dy / d * spd,
-    r: 6, dmg: e.dmg * 1.2, life: 3.5, t: 0 });
-  sfx(330, 0.18, 'sawtooth', 0.035, -200);
+  ebullets.push({ x: e.x + (dx > 0 ? 8 : -8), y: e.y - hy, vx: dx / d * spd, vy: dy / d * spd,
+    r: laser ? 5 : 6, dmg: e.dmg * (laser ? 1 : 1.2), life: 3.5, t: 0, style: laser ? 'laser' : 'fire' });
+  if (laser) sfx(1400, 0.12, 'square', 0.03, -900); else sfx(330, 0.18, 'sawtooth', 0.035, -200);
 }
 const countKind = kind => { let n = 0; for (const e of enemies) if (e.kind === kind) n++; return n; };
 
@@ -1519,6 +1577,12 @@ function killEnemy(e) {
   corpses.push({ sprite: e.sprite, scale: e.scale, variant: e.variant,
     x: e.x, groundY: groundYOf(e), flip: player.x < e.x, animT: 0 });
   burstParticles(e.x, e.y - e.r * 0.5, e.pop || '#B66D24', e.boss ? 26 : e.elite ? 16 : 8);
+  if (e.kind === 'mech') {   // mechs go out with a bang
+    effects.push({ type: 'boom', x: e.x, y: e.y - 20, radius: 46, life: 0.35, maxLife: 0.35 });
+    burstParticles(e.x, e.y - 24, '#FF9200', 14);
+    state.shake = Math.max(state.shake, 6);
+    sfx(80, 0.4, 'sawtooth', 0.08, -40);
+  }
   if (e.boss || e.elite) {
     state.hitstop = Math.max(state.hitstop, 0.12); // big kill, big freeze-frame
     for (let g = 0; g < 8; g++) {
@@ -1550,7 +1614,7 @@ function hurtPlayer(dmg) {
   player.hurtCd = 0.5;
   state.shake = Math.max(state.shake, 5);
   popNum(player.x, player.y - 40, '-' + Math.round(taken), false, C.red);
-  sndHurt();
+  hurtVoice(player.heroId);
   if (player.hp <= 0) endGame(false);
 }
 
@@ -1718,6 +1782,7 @@ function toSelect() {
 }
 function startGame(h) {
   player.name = h.name;
+  player.heroId = h.id;
   player.color = h.color;
   player.sprite = h.sprite;
   player.drawScale = h.drawScale || SCALE;
@@ -2100,6 +2165,18 @@ function update(dt) {
           e.casting = CAST_WINDUP;
           e.castT = rand(2.4, 3.2);
         }
+      } else if (e.move === 'blink') {
+        // stalk in, then vanish in smoke and reappear at your flank
+        e.blinkCd -= dt;
+        if (e.blinkCd <= 0 && d < 260 && d > 70) {
+          burstParticles(e.x, e.y - 10, '#6D49B6', 6);
+          const back = Math.atan2(-player.facing.y, -player.facing.x) + rand(-1, 1);
+          e.x = player.x + Math.cos(back) * 75; e.y = player.y + Math.sin(back) * 75;
+          burstParticles(e.x, e.y - 10, '#B692FF', 6);
+          e.fade = 0.3; e.blinkCd = rand(3, 4.5);
+          sfx(900, 0.08, 'square', 0.025, -600);
+        }
+        if (e.fade > 0) { e.fade -= dt; spd = 0; }
       } else if (e.move === 'pounce') {
         e.leapCd -= dt;
         if (e.leapT > 0) {                     // mid-air: locked heading, no steering
@@ -2117,6 +2194,19 @@ function update(dt) {
       }
       e.x += px * spd * dt;
       e.y += py * spd * dt;
+    }
+    if (e.healer) {   // lizard doctor: patches up everything nearby every 3s
+      e.healT -= dt;
+      if (e.healT <= 0) {
+        e.healT = 3;
+        let n = 0;
+        for (const o of enemies) {
+          if (o === e || o.boss || o.hp >= o.maxHp || dist2(o.x, o.y, e.x, e.y) > 110 * 110) continue;
+          o.hp = Math.min(o.maxHp, o.hp + o.maxHp * 0.25);
+          if (n++ < 6) burstParticles(o.x, o.y - o.r, '#24DB24', 3);
+        }
+        if (n) effects.push({ type: 'heal', x: e.x, y: e.y, radius: 110, life: 0.35, maxLife: 0.35 });
+      }
     }
     if (d < e.r + player.r) hurtPlayer(e.dmg);
     // never despawn — like VS, stragglers teleport to a fresh angle and rejoin the hunt
@@ -2321,13 +2411,16 @@ function renderWorld() {
     drawables.push({ y: groundYOf(e), draw() {
       const near = dist2(e.x, e.y, player.x, player.y) < (e.r + player.r + 26) ** 2;
       let anim = near ? 'attack' : 'walk', frame;
-      if (e.casting > 0) {                       // shaman windup: the fire-gesture row, once
-        anim = 'cast';
-        frame = Math.min(9, Math.floor((1 - e.casting / CAST_WINDUP) * 10));
-      } else if (e.leapT > 0 || e.crouch > 0) {  // wolf: jump row across crouch + leap
+      if (e.fade > 0 && blink(20)) return;       // assassin materialising
+      if (e.casting > 0) {                       // windup: shaman fire-gesture row, mech brace
+        anim = SHEETS[e.sprite].rows.cast !== undefined ? 'cast' : 'attack';
+        const n = frameCount(e.sprite, anim);
+        frame = Math.min(n - 1, Math.floor((1 - e.casting / CAST_WINDUP) * n));
+      } else if (e.leapT > 0 || e.crouch > 0) {  // pouncers: jump row across crouch + leap
         anim = 'attack';
+        const n = frameCount(e.sprite, 'attack');
         const p = e.crouch > 0 ? 0 : 1 - e.leapT / LEAP_TIME;
-        frame = Math.min(5, 1 + Math.floor(p * 5)) * (e.crouch > 0 ? 0 : 1);
+        frame = e.crouch > 0 ? 0 : Math.min(n - 1, 1 + Math.floor(p * (n - 1)));
       } else if (e.move === 'pounce' && anim === 'attack') {
         anim = 'walk';                           // the jump row only plays for real leaps
       }
@@ -2373,6 +2466,12 @@ function renderWorld() {
     const x = toDX(b.x), y = toDY(b.y);
     if (x < -8 || x > W + 8 || y < -8 || y > H + 8) continue;
     const sp = Math.hypot(b.vx, b.vy) || 1, ux = b.vx / sp, uy = b.vy / sp;
+    if (b.style === 'laser') {   // mech: hot cyan streak with a white core
+      line(x - ux * 9, y - uy * 9, x, y, C.blue, 3);
+      line(x - ux * 7, y - uy * 7, x, y, C.cyan, 2);
+      rect(x - 1, y - 1, 2, 2, C.white);
+      continue;
+    }
     for (let k = 3; k >= 1; k--) {
       if ((Math.floor(b.t * 20) + k) % 3 === 0) continue;
       rect(x - ux * k * 3, y - uy * k * 3, 2, 2, k === 1 ? C.orange : C.red);
@@ -2423,6 +2522,9 @@ function renderWorld() {
         disc(cx, cy, R * 0.4, '#FFFF49');
         if (p > 0.6) disc(cx, cy, R * 0.15, C.white);
       }
+    } else if (fx.type === 'heal') {   // lizard doctor's pulse: a green ring expanding outward
+      const rr = (fx.radius / PX) * (1 - p);
+      ring(cx, cy, rr, p > 0.5 ? '#92FF92' : C.green);
     }
   }
 
@@ -2835,7 +2937,7 @@ function renderBestiary() {
   const sh = shadowSprite(e.boss ? 18 : 12);
   ctx.drawImage(sh, x0 + 34 - (sh.width >> 1), y0 + 62 - (sh.height >> 1));
   const s = SHEETS[e.sheet].size;
-  drawBeastIn(e, x0 + 1, y0 + 1, 66, 66, s <= 32 ? 2 : 1, known, true);
+  drawBeastIn(e, x0 + 1, y0 + 1, 66, 66, s <= 40 ? 2 : 1, known, true);
   const tx = L.px + L.textX, tw = L.pw - L.textX - 6;
   if (known) {
     const nsc = textW(norm(e.name), 2) <= tw ? 2 : 1;
