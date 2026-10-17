@@ -36,6 +36,12 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy enemy batch 2 + hero voices: Feral Cat, Man-Eating
+  Burger, Assassin (blink to flank), Lizard Doctor (heals monsters),
+  Sentinel Mech (laser, explodes) — licensed art repacked/recoloured,
+  credited; bestiary now 24. Sampled CC0 hurt voice per hero, meow for
+  Biski; bundle embeds the clips — `448f961`
+
 - Mutant Academy bestiary + gentler opening: title menu START GAME /
   BESTIARY; 19 entries (16 enemies + 3 bosses) as silhouettes until met,
   then animated portrait, stats, first-seen time, kills, behaviour tip;
