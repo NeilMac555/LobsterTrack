@@ -118,7 +118,7 @@ const sndHurt = () => sfx(110, 0.2, 'sawtooth', 0.08, -40);
 
 // Sampled hurt voices, one per hero (Biski meows) — see assets/CREDITS.md.
 // Decoded once audio is unlocked; until then (or on file:// pages) the synth thud stands in.
-const VOICE_FILES = ['visor', 'wildcat', 'skywitch', 'ace', 'mender', 'biski'];
+const VOICE_FILES = ['visor', 'wildcat', 'skywitch', 'ace', 'mender', 'biski', 'neil', 'zoe'];
 const voiceBuf = {};
 let voicesRequested = false, lastVoiceT = -9;
 function loadVoices() {
@@ -726,7 +726,7 @@ function pips(x, y, filled, next = filled, size = 1) {
 const ASSET_FILES = ['warrior', 'wizard', 'ranger', 'rogue', 'cleric',
   'slime', 'goblin', 'skeleton', 'orc', 'minotaur', 'tiles', 'biski',
   'bat', 'imp', 'scarab', 'shaman', 'hound', 'guard', 'knight', 'skills',
-  'assassin', 'mech', 'burger', 'lizdoc', 'feral'];
+  'assassin', 'mech', 'burger', 'lizdoc', 'feral', 'neil', 'zoe'];
 const assets = {};
 function loadAssets() {
   return Promise.all(ASSET_FILES.map(name => new Promise((res, rej) => {
@@ -830,10 +830,25 @@ const SHEETS = {
   burger:   { file: 'burger',   size: 40, rows: STD, frames: { idle: 1, walk: 6, attack: 6, death: 4 } },
   lizdoc:   { file: 'lizdoc',   size: 32, rows: STD, frames: { idle: 2, walk: 6, attack: 4, death: 2 } },
   feral:    { file: 'feral',    size: 32, rows: STD },
+  // LPC-generator heroes, downscaled to 40px cells (see assets/CREDITS.md)
+  neil:     { file: 'neil',       size: 40, rows: STD, frames: { idle: 1, walk: 8, attack: 7, death: 6 } },
+  zoe:      { file: 'zoe',        size: 40, rows: STD, frames: { idle: 1, walk: 8, attack: 6, death: 1 } },
 };
 // painted skill icons (assets/skills.png): row 0 = 32x32, row 1 = 16x16, in this order
 const SKILL_ORDER = ['optic', 'claws', 'storm', 'orbs', 'nova', 'cards', 'boots', 'vitality',
-  'regen', 'magnet', 'power', 'focus', 'plating', 'heal'];
+  'regen', 'magnet', 'power', 'focus', 'plating', 'heal', 'hammer', 'sushi'];
+// projectile sprites on the sheet's bottom row (y=48): hammer 14px, nigiri 16px, maki 16px
+const PROJ = { hammer: [0, 49, 14, 14], nigiri: [16, 48, 16, 16], maki: [32, 48, 16, 16] };
+// draw a projectile centred on (x, y), turned in quarter steps so pixels stay square
+function drawProj(key, x, y, quarter = 0) {
+  if (!SPR.skills) return;
+  const [sx, sy, w, h] = PROJ[key];
+  ctx.save();
+  ctx.translate(Math.round(x), Math.round(y));
+  ctx.rotate((quarter % 4) * Math.PI / 2);
+  ctx.drawImage(SPR.skills.base, sx, sy, w, h, -(w >> 1), -(h >> 1), w, h);
+  ctx.restore();
+}
 function drawSkill(id, x, y, size = 32) {
   const i = SKILL_ORDER.indexOf(id);
   if (i < 0 || !SPR.skills) {                 // gold etc. keep their pixel icons
@@ -1206,6 +1221,40 @@ const WEAPON_DEFS = {
       return true;
     },
   },
+  hammer: {
+    name: 'Blessed Hammer',
+    desc: 'Holy hammers spiral out from where you stand, smashing everything they pass.',
+    cd: 1.2,
+    fire(w) {
+      const n = 1 + Math.floor((w.level - 1) / 2); // 1,1,2,2,3
+      w.spin = (w.spin || 0) + 2.1;                // each cast starts at a new angle
+      for (let i = 0; i < n; i++) {
+        bullets.push({ kind: 'hammer', cx: player.x, cy: player.y - 10, a0: w.spin + (TAU * i) / n,
+          t: 0, life: 1.35, x: player.x, y: player.y, r: 9 + w.level,
+          dmg: (14 + w.level * 7) * player.dmgMult, hit: new Set(), hitBz: new Set() });
+      }
+      sfx(880, 0.14, 'triangle', 0.03, 300);
+      return true;
+    },
+  },
+  sushi: {
+    name: 'Exploding Sushi',
+    desc: 'Lobs sushi at the nearest threats. It explodes where it lands.',
+    cd: 1.5,
+    fire(w) {
+      const targets = nearestEnemies(6);
+      if (!targets.length) return false;
+      const n = 1 + Math.floor(w.level / 2); // 1,2,2,3,3
+      for (let i = 0; i < n; i++) {
+        const t = targets[i % targets.length];
+        bullets.push({ kind: 'sushi', sx: player.x, sy: player.y - 14, tx: t.x + rand(-14, 14), ty: t.y + rand(-14, 14),
+          t: 0, T: 0.55 + i * 0.08, x: player.x, y: player.y, h: 0, r: 0, maki: Math.random() < 0.5,
+          dmg: (20 + w.level * 8) * player.dmgMult, aoe: 44 + w.level * 7, life: 2 });
+      }
+      sfx(520, 0.08, 'triangle', 0.03, 260);
+      return true;
+    },
+  },
   cards: {
     name: 'Kinetic Cards',
     desc: 'Charged playing cards that detonate on impact.',
@@ -1268,6 +1317,12 @@ const HEROES = [
       player.speed *= 1.2; player.magnetR *= 1.3; player.critChance = 0.22;
       player.maxHp -= 25; player.hp -= 25;
     } },
+  { id: 'neil', name: 'Neil', sprite: 'neil', color: '#FFB66D',
+    tag: 'Holy bruiser', desc: 'A regular bald, bearded bloke in a T-shirt and jeans. His Blessed Hammers spiral out and grind down crowds. Tough, a bit slow.',
+    weapon: 'hammer', mods: () => { player.maxHp += 25; player.hp += 25; player.armor += 1; player.speed *= 0.94; } },
+  { id: 'zoe', name: 'Zoe', sprite: 'zoe', color: '#FF49B6',
+    tag: 'Sushi bomber', desc: 'Ten years old, glasses, pigtails and a punk attitude. Lobs exploding sushi. Small, quick and fragile.',
+    weapon: 'sushi', mods: () => { player.speed *= 1.1; player.magnetR *= 1.2; player.maxHp -= 20; player.hp -= 20; } },
 ];
 // Read each hero's real stats by running their mods on a scratch copy of the
 // base player — the select screen can never disagree with the game.
@@ -1863,8 +1918,8 @@ function uiKey(k) {
     const n = HEROES.length;
     if (k === 'arrowleft' || k === 'a') { selIndex = (selIndex + n - 1) % n; sndMove(); }
     else if (k === 'arrowright' || k === 'd') { selIndex = (selIndex + 1) % n; sndMove(); }
-    else if (k === 'arrowup' || k === 'w') { selIndex = (selIndex + n - 3) % n; sndMove(); }
-    else if (k === 'arrowdown' || k === 's') { selIndex = (selIndex + 3) % n; sndMove(); }
+    else if (k === 'arrowup' || k === 'w') { selIndex = (selIndex + n - SEL_COLS) % n; sndMove(); }
+    else if (k === 'arrowdown' || k === 's') { selIndex = (selIndex + SEL_COLS) % n; sndMove(); }
     else if (OK_KEYS.has(k)) startGame(HEROES[selIndex]);
     return;
   }
@@ -2074,6 +2129,10 @@ function update(dt) {
   // bullets
   for (let i = bullets.length - 1; i >= 0; i--) {
     const b = bullets[i];
+    if (b.kind === 'hammer' || b.kind === 'sushi') {
+      if (updateSpecialBullet(b, dt)) { bullets[i] = bullets[bullets.length - 1]; bullets.pop(); }
+      continue;
+    }
     b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt;
     let dead = b.life <= 0;
     if (!dead) {
@@ -2339,6 +2398,45 @@ function update(dt) {
   state.flash = Math.max(0, state.flash - dt * 1.5);
 }
 
+// Blessed Hammer: a widening spiral around the cast point; pierces, hits each target once.
+// Exploding Sushi: lobbed in an arc, detonates where it lands. Returns true when finished.
+function updateSpecialBullet(b, dt) {
+  b.t += dt;
+  if (b.kind === 'hammer') {
+    const rr = 8 + 100 * b.t, ang = b.a0 + 5.2 * b.t;
+    b.x = b.cx + Math.cos(ang) * rr;
+    b.y = b.cy + Math.sin(ang) * rr * 0.85;
+    for (let j = enemies.length - 1; j >= 0; j--) {
+      const e = enemies[j];
+      if (!e || b.hit.has(e) || dist2(e.x, e.y, b.x, b.y) >= (e.r + b.r) ** 2) continue;
+      b.hit.add(e);
+      damageEnemy(e, b.dmg);
+    }
+    for (const bz of state.brazList || []) {
+      if (!b.hitBz.has(bz.key) && dist2(bz.x, bz.y, b.x, b.y) < (14 + b.r) ** 2) { b.hitBz.add(bz.key); damageBrazier(bz, 10); }
+    }
+    return b.t >= b.life;
+  }
+  // sushi
+  const p = Math.min(1, b.t / b.T);
+  b.x = b.sx + (b.tx - b.sx) * p;
+  b.y = b.sy + (b.ty - b.sy) * p;
+  b.h = Math.sin(p * Math.PI) * (36 + Math.hypot(b.tx - b.sx, b.ty - b.sy) * 0.15);
+  if (p < 1) return false;
+  effects.push({ type: 'boom', x: b.x, y: b.y, radius: b.aoe, life: 0.3, maxLife: 0.3 });
+  burstParticles(b.x, b.y, '#FFFFFF', 6);               // rice
+  burstParticles(b.x, b.y, b.maki ? '#24DB49' : '#FF6D49', 5);
+  for (let j = enemies.length - 1; j >= 0; j--) {
+    const e = enemies[j];
+    if (e && dist2(e.x, e.y, b.x, b.y) < (b.aoe + e.r) ** 2) damageEnemy(e, b.dmg);
+  }
+  for (const bz of state.brazList || []) {
+    if (dist2(bz.x, bz.y, b.x, b.y) < (b.aoe + 14) ** 2) damageBrazier(bz, 15);
+  }
+  sfx(120, 0.25, 'sawtooth', 0.05, -60);
+  return true;
+}
+
 // ---------- render: world ----------
 function renderWorld() {
   let shx = 0, shy = 0;
@@ -2434,8 +2532,9 @@ function renderWorld() {
   drawables.push({ y: player.y + 20, draw() {
     if (hurtBlink) return;
     const anim = player.attackAge < 0.45 ? 'attack' : (player.moving ? 'walk' : 'idle');
-    const frame = anim === 'attack' ? Math.min(9, Math.floor(player.attackAge / 0.45 * 10))
-      : animFrame(player.animT, anim);
+    const n = frameCount(player.sprite, anim);
+    const frame = anim === 'attack' ? Math.min(n - 1, Math.floor(player.attackAge / 0.45 * n))
+      : animFrame(player.animT, anim, player.sprite);
     drawSprite(player.sprite, anim, frame, player.x, player.y + 20, player.face < 0, player.drawScale);
   } });
   drawables.sort((a, b) => a.y - b.y);
@@ -2452,6 +2551,20 @@ function renderWorld() {
   for (const b of bullets) {
     const x = toDX(b.x), y = toDY(b.y);
     if (x < -8 || x > W + 8 || y < -8 || y > H + 8) continue;
+    if (b.kind === 'hammer') {   // glowing holy hammer, tumbling in quarter turns
+      ctx.globalCompositeOperation = 'lighter';   // holy glow, like Diablo II's blessed hammers
+      disc(x, y, 7, 'rgba(73,146,255,0.45)');
+      disc(x, y, 4, 'rgba(182,219,255,0.5)');
+      ctx.globalCompositeOperation = 'source-over';
+      drawProj('hammer', x, y, Math.floor(b.t * 14));
+      continue;
+    }
+    if (b.kind === 'sushi') {    // lobbed: shadow on the floor, sushi up in the arc
+      const hy = Math.round(b.h / PX);
+      rect(x - 3, y + 1, 7, 2, 'rgba(0,0,0,0.4)');
+      drawProj(b.maki ? 'maki' : 'nigiri', x, y - hy, Math.floor(b.t * 10));
+      continue;
+    }
     if (b.kind === 'card') {
       const f = [0, 1, 2, 1][Math.floor(b.life * 16) % 4];
       ctx.drawImage(CARD[f], x - 2, y - 3);
@@ -2744,7 +2857,7 @@ function renderPause(m) {
 }
 
 // ---------- render: title / select / results / boot ----------
-const PARADE = ['ranger', 'warrior', 'wizard', 'rogue', 'cleric', 'biski', null, null,
+const PARADE = ['ranger', 'warrior', 'wizard', 'rogue', 'cleric', 'biski', 'neil', 'zoe', null, null,
   'slime', 'bat', 'imp', 'skeleton', 'scarab', 'shaman', 'hound', 'guard', 'knight'];
 // big sheets need more room in the line-up
 const paradeGap = key => (!key ? 26 : SHEETS[key].size > 40 ? 44 : SHEETS[key].size > 32 ? 32 : 26);
@@ -2823,8 +2936,19 @@ function renderTitle() {
     drawText('REDSHRIKE / BUCH / SHEPARDSKIN', W / 2, H - 10, C.grey, { align: 'center', shadow: false });
   }
 }
+const SEL_COLS = 4;
+// a hero's walk/idle frame fitted into a box: centred, feet on feetY, clipped to the box
+function drawHeroIn(h, anim, frame, bx, by, bw, bh, k, feetY) {
+  const def = SHEETS[h.sprite], s = def.size, dw = Math.round(s * k);
+  ctx.save();
+  ctx.beginPath(); ctx.rect(bx, by, bw, bh); ctx.clip();
+  ctx.drawImage(SPR[def.file].base, frame * s, def.rows[anim] * s, s, s,
+    Math.round(bx + bw / 2 - dw / 2), Math.round(feetY - dw + 3 * k), dw, dw);
+  ctx.restore();
+}
 function selectLayout() {
-  const cell = 46, gap = 4, gw = cell * 3 + gap * 2, gh = cell * 2 + gap;
+  const cell = 46, gap = 4, gw = cell * SEL_COLS + gap * (SEL_COLS - 1);
+  const gh = cell * Math.ceil(HEROES.length / SEL_COLS) + gap * (Math.ceil(HEROES.length / SEL_COLS) - 1);
   const titleScale = textW('SELECT YOUR HERO', 2) <= W - 16 ? 2 : 1;
   const wide = W >= 340;
   const pw = wide ? W - (8 + gw + 8) - 8 : W - 16;
@@ -2846,13 +2970,13 @@ function renderSelect() {
   drawText('SELECT YOUR HERO', W / 2, 8, C.white,
     { scale: L.titleScale, align: 'center', outline: C.black, grad: GOLD_GRAD });
   HEROES.forEach((h, i) => {
-    const bx = L.gx + (i % 3) * (L.cell + L.gap), by = L.gy + Math.floor(i / 3) * (L.cell + L.gap);
+    const bx = L.gx + (i % SEL_COLS) * (L.cell + L.gap), by = L.gy + Math.floor(i / SEL_COLS) * (L.cell + L.gap);
     const on = i === selIndex;
     drawWindow(bx, by, L.cell, L.cell, { border: on ? (blink(4) ? C.yellow : C.white) : C.grey });
     arenaPatch(bx + 2, by + 2, L.cell - 4, L.cell - 4, 1, on ? 0 : 0.35);
-    const def = SHEETS[h.sprite], s = def.size, anim = on ? 'walk' : 'idle';
-    const frame = Math.floor(uiTime * 10 + i * 2) % 10;
-    ctx.drawImage(SPR[def.file].base, frame * s, def.rows[anim] * s, s, s, bx + 7, by + 9, s, s);
+    const anim = on ? 'walk' : 'idle';
+    const frame = Math.floor(uiTime * 10 + i * 2) % frameCount(h.sprite, anim);
+    drawHeroIn(h, anim, frame, bx + 2, by + 2, L.cell - 4, L.cell - 4, 1, by + 38);
     addHit(bx, by, L.cell, L.cell, 'hero:' + i);
   });
 
@@ -2865,7 +2989,7 @@ function renderSelect() {
   const def = SHEETS[h.sprite], s = def.size;
   const sh = shadowSprite(14);
   ctx.drawImage(sh, x0 + 34 - (sh.width >> 1), y0 + 60 - (sh.height >> 1));
-  ctx.drawImage(SPR[def.file].base, (Math.floor(uiTime * 10) % 10) * s, def.rows.walk * s, s, s, x0 + 2, y0 + 2, 64, 64);
+  drawHeroIn(h, 'walk', Math.floor(uiTime * 10) % frameCount(h.sprite, 'walk'), x0 + 1, y0 + 1, 66, 66, 2, y0 + 60);
   const tx = x0 + 74, tw = L.pw - (tx - L.px) - 6;
   const nsc = textW(norm(h.name), 2) <= tw ? 2 : 1;
   drawText(h.name, tx, y0 + 2, C.white, { scale: nsc, outline: C.black, grad: GOLD_GRAD });
