@@ -747,6 +747,7 @@ function prepareSprites() {
   for (const name of ASSET_FILES) {
     const set = SPR[name] = { base: bakeSheet(assets[name], BAKE_FILTERS[name] || null) };
     set.white = silhouette(set.base, C.white);
+    set.shade = silhouette(set.base, '#000000');   // bestiary: not met yet
   }
   // palette-swapped variants, the way cartridges reused one sprite for a tougher foe
   for (const f of ['slime', 'skeleton', 'goblin', 'orc', 'bat', 'imp', 'scarab', 'shaman', 'guard']) {
@@ -1015,11 +1016,12 @@ const state = {
 // below it the spawner force-fills, so the screen is never quiet.
 // Each minute headlines a NEW, visually distinct enemy (first type = most common).
 const WAVES = [
-  { types: ['slime'],                            min: 14,  interval: 0.9 },
-  { types: ['bat', 'slime'],                     min: 24,  interval: 0.8 },
-  { types: ['skeleton', 'bat', 'goblin'],        min: 34,  interval: 0.7 },
-  { types: ['imp', 'skeleton', 'goblin'],        min: 45,  interval: 0.6 },
-  { types: ['scarab', 'imp', 'bat'],             min: 56,  interval: 0.55 },
+  // the opening minutes ease you in; the quota ramps to full pressure by 5:00
+  { types: ['slime'],                            min: 9,   interval: 1.3 },
+  { types: ['bat', 'slime'],                     min: 14,  interval: 1.15 },
+  { types: ['skeleton', 'bat', 'goblin'],        min: 22,  interval: 0.95 },
+  { types: ['imp', 'skeleton', 'goblin'],        min: 36,  interval: 0.7 },
+  { types: ['scarab', 'imp', 'bat'],             min: 50,  interval: 0.6 },
   { types: ['blueslime', 'scarab', 'skeleton'],  min: 68,  interval: 0.5 },
   { types: ['shaman', 'imp', 'redslime'],        min: 80,  interval: 0.45 },
   { types: ['wolf', 'redslime', 'bat'],          min: 92,  interval: 0.42 },
@@ -1307,8 +1309,60 @@ function spdScale() { return 1 + (state.time / 60) * 0.02; }
 
 function spawnRadius() { return Math.max(VW, VH) / 2 + 80; }
 
+// ---------- bestiary: who you've met and how many you've killed ----------
+// Kept in this browser's localStorage; the game works the same without it.
+const BEST_KEY = 'mutant-academy-bestiary';
+let bestiary = { seen: {}, kills: {} }, bestDirty = false;
+try {
+  const j = JSON.parse(localStorage.getItem(BEST_KEY) || 'null');
+  if (j && j.seen && j.kills) bestiary = j;
+} catch (e) {}
+function bestSeen(k) { if (!bestiary.seen[k]) { bestiary.seen[k] = 1; bestDirty = true; } }
+function bestKill(k) { bestiary.kills[k] = (bestiary.kills[k] || 0) + 1; bestiary.seen[k] = 1; bestDirty = true; }
+function saveBestiary() {
+  if (!bestDirty) return;
+  bestDirty = false;
+  try { localStorage.setItem(BEST_KEY, JSON.stringify(bestiary)); } catch (e) {}
+}
+setInterval(saveBestiary, 4000);
+window.addEventListener('pagehide', saveBestiary);
+
+const BEST_DESC = {
+  slime: 'Danger Room fodder. Moves in short hopping lunges.',
+  bat: 'Erratic flier that weaves fast and flies straight over crates.',
+  skeleton: 'Shambles in on a swaying zigzag. Slippery to aim at.',
+  goblin: 'Quick and fragile. Runs straight at you.',
+  imp: 'Darts forward, freezes, darts again. Time your shots.',
+  scarab: 'Armoured beetle that crawls in sideways like a crab.',
+  blueslime: 'A tougher ooze with the same lunging hops.',
+  shaman: 'Keeps its distance and hurls fireballs. It stands still to cast: punish it.',
+  redslime: 'Hot-tempered ooze that hits hard.',
+  wolf: 'Crouches for a beat, then leaps. Sidestep the pounce.',
+  guard: 'Armoured imp. Slow, tough and relentless.',
+  brute: 'Prowls, freezes to wind up, then charges. Watch for the pause.',
+  raider: 'Circles you at range, then darts in from the flank.',
+  knight: 'A giant of living stone. Winds up, then charges through anything.',
+  orc: 'Heavy charger with a brutal hit. Respect the wind-up.',
+  voltslime: 'Fast, crackling ooze. Late-game swarm filler.',
+  boss0: 'The first protocol boss. Tramples in at 5:00. Drops a treasure chest.',
+  boss1: 'Upgraded Minotaur with far more armour. Arrives at 10:00.',
+  boss2: 'The final protocol. Three times the size. Arrives at 14:00.',
+};
+const firstWave = kind => { const i = WAVES.findIndex(w => w.types.includes(kind)); return i < 0 ? 99 : i; };
+// every enemy in order of first appearance, then the three bosses
+const BEST_ENTRIES = Object.keys(ENEMY_TYPES)
+  .sort((a, b) => firstWave(a) - firstWave(b) || ENEMY_TYPES[a].hp - ENEMY_TYPES[b].hp)
+  .map(k => {
+    const t = ENEMY_TYPES[k];
+    return { key: k, name: t.name, sheet: t.sprite, variant: null, hp: t.hp, speed: t.speed, dmg: t.dmg,
+      xp: t.xp, at: firstWave(k) * 60, boss: false };
+  })
+  .concat(BOSSES.map((b, i) => ({ key: 'boss' + i, name: b.name, sheet: 'minotaur', variant: b.variant,
+    hp: b.hp, speed: b.speed, dmg: b.dmg, xp: b.xp, at: b.at, boss: true })));
+
 function makeEnemy(kind, x, y, opts = {}) {
   const t = ENEMY_TYPES[kind];
+  bestSeen(kind);
   const hpMul = (opts.hpMul ?? 1) * rand(0.85, 1.25);
   const hp = t.hp * hpScale() * hpMul;
   return {
@@ -1376,7 +1430,7 @@ function spawnElite() {
 function spawnRing() {
   const wave = currentWave();
   const kind = wave.types.find(k => !ENEMY_TYPES[k].cap); // no rings of casters/knights
-  const n = 42, d = Math.min(VW, VH) / 2 + 60;
+  const n = clamp(24 + Math.floor(state.time / 60) * 6, 24, 42), d = Math.min(VW, VH) / 2 + 60; // small rings early
   for (let i = 0; i < n; i++) {
     const a = (TAU * i) / n;
     enemies.push(makeEnemy(kind, player.x + Math.cos(a) * d, player.y + Math.sin(a) * d,
@@ -1407,7 +1461,9 @@ function spawnSweep() {
 function spawnBoss(def) {
   const a = rand(0, TAU);
   const d = Math.max(VW, VH) / 2 + 100;
+  bestSeen('boss' + BOSSES.indexOf(def));
   enemies.push({
+    bestKey: 'boss' + BOSSES.indexOf(def),
     x: player.x + Math.cos(a) * d, y: player.y + Math.sin(a) * d,
     hp: def.hp, maxHp: def.hp, speed: def.speed, dmg: def.dmg, r: def.r,
     xp: def.xp, sprite: 'minotaur', scale: def.scale, variant: def.variant,
@@ -1458,6 +1514,7 @@ function killEnemy(e) {
   if (i === -1) return;
   enemies.splice(i, 1);
   state.kills++;
+  bestKill(e.boss ? e.bestKey : e.kind);
   trackStreak();
   corpses.push({ sprite: e.sprite, scale: e.scale, variant: e.variant,
     x: e.x, groundY: groundYOf(e), flip: player.x < e.x, animT: 0 });
@@ -1649,8 +1706,10 @@ function menuConfirm(m) {
 }
 
 // ---------- scenes: title / select / results ----------
-let selIndex = 0;
+let selIndex = 0, titleSel = 0, bestSel = 0;
 let tally = null;
+function openBestiary() { scene = 'bestiary'; saveBestiary(); sndOk(); }
+function closeBestiary() { scene = 'title'; sndMove(); }
 let bootError = '';
 function toSelect() {
   scene = 'select';
@@ -1674,6 +1733,7 @@ function startGame(h) {
 function endGame(won) {
   if (scene === 'over') return;
   scene = 'over';
+  saveBestiary();
   state.won = won;
   menus.length = 0;
   banners.length = 0;
@@ -1719,7 +1779,21 @@ window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
 window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
 
 function uiKey(k) {
-  if (scene === 'title') { toSelect(); return; }
+  if (scene === 'title') {
+    if (k === 'arrowup' || k === 'w' || k === 'arrowdown' || k === 's') { titleSel ^= 1; sndMove(); }
+    else if (k === 'b') openBestiary();
+    else if (OK_KEYS.has(k)) { if (titleSel === 1) openBestiary(); else toSelect(); }
+    return;
+  }
+  if (scene === 'bestiary') {
+    const n = BEST_ENTRIES.length, cols = bestLayout().cols;
+    if (k === 'arrowleft' || k === 'a') { bestSel = (bestSel + n - 1) % n; sndMove(); }
+    else if (k === 'arrowright' || k === 'd') { bestSel = (bestSel + 1) % n; sndMove(); }
+    else if (k === 'arrowup' || k === 'w') { bestSel = (bestSel - cols + n * cols) % n; sndMove(); }
+    else if (k === 'arrowdown' || k === 's') { bestSel = (bestSel + cols) % n; sndMove(); }
+    else if (k === 'escape' || k === 'backspace' || k === 'b' || OK_KEYS.has(k)) closeBestiary();
+    return;
+  }
   if (scene === 'select') {
     const n = HEROES.length;
     if (k === 'arrowleft' || k === 'a') { selIndex = (selIndex + n - 1) % n; sndMove(); }
@@ -1759,6 +1833,16 @@ function onHit(id, down) {
   const [kind, arg] = id.split(':');
   const i = Number(arg);
   if (kind === 'any' || kind === 'start') { if (down) uiKey('enter'); return; }
+  if (kind === 'back') { if (down) closeBestiary(); return; }
+  if (kind === 'title') {
+    if (i === titleSel) { if (down) uiKey('enter'); }
+    else { titleSel = i; sndMove(); if (down) uiKey('enter'); }   // a tap on an item means it
+    return;
+  }
+  if (kind === 'best') {
+    if (i !== bestSel) { bestSel = i; sndMove(); }
+    return;
+  }
   if (kind === 'icon') {
     if (!down) return;
     if (arg === 'sound') setMuted(!muted); else openPause();
@@ -1798,7 +1882,7 @@ canvas.addEventListener('pointermove', e => {
   if (touch.active && e.pointerId === touch.id) { touch.dx = p.x - touch.ox; touch.dy = p.y - touch.oy; return; }
   if (e.pointerType === 'mouse') {
     const id = hitAt(p);
-    if (id && (id.startsWith('hero:') || id.startsWith('row:'))) onHit(id, false);
+    if (id && /^(hero|row|title|best):/.test(id)) onHit(id, false);
   }
 });
 const endTouch = e => {
@@ -2621,14 +2705,21 @@ function renderTitle() {
   const ty = bot + 10;
   drawText('THE DANGER ROOM HAS GONE ROGUE.', W / 2, ty, C.lgrey, { align: 'center' });
   drawText('SURVIVE INFERNO PROTOCOL FOR 15:00', W / 2, ty + 10, C.lgrey, { align: 'center' });
-  if (blink(2)) drawText('PRESS START', W / 2, Math.round(H * 0.66), C.yellow, { align: 'center' });
+  // START GAME / BESTIARY, the classic title-screen pair
+  const my = Math.round(H * 0.6), items = ['START GAME', 'BESTIARY'];
+  addHit(0, 0, W, H, 'any');
+  items.forEach((label, i) => {
+    const y = my + i * 14, on = i === titleSel, w = textW(label);
+    drawText(label, W / 2, y, on ? C.yellow : C.lgrey, { align: 'center' });
+    if (on && blink(3)) drawCursor(Math.round(W / 2 - w / 2) - 10, y);
+    addHit(Math.round(W / 2 - w / 2) - 14, y - 4, w + 28, 14, 'title:' + i);
+  });
   const credit = 'ART: CALCIUMTRICE / ANSIMUZ / REDSHRIKE / BJERK / BUCH / SHEPARDSKIN';
   if (credit.length * 6 < W - 8) drawText(credit, W / 2, H - 10, C.grey, { align: 'center', shadow: false });
   else {
     drawText('ART: CALCIUMTRICE / ANSIMUZ / BJERK', W / 2, H - 20, C.grey, { align: 'center', shadow: false });
     drawText('REDSHRIKE / BUCH / SHEPARDSKIN', W / 2, H - 10, C.grey, { align: 'center', shadow: false });
   }
-  addHit(0, 0, W, H, 'any');
 }
 function selectLayout() {
   const cell = 46, gap = 4, gw = cell * 3 + gap * 2, gh = cell * 2 + gap;
@@ -2696,6 +2787,100 @@ function renderSelect() {
     W / 2, H - 12, C.grey, { align: 'center' });
   renderCornerIcons(false);
 }
+// ---------- bestiary screen ----------
+function bestLayout() {
+  const tile = 30, gap = 2, x0 = 8, pw = W - 16;
+  const cols = Math.max(4, Math.floor((pw + gap) / (tile + gap)));
+  const rows = Math.ceil(BEST_ENTRIES.length / cols);
+  const textX = 6 + 68 + 6, descW = pw - 12;
+  // panel fits the longest description so it never jumps between entries
+  const descLines = Math.max(...BEST_ENTRIES.map(e => wrapText(BEST_DESC[e.key] || '', descW).length));
+  const ph = 6 + 68 + 6 + descLines * 9 + 6;
+  const gw = cols * (tile + gap) - gap, gh = rows * (tile + gap);
+  // centre the whole page vertically on tall (portrait) screens
+  const total = 20 + ph + 6 + gh + 4 + 13;
+  const ty = Math.max(6, Math.floor((H - total) / 2)), py = ty + 20;
+  return { tile, gap, cols, rows, px: x0, py, pw, ph, textX, descW, ty,
+    gx: Math.round((W - gw) / 2), gy: py + ph + 6 };
+}
+const bestKnown = e => !!bestiary.seen[e.key];
+// draw a sheet's walk cycle fitted into a box, feet on the box floor (clipped)
+function drawBeastIn(e, bx, by, bw, bh, k, known, animate) {
+  const def = SHEETS[e.sheet], s = def.size, set = SPR[def.file];
+  const img = !known ? set.shade : (e.variant && set[e.variant]) || set.base;
+  const n = frameCount(e.sheet, 'walk');
+  const frame = animate ? Math.floor(uiTime * 10) % n : 0;
+  const dw = Math.round(s * k);
+  ctx.save();
+  ctx.beginPath(); ctx.rect(bx, by, bw, bh); ctx.clip();
+  const lift = e.key === 'bat' ? Math.round(6 * k) : 0;
+  ctx.drawImage(img, frame * s, def.rows.walk * s, s, s,
+    Math.round(bx + bw / 2 - dw / 2), Math.round(by + bh - 2 - dw + 3 * k) - lift, dw, dw);
+  ctx.restore();
+}
+function renderBestiary() {
+  attractBackdrop(0.7);
+  const L = bestLayout();
+  const found = BEST_ENTRIES.filter(bestKnown).length;
+  const tsc = textW('BESTIARY', 2) <= W - 100 ? 2 : 1;
+  drawText('BESTIARY', 8, L.ty, C.white, { scale: tsc, outline: C.black, grad: GOLD_GRAD });
+  drawText(`FOUND ${found}/${BEST_ENTRIES.length}`, W - 8, L.ty + 3, found === BEST_ENTRIES.length ? C.yellow : C.cyan, { align: 'right' });
+
+  // detail panel
+  const e = BEST_ENTRIES[bestSel], known = bestKnown(e);
+  drawWindow(L.px, L.py, L.pw, L.ph);
+  const x0 = L.px + 6, y0 = L.py + 6;
+  rect(x0, y0, 68, 68, C.black);
+  arenaPatch(x0 + 1, y0 + 1, 66, 66, 2, known ? 0 : 0.2);
+  const sh = shadowSprite(e.boss ? 18 : 12);
+  ctx.drawImage(sh, x0 + 34 - (sh.width >> 1), y0 + 62 - (sh.height >> 1));
+  const s = SHEETS[e.sheet].size;
+  drawBeastIn(e, x0 + 1, y0 + 1, 66, 66, s <= 32 ? 2 : 1, known, true);
+  const tx = L.px + L.textX, tw = L.pw - L.textX - 6;
+  if (known) {
+    const nsc = textW(norm(e.name), 2) <= tw ? 2 : 1;
+    drawText(e.name, tx, y0 + 1, C.white, { scale: nsc, outline: C.black, grad: e.boss ? RED_GRAD : GOLD_GRAD });
+    let sy = y0 + 4 + 7 * nsc + 3;
+    drawText(`${e.boss ? 'BOSS' : 'FIRST SEEN'} ${fmtTime(e.at)}`, tx, sy, e.boss ? C.red : C.cyan);
+    sy += 10;
+    const maxOf = f => Math.max(...BEST_ENTRIES.filter(q => !q.boss).map(q => q[f]));
+    for (const [label, f, col] of [['HP', 'hp', C.green], ['SPD', 'speed', C.cyan], ['DMG', 'dmg', C.red]]) {
+      drawText(label, tx, sy, C.yellow);
+      const segs = e.boss ? 8 : Math.max(1, Math.round((e[f] / maxOf(f)) * 8));
+      for (let i = 0; i < 8; i++) rect(tx + 24 + i * 4, sy + 1, 3, 5, i < segs ? col : C.pipOff);
+      sy += 9;
+    }
+    const kills = bestiary.kills[e.key] || 0;
+    drawText('KILLS', tx, sy + 1, C.yellow);
+    drawText(String(kills), tx + 36, sy + 1, kills ? C.white : C.grey);
+    wrapText(BEST_DESC[e.key] || '', L.descW).forEach((ln, i) => drawText(ln, x0, y0 + 74 + i * 9, C.white));
+  } else {
+    drawText('???', tx, y0 + 1, C.lgrey, { scale: 2, outline: C.black });
+    drawText(e.boss ? 'BOSS' : 'NOT MET YET', tx, y0 + 22, C.grey);
+    drawText(`APPEARS ${fmtTime(e.at)}`, tx, y0 + 32, C.cyan);
+    drawText('SURVIVE LONGER TO MEET IT.', x0, y0 + 74, C.lgrey);
+  }
+
+  // grid of portraits
+  BEST_ENTRIES.forEach((q, i) => {
+    const bx = L.gx + (i % L.cols) * (L.tile + L.gap), by = L.gy + Math.floor(i / L.cols) * (L.tile + L.gap);
+    const on = i === bestSel, kn = bestKnown(q);
+    drawWindow(bx, by, L.tile, L.tile, { border: on ? (blink(4) ? C.yellow : C.white) : (q.boss ? '#920000' : C.grey) });
+    arenaPatch(bx + 2, by + 2, L.tile - 4, L.tile - 4, 1, on ? 0 : 0.35);
+    const qs = SHEETS[q.sheet].size;
+    drawBeastIn(q, bx + 2, by + 2, L.tile - 4, L.tile - 4, qs > 40 ? 0.5 : 1, kn, on);
+    if (!kn) drawText('?', bx + L.tile - 8, by + 3, C.lgrey);
+    addHit(bx, by, L.tile, L.tile, 'best:' + i);
+  });
+
+  // back button + hint
+  const fy = Math.min(H - 16, L.gy + L.rows * (L.tile + L.gap) + 4);
+  const bw = 44, bh = 13, bbx = W - bw - 8;
+  drawWindow(bbx, fy, bw, bh, { border: blink(2) ? C.yellow : C.white });
+  drawText('BACK', bbx + bw / 2, fy + 3, C.white, { align: 'center' });
+  addHit(bbx - 2, fy - 2, bw + 4, bh + 4, 'back');
+  if (W >= 300) drawText('ARROWS: BROWSE   ESC: BACK', 8, fy + 3, C.grey);
+}
 function renderResults() {
   rect(0, 0, W, H, 'rgba(0,0,0,0.6)');
   const won = state.won, title = won ? 'STAGE CLEAR!' : 'GAME OVER';
@@ -2736,6 +2921,7 @@ function render() {
   if (scene === 'loading' || scene === 'error') { renderBoot(); return; }
   if (scene === 'title') { renderTitle(); return; }
   if (scene === 'select') { renderSelect(); return; }
+  if (scene === 'bestiary') { renderBestiary(); return; }
   renderWorld();
   if (scene === 'play') {
     renderHUD();
