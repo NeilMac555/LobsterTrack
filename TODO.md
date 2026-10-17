@@ -36,6 +36,12 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy bestiary + gentler opening: title menu START GAME /
+  BESTIARY; 19 entries (16 enemies + 3 bosses) as silhouettes until met,
+  then animated portrait, stats, first-seen time, kills, behaviour tip;
+  saved in localStorage. Early waves eased (avg on screen min 1-4:
+  24/49/45/45 -> 15/33/34/37), early rings 24 -> 42 by 3:00 — `30c8673`
+
 - Mutant Academy skill art + theme: J. W. Bjerk's CC-BY painterly spell
   icons replace the 10px glyphs (level-up cards with framed 32px icon,
   name, POWER/TRAIT tag, inline description; 16px in chest/pause/HUD).
