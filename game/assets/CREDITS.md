@@ -133,3 +133,23 @@ listed in [`CREDITS-LPC.md`](CREDITS-LPC.md).
   posted by **William.Thompsonj**, **CC-BY 3.0**:
   https://opengameart.org/content/lpc-golem — recoloured iron, downscaled,
   right-facing rows repacked.
+
+## Act II: The Burning Sands
+
+- `desert.png` — sand tiles from "Desert Tileset" by **cdmir**, **CC0**:
+  https://opengameart.org/content/desert-tileset-1 — snapped to four 9-bit sand
+  tones; rock piles, stones and agave from "Desert level decorations pixel art"
+  by **scratchio**, **CC0**:
+  https://opengameart.org/content/desert-level-decorations-pixel-art; palm trees
+  from "Oasis palm trees" by **CityBuildingKit.com** (city-building-game-art),
+  **CC0**: https://opengameart.org/content/oasis-palm-trees (downscaled); bones
+  and the sand-tinted column from **Dungeon Crawl Stone Soup** tiles, **CC0**.
+- `fly.png` (Giant Fly) — "Fly Monster" by **YuriNikolai**, **OGA-BY 3.0**:
+  https://opengameart.org/content/fly-creature-animated (frames repacked).
+- `maggot.png` (Giant Maggot) — the worm from "Forest Monsters" by
+  **Calciumtrice**, **CC-BY 3.0**: https://opengameart.org/content/forest-monsters
+  — recoloured as a pale grub, frames repacked.
+- `lizard.png` (Leaping Lizard) — composed with the Universal LPC Spritesheet
+  Character Generator (lizardfolk body, head and tail, shorts); downscaled.
+  **CC-BY-SA 3.0**; per-part credits in [`CREDITS-LPC.md`](CREDITS-LPC.md).
+- The desert theme is an original FM composition in the Hijaz maqam.

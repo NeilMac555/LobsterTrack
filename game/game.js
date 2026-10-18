@@ -184,7 +184,7 @@ const sndTick = () => sfx(1200, 0.02, 'square', 0.025);
 const sndGameOver = () => jingle([392, 349, 311, 262, 196], 0.2);
 const sndClear = () => jingle([523, 659, 784, 1047, 784, 1047, 1319], 0.11);
 
-const music = { on: true, started: false, step: 0, nextT: 0, timer: null };
+const music = { on: true, started: false, step: 0, nextT: 0, timer: null, song: 1 };
 // "Danger Room" — an original Saturday-morning-cartoon hero theme in E minor:
 // orchestra-hit intro, brass-stab pushes, galloping octave bass, a rising brass
 // melody, then a power-chord bridge. Written as 16th-note steps per bar.
@@ -221,6 +221,7 @@ const BASS_GALLOP = [0, 0, 12, 0, 0, 12, 0, 12];   // semitone offsets on the 8t
 
 function musicTick(ahead = 0.18) {   // ahead: how far to schedule (offline renders pass a long one)
   if (!music.on || muted || !audioCtx) return;
+  if (music.song === 2) { desertTick(ahead); return; }
   const bpm = 152, sd = 60 / bpm / 4;
   // never play catch-up after mute/background throttling — snap to now
   if (music.nextT < audioCtx.currentTime - 0.1) music.nextT = audioCtx.currentTime + 0.05;
@@ -277,6 +278,69 @@ function musicTick(ahead = 0.18) {   // ahead: how far to schedule (offline rend
     music.nextT += sd;
   }
 }
+// "Burning Sands" — an original desert theme in D Hijaz (D Eb F# G A Bb C): doumbek in the
+// maqsum rhythm (dum . tek . . tek dum . . . tek), riq jingles, a D/A drone, an oud ostinato,
+// a ney melody with grace-note ornaments, then an oud solo. Sharps spell the flats (D# = Eb).
+const HIJAZ_UP = { D: 'D#', 'D#': 'F#', 'F#': 'G', G: 'A', A: 'A#', 'A#': 'C', C: 'D' };
+const upper = n => { const m = /^([A-G]#?)(\d)$/.exec(n), u = HIJAZ_UP[m[1]]; return u + (u === 'C' ? +m[2] + 1 : m[2]); };   // the octave number turns over at C
+function phraseN(str) {   // like phrase() but keeps note names, for ornaments
+  let at = 0;
+  return str.trim().split(/\s+/).map(tok => { const [n, l] = tok.split(':'), ev = { at, n, len: +l }; at += +l; return ev; }).filter(e => e.n !== '-');
+}
+const OUD_RIFF = phraseN('D3:2 D#3:1 D3:1 F#3:2 G3:2 A3:2 G3:2 F#3:2 D#3:2');
+const NEY_A = ['A4:4 A#4:2 A4:2 G4:4 F#4:4', 'G4:2 A4:2 A#4:2 C5:2 A4:8', 'D5:4 C5:2 A#4:2 A4:4 G4:2 F#4:2', 'G4:6 F#4:2 D#4:4 D4:4',
+  'F#4:2 G4:2 A4:4 A#4:2 A4:2 G4:2 A4:2', 'A#4:4 C5:4 D5:8', 'D#5:2 D5:2 C5:2 A#4:2 A4:2 G4:2 F#4:2 G4:2', 'A4:8 D4:8'].map(phraseN);
+const OUD_B = ['D5:2 D#5:2 F#5:2 G5:2 F#5:2 D#5:2 D5:4', 'C5:2 D5:2 D#5:4 D5:2 C5:2 A#4:4',
+  'A4:2 A#4:2 C5:2 D5:2 C5:2 A#4:2 A4:4', 'G4:2 A4:2 A#4:2 A4:2 G4:2 F#4:2 D#4:2 D4:2'].map(phraseN);
+const SONG2 = [{ sec: 'intro' }, { sec: 'intro', fill: true }];
+const LOOP2_AT = SONG2.length;
+NEY_A.forEach((mel, i) => SONG2.push({ sec: 'A', ney: mel, fill: i === 7 }));
+OUD_B.forEach((mel, i) => SONG2.push({ sec: 'B', oud: mel, fill: i === 3 }));
+OUD_B.forEach((mel, i) => SONG2.push({ sec: 'B2', oud: mel, ney: i % 2 ? null : NEY_A[i * 2], fill: i === 3 }));
+const oud = (t, f, dur, vol) => { fm(t, f, dur, vol, 1, 2.6, 0.06); fm(t, f * 2, dur * 0.5, vol * 0.3, 1, 1.2, 0.03); };
+function desertTick(ahead) {
+  const bpm = 104, sd = 60 / bpm / 4;
+  if (music.nextT < audioCtx.currentTime - 0.1) music.nextT = audioCtx.currentTime + 0.05;
+  while (music.nextT < audioCtx.currentTime + ahead) {
+    const s = music.step % 16;
+    let bi = Math.floor(music.step / 16);
+    if (bi >= SONG2.length) bi = LOOP2_AT + (bi - LOOP2_AT) % (SONG2.length - LOOP2_AT);
+    const bar = SONG2[bi], t = music.nextT;
+    // doumbek: maqsum. dum = deep drop, tek = sharp rim slap; tek-a-tek fills close a section
+    if (s === 0 || s === 8) { beep(t, 130, 0.24, 'sine', 0.2, -75); noiseHit(t, 0.05, 0.03); }
+    if (s === 2 || s === 6 || s === 12) { noiseHit(t, 0.04, 0.07); beep(t, 820, 0.03, 'square', 0.018); }
+    if (bar.fill && s >= 13) { noiseHit(t, 0.03, 0.06); beep(t, 760, 0.025, 'square', 0.015); }
+    if (s % 2 === 1 && !(bar.fill && s >= 13)) noiseHit(t, 0.025, 0.014);                   // riq jingles
+    // drone: D + A under every bar
+    if (s === 0) {
+      fm(t, hz('D2'), 16 * sd, 0.05, 1, 0.7, 1.2, true);
+      fm(t, hz('A2'), 16 * sd, 0.025, 1, 0.5, 1.2, true);
+    }
+    // oud: ostinato under the ney, melody in the solo sections
+    const oudLine = bar.oud || OUD_RIFF;
+    for (const ev of oudLine) {
+      if (ev.at !== s) continue;
+      oud(t, hz(ev.n), Math.min(0.5, ev.len * sd * 1.6), bar.oud ? 0.06 : 0.045);
+      if (bar.oud && ev.len >= 4) oud(t + sd, hz(ev.n), 0.2, 0.035);                    // tremolo pick
+    }
+    // ney: breathy flute with an upper-neighbour grace note before long notes
+    if (bar.ney) {
+      for (const ev of bar.ney) {
+        if (ev.at !== s) continue;
+        const dur = ev.len * sd * 0.95;
+        if (ev.len >= 4) fm(t, hz(upper(ev.n)), 0.06, 0.03, 1, 0.5, 0.05, true);
+        const t0 = ev.len >= 4 ? t + 0.05 : t;
+        fm(t0, hz(ev.n), dur, 0.045, 1, 0.55, 0.4, true);
+        fm(t0, hz(ev.n) * 2.003, dur, 0.008, 1, 0.2, 0.4, true);                            // breath
+      }
+    }
+    // late game: double-time riq
+    if (scene === 'play' && state.time > 300 && s % 2 === 0) noiseHit(t, 0.02, 0.012);
+    music.step++;
+    music.nextT += sd;
+  }
+}
+
 // 2-operator FM voice: a sine modulator bends a sine carrier; the modulation
 // index decays fast, giving the bright attack / mellow tail of Mega Drive FM.
 // brass = horn envelope: quick swell, held body, brightness that follows the swell
@@ -746,7 +810,8 @@ function pips(x, y, filled, next = filled, size = 1) {
 const ASSET_FILES = ['warrior', 'wizard', 'ranger', 'rogue', 'cleric',
   'slime', 'goblin', 'skeleton', 'orc', 'minotaur', 'tiles', 'biski',
   'bat', 'imp', 'scarab', 'shaman', 'hound', 'guard', 'knight', 'skills',
-  'assassin', 'mech', 'burger', 'lizdoc', 'feral', 'neil', 'zoe', 'crypt', 'butcher', 'banshee', 'golem'];
+  'assassin', 'mech', 'burger', 'lizdoc', 'feral', 'neil', 'zoe', 'crypt', 'butcher', 'banshee', 'golem',
+  'desert', 'fly', 'maggot', 'lizard'];
 const assets = {};
 function loadAssets() {
   return Promise.all(ASSET_FILES.map(name => new Promise((res, rej) => {
@@ -809,7 +874,7 @@ function prepareSprites() {
   }
   // palette-swapped variants, the way cartridges reused one sprite for a tougher foe
   for (const f of ['slime', 'skeleton', 'goblin', 'orc', 'bat', 'imp', 'scarab', 'shaman', 'guard',
-    'assassin', 'burger', 'lizdoc', 'feral', 'banshee', 'golem']) {
+    'assassin', 'burger', 'lizdoc', 'feral', 'banshee', 'golem', 'fly', 'maggot', 'lizard']) {
     SPR[f].elite = bakeSheet(assets[f], 'saturate(2.2) brightness(1.15)');
   }
   SPR.minotaur.boss2 = bakeSheet(assets.minotaur, 'hue-rotate(140deg) saturate(1.4)');
@@ -856,6 +921,10 @@ const SHEETS = {
   butcher:  { file: 'butcher',  size: 96, rows: STD, frames: { idle: 1, walk: 8, attack: 10, death: 6 } },
   banshee:  { file: 'banshee',  size: 40, rows: STD, frames: { idle: 1, walk: 4, attack: 4, death: 2 } },
   golem:    { file: 'golem',    size: 48, rows: STD, frames: { idle: 1, walk: 7, attack: 7, death: 7 } },
+  // Act II: the Burning Sands
+  fly:      { file: 'fly',      size: 32, rows: STD, frames: { idle: 1, walk: 8, attack: 7, death: 3 } },
+  maggot:   { file: 'maggot',   size: 32, rows: STD, frames: { idle: 1, walk: 4, attack: 12, death: 8 } },
+  lizard:   { file: 'lizard',   size: 40, rows: STD, frames: { idle: 1, walk: 8, attack: 5, death: 6 } },
 };
 // painted skill icons (assets/skills.png): row 0 = 32x32, row 1 = 16x16, in this order
 const SKILL_ORDER = ['optic', 'claws', 'storm', 'orbs', 'nova', 'cards', 'boots', 'vitality',
@@ -992,7 +1061,7 @@ function scanEnv() {
       const oh = obstacleAt(ix, iy);
       if (oh) {
         const kind = (oh >>> 3) % 8;
-        obs.push({ x: ix * TILE + TILE / 2, y: iy * TILE + TILE / 2, r: PROP_R[kind], kind });
+        obs.push({ x: ix * TILE + TILE / 2, y: iy * TILE + TILE / 2, r: state.act === 2 ? DESERT_R[kind % 5] : PROP_R[kind], kind });
         continue;
       }
       if (brazierAt(ix, iy)) {
@@ -1059,7 +1128,28 @@ function drawCryptTiles(x, y, w, h, ts, ox, oy) {   // tiles of size ts covering
     }
   }
 }
+// Act II desert: rippled sand (CC0 desert tileset), bones/stones/scrub decals, palm & ruin props
+function drawDesertFloor() {
+  const img = SPR.desert.base;
+  const ix0 = Math.floor(camX / CT), iy0 = Math.floor(camY / CT);
+  for (let iy = iy0; iy * CT - camY < H; iy++) {
+    for (let ix = ix0; ix * CT - camX < W; ix++) {
+      const t = (hash2(ix, iy) >>> 4) % 16;
+      ctx.drawImage(img, (t % 8) * CT, (t >> 3) * CT, CT, CT, ix * CT - camX, iy * CT - camY, CT, CT);
+    }
+  }
+  for (let iy = iy0 - 1; iy * CT - camY < H; iy++) {
+    for (let ix = ix0 - 1; ix * CT - camX < W; ix++) {
+      const h = hash2(ix * 7 + 3, iy * 11 + 5);
+      if (h % 13) continue;
+      const d = (h >>> 4) % 7, dx = ((h >>> 8) % 17) - 8, dy = ((h >>> 13) % 17) - 8;
+      ctx.drawImage(img, d * CT, 128, CT, CT, ix * CT - camX + dx, iy * CT - camY + dy, CT, CT);
+    }
+  }
+}
+const DESERT_R = [8, 8, 8, 11, 15];   // palms (trunks), sandstone pillar, rock pile
 function drawFloor() {
+  if (state.act === 2) { drawDesertFloor(); return; }
   drawCryptTiles(0, 0, W, H, CT, camX, camY);
   // decals: blood splatter, puddles and the odd bone
   const img = SPR.crypt.base;
@@ -1079,7 +1169,8 @@ function drawFloor() {
 const PROP_R = [11, 11, 14, 14, 14, 13, 16, 11];
 function drawObstacle(o) {
   const x = toDX(o.x), y = toDY(o.y);
-  if (x < -40 || x > W + 40 || y < -50 || y > H + 40) return;
+  if (x < -40 || x > W + 40 || y < -70 || y > H + 40) return;
+  if (state.act === 2) { ctx.drawImage(SPR.desert.base, (o.kind % 5) * 48, 64, 48, 64, x - 24, y - 60, 48, 64); return; }
   ctx.drawImage(SPR.crypt.base, o.kind * CT, 2 * CT, CT, CT, x - CT / 2, y - CT + 6, CT, CT);
 }
 
@@ -1110,7 +1201,11 @@ const state = {
   spawnTimer: 0, bossesSpawned: 0, eventsFired: 0, elitesSpawned: 0,
   shake: 0, flash: 0, killTimes: [], streakTier: 0,
   hitstop: 0, lastGemT: -9, gemCombo: 0, heartT: 0, foodT: 35,
+  act: 1, portalT: 0,
 };
+// Act II: after this many level-ups' worth of levels a town portal carries you to the desert
+const ACT2_LEVEL = 5;   // = 4 level-ups
+const PORTAL_TIME = 1.8;
 
 // VS-style wave table: one entry per minute. `min` is the enemy-count quota —
 // below it the spawner force-fills, so the screen is never quiet.
@@ -1133,7 +1228,28 @@ const WAVES = [
   { types: ['voltslime', 'wolf', 'knight', 'assassin'], min: 185, interval: 0.26 },
   { types: ['mech', 'knight', 'wolf', 'shaman', 'lizdoc', 'banshee', 'voltslime'], min: 205, interval: 0.25 },
 ];
-function currentWave() { return WAVES[Math.min(WAVES.length - 1, Math.floor(state.time / 60))]; }
+// Act II keeps the same per-minute pressure but swaps in the desert roster (scarab-led)
+const ACT2_TYPES = [
+  ['scarab', 'fly'],
+  ['scarab', 'fly'],
+  ['scarab', 'lizard', 'fly'],
+  ['fly', 'scarab', 'lizard'],
+  ['maggot', 'scarab', 'fly'],
+  ['scarab', 'lizard', 'maggot'],
+  ['scarab', 'shaman', 'fly', 'maggot'],
+  ['lizard', 'wolf', 'scarab'],
+  ['scarab', 'guard', 'maggot', 'fly'],
+  ['fly', 'lizard', 'assassin', 'scarab'],
+  ['scarab', 'banshee', 'maggot', 'lizard'],
+  ['lizard', 'knight', 'scarab', 'fly'],
+  ['scarab', 'mech', 'maggot', 'lizard'],
+  ['scarab', 'lizard', 'maggot', 'fly', 'knight'],
+  ['scarab', 'lizard', 'maggot', 'fly', 'mech', 'banshee'],
+];
+function currentWave() {
+  const m = Math.min(WAVES.length - 1, Math.floor(state.time / 60));
+  return state.act === 2 ? { min: WAVES[m].min, interval: WAVES[m].interval, types: ACT2_TYPES[m] } : WAVES[m];
+}
 
 // map events: every 30s, alternating a converging ring and a screen-sweeping swarm
 const EVENT_PERIOD = 30;
@@ -1425,6 +1541,9 @@ const ENEMY_TYPES = {
   burger:   { sprite: 'burger',   name: 'MAN-EATING BURGER', hp: 55, speed: 78, dmg: 15, r: 12, xp: 4, move: 'hop',     pop: '#DBB66D' },
   assassin: { sprite: 'assassin', name: 'ASSASSIN',        hp: 45,  speed: 100, dmg: 20, r: 10, xp: 5, move: 'blink',   pop: '#6D49B6', cap: 10 },
   lizdoc:   { sprite: 'lizdoc',   name: 'LIZARD DOCTOR',   hp: 80,  speed: 66,  dmg: 12, r: 10, xp: 6, move: 'zigzag',  pop: '#49DB49', cap: 6, healer: true },
+  fly:      { sprite: 'fly',      name: 'GIANT FLY',       hp: 14,  speed: 125, dmg: 8,  r: 9,  xp: 2, move: 'flutter', pop: '#6D6D49', fly: 12 },
+  maggot:   { sprite: 'maggot',   name: 'GIANT MAGGOT',    hp: 50,  speed: 70,  dmg: 10, r: 11, xp: 4, move: 'caster',  pop: '#DBDB92', bolt: 'acid', cap: 10 },
+  lizard:   { sprite: 'lizard',   name: 'LEAPING LIZARD',  hp: 30,  speed: 130, dmg: 13, r: 10, xp: 3, move: 'pounce',  pop: '#49B649', reckless: true },
   banshee:  { sprite: 'banshee',  name: 'SCREAMING BANSHEE', hp: 40, speed: 82, dmg: 10, r: 10, xp: 5, move: 'banshee', pop: '#B6DBFF', fly: 10, cap: 8 },
   mech:     { sprite: 'mech',     name: 'SENTINEL MECH',   hp: 420, speed: 40,  dmg: 22, r: 18, xp: 12, move: 'caster', pop: '#2449FF', cap: 4, bolt: 'laser' },
   golem:    { sprite: 'golem',    name: 'IRON GOLEM',    hp: 10,  speed: 54,  dmg: 8,  r: 10, xp: 1, move: 'straight', pop: '#B6A48C' },
@@ -1503,18 +1622,22 @@ const BEST_DESC = {
   mech: 'Heavy combat robot. Keeps its distance and fires laser bolts. Explodes.',
   boss0: 'The first protocol boss. Tramples in at 5:00. Drops a treasure chest.',
   butcher: 'Ah... fresh meat! A blood-soaked brute with a cleaver. Stalks, braces, then charges. Arrives at 7:30.',
+  fly: 'Bloated desert flies the size of dogs. They swarm in fast and erratic.',
+  maggot: 'Burrows under the sand, then rears up to spit acid. Hard to pin down.',
+  lizard: 'Reckless desert lizardfolk. They leap at you again and again, barely pausing.',
   banshee: 'A wailing ghost. Her scream hurts and leaves you terrified (slowed). Kill her before she screams.',
   boss1: 'Upgraded Minotaur with far more armour. Arrives at 10:00.',
   boss2: 'The final protocol. Three times the size. Arrives at 14:00.',
 };
 const firstWave = kind => { const i = WAVES.findIndex(w => w.types.includes(kind)); return i < 0 ? 99 : i; };
+const act2Only = kind => !WAVES.some(w => w.types.includes(kind)) && ACT2_TYPES.some(t => t.includes(kind));
 // every enemy in order of first appearance, then the three bosses
 const BEST_ENTRIES = Object.keys(ENEMY_TYPES)
   .sort((a, b) => firstWave(a) - firstWave(b) || ENEMY_TYPES[a].hp - ENEMY_TYPES[b].hp)
   .map(k => {
     const t = ENEMY_TYPES[k];
     return { key: k, name: t.name, sheet: t.sprite, variant: null, hp: t.hp, speed: t.speed, dmg: t.dmg,
-      xp: t.xp, at: firstWave(k) * 60, boss: false };
+      xp: t.xp, at: firstWave(k) * 60, boss: false, act2: act2Only(k) };
   })
   .concat(BOSSES.map(b => ({ key: b.key, name: b.name, sheet: b.sprite, variant: b.variant,
     hp: b.hp, speed: b.speed, dmg: b.dmg, xp: b.xp, at: b.at, boss: true })));
@@ -1536,18 +1659,20 @@ function makeEnemy(kind, x, y, opts = {}) {
     castT: rand(1.5, 3), casting: 0,       // caster: cooldown, windup left
     leapCd: rand(0.5, 2), leapT: 0, crouch: 0, lx: 0, ly: 0, // pounce
     blinkCd: rand(2, 4), fade: 0, healT: rand(1, 3), bolt: t.bolt || 'fire', healer: !!t.healer,
-    screamCd: rand(2, 4), screaming: 0,
+    screamCd: rand(2, 4), screaming: 0, reckless: !!t.reckless,
   };
 }
 const CAST_WINDUP = 0.6, LEAP_TIME = 0.42;
-function shootFireball(e) {   // shaman fireball, or a mech's laser bolt
-  const laser = e.bolt === 'laser', hy = laser ? 30 : 8;
+function shootFireball(e) {   // shaman fireball, mech laser bolt or maggot acid spit
+  const laser = e.bolt === 'laser', acid = e.bolt === 'acid', hy = laser ? 30 : acid ? 18 : 8;
   const dx = player.x - e.x, dy = player.y - (e.y - hy), d = Math.hypot(dx, dy) || 1;
-  const spd = laser ? 230 : 150;
+  const spd = laser ? 230 : acid ? 175 : 150;
   if (ebullets.length > 60) return;
   ebullets.push({ x: e.x + (dx > 0 ? 8 : -8), y: e.y - hy, vx: dx / d * spd, vy: dy / d * spd,
-    r: laser ? 5 : 6, dmg: e.dmg * (laser ? 1 : 1.2), life: 3.5, t: 0, style: laser ? 'laser' : 'fire' });
-  if (laser) sfx(1400, 0.12, 'square', 0.03, -900); else sfx(330, 0.18, 'sawtooth', 0.035, -200);
+    r: laser ? 5 : 6, dmg: e.dmg * (laser ? 1 : 1.2), life: 3.5, t: 0, style: laser ? 'laser' : acid ? 'acid' : 'fire' });
+  if (laser) sfx(1400, 0.12, 'square', 0.03, -900);
+  else if (acid) sfx(220, 0.14, 'square', 0.035, -120);
+  else sfx(330, 0.18, 'sawtooth', 0.035, -200);
 }
 let lastScreamSnd = -9;
 function bansheeScream(e, d) {
@@ -1622,7 +1747,7 @@ function spawnSweep() {
   const px = -dirY, py = dirX; // perpendicular
   const spd = 170;
   for (let i = -14; i <= 14; i++) {
-    const e = makeEnemy('skeleton', cx + px * i * 34 + rand(-10, 10), cy + py * i * 34 + rand(-10, 10),
+    const e = makeEnemy(state.act === 2 ? 'fly' : 'skeleton', cx + px * i * 34 + rand(-10, 10), cy + py * i * 34 + rand(-10, 10),
       { hpMul: 0.06, xpMul: 1, spdMul: 1 });
     e.sweep = { vx: dirX * spd, vy: dirY * spd, life: 14 };
     enemies.push(e);
@@ -1631,6 +1756,31 @@ function spawnSweep() {
   sfx(180, 0.5, 'sawtooth', 0.07, 120);
 }
 
+function openPortal() {
+  state.portalT = PORTAL_TIME;
+  announce('A PORTAL OPENS...', C.cyan, 1.6, 4);
+  sfx(220, 1.4, 'sine', 0.07, 660);
+  sfx(330, 1.4, 'triangle', 0.04, 990);
+}
+function enterAct2() {
+  state.act = 2;
+  state.portalT = -1;                       // done: never reopens
+  // bosses and elites follow you through; the rest of Act I's rabble stays behind
+  const followers = enemies.filter(e => e.boss || e.elite);
+  enemies.length = 0; ebullets.length = 0; corpses.length = 0;
+  for (const e of followers) {
+    const a = rand(0, TAU), d = spawnRadius();
+    e.x = player.x + Math.cos(a) * d; e.y = player.y + Math.sin(a) * d;
+    enemies.push(e);
+  }
+  brazierDead.clear(); brazierDamageMap.clear();
+  state.spawnTimer = 1.2;
+  state.flash = 1;
+  state.shake = 6;
+  announce('ACT II', C.yellow, 3, 5, 'THE BURNING SANDS');
+  music.song = 2; music.step = 0;           // the desert theme starts from its intro
+  sfx(880, 0.5, 'sine', 0.06, -500);
+}
 function spawnBoss(def) {
   const a = rand(0, TAU);
   const d = Math.max(VW, VH) / 2 + 100;
@@ -2101,10 +2251,19 @@ function update(dt) {
     if (state.heartT <= 0) { state.heartT = 0.75; sfx(58, 0.13, 'sine', 0.1); }
   }
 
+  // Act II: the town portal opens once you've levelled enough, then carries you through
+  if (state.act === 1 && state.level >= ACT2_LEVEL && state.portalT <= 0) openPortal();
+  if (state.portalT > 0) {
+    state.portalT -= dt;
+    player.hurtCd = Math.max(player.hurtCd, 0.2);              // safe while stepping through
+    if (Math.random() < 0.6) burstParticles(player.x + rand(-14, 14), player.y + rand(-10, 20), Math.random() < 0.5 ? '#49B6FF' : '#DBFFFF', 1);
+    if (state.portalT <= 0) enterAct2();
+  }
+
   // VS-style wave spawner: keep the quota filled, then trickle one of each type
   const wave = currentWave();
   state.spawnTimer -= dt;
-  if (state.spawnTimer <= 0) {
+  if (state.spawnTimer <= 0 && state.portalT <= 0) {
     state.spawnTimer = wave.interval;
     const alive = enemies.length;
     if (alive < wave.min) {
@@ -2116,17 +2275,17 @@ function update(dt) {
   }
   // map events: ring / sweep alternating every 30s (skip the first quiet minute)
   const eventDue = Math.floor((state.time - 45) / EVENT_PERIOD);
-  if (eventDue >= state.eventsFired && state.time > 45) {
+  if (eventDue >= state.eventsFired && state.time > 45 && state.portalT <= 0) {
     state.eventsFired = eventDue + 1;
     if (eventDue % 2 === 0) spawnRing(); else spawnSweep();
   }
   // one elite per minute from 1:30 — walking chest with a health bar
   const eliteDue = Math.floor((state.time - 90) / 60);
-  if (state.time > 90 && eliteDue >= state.elitesSpawned) {
+  if (state.time > 90 && eliteDue >= state.elitesSpawned && state.portalT <= 0) {
     state.elitesSpawned = eliteDue + 1;
     spawnElite();
   }
-  while (state.bossesSpawned < BOSSES.length && state.time >= BOSSES[state.bossesSpawned].at) {
+  while (state.portalT <= 0 && state.bossesSpawned < BOSSES.length && state.time >= BOSSES[state.bossesSpawned].at) {
     spawnBoss(BOSSES[state.bossesSpawned]);
     state.bossesSpawned++;
   }
@@ -2318,14 +2477,14 @@ function update(dt) {
         e.leapCd -= dt;
         if (e.leapT > 0) {                     // mid-air: locked heading, no steering
           e.leapT -= dt;
-          px = e.lx; py = e.ly; spd *= 3.2;
+          px = e.lx; py = e.ly; spd *= e.reckless ? 3.6 : 3.2;
         } else if (e.crouch > 0) {             // telegraph: freeze for a beat
           e.crouch -= dt;
           spd = 0;
           if (e.crouch <= 0) { e.leapT = LEAP_TIME; e.lx = px; e.ly = py; }
-        } else if (e.leapCd <= 0 && d < 160) {
-          e.crouch = 0.28;
-          e.leapCd = rand(2.0, 2.6);
+        } else if (e.leapCd <= 0 && d < (e.reckless ? 230 : 160)) {
+          e.crouch = e.reckless ? 0.12 : 0.28;
+          e.leapCd = e.reckless ? rand(0.8, 1.2) : rand(2.0, 2.6);
           spd = 0;
         }
       }
@@ -2538,6 +2697,7 @@ function glowSprite(r) {
   return c;
 }
 function renderDarkness() {
+  if (state.act === 2) return;   // the desert is sun-bleached daylight
   if (!darkCv || darkCv.width !== W || darkCv.height !== H) {
     darkCv = document.createElement('canvas'); darkCv.width = W; darkCv.height = H;
     darkG = darkCv.getContext('2d');
@@ -2561,8 +2721,28 @@ function renderDarkness() {
   for (const b of bullets) if (b.kind === 'hammer') punch(b.x, b.y, 14);
   for (let i = 0; i < gems.length && i < 220; i++) punch(gems[i].x, gems[i].y, 5);
   for (const p of pickups) punch(p.x, p.y, 11);
+  if (state.portalT > 0) punch(player.x, player.y, 60);
   g.globalCompositeOperation = 'source-over';
   ctx.drawImage(darkCv, 0, 0);
+}
+
+// Diablo-style town portal: a tall blue oval that swirls open around the hero
+function drawPortal() {
+  const x = toDX(player.x), y = toDY(player.y) - 4;
+  const p = 1 - state.portalT / PORTAL_TIME, grow = Math.min(1, p * 3);
+  const rx = Math.round(14 * grow), ry = Math.round(24 * grow);
+  if (rx < 1) return;
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  for (let k = 0; k < 4; k++) {
+    const s = 1 - k * 0.22, ph = uiTime * 6 + k;
+    ctx.fillStyle = ['rgba(36,73,255,0.35)', 'rgba(73,146,255,0.35)', 'rgba(146,219,255,0.4)', 'rgba(219,255,255,0.5)'][k];
+    for (let dy = -Math.round(ry * s); dy <= Math.round(ry * s); dy++) {
+      const hw = Math.round(rx * s * Math.sqrt(Math.max(0, 1 - (dy / (ry * s + 0.5)) ** 2)) * (1 + 0.12 * Math.sin(ph + dy * 0.4)));
+      ctx.fillRect(x - hw, y + dy, hw * 2 + 1, 1);
+    }
+  }
+  ctx.restore();
 }
 
 // ---------- render: world ----------
@@ -2708,6 +2888,13 @@ function renderWorld() {
     const x = toDX(b.x), y = toDY(b.y);
     if (x < -8 || x > W + 8 || y < -8 || y > H + 8) continue;
     const sp = Math.hypot(b.vx, b.vy) || 1, ux = b.vx / sp, uy = b.vy / sp;
+    if (b.style === 'acid') {    // maggot spit: a green glob with drips falling behind it
+      for (let k = 1; k <= 3; k++) rect(x - ux * k * 3, y - uy * k * 3 + k, 2, 2, k === 1 ? '#92DB24' : '#496D00');
+      disc(x, y, 3, '#496D00');
+      disc(x, y, 2, '#B6FF24');
+      rect(x - 1, y - 2, 1, 1, '#FFFFB6');
+      continue;
+    }
     if (b.style === 'laser') {   // mech: hot cyan streak with a white core
       line(x - ux * 9, y - uy * 9, x, y, C.blue, 3);
       line(x - ux * 7, y - uy * 7, x, y, C.cyan, 2);
@@ -2775,6 +2962,7 @@ function renderWorld() {
     }
   }
 
+  if (state.portalT > 0) drawPortal();
   renderDarkness();
 
   // floating numbers & text
@@ -3059,7 +3247,7 @@ function renderTitle() {
     if (on && blink(3)) drawCursor(Math.round(W / 2 - w / 2) - 10, y);
     addHit(Math.round(W / 2 - w / 2) - 14, y - 4, w + 28, 14, 'title:' + i);
   });
-  const credit = 'ART: CALCIUMTRICE / ANSIMUZ / REDSHRIKE / BJERK / DCSS / LPC / SHEPARDSKIN';
+  const credit = 'ART: CALCIUMTRICE / ANSIMUZ / REDSHRIKE / BJERK / YURINIKOLAI / DCSS / LPC / SHEPARDSKIN';
   if (credit.length * 6 < W - 8) drawText(credit, W / 2, H - 10, C.grey, { align: 'center', shadow: false });
   else {
     drawText('ART: CALCIUMTRICE / ANSIMUZ / BJERK / DCSS', W / 2, H - 20, C.grey, { align: 'center', shadow: false });
@@ -3164,13 +3352,14 @@ const bestKnown = e => !!bestiary.seen[e.key];
 function drawBeastIn(e, bx, by, bw, bh, k, known, animate) {
   const def = SHEETS[e.sheet], s = def.size, set = SPR[def.file];
   const img = !known ? set.shade : (e.variant && set[e.variant]) || set.base;
-  const n = frameCount(e.sheet, 'walk');
-  const frame = animate ? Math.floor(uiTime * 10) % n : 0;
+  const anim = e.sheet === 'maggot' ? 'attack' : 'walk';   // the maggot's walk is a burrowed mound: show it risen
+  const n = frameCount(e.sheet, anim);
+  const frame = animate ? Math.floor(uiTime * 10) % n : (anim === 'attack' ? 4 : 0);
   const dw = Math.round(s * k);
   ctx.save();
   ctx.beginPath(); ctx.rect(bx, by, bw, bh); ctx.clip();
   const lift = e.key === 'bat' ? Math.round(6 * k) : 0;
-  ctx.drawImage(img, frame * s, def.rows.walk * s, s, s,
+  ctx.drawImage(img, frame * s, def.rows[anim] * s, s, s,
     Math.round(bx + bw / 2 - dw / 2), Math.round(by + bh - 2 - dw + 3 * k) - lift, dw, dw);
   ctx.restore();
 }
@@ -3197,7 +3386,7 @@ function renderBestiary() {
     const nsc = textW(norm(e.name), 2) <= tw ? 2 : 1;
     drawText(e.name, tx, y0 + 1, C.white, { scale: nsc, outline: C.black, grad: e.boss ? RED_GRAD : GOLD_GRAD });
     let sy = y0 + 4 + 7 * nsc + 3;
-    drawText(`${e.boss ? 'BOSS' : 'FIRST SEEN'} ${fmtTime(e.at)}`, tx, sy, e.boss ? C.red : C.cyan);
+    drawText(e.boss ? `BOSS ${fmtTime(e.at)}` : e.act2 ? 'FOUND IN ACT II' : `FIRST SEEN ${fmtTime(e.at)}`, tx, sy, e.boss ? C.red : e.act2 ? C.yellow : C.cyan);
     sy += 10;
     const maxOf = f => Math.max(...BEST_ENTRIES.filter(q => !q.boss).map(q => q[f]));
     for (const [label, f, col] of [['HP', 'hp', C.green], ['SPD', 'speed', C.cyan], ['DMG', 'dmg', C.red]]) {
@@ -3213,7 +3402,7 @@ function renderBestiary() {
   } else {
     drawText('???', tx, y0 + 1, C.lgrey, { scale: 2, outline: C.black });
     drawText(e.boss ? 'BOSS' : 'NOT MET YET', tx, y0 + 22, C.grey);
-    drawText(`APPEARS ${fmtTime(e.at)}`, tx, y0 + 32, C.cyan);
+    drawText(e.act2 ? 'APPEARS IN ACT II' : `APPEARS ${fmtTime(e.at)}`, tx, y0 + 32, e.act2 ? C.yellow : C.cyan);
     drawText('SURVIVE LONGER TO MEET IT.', x0, y0 + 74, C.lgrey);
   }
 
