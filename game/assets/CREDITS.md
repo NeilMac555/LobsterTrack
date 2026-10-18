@@ -126,3 +126,10 @@ listed in [`CREDITS-LPC.md`](CREDITS-LPC.md).
   https://opengameart.org/content/big-scary-troll-sounds (trimmed).
 - The Butcher and his "Ah... fresh meat!" are an affectionate nod to
   Blizzard's Diablo; no Diablo assets are used.
+
+## Iron Golem
+
+- `golem.png` (Iron Golem) — "LPC Golem" by **Redshrike** (Stephen Challener),
+  posted by **William.Thompsonj**, **CC-BY 3.0**:
+  https://opengameart.org/content/lpc-golem — recoloured iron, downscaled,
+  right-facing rows repacked.

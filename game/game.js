@@ -746,7 +746,7 @@ function pips(x, y, filled, next = filled, size = 1) {
 const ASSET_FILES = ['warrior', 'wizard', 'ranger', 'rogue', 'cleric',
   'slime', 'goblin', 'skeleton', 'orc', 'minotaur', 'tiles', 'biski',
   'bat', 'imp', 'scarab', 'shaman', 'hound', 'guard', 'knight', 'skills',
-  'assassin', 'mech', 'burger', 'lizdoc', 'feral', 'neil', 'zoe', 'crypt', 'butcher', 'banshee'];
+  'assassin', 'mech', 'burger', 'lizdoc', 'feral', 'neil', 'zoe', 'crypt', 'butcher', 'banshee', 'golem'];
 const assets = {};
 function loadAssets() {
   return Promise.all(ASSET_FILES.map(name => new Promise((res, rej) => {
@@ -809,7 +809,7 @@ function prepareSprites() {
   }
   // palette-swapped variants, the way cartridges reused one sprite for a tougher foe
   for (const f of ['slime', 'skeleton', 'goblin', 'orc', 'bat', 'imp', 'scarab', 'shaman', 'guard',
-    'assassin', 'burger', 'lizdoc', 'feral', 'banshee']) {
+    'assassin', 'burger', 'lizdoc', 'feral', 'banshee', 'golem']) {
     SPR[f].elite = bakeSheet(assets[f], 'saturate(2.2) brightness(1.15)');
   }
   SPR.minotaur.boss2 = bakeSheet(assets.minotaur, 'hue-rotate(140deg) saturate(1.4)');
@@ -855,6 +855,7 @@ const SHEETS = {
   zoe:      { file: 'zoe',        size: 40, rows: STD, frames: { idle: 1, walk: 8, attack: 6, death: 1 } },
   butcher:  { file: 'butcher',  size: 96, rows: STD, frames: { idle: 1, walk: 8, attack: 10, death: 6 } },
   banshee:  { file: 'banshee',  size: 40, rows: STD, frames: { idle: 1, walk: 4, attack: 4, death: 2 } },
+  golem:    { file: 'golem',    size: 48, rows: STD, frames: { idle: 1, walk: 7, attack: 7, death: 7 } },
 };
 // painted skill icons (assets/skills.png): row 0 = 32x32, row 1 = 16x16, in this order
 const SKILL_ORDER = ['optic', 'claws', 'storm', 'orbs', 'nova', 'cards', 'boots', 'vitality',
@@ -1116,8 +1117,8 @@ const state = {
 // Each minute headlines a NEW, visually distinct enemy (first type = most common).
 const WAVES = [
   // the opening minutes ease you in; the quota ramps to full pressure by 5:00
-  { types: ['slime'],                            min: 9,   interval: 1.3 },
-  { types: ['bat', 'slime'],                     min: 14,  interval: 1.15 },
+  { types: ['golem'],                            min: 9,   interval: 1.3 },
+  { types: ['bat', 'golem'],                     min: 14,  interval: 1.15 },
   { types: ['feral', 'skeleton', 'bat'],         min: 22,  interval: 0.95 },
   { types: ['imp', 'skeleton', 'goblin'],        min: 36,  interval: 0.7 },
   { types: ['burger', 'scarab', 'imp'],          min: 50,  interval: 0.6 },
@@ -1426,7 +1427,7 @@ const ENEMY_TYPES = {
   lizdoc:   { sprite: 'lizdoc',   name: 'LIZARD DOCTOR',   hp: 80,  speed: 66,  dmg: 12, r: 10, xp: 6, move: 'zigzag',  pop: '#49DB49', cap: 6, healer: true },
   banshee:  { sprite: 'banshee',  name: 'SCREAMING BANSHEE', hp: 40, speed: 82, dmg: 10, r: 10, xp: 5, move: 'banshee', pop: '#B6DBFF', fly: 10, cap: 8 },
   mech:     { sprite: 'mech',     name: 'SENTINEL MECH',   hp: 420, speed: 40,  dmg: 22, r: 18, xp: 12, move: 'caster', pop: '#2449FF', cap: 4, bolt: 'laser' },
-  slime:    { sprite: 'slime',    name: 'TRAINING OOZE', hp: 8,   speed: 60,  dmg: 8,  r: 10, xp: 1, move: 'hop', pop: '#49DB49' },
+  golem:    { sprite: 'golem',    name: 'IRON GOLEM',    hp: 10,  speed: 54,  dmg: 8,  r: 10, xp: 1, move: 'straight', pop: '#B6A48C' },
   skeleton: { sprite: 'skeleton', name: 'BONE WALKER',   hp: 26,  speed: 68,  dmg: 12, r: 11, xp: 2, move: 'zigzag', pop: '#DBDBDB' },
   goblin:   { sprite: 'goblin',   name: 'GREMLIN',       hp: 18,  speed: 92,  dmg: 10, r: 10, xp: 2, move: 'straight', pop: '#92B649' },
   blueslime:{ sprite: 'slimeB',   name: 'FROST OOZE',    hp: 45,  speed: 66,  dmg: 14, r: 11, xp: 3, move: 'hop', pop: '#49B6FF' },
@@ -1479,7 +1480,7 @@ setInterval(saveBestiary, 4000);
 window.addEventListener('pagehide', saveBestiary);
 
 const BEST_DESC = {
-  slime: 'Danger Room fodder. Moves in short hopping lunges.',
+  golem: 'Clanking iron constructs that plod straight at you. Opening fodder, but they come in numbers.',
   bat: 'Erratic flier that weaves fast and flies straight over crates.',
   skeleton: 'Shambles in on a swaying zigzag. Slippery to aim at.',
   goblin: 'Quick and fragile. Runs straight at you.',
@@ -1565,7 +1566,7 @@ const seenTypes = new Set();
 function announceType(kind) {
   if (seenTypes.has(kind)) return;
   seenTypes.add(kind);
-  if (kind === 'slime') return; // opening fodder needs no fanfare
+  if (kind === 'golem') return; // opening fodder needs no fanfare
   announce(`NEW THREAT: ${ENEMY_TYPES[kind].name}`, C.orange, 2.0, 2);
   sfx(160, 0.35, 'sawtooth', 0.07, 60);
 }
@@ -2993,7 +2994,7 @@ function renderPause(m) {
 
 // ---------- render: title / select / results / boot ----------
 const PARADE = ['ranger', 'warrior', 'wizard', 'rogue', 'cleric', 'biski', 'neil', 'zoe', null, null,
-  'slime', 'bat', 'imp', 'skeleton', 'scarab', 'shaman', 'hound', 'guard', 'knight'];
+  'golem', 'bat', 'imp', 'skeleton', 'scarab', 'shaman', 'hound', 'guard', 'knight'];
 // big sheets need more room in the line-up
 const paradeGap = key => (!key ? 26 : SHEETS[key].size > 40 ? 44 : SHEETS[key].size > 32 ? 32 : 26);
 function drawParade(gy) {
