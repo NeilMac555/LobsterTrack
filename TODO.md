@@ -5,10 +5,6 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 ## Now
 
-- Mutant Academy Act IV (ocean): code, axolotl mercenary and music are in
-  (`4e47bd0`, gated off); waiting on licensed sea-creature + seabed art,
-  then pack sheets, switch ACT_LEVEL[4] on, add act4 test + credits.
-
 - Team name normalizer gaps: Bielefeld, Greuther Fürth, Holstein Kiel,
   Ajaccio unmapped (flagged during backfill).
 
@@ -40,6 +36,11 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy: Act IV "The Drowned Depths" — third portal at level
+  15; seabed with deep-water light and bubbles; piranha shoals, giant
+  crabs, stinging jellyfish, electric eels, ink squids, great sharks;
+  the axolotl mercenary (recoloured CC0 lizard — no licensed axolotl
+  exists); "Drowned Depths" FM theme — `d8dd255` (WIP base `4e47bd0`)
 - Mutant Academy: Act III swarming eased (spawner top-ups stop at the
   quota; swarms only on top-ups; lighter jungle quota and caps; softer
   frogs/poison); ring-event crash fixed; Zoe made overpowered and
