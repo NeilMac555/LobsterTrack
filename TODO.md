@@ -36,6 +36,10 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy: Berserk orb — rare glowing red pickup (bosses, elites,
+  ~1/830 kills, braziers) gives 30s invulnerability, full heal, x1.75
+  speed, x3 damage, 2.5x fire rate, bigger/extra volleys and contact
+  smashing; red palette, afterimages, HUD countdown — `356f3d7`
 - Mutant Academy: Act II "The Burning Sands" — a portal after 4
   level-ups leads to a daylight desert (CC0 sand/palms/rocks) with
   scarabs, Giant Flies, acid-spitting Giant Maggots, reckless Leaping
