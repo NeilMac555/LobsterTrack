@@ -139,6 +139,9 @@ tools/hammer/male/walk.png
 
 ## Zoe
 
+Child body, human child head, Child Wavy hair, glasses, child shirt (pink) and child pants (blue); the bare
+feet were recoloured into sneakers.
+
 ```
 body/bodies/child/walk.png
 	- Licenses:
@@ -177,53 +180,16 @@ head/heads/human/child/walk.png
 		- https://opengameart.org/content/lpc-child-standing-template
 		- https://opengameart.org/content/lpc-character-bases
 
-hair/parted_side_bangs/child/walk.png
+facial/glasses/glasses/child/walk/black.png
 	- Licenses:
-		- OGA-BY 3.0+
-		- CC-BY 3.0+
-		- CC-BY-SA 3.0
-		- GPL 3.0
+		- OGA-BY 3.0
 	- Authors:
-		- JaidynReiman
+		- ElizaWy
 	- Links:
-		- https://opengameart.org/content/lpc-1-hairstyle-2-hair-extensions-3-previously-unofficially-released-hairstyles
-		- https://github.com/jrconway3/Universal-LPC-spritesheet/commit/46ddcf05a0e43e7aa6ffd47d350eef0eb529ac24
+		- https://github.com/ElizaWy/LPC/tree/main/Characters/Head%20Accessories
+		- https://opengameart.org/content/lpc-expanded-sit-run-jump-more
 
-hair/extensions/bangs/braidl/child/walk.png
-	- Licenses:
-		- OGA-BY 3.0+
-		- CC-BY 3.0+
-		- CC-BY-SA 3.0
-		- GPL 3.0
-	- Authors:
-		- JaidynReiman
-	- Links:
-		- https://opengameart.org/content/lpc-1-hairstyle-2-hair-extensions-3-previously-unofficially-released-hairstyles
-
-hair/extensions/bangs/braidr/child/walk.png
-	- Licenses:
-		- OGA-BY 3.0+
-		- CC-BY 3.0+
-		- CC-BY-SA 3.0
-		- GPL 3.0
-	- Authors:
-		- JaidynReiman
-	- Links:
-		- https://opengameart.org/content/lpc-1-hairstyle-2-hair-extensions-3-previously-unofficially-released-hairstyles
-
-facial/glasses/nerd/child/walk/black.png
-	- Note: Original by Pennomi, repositioning and recolors by JaidynReiman.
-	- Licenses:
-		- CC-BY-SA 3.0
-		- GPL 3.0
-	- Authors:
-		- JaidynReiman
-		- Thane Brimhall (pennomi)
-		- laetissima
-	- Links:
-		- https://opengameart.org/content/lpc-base-character-expressions
-
-torso/clothes/shirt/child/walk/black.png
+torso/clothes/shirt/child/walk/pink.png
 	- Licenses:
 		- OGA-BY 3.0
 		- CC-BY-SA 3.0
@@ -233,7 +199,7 @@ torso/clothes/shirt/child/walk/black.png
 	- Links:
 		- https://opengameart.org/content/lpc-clothes-for-children
 
-legs/skirts/child/walk/maroon.png
+legs/pants/child/walk/blue.png
 	- Licenses:
 		- OGA-BY 3.0
 		- CC-BY-SA 3.0
@@ -243,22 +209,16 @@ legs/skirts/child/walk/maroon.png
 	- Links:
 		- https://opengameart.org/content/lpc-clothes-for-children
 
-facial/earrings/simple/left/child/walk/silver.png
+hair/wavy/child/walk.png
 	- Licenses:
-		- CC0
+		- OGA-BY 3.0
+		- CC-BY-SA 3.0
+		- GPL 2.0
+		- GPL 3.0
 	- Authors:
-		- bluecarrot16
+		- Nila122
 	- Links:
-		- https://opengameart.org/content/lpc-pirates
-
-facial/earrings/simple/right/child/walk/silver.png
-	- Licenses:
-		- CC0
-	- Authors:
-		- bluecarrot16
-	- Links:
-		- https://opengameart.org/content/lpc-pirates
-
+		- https://opengameart.org/content/3-hairs-for-lpc
 ```
 
 ## The Butcher

@@ -1621,7 +1621,7 @@ const HEROES = [
     tag: 'Holy bruiser', desc: 'A regular bald, bearded bloke in a T-shirt and jeans. His Blessed Hammers spiral out and grind down crowds. Tough, a bit slow.',
     weapon: 'hammer', mods: () => { player.maxHp += 25; player.hp += 25; player.armor += 1; player.speed *= 0.94; } },
   { id: 'zoe', name: 'Zoe', sprite: 'zoe', color: '#FF49B6',
-    tag: 'Sushi bomber', desc: 'Ten years old, glasses, pigtails and a punk attitude. Lobs exploding sushi. Small, quick and fragile.',
+    tag: 'Sushi bomber', desc: 'Nine years old, glasses, pink tee and trainers. Lobs exploding sushi. Small, quick and fragile.',
     weapon: 'sushi', mods: () => { player.speed *= 1.1; player.magnetR *= 1.2; player.maxHp -= 20; player.hp -= 20; } },
 ];
 // Read each hero's real stats by running their mods on a scratch copy of the
