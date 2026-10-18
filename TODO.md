@@ -36,6 +36,9 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy: Zoe restyled as an ordinary nine-year-old — wavy brown
+  hair, glasses, pink tee, jeans, white trainers (LPC child parts; bare
+  feet recoloured into shoes) — `50594a9`
 - Mutant Academy: Act III "The Strangling Jungle" — second portal at
   level 10; LPC Jungle scenery with canopy shade; Vine Treants, rooted
   Man-Eaters (poison thorns), Mosquito Swarms, striking Jungle Vipers,
