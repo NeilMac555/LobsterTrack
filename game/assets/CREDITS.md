@@ -105,3 +105,24 @@ listed in [`CREDITS-LPC.md`](CREDITS-LPC.md).
 - `hurt-zoe` — "Ouch" from "24 Cute Fighting Game Voice Recordings" by
   **bart** (via OpenGameArt.org, http://opengameart.org), **CC-BY 3.0**:
   https://opengameart.org/content/24-cute-fighting-game-voice-recordings
+
+## Sanctuary: cathedral floor, props, the Butcher, banshees
+
+- `crypt.png` — floors (grey and blood-soaked cobbles, tomb stone, pebbles),
+  columns, statues, sarcophagus, blood fountain, blood splatter and bone decals
+  from **Dungeon Crawl Stone Soup** tiles, **CC0**:
+  https://opengameart.org/content/dungeon-crawl-32x32-tiles — floor tiles
+  brightened for the 9-bit palette, repacked.
+- `butcher.png` (The Butcher) — composed with the Universal LPC Spritesheet
+  Character Generator (male body, Troll head, apron, trousers, shoes, axe);
+  skin recoloured, apron blood-stained, downscaled. **CC-BY-SA 3.0** like the
+  other LPC-derived sheets; per-part credits in [`CREDITS-LPC.md`](CREDITS-LPC.md).
+- `banshee.png` (Screaming Banshee) — "Blood Wraith" by **moo**, **CC0**:
+  https://opengameart.org/content/blood-wraith — recoloured pale, mirrored,
+  downscaled.
+- `sfx/banshee-scream.mp3` — "Horror Scream 1" by **Vinrax**, **CC0**:
+  https://opengameart.org/content/horror-scream1 (trimmed).
+- `sfx/butcher-roar.mp3` — "Big scary troll sounds" by **Darsycho**, **CC0**:
+  https://opengameart.org/content/big-scary-troll-sounds (trimmed).
+- The Butcher and his "Ah... fresh meat!" are an affectionate nod to
+  Blizzard's Diablo; no Diablo assets are used.

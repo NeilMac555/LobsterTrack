@@ -1,6 +1,6 @@
-# LPC credits for Neil and Zoe
+# LPC credits for Neil, Zoe and the Butcher
 
-`neil.png` and `zoe.png` were composed with the Universal LPC Spritesheet Character Generator
+`neil.png`, `zoe.png` and `butcher.png` were composed with the Universal LPC Spritesheet Character Generator
 (https://github.com/LiberatedPixelCup/Universal-LPC-Spritesheet-Character-Generator), then
 downscaled to 40px cells and repacked for this game. Several LPC parts are CC-BY-SA 3.0 / GPL 3.0,
 so these two derived sheets are likewise available under **CC-BY-SA 3.0**. Full per-part credits,
@@ -258,5 +258,110 @@ facial/earrings/simple/right/child/walk/silver.png
 		- bluecarrot16
 	- Links:
 		- https://opengameart.org/content/lpc-pirates
+
+```
+
+## The Butcher
+
+```
+body/bodies/male/walk.png
+	- Note: see details at https://opengameart.org/content/lpc-character-bases; 'Thick' Male Revised Run/Climb by JaidynReiman (based on ElizaWy's LPC Revised)
+	- Licenses:
+		- OGA-BY 3.0
+		- CC-BY-SA 3.0
+		- GPL 3.0
+	- Authors:
+		- bluecarrot16
+		- JaidynReiman
+		- Benjamin K. Smith (BenCreating)
+		- Evert
+		- Eliza Wyatt (ElizaWy)
+		- TheraHedwig
+		- MuffinElZangano
+		- Durrani
+		- Johannes Sjölund (wulax)
+		- Stephen Challener (Redshrike)
+	- Links:
+		- https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles
+		- https://opengameart.org/content/lpc-medieval-fantasy-character-sprites
+		- https://opengameart.org/content/lpc-male-jumping-animation-by-durrani
+		- https://opengameart.org/content/lpc-runcycle-and-diagonal-walkcycle
+		- https://opengameart.org/content/lpc-revised-character-basics
+		- https://opengameart.org/content/lpc-be-seated
+		- https://opengameart.org/content/lpc-runcycle-for-male-muscular-and-pregnant-character-bases-with-modular-heads
+		- https://opengameart.org/content/lpc-jump-expanded
+		- https://opengameart.org/content/lpc-character-bases
+
+head/heads/troll/adult/walk.png
+	- Note: original "Muscleman/Ogre/Minotaur" by Reemax, modified to "Troll" by AntumDeluge, edited to LPC style and converted to modular head by bluecarrot16
+	- Licenses:
+		- CC-BY 3.0
+	- Authors:
+		- bluecarrot16
+		- AntumDeluge
+		- Tuomo Untinen (reemax)
+	- Links:
+		- https://opengameart.org/content/musclemanogreminotaur
+		- https://opengameart.org/content/trolls-0
+		- https://opengameart.org/content/lpc-folk
+
+torso/aprons/apron/male/walk/white.png
+	- Licenses:
+		- OGA-BY 3.0
+		- CC-BY-SA 3.0
+		- GPL 2.0
+		- GPL 3.0
+	- Authors:
+		- Nila122
+	- Links:
+		- https://opengameart.org/content/lpc-aprons
+
+legs/pants/male/walk.png
+	- Note: original male pants by wulax, recolors and edits to v3 base by bluecarrot16, climb/jump/run/sit/emotes/revised combat by JaidynReiman based on ElizaWy's LPC Revised
+	- Licenses:
+		- OGA-BY 3.0
+		- GPL 3.0
+		- CC-BY-SA 3.0
+	- Authors:
+		- bluecarrot16
+		- JaidynReiman
+		- ElizaWy
+		- Matthew Krohn (makrohn)
+		- Johannes Sjölund (wulax)
+		- Stephen Challener (Redshrike)
+	- Links:
+		- https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles
+		- https://opengameart.org/content/lpc-medieval-fantasy-character-sprites
+		- https://opengameart.org/content/lpc-expanded-pants
+
+feet/shoes/basic/male/walk.png
+	- Note: original by wulax, edited for v3 base by bluecarrot16, Jump/Sit/Emote/Run/Revised Combat by JaidynReiman
+	- Licenses:
+		- OGA-BY 3.0
+		- CC-BY-SA 3.0
+		- GPL 3.0
+	- Authors:
+		- JaidynReiman
+		- bluecarrot16
+		- Johannes Sjölund (wulax)
+	- Links:
+		- https://opengameart.org/content/lpc-medieval-fantasy-character-sprites
+		- http://opengameart.org/content/lpc-clothing-updates
+		- https://opengameart.org/content/lpc-expanded-socks-shoes
+
+tools/axe/male/walk.png
+	- Note: original by bluecarrot16, color reduced by JaidynReiman
+	- Licenses:
+		- OGA-BY-3.0
+		- CC-BY 4.0
+		- CC-BY-SA 3.0+
+		- GPL 2.0+
+	- Authors:
+		- bluecarrot16
+		- JaidynReiman
+		- Pierre Vigier (pvigier)
+		- Tuomo Untinen (reemax)
+	- Links:
+		- https://opengameart.org/content/lpc-hand-tools
 
 ```

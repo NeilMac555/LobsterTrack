@@ -119,6 +119,7 @@ const sndHurt = () => sfx(110, 0.2, 'sawtooth', 0.08, -40);
 // Sampled hurt voices, one per hero (Biski meows) — see assets/CREDITS.md.
 // Decoded once audio is unlocked; until then (or on file:// pages) the synth thud stands in.
 const VOICE_FILES = ['visor', 'wildcat', 'skywitch', 'ace', 'mender', 'biski', 'neil', 'zoe'];
+const SFX_FILES = ['banshee-scream', 'butcher-roar'];   // assets/sfx/<name>.mp3
 const voiceBuf = {};
 let voicesRequested = false, lastVoiceT = -9;
 function loadVoices() {
@@ -132,6 +133,25 @@ function loadVoices() {
       .then(decoded => { voiceBuf[id] = decoded; })
       .catch(() => {});
   }
+  for (const name of SFX_FILES) {
+    const key = 'sfx/' + name;
+    const url = (typeof EMBEDDED_ASSETS !== 'undefined' && EMBEDDED_ASSETS[key]) || ('assets/' + key + '.mp3');
+    fetch(url).then(r => r.arrayBuffer())
+      .then(buf => new Promise((res, rej) => audioCtx.decodeAudioData(buf, res, rej)))
+      .then(decoded => { sampleBuf[name] = decoded; })
+      .catch(() => {});
+  }
+}
+const sampleBuf = {};
+function playSample(name, vol = 0.6) {
+  try {
+    if (muted || !sampleBuf[name]) return;
+    const src = audioCtx.createBufferSource(), g = audioCtx.createGain();
+    src.buffer = sampleBuf[name];
+    g.gain.value = vol;
+    src.connect(g); g.connect(audioOut());
+    src.start();
+  } catch (e) {}
 }
 function hurtVoice(id) {
   try {
@@ -726,7 +746,7 @@ function pips(x, y, filled, next = filled, size = 1) {
 const ASSET_FILES = ['warrior', 'wizard', 'ranger', 'rogue', 'cleric',
   'slime', 'goblin', 'skeleton', 'orc', 'minotaur', 'tiles', 'biski',
   'bat', 'imp', 'scarab', 'shaman', 'hound', 'guard', 'knight', 'skills',
-  'assassin', 'mech', 'burger', 'lizdoc', 'feral', 'neil', 'zoe'];
+  'assassin', 'mech', 'burger', 'lizdoc', 'feral', 'neil', 'zoe', 'crypt', 'butcher', 'banshee'];
 const assets = {};
 function loadAssets() {
   return Promise.all(ASSET_FILES.map(name => new Promise((res, rej) => {
@@ -789,7 +809,7 @@ function prepareSprites() {
   }
   // palette-swapped variants, the way cartridges reused one sprite for a tougher foe
   for (const f of ['slime', 'skeleton', 'goblin', 'orc', 'bat', 'imp', 'scarab', 'shaman', 'guard',
-    'assassin', 'burger', 'lizdoc', 'feral']) {
+    'assassin', 'burger', 'lizdoc', 'feral', 'banshee']) {
     SPR[f].elite = bakeSheet(assets[f], 'saturate(2.2) brightness(1.15)');
   }
   SPR.minotaur.boss2 = bakeSheet(assets.minotaur, 'hue-rotate(140deg) saturate(1.4)');
@@ -833,6 +853,8 @@ const SHEETS = {
   // LPC-generator heroes, downscaled to 40px cells (see assets/CREDITS.md)
   neil:     { file: 'neil',       size: 40, rows: STD, frames: { idle: 1, walk: 8, attack: 7, death: 6 } },
   zoe:      { file: 'zoe',        size: 40, rows: STD, frames: { idle: 1, walk: 8, attack: 6, death: 1 } },
+  butcher:  { file: 'butcher',  size: 96, rows: STD, frames: { idle: 1, walk: 8, attack: 10, death: 6 } },
+  banshee:  { file: 'banshee',  size: 40, rows: STD, frames: { idle: 1, walk: 4, attack: 4, death: 2 } },
 };
 // painted skill icons (assets/skills.png): row 0 = 32x32, row 1 = 16x16, in this order
 const SKILL_ORDER = ['optic', 'claws', 'storm', 'orbs', 'nova', 'cards', 'boots', 'vitality',
@@ -968,7 +990,8 @@ function scanEnv() {
     for (let ix = x0; ix <= x1; ix++) {
       const oh = obstacleAt(ix, iy);
       if (oh) {
-        obs.push({ x: ix * TILE + TILE, y: iy * TILE + TILE / 2, r: oh % 2 ? 26 : 30, kind: oh % 2 });
+        const kind = (oh >>> 3) % 8;
+        obs.push({ x: ix * TILE + TILE / 2, y: iy * TILE + TILE / 2, r: PROP_R[kind], kind });
         continue;
       }
       if (brazierAt(ix, iy)) {
@@ -1017,29 +1040,46 @@ function damageBrazier(bz, dmg) {
   sfx(400, 0.15, 'triangle', 0.07, -150);
 }
 
+// Sanctuary cathedral floor (Dungeon Crawl Stone Soup CC0 tiles, 32px): worn grey cobbles, the odd
+// blood-soaked stone, and blood/bone decals scattered on top.
+const CT = 32;
+function cryptTile(ix, iy) {
+  const h = hash2(ix, iy);   // unsigned: shift with >>> so indices never go negative
+  if (h % 13 === 0) { const k = (h >>> 5) % 5; return k === 0 ? [7, 0] : [k - 1, 1]; }   // bloody cobbles
+  return [(h >>> 4) % 7, 0];                                                           // clean cobbles
+}
+function drawCryptTiles(x, y, w, h, ts, ox, oy) {   // tiles of size ts covering a screen rect
+  const img = SPR.crypt.base;
+  const ix0 = Math.floor(ox / ts), iy0 = Math.floor(oy / ts);
+  for (let iy = iy0; iy * ts - oy < h; iy++) {
+    for (let ix = ix0; ix * ts - ox < w; ix++) {
+      const [tx, ty] = cryptTile(ix, iy);
+      ctx.drawImage(img, tx * CT, ty * CT, CT, CT, x + ix * ts - ox, y + iy * ts - oy, ts, ts);
+    }
+  }
+}
 function drawFloor() {
-  const img = SPR.tiles.base;
-  const ix0 = Math.floor(camX / T), iy0 = Math.floor(camY / T);
-  const ix1 = Math.floor((camX + W) / T), iy1 = Math.floor((camY + H) / T);
+  drawCryptTiles(0, 0, W, H, CT, camX, camY);
+  // decals: blood splatter, puddles and the odd bone
+  const img = SPR.crypt.base;
+  const ix0 = Math.floor(camX / CT) - 1, iy0 = Math.floor(camY / CT) - 1;
+  const ix1 = Math.floor((camX + W) / CT), iy1 = Math.floor((camY + H) / CT);
   for (let iy = iy0; iy <= iy1; iy++) {
     for (let ix = ix0; ix <= ix1; ix++) {
-      const [tx, ty] = FLOOR_TILES[hash2(ix, iy) % FLOOR_TILES.length];
-      ctx.drawImage(img, tx * T, ty * T, T, T, ix * T - camX, iy * T - camY, T, T);
+      const h = hash2(ix * 7 + 3, iy * 11 + 5);
+      if (h % 6) continue;
+      const d = (h >>> 4) % 8, dx = ((h >>> 8) % 17) - 8, dy = ((h >>> 13) % 17) - 8;
+      ctx.drawImage(img, d * CT, 3 * CT, CT, CT, ix * CT - camX + dx, iy * CT - camY + dy, CT, CT);
     }
   }
 }
 
+// solid props: crumbled columns, demonic statues, a sarcophagus, the blood fountain
+const PROP_R = [11, 11, 14, 14, 14, 13, 16, 11];
 function drawObstacle(o) {
-  const img = SPR.tiles.base, x = toDX(o.x), y = toDY(o.y);
-  if (x < -40 || x > W + 40 || y < -40 || y > H + 40) return;
-  if (o.kind === 0) { // 2x2 crate stack
-    for (const [ox, oy] of [[-1, -1], [0, -1], [-1, 0], [0, 0]]) {
-      ctx.drawImage(img, 9 * T, (7 + ((ox + oy) & 1)) * T, T, T, x + ox * T, y + oy * T, T, T);
-    }
-  } else { // barrel pair
-    ctx.drawImage(img, 12 * T, 7 * T, T, T, x - T, y - T / 2, T, T);
-    ctx.drawImage(img, 12 * T, 7 * T, T, T, x, y - T / 2 - 2, T, T);
-  }
+  const x = toDX(o.x), y = toDY(o.y);
+  if (x < -40 || x > W + 40 || y < -50 || y > H + 40) return;
+  ctx.drawImage(SPR.crypt.base, o.kind * CT, 2 * CT, CT, CT, x - CT / 2, y - CT + 6, CT, CT);
 }
 
 function drawBrazier(bz) {
@@ -1081,16 +1121,16 @@ const WAVES = [
   { types: ['feral', 'skeleton', 'bat'],         min: 22,  interval: 0.95 },
   { types: ['imp', 'skeleton', 'goblin'],        min: 36,  interval: 0.7 },
   { types: ['burger', 'scarab', 'imp'],          min: 50,  interval: 0.6 },
-  { types: ['blueslime', 'burger', 'scarab'],    min: 68,  interval: 0.5 },
+  { types: ['banshee', 'blueslime', 'burger'],   min: 68,  interval: 0.5 },
   { types: ['shaman', 'imp', 'feral'],           min: 80,  interval: 0.45 },
   { types: ['wolf', 'redslime', 'assassin'],     min: 92,  interval: 0.42 },
   { types: ['lizdoc', 'guard', 'wolf'],          min: 105, interval: 0.4 },
   { types: ['brute', 'lizdoc', 'shaman'],        min: 120, interval: 0.36 },
-  { types: ['raider', 'assassin', 'scarab'],     min: 135, interval: 0.33 },
+  { types: ['raider', 'assassin', 'banshee', 'scarab'], min: 135, interval: 0.33 },
   { types: ['knight', 'raider', 'burger'],       min: 150, interval: 0.3 },
   { types: ['mech', 'orc', 'guard', 'bat'],      min: 165, interval: 0.28 },
   { types: ['voltslime', 'wolf', 'knight', 'assassin'], min: 185, interval: 0.26 },
-  { types: ['mech', 'knight', 'wolf', 'shaman', 'lizdoc', 'voltslime'], min: 205, interval: 0.25 },
+  { types: ['mech', 'knight', 'wolf', 'shaman', 'lizdoc', 'banshee', 'voltslime'], min: 205, interval: 0.25 },
 ];
 function currentWave() { return WAVES[Math.min(WAVES.length - 1, Math.floor(state.time / 60))]; }
 
@@ -1100,7 +1140,7 @@ const EVENT_PERIOD = 30;
 const player = {
   x: 0, y: 0, r: 14, speed: 150, hp: 100, maxHp: 100,
   regen: 0, armor: 0, magnetR: 70, dmgMult: 1, cdMult: 1,
-  facing: { x: 1, y: 0 }, hurtCd: 0, color: '#FFDB00', name: '',
+  facing: { x: 1, y: 0 }, hurtCd: 0, fearT: 0, color: '#FFDB00', name: '',
   sprite: 'ranger', face: 1, moving: false, animT: 0, attackAge: 99,
   critChance: 0.12, drawScale: SCALE,
   weapons: [], passives: {},
@@ -1384,6 +1424,7 @@ const ENEMY_TYPES = {
   burger:   { sprite: 'burger',   name: 'MAN-EATING BURGER', hp: 55, speed: 78, dmg: 15, r: 12, xp: 4, move: 'hop',     pop: '#DBB66D' },
   assassin: { sprite: 'assassin', name: 'ASSASSIN',        hp: 45,  speed: 100, dmg: 20, r: 10, xp: 5, move: 'blink',   pop: '#6D49B6', cap: 10 },
   lizdoc:   { sprite: 'lizdoc',   name: 'LIZARD DOCTOR',   hp: 80,  speed: 66,  dmg: 12, r: 10, xp: 6, move: 'zigzag',  pop: '#49DB49', cap: 6, healer: true },
+  banshee:  { sprite: 'banshee',  name: 'SCREAMING BANSHEE', hp: 40, speed: 82, dmg: 10, r: 10, xp: 5, move: 'banshee', pop: '#B6DBFF', fly: 10, cap: 8 },
   mech:     { sprite: 'mech',     name: 'SENTINEL MECH',   hp: 420, speed: 40,  dmg: 22, r: 18, xp: 12, move: 'caster', pop: '#2449FF', cap: 4, bolt: 'laser' },
   slime:    { sprite: 'slime',    name: 'TRAINING OOZE', hp: 8,   speed: 60,  dmg: 8,  r: 10, xp: 1, move: 'hop', pop: '#49DB49' },
   skeleton: { sprite: 'skeleton', name: 'BONE WALKER',   hp: 26,  speed: 68,  dmg: 12, r: 11, xp: 2, move: 'zigzag', pop: '#DBDBDB' },
@@ -1397,13 +1438,17 @@ const ENEMY_TYPES = {
 };
 // Bosses scale by whole dots only (2x, 2x, 3x) so their pixels stay square;
 // collision radii grow to match the bigger bodies.
+// key = bestiary id (kept stable so saved bestiaries survive new bosses); sorted by `at`
 const BOSSES = [
-  { at: 300, name: 'MINOTAUR PROTOCOL MK-I', hp: 900, speed: 50, dmg: 25, r: 40,
-    xp: 50, scale: 4, variant: null },
-  { at: 600, name: 'MINOTAUR PROTOCOL MK-II', hp: 2600, speed: 55, dmg: 32, r: 44,
-    xp: 90, scale: 4, variant: 'boss2' },
-  { at: 840, name: 'OMEGA MINOTAUR', hp: 6500, speed: 60, dmg: 42, r: 60,
-    xp: 150, scale: 6, variant: 'boss3' },
+  { key: 'boss0', at: 300, name: 'MINOTAUR PROTOCOL MK-I', hp: 900, speed: 50, dmg: 25, r: 40,
+    xp: 50, scale: 4, variant: null, sprite: 'minotaur' },
+  // the Butcher: Diablo homage. Prowls, braces, then rushes in swinging the cleaver
+  { key: 'butcher', at: 450, name: 'THE BUTCHER', hp: 1800, speed: 62, dmg: 34, r: 30,
+    xp: 70, scale: 4, variant: null, sprite: 'butcher', move: 'charge', intro: 'AH... FRESH MEAT!', roar: 'butcher-roar' },
+  { key: 'boss1', at: 600, name: 'MINOTAUR PROTOCOL MK-II', hp: 2600, speed: 55, dmg: 32, r: 44,
+    xp: 90, scale: 4, variant: 'boss2', sprite: 'minotaur' },
+  { key: 'boss2', at: 840, name: 'OMEGA MINOTAUR', hp: 6500, speed: 60, dmg: 42, r: 60,
+    xp: 150, scale: 6, variant: 'boss3', sprite: 'minotaur' },
 ];
 
 function hpScale() {
@@ -1456,6 +1501,8 @@ const BEST_DESC = {
   lizdoc: 'Mad reptile surgeon. Heals every monster near it: kill it first.',
   mech: 'Heavy combat robot. Keeps its distance and fires laser bolts. Explodes.',
   boss0: 'The first protocol boss. Tramples in at 5:00. Drops a treasure chest.',
+  butcher: 'Ah... fresh meat! A blood-soaked brute with a cleaver. Stalks, braces, then charges. Arrives at 7:30.',
+  banshee: 'A wailing ghost. Her scream hurts and leaves you terrified (slowed). Kill her before she screams.',
   boss1: 'Upgraded Minotaur with far more armour. Arrives at 10:00.',
   boss2: 'The final protocol. Three times the size. Arrives at 14:00.',
 };
@@ -1468,7 +1515,7 @@ const BEST_ENTRIES = Object.keys(ENEMY_TYPES)
     return { key: k, name: t.name, sheet: t.sprite, variant: null, hp: t.hp, speed: t.speed, dmg: t.dmg,
       xp: t.xp, at: firstWave(k) * 60, boss: false };
   })
-  .concat(BOSSES.map((b, i) => ({ key: 'boss' + i, name: b.name, sheet: 'minotaur', variant: b.variant,
+  .concat(BOSSES.map(b => ({ key: b.key, name: b.name, sheet: b.sprite, variant: b.variant,
     hp: b.hp, speed: b.speed, dmg: b.dmg, xp: b.xp, at: b.at, boss: true })));
 
 function makeEnemy(kind, x, y, opts = {}) {
@@ -1488,6 +1535,7 @@ function makeEnemy(kind, x, y, opts = {}) {
     castT: rand(1.5, 3), casting: 0,       // caster: cooldown, windup left
     leapCd: rand(0.5, 2), leapT: 0, crouch: 0, lx: 0, ly: 0, // pounce
     blinkCd: rand(2, 4), fade: 0, healT: rand(1, 3), bolt: t.bolt || 'fire', healer: !!t.healer,
+    screamCd: rand(2, 4), screaming: 0,
   };
 }
 const CAST_WINDUP = 0.6, LEAP_TIME = 0.42;
@@ -1499,6 +1547,17 @@ function shootFireball(e) {   // shaman fireball, or a mech's laser bolt
   ebullets.push({ x: e.x + (dx > 0 ? 8 : -8), y: e.y - hy, vx: dx / d * spd, vy: dy / d * spd,
     r: laser ? 5 : 6, dmg: e.dmg * (laser ? 1 : 1.2), life: 3.5, t: 0, style: laser ? 'laser' : 'fire' });
   if (laser) sfx(1400, 0.12, 'square', 0.03, -900); else sfx(330, 0.18, 'sawtooth', 0.035, -200);
+}
+let lastScreamSnd = -9;
+function bansheeScream(e, d) {
+  effects.push({ type: 'scream', x: e.x, y: e.y - 16, radius: 150, life: 0.55, maxLife: 0.55 });
+  if (uiTime - lastScreamSnd > 1.3) { lastScreamSnd = uiTime; playSample('banshee-scream', 0.55); }
+  if (d < 150) {
+    hurtPlayer(e.dmg * 1.4);
+    if (player.fearT <= 0) popText(player.x, player.y - 52, 'TERRIFIED!', '#B6DBFF');
+    player.fearT = 1.6;
+    state.shake = Math.max(state.shake, 4);
+  }
 }
 const countKind = kind => { let n = 0; for (const e of enemies) if (e.kind === kind) n++; return n; };
 
@@ -1574,16 +1633,18 @@ function spawnSweep() {
 function spawnBoss(def) {
   const a = rand(0, TAU);
   const d = Math.max(VW, VH) / 2 + 100;
-  bestSeen('boss' + BOSSES.indexOf(def));
+  bestSeen(def.key);
   enemies.push({
-    bestKey: 'boss' + BOSSES.indexOf(def),
+    bestKey: def.key, kind: def.key,
     x: player.x + Math.cos(a) * d, y: player.y + Math.sin(a) * d,
     hp: def.hp, maxHp: def.hp, speed: def.speed, dmg: def.dmg, r: def.r,
-    xp: def.xp, sprite: 'minotaur', scale: def.scale, variant: def.variant,
-    boss: true, name: def.name, flash: -1, animT: rand(0, 10), pop: '#FF9200',
+    xp: def.xp, sprite: def.sprite, scale: def.scale, variant: def.variant,
+    boss: true, name: def.name, flash: -1, animT: rand(0, 10), pop: def.sprite === 'butcher' ? '#B60000' : '#FF9200',
+    move: def.move, chargeT: 0, orbitSign: 1, fly: 0,
   });
-  announce('WARNING!', C.red, 2.6, 5, def.name, true);
+  announce(def.intro || 'WARNING!', C.red, 2.6, 5, def.name, true);
   sndBoss();
+  if (def.roar) playSample(def.roar, 0.9);
   state.shake = 12;
 }
 
@@ -2083,8 +2144,10 @@ function update(dt) {
 
   // player movement + animation clocks
   const { mx, my } = moveInput();
-  player.x += mx * player.speed * dt;
-  player.y += my * player.speed * dt;
+  player.fearT = Math.max(0, (player.fearT || 0) - dt);
+  const spd = player.speed * (player.fearT > 0 ? 0.55 : 1);   // banshee terror slows you
+  player.x += mx * spd * dt;
+  player.y += my * spd * dt;
   if (mx || my) { player.facing.x = mx; player.facing.y = my; }
   player.moving = !!(mx || my);
   if (mx) player.face = mx > 0 ? 1 : -1;
@@ -2223,6 +2286,20 @@ function update(dt) {
         } else if (e.castT <= 0 && d < 330) {
           e.casting = CAST_WINDUP;
           e.castT = rand(2.4, 3.2);
+        }
+      } else if (e.move === 'banshee') {
+        // slow wailing drift; inside 170 she stops, shudders, then SCREAMS
+        const sway = Math.sin(e.animT * 2.2 + e.orbitSign) * 0.9;
+        const nx = px - py * sway, ny = py + px * sway, nl = Math.hypot(nx, ny) || 1;
+        px = nx / nl; py = ny / nl;
+        e.screamCd -= dt;
+        if (e.screaming > 0) {
+          spd = 0;
+          e.screaming -= dt;
+          if (e.screaming <= 0) bansheeScream(e, d);
+        } else if (e.screamCd <= 0 && d < 170) {
+          e.screaming = 0.55;
+          e.screamCd = rand(4, 6);
         }
       } else if (e.move === 'blink') {
         // stalk in, then vanish in smoke and reappear at your flank
@@ -2437,6 +2514,56 @@ function updateSpecialBullet(b, dt) {
   return true;
 }
 
+// ---------- Diablo-style light radius ----------
+// The world is drawn, then a darkness layer goes on top with stepped holes punched out
+// around the hero, torches, fireballs and explosions (and a glint for every drop).
+const DARKNESS = 0.68;
+let darkCv = null, darkG = null;
+const glowCache = new Map();
+function glowSprite(r) {
+  r = Math.max(2, Math.round(r));
+  let c = glowCache.get(r);
+  if (c) return c;
+  c = document.createElement('canvas');
+  c.width = c.height = r * 2 + 1;
+  const g = c.getContext('2d'), d = g.createImageData(c.width, c.height);
+  for (let y = 0; y < c.height; y++) for (let x = 0; x < c.width; x++) {
+    const q = Math.hypot(x - r, (y - r) * 1.15) / r;   // slightly squat, like Diablo's ellipse
+    const a = q < 0.45 ? 255 : q < 0.65 ? 215 : q < 0.82 ? 150 : q < 1 ? 75 : 0;
+    d.data[(y * c.width + x) * 4 + 3] = a;
+  }
+  g.putImageData(d, 0, 0);
+  glowCache.set(r, c);
+  return c;
+}
+function renderDarkness() {
+  if (!darkCv || darkCv.width !== W || darkCv.height !== H) {
+    darkCv = document.createElement('canvas'); darkCv.width = W; darkCv.height = H;
+    darkG = darkCv.getContext('2d');
+  }
+  const g = darkG;
+  g.globalCompositeOperation = 'source-over';
+  g.clearRect(0, 0, W, H);
+  g.fillStyle = `rgba(6,0,10,${DARKNESS})`;
+  g.fillRect(0, 0, W, H);
+  g.globalCompositeOperation = 'destination-out';
+  const punch = (wx, wy, r) => {
+    const s = glowSprite(r), x = toDX(wx), y = toDY(wy);
+    if (x < -s.width || x > W + s.width || y < -s.height || y > H + s.height) return;
+    g.drawImage(s, x - (s.width >> 1), y - (s.height >> 1));
+  };
+  const flick = Math.floor(uiTime * 8) % 3;
+  punch(player.x, player.y - 10, 112 + flick * 2);
+  for (const bz of state.brazList || []) punch(bz.x, bz.y - 12, 42 + ((Math.floor(uiTime * 7 + bz.x) % 3) * 2));
+  for (const b of ebullets) punch(b.x, b.y, b.style === 'laser' ? 12 : 22);
+  for (const fx of effects) if (fx.type === 'boom' || fx.type === 'bolt' || fx.type === 'nova') punch(fx.x, fx.y, Math.max(16, (fx.radius || 30) / PX));
+  for (const b of bullets) if (b.kind === 'hammer') punch(b.x, b.y, 14);
+  for (let i = 0; i < gems.length && i < 220; i++) punch(gems[i].x, gems[i].y, 5);
+  for (const p of pickups) punch(p.x, p.y, 11);
+  g.globalCompositeOperation = 'source-over';
+  ctx.drawImage(darkCv, 0, 0);
+}
+
 // ---------- render: world ----------
 function renderWorld() {
   let shx = 0, shy = 0;
@@ -2503,13 +2630,14 @@ function renderWorld() {
 
   // living entities + solid props, y-sorted (painter's algorithm)
   const drawables = [];
-  for (const o of state.obsList || []) drawables.push({ y: o.y + TILE / 2, draw() { drawObstacle(o); } });
+  for (const o of state.obsList || []) drawables.push({ y: o.y + 4, draw() { drawObstacle(o); } });
   for (const bz of state.brazList || []) drawables.push({ y: bz.y + 8, draw() { drawBrazier(bz); } });
   for (const e of enemies) {
     drawables.push({ y: groundYOf(e), draw() {
       const near = dist2(e.x, e.y, player.x, player.y) < (e.r + player.r + 26) ** 2;
       let anim = near ? 'attack' : 'walk', frame;
       if (e.fade > 0 && blink(20)) return;       // assassin materialising
+      const shriek = e.screaming > 0 && blink(16);  // banshee drawing breath
       if (e.casting > 0) {                       // windup: shaman fire-gesture row, mech brace
         anim = SHEETS[e.sprite].rows.cast !== undefined ? 'cast' : 'attack';
         const n = frameCount(e.sprite, anim);
@@ -2525,7 +2653,7 @@ function renderWorld() {
       if (frame === undefined) frame = animFrame(e.animT, anim, e.sprite);
       const lift = e.fly ? e.fly + Math.round(Math.sin(e.animT * 9) * 3) : 0;
       drawSprite(e.sprite, anim, frame, e.x, groundYOf(e) - lift, e.lx && e.leapT > 0 ? e.lx < 0 : player.x < e.x,
-        e.scale, e.flash > 0 ? 'white' : e.variant);
+        e.scale, e.flash > 0 || shriek ? 'white' : e.variant);
     } });
   }
   const hurtBlink = player.hurtCd > 0 && Math.floor(uiTime * 20) % 2 === 0;
@@ -2635,11 +2763,18 @@ function renderWorld() {
         disc(cx, cy, R * 0.4, '#FFFF49');
         if (p > 0.6) disc(cx, cy, R * 0.15, C.white);
       }
+    } else if (fx.type === 'scream') {   // banshee shriek: three pale rings racing outward
+      for (let k = 0; k < 3; k++) {
+        const q = Math.min(1, (1 - p) * 1.3 - k * 0.18);
+        if (q > 0) ring(cx, cy, (fx.radius / PX) * q, k === 0 ? C.white : '#92B6DB');
+      }
     } else if (fx.type === 'heal') {   // lizard doctor's pulse: a green ring expanding outward
       const rr = (fx.radius / PX) * (1 - p);
       ring(cx, cy, rr, p > 0.5 ? '#92FF92' : C.green);
     }
   }
+
+  renderDarkness();
 
   // floating numbers & text
   for (const t of texts) {
@@ -2886,13 +3021,7 @@ function arenaPatch(x, y, w, h, k, dark) {
   ctx.beginPath();
   ctx.rect(x, y, w, h);
   ctx.clip();
-  const ts = T * k;
-  for (let iy = 0; iy * ts < h; iy++) {
-    for (let ix = 0; ix * ts < w; ix++) {
-      const [tx, ty] = FLOOR_TILES[hash2(ix + 40, iy + 40) % 7];   // plain tiles only
-      ctx.drawImage(SPR.tiles.base, tx * T, ty * T, T, T, x + ix * ts, y + iy * ts, ts, ts);
-    }
-  }
+  drawCryptTiles(x, y, w, h, CT * k / 2, 40 * CT * k / 2, 40 * CT * k / 2);
   if (dark) rect(x, y, w, h, `rgba(0,0,0,${dark})`);
   ctx.restore();
 }
@@ -2919,7 +3048,7 @@ function renderTitle() {
   drawText(l2, W / 2, y2, C.white, { scale: sc2, align: 'center', outline: C.black, drop: '#000024', grad: CYAN_GRAD });
   const ty = bot + 10;
   drawText('THE DANGER ROOM HAS GONE ROGUE.', W / 2, ty, C.lgrey, { align: 'center' });
-  drawText('SURVIVE INFERNO PROTOCOL FOR 15:00', W / 2, ty + 10, C.lgrey, { align: 'center' });
+  drawText('SURVIVE THE CATHEDRAL FOR 15:00', W / 2, ty + 10, C.lgrey, { align: 'center' });
   // START GAME / BESTIARY, the classic title-screen pair
   const my = Math.round(H * 0.6), items = ['START GAME', 'BESTIARY'];
   addHit(0, 0, W, H, 'any');
@@ -2929,11 +3058,11 @@ function renderTitle() {
     if (on && blink(3)) drawCursor(Math.round(W / 2 - w / 2) - 10, y);
     addHit(Math.round(W / 2 - w / 2) - 14, y - 4, w + 28, 14, 'title:' + i);
   });
-  const credit = 'ART: CALCIUMTRICE / ANSIMUZ / REDSHRIKE / BJERK / BUCH / SHEPARDSKIN';
+  const credit = 'ART: CALCIUMTRICE / ANSIMUZ / REDSHRIKE / BJERK / DCSS / LPC / SHEPARDSKIN';
   if (credit.length * 6 < W - 8) drawText(credit, W / 2, H - 10, C.grey, { align: 'center', shadow: false });
   else {
-    drawText('ART: CALCIUMTRICE / ANSIMUZ / BJERK', W / 2, H - 20, C.grey, { align: 'center', shadow: false });
-    drawText('REDSHRIKE / BUCH / SHEPARDSKIN', W / 2, H - 10, C.grey, { align: 'center', shadow: false });
+    drawText('ART: CALCIUMTRICE / ANSIMUZ / BJERK / DCSS', W / 2, H - 20, C.grey, { align: 'center', shadow: false });
+    drawText('REDSHRIKE / LPC / BUCH / SHEPARDSKIN', W / 2, H - 10, C.grey, { align: 'center', shadow: false });
   }
 }
 const SEL_COLS = 4;
