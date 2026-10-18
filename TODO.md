@@ -36,6 +36,11 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy: Act III "The Strangling Jungle" — second portal at
+  level 10; LPC Jungle scenery with canopy shade; Vine Treants, rooted
+  Man-Eaters (poison thorns), Mosquito Swarms, striking Jungle Vipers,
+  coconut-throwing Demon Monkeys, Giant Poison Frogs (poison + toxic
+  clouds); "Green Hell" FM jungle theme — `c5abf3a` (WIP base `5fb54c5`)
 - Mutant Academy: Berserk orb — rare glowing red pickup (bosses, elites,
   ~1/830 kills, braziers) gives 30s invulnerability, full heal, x1.75
   speed, x3 damage, 2.5x fire rate, bigger/extra volleys and contact
