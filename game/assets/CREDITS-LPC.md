@@ -139,7 +139,7 @@ tools/hammer/male/walk.png
 
 ## Zoe
 
-Child body, human child head, Child Wavy hair, glasses, child shirt (pink) and child pants (blue); the bare
+Child body, human child head, Child Wavy hair, glasses, child shirt (black) and child pants (black); the bare
 feet were recoloured into sneakers.
 
 ```
@@ -189,7 +189,7 @@ facial/glasses/glasses/child/walk/black.png
 		- https://github.com/ElizaWy/LPC/tree/main/Characters/Head%20Accessories
 		- https://opengameart.org/content/lpc-expanded-sit-run-jump-more
 
-torso/clothes/shirt/child/walk/pink.png
+torso/clothes/shirt/child/walk/black.png
 	- Licenses:
 		- OGA-BY 3.0
 		- CC-BY-SA 3.0
@@ -199,7 +199,7 @@ torso/clothes/shirt/child/walk/pink.png
 	- Links:
 		- https://opengameart.org/content/lpc-clothes-for-children
 
-legs/pants/child/walk/blue.png
+legs/pants/child/walk/black.png
 	- Licenses:
 		- OGA-BY 3.0
 		- CC-BY-SA 3.0

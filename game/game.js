@@ -1475,7 +1475,7 @@ const ACT4_TYPES = [ ['piranha','crab'], ['piranha','crab'], ['piranha','jelly',
 function currentWave() {
   const m = Math.min(WAVES.length - 1, Math.floor(state.time / 60));
   if (state.act === 4) return { min: WAVES[m].min, interval: WAVES[m].interval, types: ACT4_TYPES[m] };
-  if (state.act === 3) return { min: WAVES[m].min, interval: WAVES[m].interval, types: ACT3_TYPES[m] };
+  if (state.act === 3) return { min: Math.round(WAVES[m].min * 0.8), interval: WAVES[m].interval * 1.15, types: ACT3_TYPES[m] };
   return state.act === 2 ? { min: WAVES[m].min, interval: WAVES[m].interval, types: ACT2_TYPES[m] } : WAVES[m];
 }
 
@@ -1706,8 +1706,11 @@ const HEROES = [
     tag: 'Holy bruiser', desc: 'A regular bald, bearded bloke in a T-shirt and jeans. His Blessed Hammers spiral out and grind down crowds. Tough, a bit slow.',
     weapon: 'hammer', mods: () => { player.maxHp += 25; player.hp += 25; player.armor += 1; player.speed *= 0.94; } },
   { id: 'zoe', name: 'Zoe', sprite: 'zoe', color: '#FF49B6',
-    tag: 'Sushi bomber', desc: 'Nine years old, glasses, pink tee and trainers. Lobs exploding sushi. Small, quick and fragile.',
-    weapon: 'sushi', mods: () => { player.speed *= 1.1; player.magnetR *= 1.2; player.maxHp -= 20; player.hp -= 20; } },
+    tag: 'Sushi bomber', desc: 'Nine years old, glasses, black tee and trainers. Lobs exploding sushi, and is secretly the strongest mutant in the academy.',
+    weapon: 'sushi', mods: () => {   // deliberately overpowered: tops every stat bar, hits harder and faster
+      player.maxHp += 60; player.hp += 60; player.speed *= 1.3; player.critChance = 0.3; player.regen += 1.5;
+      player.armor += 2; player.dmgMult *= 1.75; player.cdMult *= 0.7; player.magnetR *= 1.6;
+    } },
 ];
 // Read each hero's real stats by running their mods on a scratch copy of the
 // base player — the select screen can never disagree with the game.
@@ -1775,11 +1778,11 @@ const ENEMY_TYPES = {
   lizard:   { sprite: 'lizard',   name: 'LEAPING LIZARD',  hp: 30,  speed: 130, dmg: 13, r: 10, xp: 3, move: 'pounce',  pop: '#49B649', reckless: true },
   // Act III jungle
   snake:    { sprite: 'snake',    name: 'JUNGLE VIPER',    hp: 26,  speed: 115, dmg: 12, r: 9,  xp: 3, move: 'slither', pop: '#FFDB00' },
-  mosquito: { sprite: 'mosquito', name: 'MOSQUITO SWARM',  hp: 5,   speed: 150, dmg: 4,  r: 6,  xp: 1, move: 'flutter', pop: '#920000', fly: 14, cap: 70, swarm: [5, 8] },
-  plant:    { sprite: 'plant',    name: 'MAN-EATER',       hp: 90,  speed: 0,   dmg: 16, r: 14, xp: 6, move: 'rooted',  pop: '#B624B6', bolt: 'thorn', cap: 8 },
+  mosquito: { sprite: 'mosquito', name: 'MOSQUITO SWARM',  hp: 5,   speed: 150, dmg: 4,  r: 6,  xp: 1, move: 'flutter', pop: '#920000', fly: 14, cap: 40, swarm: [3, 5] },
+  plant:    { sprite: 'plant',    name: 'MAN-EATER',       hp: 90,  speed: 0,   dmg: 16, r: 14, xp: 6, move: 'rooted',  pop: '#B624B6', bolt: 'thorn', cap: 5 },
   monkey:   { sprite: 'monkey',   name: 'DEMON MONKEY',    hp: 34,  speed: 140, dmg: 10, r: 10, xp: 4, move: 'caster',  pop: '#DB2424', bolt: 'coconut', cap: 12 },
-  frog:     { sprite: 'frog',     name: 'GIANT POISON FROG', hp: 70, speed: 95, dmg: 10, r: 15, xp: 6, move: 'hop',     pop: '#4992FF', poison: true, cap: 14, scale: 0.75 },
-  treant:   { sprite: 'treant',   name: 'VINE TREANT',     hp: 260, speed: 40,  dmg: 26, r: 16, xp: 10, move: 'straight', pop: '#49B624', cap: 10 },
+  frog:     { sprite: 'frog',     name: 'GIANT POISON FROG', hp: 70, speed: 80, dmg: 7,  r: 15, xp: 6, move: 'hop',     pop: '#4992FF', poison: true, cap: 8, scale: 0.75 },
+  treant:   { sprite: 'treant',   name: 'VINE TREANT',     hp: 200, speed: 40,  dmg: 26, r: 16, xp: 10, move: 'straight', pop: '#49B624', cap: 6 },
   banshee:  { sprite: 'banshee',  name: 'SCREAMING BANSHEE', hp: 40, speed: 82, dmg: 10, r: 10, xp: 5, move: 'banshee', pop: '#B6DBFF', fly: 10, cap: 8 },
   mech:     { sprite: 'mech',     name: 'SENTINEL MECH',   hp: 420, speed: 40,  dmg: 22, r: 18, xp: 12, move: 'caster', pop: '#2449FF', cap: 4, bolt: 'laser' },
   golem:    { sprite: 'golem',    name: 'IRON GOLEM',    hp: 10,  speed: 54,  dmg: 8,  r: 10, xp: 1, move: 'straight', pop: '#B6A48C' },
@@ -1862,7 +1865,7 @@ const BEST_DESC = {
   maggot: 'Burrows under the sand, then rears up to spit acid. Hard to pin down.',
   lizard: 'Reckless desert lizardfolk. They leap at you again and again, barely pausing.',
   snake: 'A golden viper. It slithers in S-curves, coils, then strikes faster than you can blink.',
-  mosquito: 'Never alone: they come in clouds of six to eight. Weak, fast and everywhere.',
+  mosquito: 'Never alone: they come in clouds of three to five. Weak, fast and everywhere.',
   plant: 'A rooted man-eater that bursts up from the undergrowth. Bites anything in reach and spits poison thorns.',
   monkey: 'A shrieking demon ape. Keeps its distance, circles you and hurls coconuts.',
   frog: 'A giant poison dart frog. Its touch poisons you, and it bursts into a toxic cloud when it dies.',
@@ -1916,7 +1919,7 @@ const BOLTS = {
   fire:    { hy: 8,  spd: 150, r: 6, dmg: 1.2 },
   laser:   { hy: 30, spd: 230, r: 5, dmg: 1 },
   acid:    { hy: 18, spd: 175, r: 6, dmg: 1.2 },
-  thorn:   { hy: 20, spd: 240, r: 4, dmg: 0.8, n: 3 },   // a three-thorn fan
+  thorn:   { hy: 20, spd: 240, r: 4, dmg: 0.6, n: 3 },   // a three-thorn fan
   coconut: { hy: 22, spd: 165, r: 6, dmg: 1.1 },
   ink:     { hy: 14, spd: 170, r: 7, dmg: 0.6 },   // octopus: blots out your view
 };
@@ -2014,7 +2017,9 @@ function spawnElite() {
 // ring event: a circle of weak fodder closes in — carve your way out
 function spawnRing() {
   const wave = currentWave();
-  const kind = wave.types.find(k => !ENEMY_TYPES[k].cap); // no rings of casters/knights
+  // no rings of casters/knights/rooted man-eaters; a wave of nothing but capped kinds falls back to any walker
+  const walker = k => ENEMY_TYPES[k].move !== 'rooted' && ENEMY_TYPES[k].move !== 'caster';
+  const kind = wave.types.find(k => !ENEMY_TYPES[k].cap && walker(k)) || wave.types.find(walker) || 'skeleton';
   const n = clamp(24 + Math.floor(state.time / 60) * 6, 24, 42), d = Math.min(VW, VH) / 2 + 60; // small rings early
   for (let i = 0; i < n; i++) {
     const a = (TAU * i) / n;
@@ -2666,10 +2671,11 @@ function update(dt) {
     state.spawnTimer = wave.interval;
     const alive = enemies.length;
     if (alive < wave.min) {
+      // top up to the quota and stop there (a single mosquito/piranha call brings a whole swarm)
       const deficit = Math.min(10, wave.min - alive);
-      for (let i = 0; i < deficit; i++) spawnEnemy(pickWeighted(wave.types));
+      for (let i = 0; i < deficit && enemies.length < wave.min; i++) spawnEnemy(pickWeighted(wave.types));
     } else {
-      for (const kind of wave.types) spawnEnemy(kind);
+      for (const kind of wave.types) if (!ENEMY_TYPES[kind].swarm) spawnEnemy(kind);   // swarms only come with top-ups
     }
   }
   // map events: ring / sweep alternating every 30s (skip the first quiet minute)
@@ -2715,7 +2721,7 @@ function update(dt) {
     if (state.berserkT > 0) player.poisonT = 0;
     else if (player.poisonTick <= 0) {
       player.poisonTick = 0.5;
-      const dmg = Math.max(1, Math.round(player.maxHp * 0.015));
+      const dmg = Math.max(1, Math.round(player.maxHp * 0.01));
       player.hp -= dmg;
       popNum(player.x + rand(-8, 8), player.y - 36, '-' + dmg, false, '#92FF24');
       burstParticles(player.x, player.y - 10, '#92FF24', 2);
@@ -2999,7 +3005,7 @@ function update(dt) {
     let dead = b.life <= 0;
     if (!dead && dist2(b.x, b.y, player.x, player.y) < (player.r + b.r) ** 2) {
       hurtPlayer(b.dmg);
-      if (b.poison) poisonPlayer(2.5);
+      if (b.poison) poisonPlayer(1.5);
       if (b.style === 'ink' && state.berserkT <= 0) {
         if (state.inkT <= 0) popText(player.x, player.y - 52, 'INKED!', '#9292DB');
         state.inkT = 2.6;
