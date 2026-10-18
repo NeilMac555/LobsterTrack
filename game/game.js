@@ -811,7 +811,7 @@ const ASSET_FILES = ['warrior', 'wizard', 'ranger', 'rogue', 'cleric',
   'slime', 'goblin', 'skeleton', 'orc', 'minotaur', 'tiles', 'biski',
   'bat', 'imp', 'scarab', 'shaman', 'hound', 'guard', 'knight', 'skills',
   'assassin', 'mech', 'burger', 'lizdoc', 'feral', 'neil', 'zoe', 'crypt', 'butcher', 'banshee', 'golem',
-  'desert', 'fly', 'maggot', 'lizard'];
+  'desert', 'fly', 'maggot', 'lizard', 'orb'];
 const assets = {};
 function loadAssets() {
   return Promise.all(ASSET_FILES.map(name => new Promise((res, rej) => {
@@ -863,7 +863,33 @@ function silhouette(src, color) {   // hit-flash palette: every opaque pixel -> 
   g.fillRect(0, 0, c.width, c.height);
   return c;
 }
-const SPR = {};   // file -> { base, white, elite?, boss2?, boss3? }
+const SPR = {};   // file -> { base, white, elite?, boss2?, boss3?, rage? }
+// berserk palette: the hero's own shading pushed into blood red (baked on first use)
+function rageSheet(file) {
+  const set = SPR[file];
+  if (set.rage) return set.rage;
+  const c = document.createElement('canvas');
+  c.width = set.base.width; c.height = set.base.height;
+  const g = c.getContext('2d');
+  g.drawImage(set.base, 0, 0);
+  try {
+    const d = g.getImageData(0, 0, c.width, c.height), a = d.data;
+    for (let i = 0; i < a.length; i += 4) {
+      if (!a[i + 3]) continue;
+      const L = (0.3 * a[i] + 0.59 * a[i + 1] + 0.11 * a[i + 2]) / 255;
+      const q = v => MD_LEVELS[Math.max(0, Math.min(7, Math.round(v * 7 / 255)))];
+      a[i] = q(a[i] * 0.5 + 255 * Math.min(1, L * 1.4 + 0.25) * 0.5);
+      a[i + 1] = q(a[i + 1] * 0.5);
+      a[i + 2] = q(a[i + 2] * 0.4);
+    }
+    g.putImageData(d, 0, 0);
+  } catch (e) {   // tainted canvas (file://): a flat red silhouette still reads as rage
+    set.ghost = silhouette(set.base, '#920000');
+    return (set.rage = silhouette(set.base, C.red));
+  }
+  set.ghost = silhouette(set.base, '#920000');   // afterimages
+  return (set.rage = c);
+}
 // the black cat needs a small lift so her shading survives the 9-bit palette
 const BAKE_FILTERS = { biski: 'brightness(1.6)' };
 function prepareSprites() {
@@ -1104,8 +1130,9 @@ function damageBrazier(bz, dmg) {
   if (roll < 0.40) pickups.push({ x: bz.x, y: bz.y, type: 'gold', v: randInt(15, 40) });
   else if (roll < 0.70) pickups.push({ x: bz.x, y: bz.y, type: 'food', food: rollFood(true) });
   else if (roll < 0.85) gems.push({ x: bz.x, y: bz.y, v: 8 });
-  else if (roll < 0.96) pickups.push({ x: bz.x, y: bz.y, type: 'vac' });
-  else pickups.push({ x: bz.x, y: bz.y, type: 'nuke' });
+  else if (roll < 0.94) pickups.push({ x: bz.x, y: bz.y, type: 'vac' });
+  else if (roll < 0.97 || orbOnFloor()) pickups.push({ x: bz.x, y: bz.y, type: 'nuke' });
+  else pickups.push({ x: bz.x, y: bz.y, type: 'berserk' });
   effects.push({ type: 'boom', x: bz.x, y: bz.y - 10, radius: 40, life: 0.3, maxLife: 0.3 });
   sfx(400, 0.15, 'triangle', 0.07, -150);
 }
@@ -1201,11 +1228,18 @@ const state = {
   spawnTimer: 0, bossesSpawned: 0, eventsFired: 0, elitesSpawned: 0,
   shake: 0, flash: 0, killTimes: [], streakTier: 0,
   hitstop: 0, lastGemT: -9, gemCombo: 0, heartT: 0, foodT: 35,
-  act: 1, portalT: 0,
+  act: 1, portalT: 0, berserkT: 0,
 };
 // Act II: after this many level-ups' worth of levels a town portal carries you to the desert
 const ACT2_LEVEL = 5;   // = 4 level-ups
 const PORTAL_TIME = 1.8;
+
+// Berserk orb (a nod to DOOM's berserk pack): 30s of invulnerability, speed and amplified powers
+const BERSERK_TIME = 30;
+const BERSERK = { speed: 1.75, dmg: 3, cd: 0.4 };
+const amp = () => state.berserkT > 0 ? 1.5 : 1;    // area of every blast, slash and orbit
+const ampN = () => state.berserkT > 0 ? 1 : 0;     // one extra projectile per volley
+const orbOnFloor = () => state.berserkT > 0 || pickups.some(p => p.type === 'berserk');
 
 // VS-style wave table: one entry per minute. `min` is the enemy-count quota —
 // below it the spawner force-fills, so the screen is never quiet.
@@ -1289,14 +1323,14 @@ const WEAPON_DEFS = {
     desc: 'Fires a searing energy beam at the nearest threat.',
     cd: 0.9,
     fire(w) {
-      const n = 1 + Math.floor((w.level - 1) / 2); // 1,1,2,2,3
+      const n = 1 + Math.floor((w.level - 1) / 2) + ampN(); // 1,1,2,2,3
       const targets = nearestEnemies(n);
       if (!targets.length) return false;
       for (const t of targets) {
         const a = Math.atan2(t.y - player.y, t.x - player.x);
         bullets.push({
           x: player.x, y: player.y - 14, vx: Math.cos(a) * 560, vy: Math.sin(a) * 560,
-          r: 5, dmg: (10 + w.level * 5) * player.dmgMult, life: 1.2,
+          r: 5 * amp(), dmg: (10 + w.level * 5) * player.dmgMult, life: 1.2,
           kind: 'optic', pierce: w.level >= 4 ? 1 : 0,
         });
       }
@@ -1309,7 +1343,7 @@ const WEAPON_DEFS = {
     desc: 'A savage melee slash in the direction you move.',
     cd: 1.0,
     fire(w) {
-      const range = 85 + w.level * 15;
+      const range = (85 + w.level * 15) * amp();
       const arc = (100 + w.level * 12) * Math.PI / 180;
       const fa = Math.atan2(player.facing.y, player.facing.x);
       const dirs = w.level >= 5 ? [fa, fa + Math.PI] : [fa];
@@ -1340,8 +1374,8 @@ const WEAPON_DEFS = {
     desc: 'Lightning hammers random enemies near you.',
     cd: 2.2,
     fire(w) {
-      const bolts = 1 + w.level;
-      const inRange = enemies.filter(e => dist2(e.x, e.y, player.x, player.y) < 380 ** 2);
+      const bolts = (1 + w.level) * (1 + ampN());
+      const inRange = enemies.filter(e => dist2(e.x, e.y, player.x, player.y) < (380 * amp()) ** 2);
       if (!inRange.length) return false;
       for (let i = 0; i < bolts; i++) {
         const t = pick(inRange);
@@ -1364,7 +1398,7 @@ const WEAPON_DEFS = {
     desc: 'A telepathic shockwave ripples out, hitting everything.',
     cd: 3.4,
     fire(w) {
-      const radius = 150 + w.level * 35;
+      const radius = (150 + w.level * 35) * amp();
       effects.push({ type: 'nova', x: player.x, y: player.y, radius, life: 0.4, maxLife: 0.4 });
       for (const e of enemies) {
         if (dist2(e.x, e.y, player.x, player.y) < (radius + e.r) ** 2) {
@@ -1383,11 +1417,11 @@ const WEAPON_DEFS = {
     desc: 'Holy hammers spiral out from where you stand, smashing everything they pass.',
     cd: 1.2,
     fire(w) {
-      const n = 1 + Math.floor((w.level - 1) / 2); // 1,1,2,2,3
+      const n = 1 + Math.floor((w.level - 1) / 2) + ampN(); // 1,1,2,2,3
       w.spin = (w.spin || 0) + 2.1;                // each cast starts at a new angle
       for (let i = 0; i < n; i++) {
         bullets.push({ kind: 'hammer', cx: player.x, cy: player.y - 10, a0: w.spin + (TAU * i) / n,
-          t: 0, life: 1.35, x: player.x, y: player.y, r: 9 + w.level,
+          t: 0, life: 1.35, x: player.x, y: player.y, r: (9 + w.level) * amp(),
           dmg: (14 + w.level * 7) * player.dmgMult, hit: new Set(), hitBz: new Set() });
       }
       sfx(880, 0.14, 'triangle', 0.03, 300);
@@ -1401,12 +1435,12 @@ const WEAPON_DEFS = {
     fire(w) {
       const targets = nearestEnemies(6);
       if (!targets.length) return false;
-      const n = 1 + Math.floor(w.level / 2); // 1,2,2,3,3
+      const n = 1 + Math.floor(w.level / 2) + ampN(); // 1,2,2,3,3
       for (let i = 0; i < n; i++) {
         const t = targets[i % targets.length];
         bullets.push({ kind: 'sushi', sx: player.x, sy: player.y - 14, tx: t.x + rand(-14, 14), ty: t.y + rand(-14, 14),
           t: 0, T: 0.55 + i * 0.08, x: player.x, y: player.y, h: 0, r: 0, maki: Math.random() < 0.5,
-          dmg: (20 + w.level * 8) * player.dmgMult, aoe: 44 + w.level * 7, life: 2 });
+          dmg: (20 + w.level * 8) * player.dmgMult, aoe: (44 + w.level * 7) * amp(), life: 2 });
       }
       sfx(520, 0.08, 'triangle', 0.03, 260);
       return true;
@@ -1417,13 +1451,13 @@ const WEAPON_DEFS = {
     desc: 'Charged playing cards that detonate on impact.',
     cd: 1.3,
     fire(w) {
-      const n = 1 + Math.floor(w.level / 2); // 1,2,2,3,3
+      const n = 1 + Math.floor(w.level / 2) + ampN(); // 1,2,2,3,3
       for (let i = 0; i < n; i++) {
         const a = rand(0, TAU);
         bullets.push({
           x: player.x, y: player.y - 14, vx: Math.cos(a) * 340, vy: Math.sin(a) * 340,
           r: 6, dmg: (14 + w.level * 6) * player.dmgMult, life: 1.4,
-          kind: 'card', aoe: 55 + w.level * 8,
+          kind: 'card', aoe: (55 + w.level * 8) * amp(),
         });
       }
       sfx(660, 0.05, 'triangle', 0.03);
@@ -1756,6 +1790,43 @@ function spawnSweep() {
   sfx(180, 0.5, 'sawtooth', 0.07, 120);
 }
 
+function startBerserk() {
+  if (state.berserkT <= 0) {           // stacking orbs refills the clock; the boosts apply once
+    player.speed *= BERSERK.speed; player.dmgMult *= BERSERK.dmg; player.cdMult *= BERSERK.cd;
+    for (const w of player.weapons) w.timer = Math.min(w.timer || 0, 0.05);   // unleash everything now
+  }
+  state.berserkT = BERSERK_TIME;
+  player.hp = player.maxHp;            // like the pack it's named after: full health too
+  player.fearT = 0;
+  state.flash = 1; state.shake = 16; state.hitstop = Math.max(state.hitstop, 0.15);
+  announce('BERSERK!', C.red, 2.4, 5, 'RIP AND TEAR');
+  burstParticles(player.x, player.y - 14, '#FF2400', 30);
+  effects.push({ type: 'nova', x: player.x, y: player.y, radius: 260, life: 0.5, maxLife: 0.5 });
+  sndBerserk();
+}
+function endBerserk() {
+  state.berserkT = 0;
+  player.speed /= BERSERK.speed; player.dmgMult /= BERSERK.dmg; player.cdMult /= BERSERK.cd;
+  player.hurtCd = Math.max(player.hurtCd, 1.2);   // a moment's grace as the rage fades
+  announce('THE RAGE FADES', C.grey, 1.4, 3);
+  sfx(330, 0.6, 'sawtooth', 0.05, -250);
+}
+// berserk stinger: detuned FM power-chord stabs over a noise crash and a rising roar
+function sndBerserk() {
+  try {
+    if (muted || !audioCtx) return;
+    const t = audioCtx.currentTime + 0.02;
+    noiseHit(t, 0.18, 0.25);
+    beep(t, 55, 0.9, 'sawtooth', 0.09, 110);
+    const stabs = [[0, 82.4], [0.13, 82.4], [0.26, 98], [0.39, 82.4], [0.52, 110], [0.65, 116.5]];
+    for (const [dt, f] of stabs) {
+      fm(t + 0.1 + dt, f, 0.12, 0.09, 1, 5, 0.1, true);
+      fm(t + 0.1 + dt, f * 1.498, 0.12, 0.06, 1, 4, 0.1, true);   // the fifth
+      fm(t + 0.1 + dt, f * 2.01, 0.12, 0.04, 2, 3, 0.08, true);
+      noiseHit(t + 0.1 + dt, 0.05, 0.1);
+    }
+  } catch (e) {}
+}
 function openPortal() {
   state.portalT = PORTAL_TIME;
   announce('A PORTAL OPENS...', C.cyan, 1.6, 4);
@@ -1858,12 +1929,14 @@ function killEnemy(e) {
     }
     pickups.push({ x: e.x, y: e.y, type: 'chest' }); // jackpot time
     if (e.elite && Math.random() < 0.5) pickups.push({ x: e.x + 22, y: e.y + 6, type: 'food', food: rollFood(true) });
+    if (!orbOnFloor() && (e.boss || Math.random() < 0.3)) pickups.push({ x: e.x - 22, y: e.y + 6, type: 'berserk' });
     state.shake = 8;
   } else {
     gems.push({ x: e.x, y: e.y, v: e.xp });
     const r = Math.random();
     if (r < 0.04) pickups.push({ x: e.x + rand(-8, 8), y: e.y + rand(-8, 8), type: 'gold', v: randInt(5, 15) });
     else if (r < 0.046 && !e.sweep) pickups.push({ x: e.x + rand(-8, 8), y: e.y + rand(-8, 8), type: 'food', food: rollFood() });
+    else if (r < 0.0472 && state.time > 45 && !orbOnFloor()) pickups.push({ x: e.x, y: e.y, type: 'berserk' });   // rare: ~1 in 830 kills
     if (gems.length > 450) {
       const old = gems.shift();
       gems[Math.floor(Math.random() * gems.length)].v += old.v;
@@ -1875,7 +1948,7 @@ function groundYOf(e) { return e.y + e.r * 0.9; }
 
 // ---------- player damage / xp ----------
 function hurtPlayer(dmg) {
-  if (player.hurtCd > 0) return;
+  if (player.hurtCd > 0 || state.berserkT > 0) return;
   const taken = Math.max(1, dmg - player.armor);
   player.hp -= taken;
   player.hurtCd = 0.5;
@@ -2305,7 +2378,21 @@ function update(dt) {
   // player movement + animation clocks
   const { mx, my } = moveInput();
   player.fearT = Math.max(0, (player.fearT || 0) - dt);
-  const spd = player.speed * (player.fearT > 0 ? 0.55 : 1);   // banshee terror slows you
+  if (state.berserkT > 0) {
+    const was = state.berserkT;
+    state.berserkT -= dt;
+    if (state.berserkT <= 3 && Math.ceil(state.berserkT) < Math.ceil(was)) sfx(880, 0.08, 'square', 0.04);   // last 3s: tick, tick, tick
+    if (Math.random() < 0.5) burstParticles(player.x + rand(-10, 10), player.y + rand(-24, 12), Math.random() < 0.6 ? '#FF2400' : '#FFB600', 1);
+    if (state.berserkT <= 0) endBerserk();
+    state.trailT = (state.trailT || 0) - dt;
+    if (state.trailT <= 0) {
+      state.trailT = 0.05;
+      state.trail = (state.trail || []).slice(-5);
+      if (player.moving) state.trail.push({ x: player.x, y: player.y, flip: player.face < 0, frame: animFrame(player.animT, 'walk', player.sprite) });
+      else state.trail.shift();
+    }
+  } else state.trail = [];
+  const spd = player.speed * (player.fearT > 0 && state.berserkT <= 0 ? 0.55 : 1);   // banshee terror slows you
   player.x += mx * spd * dt;
   player.y += my * spd * dt;
   if (mx || my) { player.facing.x = mx; player.facing.y = my; }
@@ -2320,9 +2407,9 @@ function update(dt) {
   for (const w of player.weapons) {
     const def = WEAPON_DEFS[w.id];
     if (def.passiveOrbit) {
-      const count = 1 + w.level;
-      const radius = 70 + w.level * 10;
-      const spd = 2.4 + w.level * 0.25;
+      const count = 1 + w.level + ampN() * 2;
+      const radius = (70 + w.level * 10) * amp();
+      const spd = (2.4 + w.level * 0.25) * (1 + ampN());
       w.orbitA += spd * dt;
       w.tick = (w.tick || 0) - dt;
       const canHit = w.tick <= 0;
@@ -2339,7 +2426,7 @@ function update(dt) {
           }
         }
       }
-      if (canHit) w.tick = 0.25;
+      if (canHit) w.tick = 0.25 * player.cdMult;
       continue;
     }
     w.timer -= dt;
@@ -2504,7 +2591,17 @@ function update(dt) {
         if (n) effects.push({ type: 'heal', x: e.x, y: e.y, radius: 110, life: 0.35, maxLife: 0.35 });
       }
     }
-    if (d < e.r + player.r) hurtPlayer(e.dmg);
+    if (d < e.r + player.r) {
+      if (state.berserkT > 0) {   // berserk: you are the hazard now — touching things hurts THEM
+        e.ramT = (e.ramT || 0) - dt;
+        if (e.ramT <= 0) {
+          e.ramT = 0.2;
+          damageEnemy(e, 25 * player.dmgMult);
+          const k = 26 / Math.max(1, d);
+          e.x += (e.x - player.x) * k; e.y += (e.y - player.y) * k;
+        }
+      } else hurtPlayer(e.dmg);
+    }
     // never despawn — like VS, stragglers teleport to a fresh angle and rejoin the hunt
     if (!e.boss && !e.sweep && d > Math.max(VW, VH) * 1.2) {
       const a = rand(0, TAU), sd = spawnRadius();
@@ -2614,6 +2711,8 @@ function update(dt) {
       ebullets.length = 0;
     } else if (p.type === 'chest') {
       pushMenu({ type: 'chest' });
+    } else if (p.type === 'berserk') {
+      startBerserk();
     }
   }
 
@@ -2714,13 +2813,13 @@ function renderDarkness() {
     g.drawImage(s, x - (s.width >> 1), y - (s.height >> 1));
   };
   const flick = Math.floor(uiTime * 8) % 3;
-  punch(player.x, player.y - 10, 112 + flick * 2);
+  punch(player.x, player.y - 10, (state.berserkT > 0 ? 140 : 112) + flick * 2);
   for (const bz of state.brazList || []) punch(bz.x, bz.y - 12, 42 + ((Math.floor(uiTime * 7 + bz.x) % 3) * 2));
   for (const b of ebullets) punch(b.x, b.y, b.style === 'laser' ? 12 : 22);
   for (const fx of effects) if (fx.type === 'boom' || fx.type === 'bolt' || fx.type === 'nova') punch(fx.x, fx.y, Math.max(16, (fx.radius || 30) / PX));
   for (const b of bullets) if (b.kind === 'hammer') punch(b.x, b.y, 14);
   for (let i = 0; i < gems.length && i < 220; i++) punch(gems[i].x, gems[i].y, 5);
-  for (const p of pickups) punch(p.x, p.y, 11);
+  for (const p of pickups) punch(p.x, p.y, p.type === 'berserk' ? 34 + (Math.floor(uiTime * 6) % 2) * 3 : 11);
   if (state.portalT > 0) punch(player.x, player.y, 60);
   g.globalCompositeOperation = 'source-over';
   ctx.drawImage(darkCv, 0, 0);
@@ -2792,6 +2891,22 @@ function renderWorld() {
     } else if (p.type === 'nuke') {
       ring(x, y + bob, blink(6) ? 8 : 10, blink(3) ? C.white : C.red);
       ctx.drawImage(BOMB[blink(6) ? 0 : 1], x - 4, y - 5 + bob);
+    } else if (p.type === 'berserk') {   // the glowing blood-red orb
+      const pulse = Math.floor(uiTime * 6) % 4, fr = [0, 1, 2, 1][pulse];
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      for (let k = 0; k < 3; k++) {
+        ctx.fillStyle = ['rgba(146,0,0,0.3)', 'rgba(219,36,0,0.3)', 'rgba(255,109,36,0.3)'][k];
+        const rr = 18 - k * 4 + (pulse === 2 ? 1 : 0);
+        for (let dy = -rr; dy <= rr; dy++) {
+          const hw = Math.round(Math.sqrt(rr * rr - dy * dy));
+          ctx.fillRect(x - hw, y + bob + dy, hw * 2 + 1, 1);
+        }
+      }
+      ctx.restore();
+      drawShadowAt(p.x, p.y + 22, 8);
+      ctx.drawImage(SPR.orb.base, fr * 20, 0, 20, 20, x - 10, y - 10 + bob, 20, 20);
+      if (blink(5)) rect(x - 4 + (pulse & 1) * 7, y - 6 + bob, 1, 1, C.white);
     } else if (p.type === 'chest') {
       ring(x, y, blink(3) ? 11 : 12, C.yellow);
       ctx.drawImage(CHEST, x - 7, y - 6);
@@ -2837,14 +2952,26 @@ function renderWorld() {
         e.scale, e.flash > 0 || shriek ? 'white' : e.variant);
     } });
   }
-  const hurtBlink = player.hurtCd > 0 && Math.floor(uiTime * 20) % 2 === 0;
+  const hurtBlink = player.hurtCd > 0 && state.berserkT <= 0 && Math.floor(uiTime * 20) % 2 === 0;
+  const rage = state.berserkT > 0;
+  if (rage) {                          // afterimages, flickered on alternate frames like old hardware
+    if (!SPR[SHEETS[player.sprite].file].rage) rageSheet(SHEETS[player.sprite].file);
+    const tr = state.trail || [];
+    for (let i = tr.length - 2; i >= 0; i -= 2) {   // every other sample, nearest one skipped
+      const t = tr[i];
+      if ((Math.floor(uiTime * 30) + i) % 2) continue;
+      drawables.push({ y: t.y + 19, draw() { drawSprite(player.sprite, 'walk', t.frame, t.x, t.y + 20, t.flip, player.drawScale, 'ghost'); } });
+    }
+  }
   drawables.push({ y: player.y + 20, draw() {
     if (hurtBlink) return;
     const anim = player.attackAge < 0.45 ? 'attack' : (player.moving ? 'walk' : 'idle');
     const n = frameCount(player.sprite, anim);
     const frame = anim === 'attack' ? Math.min(n - 1, Math.floor(player.attackAge / 0.45 * n))
       : animFrame(player.animT, anim, player.sprite);
-    drawSprite(player.sprite, anim, frame, player.x, player.y + 20, player.face < 0, player.drawScale);
+    // berserk: the hero burns red, flaring back to normal colours as the last seconds run out
+    const red = rage && !(state.berserkT < 3 && blink(6));
+    drawSprite(player.sprite, anim, frame, player.x, player.y + 20, player.face < 0, player.drawScale, red ? 'rage' : null);
   } });
   drawables.sort((a, b) => a.y - b.y);
   for (const d of drawables) d.draw();
@@ -3004,6 +3131,16 @@ function renderHUD() {
     });
 
   renderCornerIcons(true);
+
+  // berserk countdown, under the stat stack
+  if (state.berserkT > 0) {
+    const f = clamp(state.berserkT / BERSERK_TIME, 0, 1), last = state.berserkT < 3;
+    drawText('BERSERK', x, 62, last && blink(4) ? C.white : C.red);
+    drawText(String(Math.ceil(state.berserkT)), x + 48, 62, C.white);
+    rect(x, 71, bw + 2, 5, C.black);
+    rect(x + 1, 72, Math.round(bw * f), 3, C.red);
+    rect(x + 1, 72, Math.round(bw * f), 1, '#FF9292');
+  }
 
   // live combo counter during a frenzy
   const comboN = state.killTimes.length;
@@ -3474,6 +3611,13 @@ function render() {
   }
   // stepped full-screen flash on level-ups, chests and purges
   if (state.flash > 0.05 && !REDUCED) rect(0, 0, W, H, `rgba(255,255,255,${state.flash > 0.3 ? 0.4 : 0.2})`);
+  // berserk: the whole screen runs red, with a throbbing border
+  if (scene === 'play' && state.berserkT > 0) {
+    rect(0, 0, W, H, 'rgba(182,0,0,0.16)');
+    const b = Math.floor(uiTime * 4) % 2 ? 3 : 2;
+    const col = 'rgba(255,0,0,0.35)';
+    rect(0, 0, W, b, col); rect(0, H - b, W, b, col); rect(0, b, b, H - 2 * b, col); rect(W - b, b, b, H - 2 * b, col);
+  }
   if (scene === 'play') {
     const m = menus[0];
     if (m) {

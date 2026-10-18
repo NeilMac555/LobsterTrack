@@ -153,3 +153,10 @@ listed in [`CREDITS-LPC.md`](CREDITS-LPC.md).
   Character Generator (lizardfolk body, head and tail, shorts); downscaled.
   **CC-BY-SA 3.0**; per-part credits in [`CREDITS-LPC.md`](CREDITS-LPC.md).
 - The desert theme is an original FM composition in the Hijaz maqam.
+
+## Berserk orb
+
+- `orb.png` — three "Orb of Destruction" tiles from **Dungeon Crawl Stone Soup**,
+  **CC0**: https://opengameart.org/content/dungeon-crawl-32x32-tiles —
+  recoloured blood red, downscaled. Berserk itself is a nod to id Software's
+  DOOM; no DOOM assets are used.
