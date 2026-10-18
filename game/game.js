@@ -875,7 +875,8 @@ const ASSET_FILES = ['warrior', 'wizard', 'ranger', 'rogue', 'cleric',
   'slime', 'goblin', 'skeleton', 'orc', 'minotaur', 'tiles', 'biski',
   'bat', 'imp', 'scarab', 'shaman', 'hound', 'guard', 'knight', 'skills',
   'assassin', 'mech', 'burger', 'lizdoc', 'feral', 'neil', 'zoe', 'crypt', 'butcher', 'banshee', 'golem',
-  'desert', 'fly', 'maggot', 'lizard', 'orb'];
+  'desert', 'fly', 'maggot', 'lizard', 'orb',
+  'jungle', 'snake', 'treant', 'plant', 'mosquito', 'monkey', 'frog'];
 const assets = {};
 function loadAssets() {
   return Promise.all(ASSET_FILES.map(name => new Promise((res, rej) => {
@@ -964,7 +965,8 @@ function prepareSprites() {
   }
   // palette-swapped variants, the way cartridges reused one sprite for a tougher foe
   for (const f of ['slime', 'skeleton', 'goblin', 'orc', 'bat', 'imp', 'scarab', 'shaman', 'guard',
-    'assassin', 'burger', 'lizdoc', 'feral', 'banshee', 'golem', 'fly', 'maggot', 'lizard']) {
+    'assassin', 'burger', 'lizdoc', 'feral', 'banshee', 'golem', 'fly', 'maggot', 'lizard',
+    'snake', 'treant', 'plant', 'mosquito', 'monkey', 'frog']) {
     SPR[f].elite = bakeSheet(assets[f], 'saturate(2.2) brightness(1.15)');
   }
   SPR.minotaur.boss2 = bakeSheet(assets.minotaur, 'hue-rotate(140deg) saturate(1.4)');
@@ -1015,6 +1017,14 @@ const SHEETS = {
   fly:      { file: 'fly',      size: 32, rows: STD, frames: { idle: 1, walk: 8, attack: 7, death: 3 } },
   maggot:   { file: 'maggot',   size: 32, rows: STD, frames: { idle: 1, walk: 4, attack: 12, death: 8 } },
   lizard:   { file: 'lizard',   size: 40, rows: STD, frames: { idle: 1, walk: 8, attack: 5, death: 6 } },
+  // Act III jungle
+  snake:    { file: 'snake',    size: 64, rows: STD, frames: { idle: 10, walk: 10, attack: 10, death: 10 } },
+  treant:   { file: 'treant',   size: 64, rows: STD, frames: { idle: 1, walk: 4, attack: 4, death: 4 } },
+  plant:    { file: 'plant',    size: 64, rows: STD, frames: { idle: 1, walk: 4, attack: 7, death: 10 } },
+  mosquito: { file: 'mosquito', size: 24, rows: STD, frames: { idle: 1, walk: 4, attack: 3, death: 3 } },
+  monkey:   { file: 'monkey',   size: 44, rows: STD, frames: { idle: 1, walk: 8, attack: 4, death: 4 } },
+  frog:     { file: 'frog',     size: 208, rows: { idle: 0, air: 1, walk: 2, attack: 3, death: 4 },   // air = [rising, falling]
+              frames: { idle: 1, air: 2, walk: 5, attack: 10, death: 3 } },
 };
 // painted skill icons (assets/skills.png): row 0 = 32x32, row 1 = 16x16, in this order
 const SKILL_ORDER = ['optic', 'claws', 'storm', 'orbs', 'nova', 'cards', 'boots', 'vitality',
@@ -1142,7 +1152,7 @@ const brazierDead = new Set();
 
 function scanEnv() {
   // rebuild the nearby obstacle/brazier lists once per frame
-  const M = 120;
+  const M = 230;   // jungle trees stand ~200 units tall: scan far enough below the screen
   const x0 = Math.floor((player.x - VW / 2 - M) / TILE), x1 = Math.ceil((player.x + VW / 2 + M) / TILE);
   const y0 = Math.floor((player.y - VH / 2 - M) / TILE), y1 = Math.ceil((player.y + VH / 2 + M) / TILE);
   const obs = [], braz = [];
@@ -1239,8 +1249,8 @@ function drawDesertFloor() {
   }
 }
 const DESERT_R = [8, 8, 8, 11, 15];   // palms (trunks), sandstone pillar, rock pile
-// Act III jungle: grass/moss/mud floor, flower/vine/fern decals, jungle trees and boulders
-// (same sheet layout as the desert: 16 floor tiles, 48x64 props at y=64, decals at y=128)
+// Act III jungle: DCSS grass floor; LPC Jungle trees, a giant fern and undergrowth decals
+// (16 floor tiles in rows 0-1, six 80x112 props at y=64, eight 32px decals at y=176)
 function drawJungleFloor() {
   const img = SPR.jungle.base;
   const ix0 = Math.floor(camX / CT), iy0 = Math.floor(camY / CT);
@@ -1255,11 +1265,11 @@ function drawJungleFloor() {
       const h = hash2(ix * 7 + 3, iy * 11 + 5);
       if (h % 4) continue;                       // the undergrowth is thick
       const d = (h >>> 4) % 8, dx = ((h >>> 8) % 17) - 8, dy = ((h >>> 13) % 17) - 8;
-      ctx.drawImage(img, d * CT, 128, CT, CT, ix * CT - camX + dx, iy * CT - camY + dy, CT, CT);
+      ctx.drawImage(img, d * CT, 176, CT, CT, ix * CT - camX + dx, iy * CT - camY + dy, CT, CT);
     }
   }
 }
-const JUNGLE_R = [9, 9, 9, 10, 13, 15];   // jungle trees (trunks), a giant fern, boulders
+const JUNGLE_R = [10, 12, 14, 12, 9, 14];   // tree trunks and buttress roots, then the giant fern
 function drawFloor() {
   if (state.act === 3) { drawJungleFloor(); return; }
   if (state.act === 2) { drawDesertFloor(); return; }
@@ -1282,8 +1292,8 @@ function drawFloor() {
 const PROP_R = [11, 11, 14, 14, 14, 13, 16, 11];
 function drawObstacle(o) {
   const x = toDX(o.x), y = toDY(o.y);
-  if (x < -40 || x > W + 40 || y < -70 || y > H + 40) return;
-  if (state.act === 3) { ctx.drawImage(SPR.jungle.base, (o.kind % 6) * 48, 64, 48, 64, x - 24, y - 60, 48, 64); return; }
+  if (x < -48 || x > W + 48 || y < -20 || y > H + 120) return;
+  if (state.act === 3) { ctx.drawImage(SPR.jungle.base, (o.kind % 6) * 80, 64, 80, 112, x - 40, y - 102, 80, 112); return; }
   if (state.act === 2) { ctx.drawImage(SPR.desert.base, (o.kind % 5) * 48, 64, 48, 64, x - 24, y - 60, 48, 64); return; }
   ctx.drawImage(SPR.crypt.base, o.kind * CT, 2 * CT, CT, CT, x - CT / 2, y - CT + 6, CT, CT);
 }
@@ -1320,7 +1330,7 @@ const state = {
 // Act II: after this many level-ups' worth of levels a town portal carries you to the desert
 const ACT2_LEVEL = 5;   // = 4 level-ups
 const ACT3_LEVEL = 10;  // the jungle
-const ACT_LEVEL = { 2: ACT2_LEVEL };   // Act III (ACT3_LEVEL) is switched on once its creatures land
+const ACT_LEVEL = { 2: ACT2_LEVEL, 3: ACT3_LEVEL };
 const ACT_NAMES = { 2: ['ACT II', 'THE BURNING SANDS'], 3: ['ACT III', 'THE STRANGLING JUNGLE'] };
 const ROMAN = ['', 'I', 'II', 'III'];
 const PORTAL_TIME = 1.8;
@@ -1659,8 +1669,9 @@ function nearestEnemies(n) {
 //       flutter = fast erratic weave (flies over props), skitter = dart-and-freeze,
 //       scuttle = slow sidelong crawl, caster = keeps its distance and lobs fireballs,
 //       pounce = crouch, then a long locked-direction leap,
-//       blink = teleports to your flank after a puff of smoke
-// healer = patches up nearby enemies; bolt = what a caster shoots
+//       blink = teleports to your flank after a puff of smoke,
+//       rooted = never moves (bites and spits), slither = S-curve crawl, then a coiled strike
+// healer = patches up nearby enemies; bolt = what a caster shoots; poison = touch poisons you (and dies in a toxic cloud)
 // cap = most of that kind alive at once (big or ranged foes would swamp the screen)
 const ENEMY_TYPES = {
   bat:      { sprite: 'bat',      name: 'BAT DEMON',       hp: 10,  speed: 115, dmg: 7,  r: 9,  xp: 1, move: 'flutter', pop: '#B692FF', fly: 14 },
@@ -1677,6 +1688,13 @@ const ENEMY_TYPES = {
   fly:      { sprite: 'fly',      name: 'GIANT FLY',       hp: 14,  speed: 125, dmg: 8,  r: 9,  xp: 2, move: 'flutter', pop: '#6D6D49', fly: 12 },
   maggot:   { sprite: 'maggot',   name: 'GIANT MAGGOT',    hp: 50,  speed: 70,  dmg: 10, r: 11, xp: 4, move: 'caster',  pop: '#DBDB92', bolt: 'acid', cap: 10 },
   lizard:   { sprite: 'lizard',   name: 'LEAPING LIZARD',  hp: 30,  speed: 130, dmg: 13, r: 10, xp: 3, move: 'pounce',  pop: '#49B649', reckless: true },
+  // Act III jungle
+  snake:    { sprite: 'snake',    name: 'JUNGLE VIPER',    hp: 26,  speed: 115, dmg: 12, r: 9,  xp: 3, move: 'slither', pop: '#FFDB00' },
+  mosquito: { sprite: 'mosquito', name: 'MOSQUITO SWARM',  hp: 5,   speed: 150, dmg: 4,  r: 6,  xp: 1, move: 'flutter', pop: '#920000', fly: 14, cap: 70 },
+  plant:    { sprite: 'plant',    name: 'MAN-EATER',       hp: 90,  speed: 0,   dmg: 16, r: 14, xp: 6, move: 'rooted',  pop: '#B624B6', bolt: 'thorn', cap: 8 },
+  monkey:   { sprite: 'monkey',   name: 'DEMON MONKEY',    hp: 34,  speed: 140, dmg: 10, r: 10, xp: 4, move: 'caster',  pop: '#DB2424', bolt: 'coconut', cap: 12 },
+  frog:     { sprite: 'frog',     name: 'GIANT POISON FROG', hp: 70, speed: 95, dmg: 10, r: 15, xp: 6, move: 'hop',     pop: '#4992FF', poison: true, cap: 14, scale: 0.75 },
+  treant:   { sprite: 'treant',   name: 'VINE TREANT',     hp: 260, speed: 40,  dmg: 26, r: 16, xp: 10, move: 'straight', pop: '#49B624', cap: 10 },
   banshee:  { sprite: 'banshee',  name: 'SCREAMING BANSHEE', hp: 40, speed: 82, dmg: 10, r: 10, xp: 5, move: 'banshee', pop: '#B6DBFF', fly: 10, cap: 8 },
   mech:     { sprite: 'mech',     name: 'SENTINEL MECH',   hp: 420, speed: 40,  dmg: 22, r: 18, xp: 12, move: 'caster', pop: '#2449FF', cap: 4, bolt: 'laser' },
   golem:    { sprite: 'golem',    name: 'IRON GOLEM',    hp: 10,  speed: 54,  dmg: 8,  r: 10, xp: 1, move: 'straight', pop: '#B6A48C' },
@@ -1758,6 +1776,12 @@ const BEST_DESC = {
   fly: 'Bloated desert flies the size of dogs. They swarm in fast and erratic.',
   maggot: 'Burrows under the sand, then rears up to spit acid. Hard to pin down.',
   lizard: 'Reckless desert lizardfolk. They leap at you again and again, barely pausing.',
+  snake: 'A golden viper. It slithers in S-curves, coils, then strikes faster than you can blink.',
+  mosquito: 'Never alone: they come in clouds of six to eight. Weak, fast and everywhere.',
+  plant: 'A rooted man-eater that bursts up from the undergrowth. Bites anything in reach and spits poison thorns.',
+  monkey: 'A shrieking demon ape. Keeps its distance, circles you and hurls coconuts.',
+  frog: 'A giant poison dart frog. Its touch poisons you, and it bursts into a toxic cloud when it dies.',
+  treant: 'A walking tangle of jungle vines. Slow, enormous and very, very hard to cut down.',
   banshee: 'A wailing ghost. Her scream hurts and leaves you terrified (slowed). Kill her before she screams.',
   boss1: 'Upgraded Minotaur with far more armour. Arrives at 10:00.',
   boss2: 'The final protocol. Three times the size. Arrives at 14:00.',
@@ -1788,7 +1812,7 @@ function makeEnemy(kind, x, y, opts = {}) {
     x, y, hp, maxHp: hp,
     speed: t.speed * spdScale() * rand(0.9, 1.1) * (opts.spdMul ?? 1),
     dmg: t.dmg * dmgScale(), r: Math.round(t.r * (opts.rMul ?? 1)), xp: Math.ceil(t.xp * (opts.xpMul ?? 1)),
-    sprite: t.sprite, scale: (opts.scale ?? SCALE), variant: opts.variant ?? null,
+    sprite: t.sprite, scale: (opts.scale ?? SCALE) * (t.scale ?? 1), variant: opts.variant ?? null,
     move: t.move, boss: false, elite: !!opts.elite, sweep: opts.sweep ?? null,
     flash: -1, animT: rand(0, 10), chargeT: rand(0, 4), pop: t.pop,
     orbitSign: Math.random() < 0.5 ? 1 : -1,
@@ -1987,6 +2011,7 @@ function enterAct(n) {
   state.spawnTimer = 1.2;
   state.flash = 1;
   state.shake = 6;
+  banners.length = 0;                       // stale "new threat" news from the old act
   announce(ACT_NAMES[n][0], n === 3 ? C.green : C.yellow, 3, 5, ACT_NAMES[n][1]);
   music.song = n; music.step = 0;           // each act's theme starts from its intro
   sfx(880, 0.5, 'sine', 0.06, -500);
@@ -3147,9 +3172,12 @@ function renderWorld() {
         frame = e.crouch > 0 ? 0 : Math.min(n - 1, 1 + Math.floor(p * (n - 1)));
       } else if (e.move === 'pounce' && anim === 'attack') {
         anim = 'walk';                           // the jump row only plays for real leaps
+      } else if (e.kind === 'frog' && anim !== 'attack' && Math.sin(e.animT * 5) > 0.05) {
+        anim = 'air';                            // mid-hop (synced to the 'hop' lunge): rising, then falling
+        frame = Math.cos(e.animT * 5) > 0 ? 0 : 1;
       }
       if (frame === undefined) frame = animFrame(e.animT, anim, e.sprite);
-      const lift = e.fly ? e.fly + Math.round(Math.sin(e.animT * 9) * 3) : 0;
+      const lift = e.fly ? e.fly + Math.round(Math.sin(e.animT * 9) * 3) : anim === 'air' ? Math.round(Math.sin(e.animT * 5) * 26) : 0;
       drawSprite(e.sprite, anim, frame, e.x, groundYOf(e) - lift, e.lx && e.leapT > 0 ? e.lx < 0 : player.x < e.x,
         e.scale, e.flash > 0 || shriek ? 'white' : e.variant);
     } });
@@ -3616,7 +3644,7 @@ function renderTitle() {
     if (on && blink(3)) drawCursor(Math.round(W / 2 - w / 2) - 10, y);
     addHit(Math.round(W / 2 - w / 2) - 14, y - 4, w + 28, 14, 'title:' + i);
   });
-  const credit = 'ART: CALCIUMTRICE / ANSIMUZ / REDSHRIKE / BJERK / YURINIKOLAI / DCSS / LPC / SHEPARDSKIN';
+  const credit = 'ART: CALCIUMTRICE / ANSIMUZ / REDSHRIKE / BJERK / YURINIKOLAI / CRAFTPIX / DCSS / LPC / OPP / SHEPARDSKIN';
   if (credit.length * 6 < W - 8) drawText(credit, W / 2, H - 10, C.grey, { align: 'center', shadow: false });
   else {
     drawText('ART: CALCIUMTRICE / ANSIMUZ / BJERK / DCSS', W / 2, H - 20, C.grey, { align: 'center', shadow: false });

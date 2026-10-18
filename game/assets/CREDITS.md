@@ -160,3 +160,31 @@ listed in [`CREDITS-LPC.md`](CREDITS-LPC.md).
   **CC0**: https://opengameart.org/content/dungeon-crawl-32x32-tiles —
   recoloured blood red, downscaled. Berserk itself is a nod to id Software's
   DOOM; no DOOM assets are used.
+
+## Act III: The Strangling Jungle
+
+- `jungle.png` — floor: grass and flower tiles from **Dungeon Crawl Stone Soup**,
+  **CC0**; trees, the giant fern and the undergrowth decals from
+  **"[LPC] Jungle" by bluecarrot16, Lanea Zimmerman (Sharm), Sevarihk, Hyptosis,
+  Emcee Flesher, ansimuz, KnoblePersona, surt, Talosaurus, and the Open Pixel
+  Project contributors (OpenPixelProject.com)**, **CC-BY 4.0**:
+  https://opengameart.org/content/lpc-jungle — downscaled, repacked. The full
+  upstream credits list ships as [`CREDITS-LPC-jungle.txt`](CREDITS-LPC-jungle.txt).
+- `snake.png` (Jungle Viper) — "Animated Snake" by **Calciumtrice**, **CC-BY 3.0**:
+  https://opengameart.org/content/animated-snake — recoloured golden, mirrored, 2x.
+- `treant.png` (Vine Treant) — "Plant Ent" from "ents" by **macmanmatty**,
+  **CC-BY 4.0**: https://opengameart.org/content/ents — walk, throwing and
+  withering sheets, downscaled.
+- `plant.png` (Man-Eater) — "Pixel Predator Plant Mob Character" by
+  **CraftPix.net 2D Game Assets**, **OGA-BY 3.0**:
+  https://opengameart.org/content/pixel-predator-plant-mob-character
+- `mosquito.png` (Mosquito Swarm) — "16x16 Flies" by **ARoachIFoundOnMyPillow**,
+  **CC0**: https://opengameart.org/content/16x16-flies — recoloured.
+- `monkey.png` (Demon Monkey) — "Baboon Monk" by **Crisisworks** (from his game
+  *Spirit of the Wind*), **CC-BY 4.0**: https://opengameart.org/content/baboon-monk
+  — recoloured crimson, downscaled.
+- `frog.png` (Giant Poison Frog) — the frog from "OPP2017 - Sprites, characters,
+  objects, effects" by the **Open Pixel Project** (openpixelproject.com), **CC0**:
+  https://opengameart.org/content/opp2017-sprites-characters-objects-effects —
+  blue dart-frog palette, hop frames remapped to it, 2x.
+- The jungle theme "Green Hell" is an original FM composition.
