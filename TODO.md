@@ -5,6 +5,10 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 ## Now
 
+- Mutant Academy Act IV (ocean): code, axolotl mercenary and music are in
+  (`4e47bd0`, gated off); waiting on licensed sea-creature + seabed art,
+  then pack sheets, switch ACT_LEVEL[4] on, add act4 test + credits.
+
 - Team name normalizer gaps: Bielefeld, Greuther Fürth, Holstein Kiel,
   Ajaccio unmapped (flagged during backfill).
 
@@ -36,6 +40,10 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy: Act III swarming eased (spawner top-ups stop at the
+  quota; swarms only on top-ups; lighter jungle quota and caps; softer
+  frogs/poison); ring-event crash fixed; Zoe made overpowered and
+  dressed in black — `9622935`
 - Mutant Academy: Zoe restyled as an ordinary nine-year-old — wavy brown
   hair, glasses, pink tee, jeans, white trainers (LPC child parts; bare
   feet recoloured into shoes) — `50594a9`
