@@ -36,6 +36,10 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy: Act II "The Burning Sands" — a portal after 4
+  level-ups leads to a daylight desert (CC0 sand/palms/rocks) with
+  scarabs, Giant Flies, acid-spitting Giant Maggots, reckless Leaping
+  Lizards, bestiary entries and a Hijaz-maqam FM theme — `ff9a88b`
 - Mutant Academy: Iron Golems (Redshrike's CC-BY LPC Golem, recoloured
   iron) replace the green Training Ooze as opening fodder; same stats,
   stomp/smash/crumble animations — `3e983cf`
