@@ -223,6 +223,7 @@ function musicTick(ahead = 0.18) {   // ahead: how far to schedule (offline rend
   if (!music.on || muted || !audioCtx) return;
   if (music.song === 2) { desertTick(ahead); return; }
   if (music.song === 3) { jungleTick(ahead); return; }
+  if (music.song === 4) { oceanTick(ahead); return; }
   const bpm = 152, sd = 60 / bpm / 4;
   // never play catch-up after mute/background throttling — snap to now
   if (music.nextT < audioCtx.currentTime - 0.1) music.nextT = audioCtx.currentTime + 0.05;
@@ -400,6 +401,58 @@ function jungleTick(ahead) {
     if (bar16 % 4 === 2 && s === 14) { beep(t, 70, 0.12, 'square', 0.03, 30); beep(t + 0.14, 66, 0.12, 'square', 0.025, 30); }
     // late game: the drummers double up
     if (scene === 'play' && state.time > 480 && s % 2 === 1) beep(t, 190, 0.06, 'sine', 0.06, -60);
+    music.step++;
+    music.nextT += sd;
+  }
+}
+// "Drowned Depths" — an original undersea theme in D dorian over Dm9-Bbmaj7-Fmaj7-Cadd9 (sharps spell
+// the flats): a cascading glass-bell arpeggio, a slow ocarina melody, a warm sub bass, rising bubbles,
+// a whale call in the second section and a soft heartbeat kick.
+const OCEAN_CH = [{ root: 'D2', arp: ['D4', 'F4', 'A4', 'C5', 'E5'] }, { root: 'A#1', arp: ['A#3', 'D4', 'F4', 'A4', 'C5'] },
+  { root: 'F2', arp: ['F4', 'A4', 'C5', 'E5', 'G5'] }, { root: 'C2', arp: ['C4', 'E4', 'G4', 'D5', 'E5'] }];
+const ARP_ORDER = [0, 1, 2, 3, 4, 3, 2, 1];          // up and back down on the 8ths
+const OCARINA_A = ['A4:8 G4:4 F4:4', 'D4:12 -:4', 'C5:6 A4:2 G4:8', 'E4:12 -:4',
+  'F4:4 G4:4 A4:4 C5:4', 'D5:8 C5:4 A4:4', 'G4:4 A4:4 C5:4 B4:4', 'A4:16'].map(phrase);
+const OCARINA_B = ['D5:8 E5:4 F5:4', 'D5:12 -:4', 'C5:4 D5:4 F5:4 A5:4', 'G5:12 -:4'].map(phrase);
+const SONG4 = [{ sec: 'intro' }, { sec: 'intro' }];
+const LOOP4_AT = SONG4.length;
+OCARINA_A.forEach(mel => SONG4.push({ sec: 'A', mel }));
+OCARINA_B.forEach((mel, i) => SONG4.push({ sec: 'B', mel, whale: i === 0 }));
+OCARINA_B.forEach((mel, i) => SONG4.push({ sec: 'B2', mel, oct: true }));
+function oceanTick(ahead) {
+  const bpm = 92, sd = 60 / bpm / 4;
+  if (music.nextT < audioCtx.currentTime - 0.1) music.nextT = audioCtx.currentTime + 0.05;
+  while (music.nextT < audioCtx.currentTime + ahead) {
+    const s = music.step % 16, bar16 = Math.floor(music.step / 16);
+    let bi = bar16;
+    if (bi >= SONG4.length) bi = LOOP4_AT + (bi - LOOP4_AT) % (SONG4.length - LOOP4_AT);
+    const bar = SONG4[bi], ch = OCEAN_CH[bar16 % 4], t = music.nextT;
+    // heartbeat kick + a hushed shaker
+    if (bar.sec !== 'intro' && (s === 0 || s === 3)) beep(t, s ? 62 : 70, 0.22, 'sine', s ? 0.09 : 0.14, -30);
+    if (bar.sec !== 'intro' && s % 4 === 2) noiseHit(t, 0.03, 0.012);
+    // sub bass: root on 1 and the "and" of 3, a long swell
+    if (s === 0 || s === 10) fm(t, hz(ch.root), sd * (s ? 5 : 9), 0.07, 1, 0.8, 0.3, true);
+    // glass-bell arpeggio on the 8ths (an inharmonic 3.5 ratio rings like struck glass)
+    if (s % 2 === 0) {
+      const n = ch.arp[ARP_ORDER[s / 2]];
+      fm(t, hz(n), 0.6, bar.sec === 'intro' ? 0.024 : 0.019, 3.5, 1.2, 0.25);
+      fm(t + sd * 3, hz(n) * 2, 0.4, 0.008, 3.5, 0.8, 0.2);                       // a faint echo an octave up
+    }
+    // ocarina: soft, slow-swelling FM with a breath on top
+    if (bar.mel) for (const ev of bar.mel) {
+      if (ev.at !== s) continue;
+      const f = bar.oct ? ev.f * 2 : ev.f, dur = ev.len * sd * 0.97;
+      fm(t, f, dur, 0.036, 1, 0.35, 0.6, true);
+      fm(t, f * 2.002, dur, 0.007, 1, 0.15, 0.6, true);
+      if (bar.oct) fm(t, ev.f, dur, 0.02, 1, 0.3, 0.6, true);
+    }
+    // bubbles: little rising blips, a different pair each bar
+    const b1 = (bar16 * 5) % 16, b2 = (bar16 * 11 + 7) % 16;
+    if (s === b1 || s === b2) { beep(t, 500 + (bar16 % 3) * 120, 0.08, 'sine', 0.02, 900); beep(t + 0.07, 800 + (bar16 % 3) * 120, 0.06, 'sine', 0.014, 900); }
+    // whale call: a long low glide up and back, once per B section
+    if (bar.whale && s === 4) { beep(t, 180, 1.6, 'sine', 0.035, 140); beep(t + 1.6, 320, 1.4, 'sine', 0.025, -160); }
+    // late game: the bass starts to pulse on the 8ths
+    if (scene === 'play' && state.time > 600 && s % 2 === 0 && s !== 0 && s !== 10) fm(t, hz(ch.root), sd * 1.5, 0.05, 1, 1, 0.1);
     music.step++;
     music.nextT += sd;
   }
@@ -1161,7 +1214,7 @@ function scanEnv() {
       const oh = obstacleAt(ix, iy);
       if (oh) {
         const kind = (oh >>> 3) % 8;
-        obs.push({ x: ix * TILE + TILE / 2, y: iy * TILE + TILE / 2, r: state.act === 3 ? JUNGLE_R[kind % 6] : state.act === 2 ? DESERT_R[kind % 5] : PROP_R[kind], kind });
+        obs.push({ x: ix * TILE + TILE / 2, y: iy * TILE + TILE / 2, r: state.act === 4 ? OCEAN_R[kind % 6] : state.act === 3 ? JUNGLE_R[kind % 6] : state.act === 2 ? DESERT_R[kind % 5] : PROP_R[kind], kind });
         continue;
       }
       if (brazierAt(ix, iy)) {
@@ -1270,7 +1323,28 @@ function drawJungleFloor() {
   }
 }
 const JUNGLE_R = [10, 12, 14, 12, 9, 14];   // tree trunks and buttress roots, then the giant fern
+// Act IV seabed: same sheet layout as the jungle (16 floor tiles, six 80x112 props at y=64, decals at y=176)
+function drawOceanFloor() {
+  const img = SPR.ocean.base;
+  const ix0 = Math.floor(camX / CT), iy0 = Math.floor(camY / CT);
+  for (let iy = iy0; iy * CT - camY < H; iy++) {
+    for (let ix = ix0; ix * CT - camX < W; ix++) {
+      const t = (hash2(ix, iy) >>> 4) % 16;
+      ctx.drawImage(img, (t % 8) * CT, (t >> 3) * CT, CT, CT, ix * CT - camX, iy * CT - camY, CT, CT);
+    }
+  }
+  for (let iy = iy0 - 1; iy * CT - camY < H; iy++) {
+    for (let ix = ix0 - 1; ix * CT - camX < W; ix++) {
+      const h = hash2(ix * 7 + 3, iy * 11 + 5);
+      if (h % 6) continue;
+      const d = (h >>> 4) % 8, dx = ((h >>> 8) % 17) - 8, dy = ((h >>> 13) % 17) - 8;
+      ctx.drawImage(img, d * CT, 176, CT, CT, ix * CT - camX + dx, iy * CT - camY + dy, CT, CT);
+    }
+  }
+}
+const OCEAN_R = [12, 12, 12, 14, 14, 16];
 function drawFloor() {
+  if (state.act === 4) { drawOceanFloor(); return; }
   if (state.act === 3) { drawJungleFloor(); return; }
   if (state.act === 2) { drawDesertFloor(); return; }
   drawCryptTiles(0, 0, W, H, CT, camX, camY);
@@ -1293,7 +1367,7 @@ const PROP_R = [11, 11, 14, 14, 14, 13, 16, 11];
 function drawObstacle(o) {
   const x = toDX(o.x), y = toDY(o.y);
   if (x < -48 || x > W + 48 || y < -20 || y > H + 120) return;
-  if (state.act === 3) { ctx.drawImage(SPR.jungle.base, (o.kind % 6) * 80, 64, 80, 112, x - 40, y - 102, 80, 112); return; }
+  if (state.act >= 3) { ctx.drawImage(SPR[state.act === 4 ? 'ocean' : 'jungle'].base, (o.kind % 6) * 80, 64, 80, 112, x - 40, y - 102, 80, 112); return; }
   if (state.act === 2) { ctx.drawImage(SPR.desert.base, (o.kind % 5) * 48, 64, 48, 64, x - 24, y - 60, 48, 64); return; }
   ctx.drawImage(SPR.crypt.base, o.kind * CT, 2 * CT, CT, CT, x - CT / 2, y - CT + 6, CT, CT);
 }
@@ -1326,13 +1400,16 @@ const state = {
   shake: 0, flash: 0, killTimes: [], streakTier: 0,
   hitstop: 0, lastGemT: -9, gemCombo: 0, heartT: 0, foodT: 35,
   act: 1, portalT: 0, berserkT: 0,
+  ally: null, wildAxo: null, allyT: 0, inkT: 0,
 };
 // Act II: after this many level-ups' worth of levels a town portal carries you to the desert
 const ACT2_LEVEL = 5;   // = 4 level-ups
 const ACT3_LEVEL = 10;  // the jungle
-const ACT_LEVEL = { 2: ACT2_LEVEL, 3: ACT3_LEVEL };
-const ACT_NAMES = { 2: ['ACT II', 'THE BURNING SANDS'], 3: ['ACT III', 'THE STRANGLING JUNGLE'] };
-const ROMAN = ['', 'I', 'II', 'III'];
+const ACT4_LEVEL = 15;  // the ocean
+const ACT_LEVEL = { 2: ACT2_LEVEL, 3: ACT3_LEVEL };   // Act IV (ACT4_LEVEL) is switched on once its creatures land
+const ACT_NAMES = { 2: ['ACT II', 'THE BURNING SANDS'], 3: ['ACT III', 'THE STRANGLING JUNGLE'], 4: ['ACT IV', 'THE DROWNED DEPTHS'] };
+const ACT_COL = { 2: '#FFDB00', 3: '#24DB24', 4: '#49DBFF' };
+const ROMAN = ['', 'I', 'II', 'III', 'IV'];
 const PORTAL_TIME = 1.8;
 
 // Berserk orb (a nod to DOOM's berserk pack): 30s of invulnerability, speed and amplified powers
@@ -1388,8 +1465,16 @@ const ACT3_TYPES = [ ['snake','mosquito'], ['snake','mosquito'], ['snake','plant
   ['snake','frog','monkey','banshee','mosquito'], ['treant','frog','monkey','knight','mosquito'],
   ['monkey','snake','treant','frog','plant'], ['treant','frog','monkey','snake','mosquito','plant'],
   ['frog','treant','monkey','snake','mosquito','plant','mech'] ];
+// Act IV: the ocean. Piranha shoals and crabs first, then jellyfish, eels, octopuses and sharks
+const ACT4_TYPES = [ ['piranha','crab'], ['piranha','crab'], ['piranha','jelly','crab'], ['crab','eel','piranha'],
+  ['jelly','piranha','eel','crab'], ['octopus','piranha','crab'], ['eel','jelly','octopus','piranha'],
+  ['shark','piranha','crab'], ['octopus','eel','shark','piranha'], ['jelly','shark','octopus','crab'],
+  ['shark','eel','piranha','jelly','octopus'], ['octopus','shark','crab','eel','piranha'],
+  ['shark','jelly','octopus','eel','crab'], ['shark','octopus','eel','jelly','piranha','crab'],
+  ['shark','octopus','eel','jelly','piranha','crab','knight'] ];
 function currentWave() {
   const m = Math.min(WAVES.length - 1, Math.floor(state.time / 60));
+  if (state.act === 4) return { min: WAVES[m].min, interval: WAVES[m].interval, types: ACT4_TYPES[m] };
   if (state.act === 3) return { min: WAVES[m].min, interval: WAVES[m].interval, types: ACT3_TYPES[m] };
   return state.act === 2 ? { min: WAVES[m].min, interval: WAVES[m].interval, types: ACT2_TYPES[m] } : WAVES[m];
 }
@@ -1690,7 +1775,7 @@ const ENEMY_TYPES = {
   lizard:   { sprite: 'lizard',   name: 'LEAPING LIZARD',  hp: 30,  speed: 130, dmg: 13, r: 10, xp: 3, move: 'pounce',  pop: '#49B649', reckless: true },
   // Act III jungle
   snake:    { sprite: 'snake',    name: 'JUNGLE VIPER',    hp: 26,  speed: 115, dmg: 12, r: 9,  xp: 3, move: 'slither', pop: '#FFDB00' },
-  mosquito: { sprite: 'mosquito', name: 'MOSQUITO SWARM',  hp: 5,   speed: 150, dmg: 4,  r: 6,  xp: 1, move: 'flutter', pop: '#920000', fly: 14, cap: 70 },
+  mosquito: { sprite: 'mosquito', name: 'MOSQUITO SWARM',  hp: 5,   speed: 150, dmg: 4,  r: 6,  xp: 1, move: 'flutter', pop: '#920000', fly: 14, cap: 70, swarm: [5, 8] },
   plant:    { sprite: 'plant',    name: 'MAN-EATER',       hp: 90,  speed: 0,   dmg: 16, r: 14, xp: 6, move: 'rooted',  pop: '#B624B6', bolt: 'thorn', cap: 8 },
   monkey:   { sprite: 'monkey',   name: 'DEMON MONKEY',    hp: 34,  speed: 140, dmg: 10, r: 10, xp: 4, move: 'caster',  pop: '#DB2424', bolt: 'coconut', cap: 12 },
   frog:     { sprite: 'frog',     name: 'GIANT POISON FROG', hp: 70, speed: 95, dmg: 10, r: 15, xp: 6, move: 'hop',     pop: '#4992FF', poison: true, cap: 14, scale: 0.75 },
@@ -1788,12 +1873,14 @@ const BEST_DESC = {
 };
 const firstWave = kind => { const i = WAVES.findIndex(w => w.types.includes(kind)); return i < 0 ? 99 : i; };
 // the act a creature first turns up in (1 = the cathedral)
-const actOf = kind => WAVES.some(w => w.types.includes(kind)) ? 1 : ACT2_TYPES.some(t => t.includes(kind)) ? 2 : 3;
+const actOf = kind => WAVES.some(w => w.types.includes(kind)) ? 1 : ACT2_TYPES.some(t => t.includes(kind)) ? 2
+  : ACT3_TYPES.some(t => t.includes(kind)) ? 3 : 4;
+const ACT_TABLE = { 2: () => ACT2_TYPES, 3: () => ACT3_TYPES, 4: () => ACT4_TYPES };
 const firstActWave = (kind, table) => { const i = table.findIndex(t => t.includes(kind)); return i < 0 ? 99 : i; };
 // every enemy in order of first appearance (act by act), then the bosses
 const BEST_ENTRIES = Object.keys(ENEMY_TYPES)
   .sort((a, b) => actOf(a) - actOf(b) || firstWave(a) - firstWave(b)
-    || firstActWave(a, actOf(a) === 2 ? ACT2_TYPES : ACT3_TYPES) - firstActWave(b, actOf(b) === 2 ? ACT2_TYPES : ACT3_TYPES)
+    || (actOf(a) > 1 ? firstActWave(a, ACT_TABLE[actOf(a)]()) - firstActWave(b, ACT_TABLE[actOf(b)]()) : 0)
     || ENEMY_TYPES[a].hp - ENEMY_TYPES[b].hp)
   .map(k => {
     const t = ENEMY_TYPES[k];
@@ -1820,7 +1907,7 @@ function makeEnemy(kind, x, y, opts = {}) {
     castT: rand(1.5, 3), casting: 0,       // caster: cooldown, windup left
     leapCd: rand(0.5, 2), leapT: 0, crouch: 0, lx: 0, ly: 0, // pounce
     blinkCd: rand(2, 4), fade: 0, healT: rand(1, 3), bolt: t.bolt || 'fire', healer: !!t.healer,
-    screamCd: rand(2, 4), screaming: 0, reckless: !!t.reckless, poison: !!t.poison,
+    screamCd: rand(2, 4), screaming: 0, reckless: !!t.reckless, poison: !!t.poison, shock: !!t.shock,
   };
 }
 const CAST_WINDUP = 0.6, LEAP_TIME = 0.42;
@@ -1831,6 +1918,7 @@ const BOLTS = {
   acid:    { hy: 18, spd: 175, r: 6, dmg: 1.2 },
   thorn:   { hy: 20, spd: 240, r: 4, dmg: 0.8, n: 3 },   // a three-thorn fan
   coconut: { hy: 22, spd: 165, r: 6, dmg: 1.1 },
+  ink:     { hy: 14, spd: 170, r: 7, dmg: 0.6 },   // octopus: blots out your view
 };
 function shootFireball(e) {
   const B = BOLTS[e.bolt] || BOLTS.fire;
@@ -1845,6 +1933,7 @@ function shootFireball(e) {
   if (e.bolt === 'laser') sfx(1400, 0.12, 'square', 0.03, -900);
   else if (e.bolt === 'acid') sfx(220, 0.14, 'square', 0.035, -120);
   else if (e.bolt === 'thorn') sfx(1800, 0.06, 'square', 0.025, -1200);
+  else if (e.bolt === 'ink') sfx(160, 0.2, 'sine', 0.05, -80);
   else if (e.bolt === 'coconut') { sfx(520, 0.1, 'triangle', 0.04, 300); sfx(880, 0.08, 'square', 0.02, 400); }   // monkey shriek
   else sfx(330, 0.18, 'sawtooth', 0.035, -200);
 }
@@ -1899,8 +1988,9 @@ function spawnEnemy(kind) {
   announceType(kind);
   const a = rand(0, TAU), d = spawnRadius();
   const x = player.x + Math.cos(a) * d, y = player.y + Math.sin(a) * d;
-  if (kind === 'mosquito') {   // mosquitoes never come alone
-    const n = randInt(5, 8);
+  const sw = ENEMY_TYPES[kind].swarm;
+  if (sw) {   // mosquitoes and piranhas never come alone
+    const n = randInt(sw[0], sw[1]);
     for (let i = 0; i < n; i++) enemies.push(makeEnemy(kind, x + rand(-30, 30), y + rand(-30, 30)));
     return;
   }
@@ -1944,7 +2034,7 @@ function spawnSweep() {
   const px = -dirY, py = dirX; // perpendicular
   const spd = 170;
   for (let i = -14; i <= 14; i++) {
-    const e = makeEnemy(['skeleton', 'skeleton', 'fly', 'mosquito'][state.act], cx + px * i * 34 + rand(-10, 10), cy + py * i * 34 + rand(-10, 10),
+    const e = makeEnemy(['skeleton', 'skeleton', 'fly', 'mosquito', 'piranha'][state.act], cx + px * i * 34 + rand(-10, 10), cy + py * i * 34 + rand(-10, 10),
       { hpMul: 0.06, xpMul: 1, spdMul: 1 });
     e.sweep = { vx: dirX * spd, vy: dirY * spd, life: 14 };
     enemies.push(e);
@@ -1990,6 +2080,72 @@ function sndBerserk() {
     }
   } catch (e) {}
 }
+// ---- the axolotl mercenary (Act IV): one waits somewhere on the seabed now and then; swim up to it
+// and it signs on for ALLY_TIME seconds, hunting the nearest threat with bites and bubble shots
+const ALLY_TIME = 45;
+function updateAxolotl(dt) {
+  if (!state.ally && !state.wildAxo) {
+    state.allyT -= dt;
+    if (state.allyT <= 0) {
+      const a = rand(0, TAU), d = rand(220, 300);
+      state.wildAxo = { x: player.x + Math.cos(a) * d, y: player.y + Math.sin(a) * d, r: 12, animT: 0, life: 45 };
+      resolveObstacles(state.wildAxo);
+      announce('AN AXOLOTL WANTS TO HELP!', '#FF92DB', 2.2, 3, 'FIND IT AND IT WILL FIGHT FOR YOU');
+      sfx(1200, 0.08, 'sine', 0.04, 600); setTimeout(() => sfx(1500, 0.1, 'sine', 0.04, 700), 110);
+    }
+  }
+  const w = state.wildAxo;
+  if (w) {
+    w.animT += dt; w.life -= dt;
+    if (dist2(w.x, w.y, player.x, player.y) < 44 * 44) hireAxolotl();
+    else if (w.life <= 0) { burstParticles(w.x, w.y, '#B6DBFF', 8); state.wildAxo = null; state.allyT = rand(20, 30); }
+  }
+  const al = state.ally;
+  if (!al) return;
+  al.t -= dt; al.animT += dt; al.cd -= dt; al.biteCd -= dt; al.attackAge += dt;
+  let tgt = null, best = 280 * 280;
+  for (const e of enemies) {
+    if (e.sweep) continue;
+    const q = dist2(e.x, e.y, al.x, al.y);
+    if (q < best && dist2(e.x, e.y, player.x, player.y) < 320 * 320) { best = q; tgt = e; }
+  }
+  // hunt the target, or swim back to heel at the hero's side
+  const gx = tgt ? tgt.x : player.x - player.face * 46, gy = tgt ? tgt.y : player.y + 12;
+  const dx = gx - al.x, dy = gy - al.y, d = Math.hypot(dx, dy) || 1;
+  const spd = (tgt ? 240 : 210) * Math.min(1, d / 50);
+  al.moving = d > 6;
+  if (al.moving) { al.x += dx / d * spd * dt; al.y += dy / d * spd * dt; }
+  if (Math.abs(dx) > 3) al.face = dx < 0 ? -1 : 1;
+  if (dist2(al.x, al.y, player.x, player.y) > 420 * 420) {   // never lost: pops back beside you
+    al.x = player.x - player.face * 46; al.y = player.y + 12;
+    burstParticles(al.x, al.y - 8, '#B6DBFF', 8);
+  }
+  const power = (1 + state.level * 0.08) * player.dmgMult;
+  if (tgt && best < (tgt.r + 16) ** 2 && al.biteCd <= 0) {
+    damageEnemy(tgt, 22 * power);
+    al.biteCd = 0.45; al.attackAge = 0;
+    sfx(700, 0.05, 'square', 0.025, -300);
+  } else if (tgt && al.cd <= 0 && best > 60 * 60) {
+    const a = Math.atan2(tgt.y - (al.y - 8), tgt.x - al.x);
+    bullets.push({ kind: 'bubble', x: al.x, y: al.y - 8, vx: Math.cos(a) * 300, vy: Math.sin(a) * 300,
+      r: 6, dmg: 14 * power, life: 1.3, pierce: 1 });
+    al.cd = 0.8 * player.cdMult; al.attackAge = 0;
+    sfx(600, 0.08, 'sine', 0.03, 700);
+  }
+  if (al.t <= 0) {
+    burstParticles(al.x, al.y - 8, '#FF92DB', 12);
+    announce('THE AXOLOTL SWIMS OFF', '#FF92DB', 1.6, 2, 'IT MAY COME BACK...');
+    state.ally = null; state.allyT = rand(35, 55);
+  }
+}
+function hireAxolotl() {
+  const w = state.wildAxo;
+  state.ally = { x: w.x, y: w.y, t: ALLY_TIME, animT: 0, cd: 0.3, biteCd: 0, attackAge: 9, face: 1, moving: false };
+  state.wildAxo = null;
+  burstParticles(w.x, w.y - 8, '#FF92DB', 16);
+  announce('AXOLOTL JOINS YOU!', '#FF92DB', 2.2, 4, `MERCENARY FOR ${ALLY_TIME} SECONDS`);
+  jingle([784, 988, 1175, 1568], 0.08, 0.05);
+}
 function openPortal() {
   state.portalT = PORTAL_TIME;
   announce('A PORTAL OPENS...', C.cyan, 1.6, 4);
@@ -2012,7 +2168,8 @@ function enterAct(n) {
   state.flash = 1;
   state.shake = 6;
   banners.length = 0;                       // stale "new threat" news from the old act
-  announce(ACT_NAMES[n][0], n === 3 ? C.green : C.yellow, 3, 5, ACT_NAMES[n][1]);
+  announce(ACT_NAMES[n][0], ACT_COL[n], 3, 5, ACT_NAMES[n][1]);
+  state.allyT = rand(20, 30);               // the ocean's axolotl turns up a little after you arrive
   music.song = n; music.step = 0;           // each act's theme starts from its intro
   sfx(880, 0.5, 'sine', 0.06, -500);
 }
@@ -2547,6 +2704,8 @@ function update(dt) {
   // player movement + animation clocks
   const { mx, my } = moveInput();
   player.fearT = Math.max(0, (player.fearT || 0) - dt);
+  state.inkT = Math.max(0, state.inkT - dt);
+  if (state.act === 4) updateAxolotl(dt);
   for (const fx of effects) {
     if (fx.type === 'toxic' && fx.life > 0.4 && dist2(fx.x, fx.y, player.x, player.y) < (fx.radius + player.r * 0.5) ** 2) poisonPlayer(2);
   }
@@ -2815,6 +2974,10 @@ function update(dt) {
       } else {
         hurtPlayer(e.dmg);
         if (e.poison) poisonPlayer();
+        if (e.shock && state.berserkT <= 0) {   // jellyfish and eels: a jolt that leaves you sluggish
+          if (player.fearT <= 0.2) { popText(player.x, player.y - 52, 'ZAPPED!', '#FFFF49'); effects.push({ type: 'bolt', x: player.x, y: player.y, life: 0.18, maxLife: 0.18 }); sfx(1600, 0.12, 'sawtooth', 0.03, -1200); }
+          player.fearT = Math.max(player.fearT, 0.9);
+        }
       }
     }
     // never despawn — like VS, stragglers teleport to a fresh angle and rejoin the hunt
@@ -2837,6 +3000,10 @@ function update(dt) {
     if (!dead && dist2(b.x, b.y, player.x, player.y) < (player.r + b.r) ** 2) {
       hurtPlayer(b.dmg);
       if (b.poison) poisonPlayer(2.5);
+      if (b.style === 'ink' && state.berserkT <= 0) {
+        if (state.inkT <= 0) popText(player.x, player.y - 52, 'INKED!', '#9292DB');
+        state.inkT = 2.6;
+      }
       burstParticles(b.x, b.y, b.style === 'coconut' ? '#924900' : b.style === 'thorn' ? '#49B600' : '#FF9200', 5);
       dead = true;
     }
@@ -3023,7 +3190,7 @@ function renderDarkness() {
   g.globalCompositeOperation = 'source-over';
   g.clearRect(0, 0, W, H);
   // the jungle is canopy shade (green-black, lighter) rather than crypt dark
-  g.fillStyle = state.act === 3 ? 'rgba(0,18,6,0.5)' : `rgba(6,0,10,${DARKNESS})`;
+  g.fillStyle = state.act === 4 ? 'rgba(0,14,40,0.55)' : state.act === 3 ? 'rgba(0,18,6,0.5)' : `rgba(6,0,10,${DARKNESS})`;
   g.fillRect(0, 0, W, H);
   g.globalCompositeOperation = 'destination-out';
   const punch = (wx, wy, r) => {
@@ -3032,6 +3199,15 @@ function renderDarkness() {
     g.drawImage(s, x - (s.width >> 1), y - (s.height >> 1));
   };
   const flick = Math.floor(uiTime * 8) % 3;
+  if (state.act === 4) {   // caustics: rippling pools of surface light drift slowly across the seabed
+    const S = 130, drift = uiTime * 9, sx0 = Math.floor((player.x - VW / 2 - drift) / S) - 1, sy0 = Math.floor((player.y - VH / 2) / S) - 1;
+    for (let sy = sy0; sy * S < player.y + VH / 2 + S; sy++) for (let sx = sx0; sx * S + drift < player.x + VW / 2 + S; sx++) {
+      const h = hash2(sx * 3 + 7, sy * 13 + 1);
+      if (h % 2) continue;
+      const wob = Math.sin(uiTime * 1.3 + (h % 7)) * 5;
+      punch(sx * S + drift + (h >>> 5) % S, sy * S + (h >>> 11) % S, 22 + (h >>> 17) % 18 + wob);
+    }
+  }
   if (state.act === 3) {   // dappled sunlight: shafts break through the canopy at fixed spots
     const S = 150, sx0 = Math.floor((player.x - VW / 2) / S) - 1, sy0 = Math.floor((player.y - VH / 2) / S) - 1;
     for (let sy = sy0; sy * S < player.y + VH / 2 + S; sy++) for (let sx = sx0; sx * S < player.x + VW / 2 + S; sx++) {
@@ -3044,7 +3220,9 @@ function renderDarkness() {
   for (const bz of state.brazList || []) punch(bz.x, bz.y - 12, 42 + ((Math.floor(uiTime * 7 + bz.x) % 3) * 2));
   for (const b of ebullets) punch(b.x, b.y, b.style === 'laser' ? 12 : 22);
   for (const fx of effects) if (fx.type === 'boom' || fx.type === 'bolt' || fx.type === 'nova') punch(fx.x, fx.y, Math.max(16, (fx.radius || 30) / PX));
-  for (const b of bullets) if (b.kind === 'hammer') punch(b.x, b.y, 14);
+  for (const b of bullets) if (b.kind === 'hammer' || b.kind === 'bubble') punch(b.x, b.y, 14);
+  if (state.ally) punch(state.ally.x, state.ally.y - 8, 34);
+  if (state.wildAxo) punch(state.wildAxo.x, state.wildAxo.y - 8, 40);
   for (let i = 0; i < gems.length && i < 220; i++) punch(gems[i].x, gems[i].y, 5);
   for (const p of pickups) punch(p.x, p.y, p.type === 'berserk' ? 34 + (Math.floor(uiTime * 6) % 2) * 3 : 11);
   if (state.portalT > 0) punch(player.x, player.y, 60);
@@ -3193,6 +3371,27 @@ function renderWorld() {
       drawables.push({ y: t.y + 19, draw() { drawSprite(player.sprite, 'walk', t.frame, t.x, t.y + 20, t.flip, player.drawScale, 'ghost'); } });
     }
   }
+  const axoDraw = (o, anim, frame, flip) => drawSprite('axolotl', anim, frame, o.x, o.y + 12, flip);
+  if (state.wildAxo) {
+    const w = state.wildAxo;
+    drawables.push({ y: w.y + 12, draw() {
+      if (w.life < 4 && blink(10)) return;
+      const bob = Math.round(Math.sin(w.animT * 3) * 2);
+      axoDraw({ x: w.x, y: w.y + bob }, 'idle', animFrame(w.animT, 'idle', 'axolotl'), player.x < w.x);
+      const hx = toDX(w.x), hy = toDY(w.y) - 30 + bob;   // a pink "!" calls you over
+      if (blink(3)) { rect(hx - 1, hy - 6, 3, 5, '#FF92DB'); rect(hx - 1, hy + 1, 3, 2, '#FF92DB'); }
+    } });
+  }
+  if (state.ally) {
+    const al = state.ally;
+    drawables.push({ y: al.y + 12, draw() {
+      if (al.t < 4 && blink(10)) return;   // contract running out
+      const anim = al.attackAge < 0.3 ? 'attack' : al.moving ? 'walk' : 'idle';
+      const n = frameCount('axolotl', anim);
+      const frame = anim === 'attack' ? Math.min(n - 1, Math.floor(al.attackAge / 0.3 * n)) : animFrame(al.animT, anim, 'axolotl');
+      axoDraw(al, anim, frame, al.face < 0);
+    } });
+  }
   drawables.push({ y: player.y + 20, draw() {
     if (hurtBlink) return;
     const anim = player.attackAge < 0.45 ? 'attack' : (player.moving ? 'walk' : 'idle');
@@ -3229,6 +3428,12 @@ function renderWorld() {
       const hy = Math.round(b.h / PX);
       rect(x - 3, y + 1, 7, 2, 'rgba(0,0,0,0.4)');
       drawProj(b.maki ? 'maki' : 'nigiri', x, y - hy, Math.floor(b.t * 10));
+      continue;
+    }
+    if (b.kind === 'bubble') {   // axolotl spit: a wobbling bubble with a highlight
+      const r = 3 + (Math.floor(b.life * 12) % 2);
+      ring(x, y, r, '#B6FFFF');
+      rect(x - 1, y - 2, 1, 1, C.white);
       continue;
     }
     if (b.kind === 'card') {
@@ -3349,6 +3554,18 @@ function renderWorld() {
     }
   }
 
+  if (state.act === 4) {   // streams of bubbles rising off the seabed, anchored to the world
+    const S = 90, x0 = Math.floor(camX * PX / S) - 1, y0 = Math.floor(camY * PX / S) - 1;
+    for (let gy = y0; gy * S < (camY + H) * PX + S; gy++) for (let gx = x0; gx * S < (camX + W) * PX + S; gx++) {
+      const h = hash2(gx * 11 + 5, gy * 7 + 3);
+      if (h % 5) continue;
+      for (let k = 0; k < 3; k++) {
+        const ph = (uiTime * 0.35 + k / 3 + (h % 97) / 97) % 1;
+        const bx = toDX(gx * S + (h >>> 6) % S + Math.sin(uiTime * 2 + k + h) * 3), by = toDY(gy * S + S - ph * S * 1.6);
+        if (ph < 0.85 || blink(12)) ring(bx, by, k === 1 ? 2 : 1, '#92DBFF');
+      }
+    }
+  }
   if (state.portalT > 0) drawPortal();
   renderDarkness();
 
@@ -3400,6 +3617,31 @@ function renderHUD() {
     rect(x, 71, bw + 2, 5, C.black);
     rect(x + 1, 72, Math.round(bw * f), 3, C.red);
     rect(x + 1, 72, Math.round(bw * f), 1, '#FF9292');
+  }
+
+  // the axolotl mercenary's contract, under the stats (below berserk if both run)
+  if (state.ally) {
+    const ay = state.berserkT > 0 ? 80 : 62, f = clamp(state.ally.t / ALLY_TIME, 0, 1);
+    drawText('AXOLOTL', x, ay, '#FF92DB');
+    drawText(String(Math.ceil(state.ally.t)), x + 48, ay, C.white);
+    rect(x, ay + 9, bw + 2, 5, C.black);
+    rect(x + 1, ay + 10, Math.round(bw * f), 3, '#FF6DB6');
+  }
+  if (state.wildAxo) {   // an arrow at the screen edge points the way to a waiting axolotl
+    const wx = toDX(state.wildAxo.x), wy = toDY(state.wildAxo.y) - 8;
+    if (wx < 8 || wx > W - 8 || wy < 8 || wy > H - 8) {
+      const cx = W / 2, cy = H / 2, a = Math.atan2(wy - cy, wx - cx);
+      const k = Math.min((W / 2 - 14) / Math.abs(Math.cos(a) || 1e-6), (H / 2 - 14) / Math.abs(Math.sin(a) || 1e-6));
+      const ax = Math.round(cx + Math.cos(a) * k), ay2 = Math.round(cy + Math.sin(a) * k);
+      if (blink(4)) {
+        ctx.fillStyle = '#FF92DB';
+        ctx.beginPath();
+        ctx.moveTo(ax + Math.cos(a) * 6, ay2 + Math.sin(a) * 6);
+        ctx.lineTo(ax + Math.cos(a + 2.5) * 6, ay2 + Math.sin(a + 2.5) * 6);
+        ctx.lineTo(ax + Math.cos(a - 2.5) * 6, ay2 + Math.sin(a - 2.5) * 6);
+        ctx.fill();
+      }
+    }
   }
 
   // live combo counter during a frenzy
@@ -3783,7 +4025,7 @@ function renderBestiary() {
     const nsc = textW(norm(e.name), 2) <= tw ? 2 : 1;
     drawText(e.name, tx, y0 + 1, C.white, { scale: nsc, outline: C.black, grad: e.boss ? RED_GRAD : GOLD_GRAD });
     let sy = y0 + 4 + 7 * nsc + 3;
-    drawText(e.boss ? `BOSS ${fmtTime(e.at)}` : e.act > 1 ? `FOUND IN ACT ${ROMAN[e.act]}` : `FIRST SEEN ${fmtTime(e.at)}`, tx, sy, e.boss ? C.red : e.act === 3 ? C.green : e.act === 2 ? C.yellow : C.cyan);
+    drawText(e.boss ? `BOSS ${fmtTime(e.at)}` : e.act > 1 ? `FOUND IN ACT ${ROMAN[e.act]}` : `FIRST SEEN ${fmtTime(e.at)}`, tx, sy, e.boss ? C.red : ACT_COL[e.act] || C.cyan);
     sy += 10;
     const maxOf = f => Math.max(...BEST_ENTRIES.filter(q => !q.boss).map(q => q[f]));
     for (const [label, f, col] of [['HP', 'hp', C.green], ['SPD', 'speed', C.cyan], ['DMG', 'dmg', C.red]]) {
@@ -3799,7 +4041,7 @@ function renderBestiary() {
   } else {
     drawText('???', tx, y0 + 1, C.lgrey, { scale: 2, outline: C.black });
     drawText(e.boss ? 'BOSS' : 'NOT MET YET', tx, y0 + 22, C.grey);
-    drawText(e.act > 1 ? `APPEARS IN ACT ${ROMAN[e.act]}` : `APPEARS ${fmtTime(e.at)}`, tx, y0 + 32, e.act === 3 ? C.green : e.act === 2 ? C.yellow : C.cyan);
+    drawText(e.act > 1 ? `APPEARS IN ACT ${ROMAN[e.act]}` : `APPEARS ${fmtTime(e.at)}`, tx, y0 + 32, ACT_COL[e.act] || C.cyan);
     drawText('SURVIVE LONGER TO MEET IT.', x0, y0 + 74, C.lgrey);
   }
 
@@ -3871,6 +4113,14 @@ function render() {
   }
   // stepped full-screen flash on level-ups, chests and purges
   if (state.flash > 0.05 && !REDUCED) rect(0, 0, W, H, `rgba(255,255,255,${state.flash > 0.3 ? 0.4 : 0.2})`);
+  // octopus ink: dark blots smother the edges of the view, clearing from the outside in
+  if (scene === 'play' && state.inkT > 0) {
+    const k = Math.min(1, state.inkT / 1.2);
+    for (let i = 0; i < 7; i++) {
+      const bx = (hash2(i, 3) % 1000) / 1000 * W, by = (hash2(i, 7) % 1000) / 1000 * H;
+      disc(Math.round(bx), Math.round(by), Math.round((30 + (hash2(i, 9) % 30)) * k), 'rgba(20,10,36,0.82)');
+    }
+  }
   // berserk: the whole screen runs red, with a throbbing border
   if (scene === 'play' && state.berserkT > 0) {
     rect(0, 0, W, H, 'rgba(182,0,0,0.16)');
