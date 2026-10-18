@@ -36,6 +36,10 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy: Iron Golems (Redshrike's CC-BY LPC Golem, recoloured
+  iron) replace the green Training Ooze as opening fodder; same stats,
+  stomp/smash/crumble animations — `3e983cf`
+
 - Mutant Academy Sanctuary pass: Diablo-style cathedral arena (DCSS CC0
   cobbles, blood/bone decals, columns/statues/sarcophagus props), darkness
   with a stepped light radius + torch/projectile lights, the Butcher boss
