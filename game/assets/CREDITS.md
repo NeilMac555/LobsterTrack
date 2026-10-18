@@ -217,3 +217,12 @@ listed in [`CREDITS-LPC.md`](CREDITS-LPC.md).
   https://opengameart.org/content/komodo — recoloured as a pink (leucistic)
   axolotl with gill stalks added. (No freely licensed axolotl sprite exists.)
 - The undersea theme "Drowned Depths" is an original FM composition.
+
+## Act bosses
+
+- The Butcher, the Maggot Queen and the Elder Treant reuse the Butcher, maggot
+  and treant sheets above, scaled up.
+- `kraken.png` (The Kraken) — "Great Pacific Octopus idle and action" by
+  **rapidpunches**, **CC-BY 4.0**:
+  https://opengameart.org/content/great-pacific-octopus-idle-and-action —
+  recoloured crimson-violet; swim frames mirrored.

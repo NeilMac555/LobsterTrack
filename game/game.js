@@ -219,6 +219,8 @@ B_CH.forEach((c, i) => SONG.push({ c, mel: phrase(MEL_B[i]), stabs: i === 7 ? ST
 A_CH.forEach((c, i) => SONG.push({ c, mel: phrase(MEL_A[i]), stabs: i === 7 ? STAB_END : STAB_PUSH, fill: i === 7, crash: i === 0, oct: true, sec: 'A2' }));
 const BASS_GALLOP = [0, 0, 12, 0, 0, 12, 0, 12];   // semitone offsets on the 8ths
 
+// the music's late-game layers also kick in for every boss fight
+const lateGame = t => scene === 'play' && (state.time > t || !!state.actBoss);
 function musicTick(ahead = 0.18) {   // ahead: how far to schedule (offline renders pass a long one)
   if (!music.on || muted || !audioCtx) return;
   if (music.song === 2) { desertTick(ahead); return; }
@@ -232,7 +234,7 @@ function musicTick(ahead = 0.18) {   // ahead: how far to schedule (offline rend
     let bi = Math.floor(total / 16);
     if (bi >= SONG.length) bi = LOOP_AT + (bi - LOOP_AT) % (SONG.length - LOOP_AT);
     const bar = SONG[bi], ch = CHORDS[bar.c], t = music.nextT;
-    const intense = scene === 'play' && state.time > 300;
+    const intense = lateGame(300);
     // drums: driving rock beat, snare roll + tom run into each new section
     if (bar.crash && s === 0) noiseHit(t, 0.45, 0.06);
     if (s === 0 || s === 8 || s === 10 || (bar.sec !== 'intro' && s === 7)) beep(t, 90, 0.11, 'sine', 0.16, -55);
@@ -337,7 +339,7 @@ function desertTick(ahead) {
       }
     }
     // late game: double-time riq
-    if (scene === 'play' && state.time > 300 && s % 2 === 0) noiseHit(t, 0.02, 0.012);
+    if (lateGame(300) && s % 2 === 0) noiseHit(t, 0.02, 0.012);
     music.step++;
     music.nextT += sd;
   }
@@ -400,7 +402,7 @@ function jungleTick(ahead) {
     if (bar16 % 2 === 1 && (s === 4 || s === 5 || s === 6)) beep(t, 2300 + (s - 4) * 300, 0.07, 'sine', 0.018, 1100);
     if (bar16 % 4 === 2 && s === 14) { beep(t, 70, 0.12, 'square', 0.03, 30); beep(t + 0.14, 66, 0.12, 'square', 0.025, 30); }
     // late game: the drummers double up
-    if (scene === 'play' && state.time > 480 && s % 2 === 1) beep(t, 190, 0.06, 'sine', 0.06, -60);
+    if (lateGame(480) && s % 2 === 1) beep(t, 190, 0.06, 'sine', 0.06, -60);
     music.step++;
     music.nextT += sd;
   }
@@ -452,7 +454,7 @@ function oceanTick(ahead) {
     // whale call: a long low glide up and back, once per B section
     if (bar.whale && s === 4) { beep(t, 180, 1.6, 'sine', 0.035, 140); beep(t + 1.6, 320, 1.4, 'sine', 0.025, -160); }
     // late game: the bass starts to pulse on the 8ths
-    if (scene === 'play' && state.time > 600 && s % 2 === 0 && s !== 0 && s !== 10) fm(t, hz(ch.root), sd * 1.5, 0.05, 1, 1, 0.1);
+    if (lateGame(600) && s % 2 === 0 && s !== 0 && s !== 10) fm(t, hz(ch.root), sd * 1.5, 0.05, 1, 1, 0.1);
     music.step++;
     music.nextT += sd;
   }
@@ -930,7 +932,7 @@ const ASSET_FILES = ['warrior', 'wizard', 'ranger', 'rogue', 'cleric',
   'assassin', 'mech', 'burger', 'lizdoc', 'feral', 'neil', 'zoe', 'crypt', 'butcher', 'banshee', 'golem',
   'desert', 'fly', 'maggot', 'lizard', 'orb',
   'jungle', 'snake', 'treant', 'plant', 'mosquito', 'monkey', 'frog',
-  'ocean', 'axolotl', 'piranha', 'jelly', 'crab', 'shark', 'squid', 'eel'];
+  'ocean', 'axolotl', 'piranha', 'jelly', 'crab', 'shark', 'squid', 'eel', 'kraken'];
 const assets = {};
 function loadAssets() {
   return Promise.all(ASSET_FILES.map(name => new Promise((res, rej) => {
@@ -1087,6 +1089,8 @@ const SHEETS = {
   shark:    { file: 'shark',    size: 80,  rows: STD, frames: { idle: 1, walk: 4, attack: 4, death: 3 } },
   squid:    { file: 'squid',    size: 64,  rows: STD, frames: { idle: 1, walk: 6, attack: 6, death: 8 } },
   eel:      { file: 'eel',      size: 96,  rows: STD, frames: { idle: 1, walk: 4, attack: 3, death: 2 } },
+  kraken:   { file: 'kraken',   size: 64,  rows: { idle: 0, swim: 1, walk: 2, attack: 3, death: 4 },   // Act IV boss
+              frames: { idle: 1, swim: 5, walk: 4, attack: 4, death: 4 } },
 };
 // painted skill icons (assets/skills.png): row 0 = 32x32, row 1 = 16x16, in this order
 const SKILL_ORDER = ['optic', 'claws', 'storm', 'orbs', 'nova', 'cards', 'boots', 'vitality',
@@ -1398,7 +1402,6 @@ function drawBrazierLight(bz) {
 }
 
 // ---------- game constants ----------
-const WIN_TIME = 15 * 60;           // survive this long to win
 const MAX_WEAPONS = 4, MAX_PASSIVES = 4, MAX_LEVEL = 5;
 
 // ---------- state ----------
@@ -1410,12 +1413,12 @@ const state = {
   hitstop: 0, lastGemT: -9, gemCombo: 0, heartT: 0, foodT: 35,
   act: 1, portalT: 0, berserkT: 0,
   ally: null, wildAxo: null, allyT: 0, inkT: 0,
+  actBoss: null, bossCleared: 0, clearT: 0,
 };
 // Act II: after this many level-ups' worth of levels a town portal carries you to the desert
-const ACT2_LEVEL = 5;   // = 4 level-ups
+const ACT2_LEVEL = 5;   // = 4 level-ups (the Butcher's level; beat him and the portal opens)
 const ACT3_LEVEL = 10;  // the jungle
 const ACT4_LEVEL = 15;  // the ocean
-const ACT_LEVEL = { 2: ACT2_LEVEL, 3: ACT3_LEVEL, 4: ACT4_LEVEL };
 const ACT_NAMES = { 2: ['ACT II', 'THE BURNING SANDS'], 3: ['ACT III', 'THE STRANGLING JUNGLE'], 4: ['ACT IV', 'THE DROWNED DEPTHS'] };
 const ACT_COL = { 2: '#FFDB00', 3: '#24DB24', 4: '#49DBFF' };
 const ROMAN = ['', 'I', 'II', 'III', 'IV'];
@@ -1815,17 +1818,23 @@ const ENEMY_TYPES = {
 // Bosses scale by whole dots only (2x, 2x, 3x) so their pixels stay square;
 // collision radii grow to match the bigger bodies.
 // key = bestiary id (kept stable so saved bestiaries survive new bosses); sorted by `at`
+// Act bosses: reaching an act's level summons its boss (the act's waves thin to a trickle), and the
+// portal on, or victory after the Kraken, only opens once it falls. Each is several times the hero's size.
 const BOSSES = [
-  { key: 'boss0', at: 300, name: 'MINOTAUR PROTOCOL MK-I', hp: 900, speed: 50, dmg: 25, r: 40,
-    xp: 50, scale: 4, variant: null, sprite: 'minotaur' },
-  // the Butcher: Diablo homage. Prowls, braces, then rushes in swinging the cleaver
-  { key: 'butcher', at: 450, name: 'THE BUTCHER', hp: 1800, speed: 62, dmg: 34, r: 30,
-    xp: 70, scale: 4, variant: null, sprite: 'butcher', move: 'charge', intro: 'AH... FRESH MEAT!', roar: 'butcher-roar' },
-  { key: 'boss1', at: 600, name: 'MINOTAUR PROTOCOL MK-II', hp: 2600, speed: 55, dmg: 32, r: 44,
-    xp: 90, scale: 4, variant: 'boss2', sprite: 'minotaur' },
-  { key: 'boss2', at: 840, name: 'OMEGA MINOTAUR', hp: 6500, speed: 60, dmg: 42, r: 60,
-    xp: 150, scale: 6, variant: 'boss3', sprite: 'minotaur' },
+  // the Butcher: Diablo homage. Prowls, braces, rushes in swinging the cleaver; slams shockwaves; enrages
+  { key: 'butcher', act: 1, name: 'THE BUTCHER', hp: 3700, speed: 62, dmg: 26, r: 40,
+    xp: 80, scale: 8, variant: null, sprite: 'butcher', move: 'butcher', intro: 'AH... FRESH MEAT!', roar: 'butcher-roar' },
+  // the Maggot Queen: burrows, surfaces beneath you, sprays acid and births maggots
+  { key: 'maggotqueen', act: 2, name: 'THE MAGGOT QUEEN', hp: 14000, speed: 58, dmg: 30, r: 50,
+    xp: 120, scale: 10, variant: 'elite', sprite: 'maggot', move: 'queen', intro: 'THE SANDS ARE MOVING...' },
+  // the Elder Treant: thorn storms, man-eaters sprouting around you, eruptions of roots
+  { key: 'eldertreant', act: 3, name: 'THE ELDER TREANT', hp: 38000, speed: 32, dmg: 36, r: 48,
+    xp: 160, scale: 5, variant: 'elite', sprite: 'treant', move: 'elder', intro: 'THE FOREST AWAKENS' },
+  // the Kraken: tentacle slams, torpedo dashes, ink that swallows the screen; beating it wins the game
+  { key: 'kraken', act: 4, name: 'THE KRAKEN', hp: 80000, speed: 42, dmg: 40, r: 56,
+    xp: 250, scale: 5, variant: null, sprite: 'kraken', move: 'kraken', intro: 'SOMETHING VAST RISES...' },
 ];
+const ACT_BOSS_LEVEL = { 1: ACT2_LEVEL, 2: ACT3_LEVEL, 3: ACT4_LEVEL, 4: 20 };
 
 function hpScale() {
   const m = state.time / 60;
@@ -1876,8 +1885,10 @@ const BEST_DESC = {
   assassin: 'Stalks in, vanishes in smoke and reappears at your back. Keep moving.',
   lizdoc: 'Mad reptile surgeon. Heals every monster near it: kill it first.',
   mech: 'Heavy combat robot. Keeps its distance and fires laser bolts. Explodes.',
-  boss0: 'The first protocol boss. Tramples in at 5:00. Drops a treasure chest.',
-  butcher: 'Ah... fresh meat! A blood-soaked brute with a cleaver. Stalks, braces, then charges. Arrives at 7:30.',
+  butcher: 'Ah... fresh meat! Guards the cathedral. Charges with his cleaver, slams out shockwaves, and calls golems when enraged.',
+  maggotqueen: 'Mother of the desert maggots. Burrows out of reach, erupts beneath you, sprays acid and births her brood.',
+  eldertreant: 'The jungle itself, walking. Hurls storms of poison thorns, raises man-eaters and splits the earth with roots.',
+  kraken: 'Lord of the deep. Tentacles slam where the rings mark, it dashes like a torpedo, and its ink drowns the light.',
   fly: 'Bloated desert flies the size of dogs. They swarm in fast and erratic.',
   maggot: 'Burrows under the sand, then rears up to spit acid. Hard to pin down.',
   lizard: 'Reckless desert lizardfolk. They leap at you again and again, barely pausing.',
@@ -1894,8 +1905,6 @@ const BEST_DESC = {
   squid: 'Keeps its distance and squirts ink that blots out your view.',
   shark: 'Circles, freezes... then charges like a torpedo. Get out of the way.',
   banshee: 'A wailing ghost. Her scream hurts and leaves you terrified (slowed). Kill her before she screams.',
-  boss1: 'Upgraded Minotaur with far more armour. Arrives at 10:00.',
-  boss2: 'The final protocol. Three times the size. Arrives at 14:00.',
 };
 const firstWave = kind => { const i = WAVES.findIndex(w => w.types.includes(kind)); return i < 0 ? 99 : i; };
 // the act a creature first turns up in (1 = the cathedral)
@@ -1914,7 +1923,7 @@ const BEST_ENTRIES = Object.keys(ENEMY_TYPES)
       xp: t.xp, at: firstWave(k) * 60, boss: false, act: actOf(k) };
   })
   .concat(BOSSES.map(b => ({ key: b.key, name: b.name, sheet: b.sprite, variant: b.variant,
-    hp: b.hp, speed: b.speed, dmg: b.dmg, xp: b.xp, at: b.at, boss: true })));
+    hp: b.hp, speed: b.speed, dmg: b.dmg, xp: b.xp, at: 0, act: b.act, boss: true })));
 
 function makeEnemy(kind, x, y, opts = {}) {
   const t = ENEMY_TYPES[kind];
@@ -1962,6 +1971,24 @@ function shootFireball(e) {
   else if (e.bolt === 'ink') sfx(160, 0.2, 'sine', 0.05, -80);
   else if (e.bolt === 'coconut') { sfx(520, 0.1, 'triangle', 0.04, 300); sfx(880, 0.08, 'square', 0.02, 400); }   // monkey shriek
   else sfx(330, 0.18, 'sawtooth', 0.035, -200);
+}
+// boss volleys: a fan aimed at you, or a ring in every direction
+function bossBolt(e, bolt, a) {
+  const B = BOLTS[bolt];
+  ebullets.push({ x: e.x, y: e.y - e.r * 0.8, vx: Math.cos(a) * B.spd, vy: Math.sin(a) * B.spd, r: B.r + 1,
+    dmg: e.dmg * 0.45, life: 4, t: 0, style: bolt, poison: bolt === 'thorn' });
+}
+function bossFan(e, bolt, n, spread) {
+  if (ebullets.length > 140) return;
+  const a0 = Math.atan2(player.y - (e.y - e.r * 0.8), player.x - e.x);
+  for (let i = 0; i < n; i++) bossBolt(e, bolt, a0 + (i - (n - 1) / 2) * spread);
+  sfx(200, 0.2, 'square', 0.05, -100);
+}
+function bossRing(e, bolt, n) {
+  if (ebullets.length > 140) return;
+  const off = rand(0, TAU);
+  for (let i = 0; i < n; i++) bossBolt(e, bolt, off + TAU * i / n);
+  sfx(1400, 0.12, 'square', 0.04, -1000);
 }
 // poison: a damage-over-time that ignores the hurt cooldown (frogs, man-eater thorns, toxic clouds)
 function poisonPlayer(secs = 4) {
@@ -2206,22 +2233,32 @@ function spawnBoss(def) {
   const a = rand(0, TAU);
   const d = Math.max(VW, VH) / 2 + 100;
   bestSeen(def.key);
-  enemies.push({
+  const e = {
     bestKey: def.key, kind: def.key,
     x: player.x + Math.cos(a) * d, y: player.y + Math.sin(a) * d,
     hp: def.hp, maxHp: def.hp, speed: def.speed, dmg: def.dmg, r: def.r,
     xp: def.xp, sprite: def.sprite, scale: def.scale, variant: def.variant,
     boss: true, name: def.name, flash: -1, animT: rand(0, 10), pop: def.sprite === 'butcher' ? '#B60000' : '#FF9200',
-    move: def.move, chargeT: 0, orbitSign: 1, fly: 0,
-  });
+    move: def.move, chargeT: 0, orbitSign: 1, fly: 0, key: def.key, act: def.act,
+    castT: 2, casting: 0, slamCd: 4, wind: 0, phase: 'surface', phaseT: 5, spitCd: 1.5, summonCd: 6, rootCd: 5, inkCd: 9, dashCd: 7,
+    leapT: 0, crouch: 0, lx: 0, ly: 0,
+  };
+  enemies.push(e);
   announce(def.intro || 'WARNING!', C.red, 2.6, 5, def.name, true);
   sndBoss();
   if (def.roar) playSample(def.roar, 0.9);
   state.shake = 12;
+  return e;
+}
+function summonActBoss() {
+  const def = BOSSES.find(b => b.act === state.act);
+  state.actBoss = spawnBoss(def);
+  state.actBoss.actBoss = true;
 }
 
 let lastHitSnd = 0;
 function damageEnemy(e, dmg) {
+  if (e.burrowed) return;   // the Maggot Queen underground
   const crit = Math.random() < player.critChance;
   if (crit) dmg *= 2.2;
   e.hp -= dmg;
@@ -2275,6 +2312,16 @@ function killEnemy(e) {
     burstParticles(e.x, e.y - 24, '#FF9200', 14);
     state.shake = Math.max(state.shake, 6);
     sfx(80, 0.4, 'sawtooth', 0.08, -40);
+  }
+  if (e === state.actBoss) {   // the act is won: the stragglers flee, the way on opens shortly
+    state.actBoss = null;
+    state.bossCleared = state.act;
+    state.clearT = 3;
+    state.flash = 1; state.shake = 18;
+    announce(state.act < 4 ? 'ACT CLEARED!' : 'VICTORY!', C.yellow, 3, 6, state.act < 4 ? 'A PORTAL WILL OPEN...' : 'THE DEPTHS ARE SAFE');
+    jingle([523, 659, 784, 1047, 1319], 0.1, 0.06);
+    for (const o of [...enemies]) if (o !== e) { burstParticles(o.x, o.y - 8, o.pop || '#B66D24', 3); enemies.splice(enemies.indexOf(o), 1); }
+    ebullets.length = 0;
   }
   if (e.boss || e.elite) {
     state.hitstop = Math.max(state.hitstop, 0.12); // big kill, big freeze-frame
@@ -2670,7 +2717,6 @@ function moveInput() {
 function update(dt) {
   if (state.hitstop > 0) { state.hitstop -= dt; return; } // freeze-frame
   state.time += dt;
-  if (state.time >= WIN_TIME) { endGame(true); return; }
   scanEnv();
   state.goldShown += (state.gold - state.goldShown) * Math.min(1, dt * 10);
   // low-HP heartbeat
@@ -2679,8 +2725,15 @@ function update(dt) {
     if (state.heartT <= 0) { state.heartT = 0.75; sfx(58, 0.13, 'sine', 0.1); }
   }
 
-  // Act II: the town portal opens once you've levelled enough, then carries you through
-  if (ACT_LEVEL[state.act + 1] && state.level >= ACT_LEVEL[state.act + 1] && state.portalT <= 0) openPortal();
+  // act bosses: the act's level summons its boss; once it falls the portal opens (or, after the Kraken, you win)
+  if (!state.actBoss && state.bossCleared < state.act && state.level >= ACT_BOSS_LEVEL[state.act] && state.portalT <= 0) summonActBoss();
+  if (state.clearT > 0) {
+    state.clearT -= dt;
+    if (state.clearT <= 0) {
+      if (state.act < 4) openPortal();
+      else { endGame(true); return; }
+    }
+  }
   if (state.portalT > 0) {
     state.portalT -= dt;
     player.hurtCd = Math.max(player.hurtCd, 0.2);              // safe while stepping through
@@ -2691,10 +2744,12 @@ function update(dt) {
   // VS-style wave spawner: keep the quota filled, then trickle one of each type
   const wave = currentWave();
   state.spawnTimer -= dt;
-  if (state.spawnTimer <= 0 && state.portalT <= 0) {
+  if (state.spawnTimer <= 0 && state.portalT <= 0 && state.clearT <= 0) {
     state.spawnTimer = wave.interval;
-    const alive = enemies.length;
-    if (alive < wave.min) {
+    const alive = enemies.length, quota = state.actBoss ? Math.round(wave.min * 0.3) : wave.min;
+    if (state.actBoss) {   // the boss fight: a thin trickle only
+      for (let i = 0; i < 2 && enemies.length < quota; i++) spawnEnemy(pickWeighted(wave.types));
+    } else if (alive < wave.min) {
       // top up to the quota and stop there (a single mosquito/piranha call brings a whole swarm)
       const deficit = Math.min(10, wave.min - alive);
       for (let i = 0; i < deficit && enemies.length < wave.min; i++) spawnEnemy(pickWeighted(wave.types));
@@ -2704,19 +2759,15 @@ function update(dt) {
   }
   // map events: ring / sweep alternating every 30s (skip the first quiet minute)
   const eventDue = Math.floor((state.time - 45) / EVENT_PERIOD);
-  if (eventDue >= state.eventsFired && state.time > 45 && state.portalT <= 0) {
+  if (eventDue >= state.eventsFired && state.time > 45 && state.portalT <= 0 && !state.actBoss && state.clearT <= 0) {
     state.eventsFired = eventDue + 1;
     if (eventDue % 2 === 0) spawnRing(); else spawnSweep();
   }
   // one elite per minute from 1:30 — walking chest with a health bar
   const eliteDue = Math.floor((state.time - 90) / 60);
-  if (state.time > 90 && eliteDue >= state.elitesSpawned && state.portalT <= 0) {
+  if (state.time > 90 && eliteDue >= state.elitesSpawned && state.portalT <= 0 && !state.actBoss && state.clearT <= 0) {
     state.elitesSpawned = eliteDue + 1;
     spawnElite();
-  }
-  while (state.portalT <= 0 && state.bossesSpawned < BOSSES.length && state.time >= BOSSES[state.bossesSpawned].at) {
-    spawnBoss(BOSSES[state.bossesSpawned]);
-    state.bossesSpawned++;
   }
   // a snack turns up on the floor nearby every 40-55s (never more than 4 lying around)
   state.foodT -= dt;
@@ -2945,6 +2996,95 @@ function update(dt) {
           e.casting = CAST_WINDUP;
           e.castT = rand(2.2, 3.0);
         }
+      } else if (e.move === 'butcher') {
+        // prowl / brace / rush like a charger, plus a cleaver slam that sends a shockwave rolling out
+        if (e.wind > 0) {
+          spd = 0; e.wind -= dt;
+          if (e.wind <= 0) {
+            effects.push({ type: 'shock', x: e.x, y: e.y + e.r * 0.4, radius: 220, life: 0.75, maxLife: 0.75, dmg: e.dmg * 0.8, hit: false });
+            state.shake = Math.max(state.shake, 10); sfx(70, 0.5, 'sawtooth', 0.1, -30);
+          }
+        } else {
+          e.chargeT = (e.chargeT + dt) % 4;
+          if (e.chargeT < 2.2) spd *= 0.55; else if (e.chargeT < 2.8) spd = 0; else spd *= 2.6;
+          e.slamCd -= dt;
+          if (e.slamCd <= 0 && d < 210 && e.chargeT < 2.2) { e.wind = 0.6; e.slamCd = e.enraged ? 3 : 4.5; }
+        }
+        if (!e.enraged && e.hp < e.maxHp / 2) {
+          e.enraged = true; e.speed *= 1.35;
+          announce('THE BUTCHER IS ENRAGED!', C.red, 2, 5);
+          playSample('butcher-roar', 0.9);
+          for (let k = 0; k < 10; k++) { const a = TAU * k / 10; enemies.push(makeEnemy('golem', player.x + Math.cos(a) * 170, player.y + Math.sin(a) * 170, { hpMul: 0.6 })); }
+        }
+      } else if (e.move === 'queen') {
+        // surface and spit acid fans -> burrow (untouchable) and tunnel to you -> a warning ring -> erupt
+        const rage = e.hp < e.maxHp / 2;
+        e.phaseT -= dt;
+        if (e.phase === 'surface') {
+          spd *= 0.5;
+          e.spitCd -= dt;
+          if (e.spitCd <= 0) { e.spitCd = rage ? 1.0 : 1.4; bossFan(e, 'acid', rage ? 7 : 5, 0.22); }
+          if (e.phaseT <= 0) { e.phase = 'burrow'; e.phaseT = 1.8; e.burrowed = true; burstParticles(e.x, e.y, '#DBB66D', 14); sfx(90, 0.4, 'sawtooth', 0.07, -40); }
+        } else if (e.phase === 'burrow') {
+          spd = 230;
+          if (e.phaseT <= 0 || d < 24) {
+            e.phase = 'warn'; e.phaseT = 0.9; e.tx = player.x; e.ty = player.y;
+            effects.push({ type: 'warn', x: e.tx, y: e.ty, radius: 90, life: 0.9, maxLife: 0.9, dmg: e.dmg * 1.2, col: '#DBB66D' });
+          }
+        } else if (e.phase === 'warn') {
+          spd = 0;
+          e.x += (e.tx - e.x) * Math.min(1, dt * 8); e.y += (e.ty - e.y) * Math.min(1, dt * 8);
+          if (e.phaseT <= 0) {
+            e.phase = 'erupt'; e.phaseT = 1.2; e.burrowed = false; state.shake = 12;
+            burstParticles(e.x, e.y, '#DBB66D', 24); sfx(60, 0.5, 'sawtooth', 0.1, -20);
+            for (let k = 0; k < (rage ? 3 : 2); k++) enemies.push(makeEnemy('maggot', e.x + rand(-70, 70), e.y + rand(-70, 70)));
+          }
+        } else {
+          spd = 0;
+          if (e.phaseT <= 0) { e.phase = 'surface'; e.phaseT = rage ? 4 : 5.5; e.spitCd = 0.6; }
+        }
+      } else if (e.move === 'elder') {
+        // a slow advance; thorn storms in every direction; man-eaters sprout around you; roots erupt in lines
+        const rage = e.hp < e.maxHp / 2;
+        e.castT -= dt; e.summonCd -= dt; e.rootCd -= dt;
+        if (e.casting > 0) { spd = 0; e.casting -= dt; if (e.casting <= 0) bossRing(e, 'thorn', rage ? 16 : 11); }
+        else if (e.castT <= 0) { e.casting = CAST_WINDUP; e.castT = rage ? 2.0 : 2.8; }
+        if (e.summonCd <= 0) {
+          e.summonCd = 8;
+          for (let k = 0; k < 3 && countKind('plant') < 6; k++) { const pl = makeEnemy('plant', 0, 0); rootedSpot(pl); enemies.push(pl); }
+        }
+        if (rage && e.rootCd <= 0) {
+          e.rootCd = 4.5;
+          const a = Math.atan2(player.y - e.y, player.x - e.x);
+          for (let k = 1; k <= 7; k++) effects.push({ type: 'warn', x: e.x + Math.cos(a) * k * 55, y: e.y + Math.sin(a) * k * 55,
+            radius: 34, life: 0.5 + k * 0.12, maxLife: 0.5 + k * 0.12, dmg: e.dmg * 0.7, col: '#6D4924' });
+        }
+      } else if (e.move === 'kraken') {
+        // drifts in; tentacles slam down on marked rings; torpedo dashes; ink swallows the screen as squids join in
+        const rage = e.hp < e.maxHp / 2;
+        e.slamCd -= dt; e.inkCd -= dt; e.dashCd -= dt;
+        if (e.wind > 0) e.wind -= dt;
+        if (e.leapT > 0) { e.leapT -= dt; px = e.lx; py = e.ly; spd = 400; }
+        else if (e.crouch > 0) {
+          e.crouch -= dt; spd = 0;
+          if (e.crouch <= 0) { e.leapT = 0.9; e.lx = px; e.ly = py; sfx(200, 0.6, 'sawtooth', 0.06, 300); }
+        } else {
+          spd *= 0.8;
+          if (e.dashCd <= 0 && d > 140) { e.crouch = 0.6; e.dashCd = rage ? 5 : 7; }
+          if (e.slamCd <= 0) {
+            e.slamCd = rage ? 2.6 : 3.6; e.wind = 0.5;
+            const n = rage ? 5 : 3, T = rage ? 0.8 : 1.0;
+            for (let k = 0; k < n; k++) {
+              const ox = k ? rand(-120, 120) : 0, oy = k ? rand(-120, 120) : 0;
+              effects.push({ type: 'warn', x: player.x + ox, y: player.y + oy, radius: 48, life: T, maxLife: T, dmg: e.dmg * 0.9, col: '#B6DBFF' });
+            }
+          }
+          if (e.inkCd <= 0) {
+            e.inkCd = rage ? 7 : 10;
+            if (state.berserkT <= 0) { state.inkT = 3.2; popText(player.x, player.y - 52, 'INKED!', '#9292DB'); }
+            for (let k = 0; k < 2 && countKind('squid') < 6; k++) enemies.push(makeEnemy('squid', e.x + rand(-80, 80), e.y + rand(-80, 80)));
+          }
+        }
       } else if (e.move === 'drift') {
         // jellyfish: a slow sway, propelled in pulses
         const sway = Math.sin(e.animT * 1.6 + e.orbitSign) * 1.1;
@@ -2998,7 +3138,7 @@ function update(dt) {
         if (n) effects.push({ type: 'heal', x: e.x, y: e.y, radius: 110, life: 0.35, maxLife: 0.35 });
       }
     }
-    if (d < e.r + player.r) {
+    if (d < e.r + player.r && !e.burrowed) {
       if (state.berserkT > 0) {   // berserk: you are the hazard now — touching things hurts THEM
         e.ramT = (e.ramT || 0) - dt;
         if (e.ramT <= 0) {
@@ -3139,7 +3279,18 @@ function update(dt) {
 
   // effects, floating text, banner
   for (let i = effects.length - 1; i >= 0; i--) {
-    effects[i].life -= dt;
+    const fx = effects[i];
+    fx.life -= dt;
+    if (fx.type === 'shock' && !fx.hit) {   // a rolling ring: it only hurts where the wavefront is
+      const r = fx.radius * (1 - fx.life / fx.maxLife), dd = Math.hypot(player.x - fx.x, player.y - fx.y);
+      if (Math.abs(dd - r) < 18) { fx.hit = true; hurtPlayer(fx.dmg); }
+    }
+    if (fx.type === 'warn' && fx.life <= 0) {   // a marked ring lands: eruption, slam or roots
+      effects.push({ type: 'boom', x: fx.x, y: fx.y, radius: fx.radius, life: 0.3, maxLife: 0.3 });
+      burstParticles(fx.x, fx.y, fx.col || '#FFFFFF', 10);
+      state.shake = Math.max(state.shake, 6);
+      if (dist2(fx.x, fx.y, player.x, player.y) < (fx.radius + player.r * 0.5) ** 2) hurtPlayer(fx.dmg);
+    }
     if (effects[i].life <= 0) effects.splice(i, 1);
   }
   for (let i = texts.length - 1; i >= 0; i--) {
@@ -3267,6 +3418,23 @@ function renderDarkness() {
 }
 
 // Diablo-style town portal: a tall blue oval that swirls open around the hero
+// act bosses pick their own rows: the queen's mound and eruption, the kraken's jet and lash, the butcher's slam
+function bossAnim(e) {
+  const prog = (t, T, key, anim) => Math.min(frameCount(key, anim) - 1, Math.floor((1 - t / T) * frameCount(key, anim)));
+  if (e.key === 'butcher' && e.wind > 0) return ['attack', prog(e.wind, 0.6, 'butcher', 'attack')];
+  if (e.key === 'maggotqueen') {
+    if (e.burrowed) return ['walk', animFrame(e.animT, 'walk', 'maggot')];
+    if (e.phase === 'erupt') return ['attack', prog(e.phaseT, 1.2, 'maggot', 'attack')];
+    return ['attack', 5 + Math.floor(e.animT * 8) % 7];            // risen, spitting
+  }
+  if (e.key === 'kraken') {
+    if (e.leapT > 0) return ['swim', animFrame(e.animT, 'swim', 'kraken')];
+    if (e.crouch > 0) return ['idle', 0];
+    if (e.wind > 0) return ['attack', prog(e.wind, 0.5, 'kraken', 'attack')];
+    return ['walk', animFrame(e.animT, 'walk', 'kraken')];
+  }
+  return null;
+}
 function drawPortal() {
   const x = toDX(player.x), y = toDY(player.y) - 4;
   const p = 1 - state.portalT / PORTAL_TIME, grow = Math.min(1, p * 3);
@@ -3375,7 +3543,9 @@ function renderWorld() {
       let anim = near ? 'attack' : 'walk', frame;
       if (e.fade > 0 && blink(20)) return;       // assassin materialising
       const shriek = e.screaming > 0 && blink(16);  // banshee drawing breath
-      if (e.casting > 0) {                       // windup: shaman fire-gesture row, mech brace
+      const ba = bossAnim(e);
+      if (ba) { anim = ba[0]; frame = ba[1]; }
+      else if (e.casting > 0) {                  // windup: shaman fire-gesture row, mech brace
         anim = SHEETS[e.sprite].rows.cast !== undefined ? 'cast' : 'attack';
         const n = frameCount(e.sprite, anim);
         frame = Math.min(n - 1, Math.floor((1 - e.casting / CAST_WINDUP) * n));
@@ -3576,6 +3746,14 @@ function renderWorld() {
     } else if (fx.type === 'heal') {   // lizard doctor's pulse: a green ring expanding outward
       const rr = (fx.radius / PX) * (1 - p);
       ring(cx, cy, rr, p > 0.5 ? '#92FF92' : C.green);
+    } else if (fx.type === 'warn') {   // a boss attack is about to land here: blinking ring, closing inner ring
+      const r = fx.radius / PX;
+      ring(cx, cy, r, blink(8) ? '#FF2424' : (fx.col || C.orange));
+      ring(cx, cy, Math.max(1, r * p), '#FF9292');
+    } else if (fx.type === 'shock') {  // the Butcher's slam: a double ring rolling outward
+      const r = (fx.radius / PX) * (1 - p);
+      ring(cx, cy, r, p > 0.3 ? C.white : '#FFB66D');
+      ring(cx, cy, Math.max(1, r - 3), '#DB6D24');
     } else if (fx.type === 'toxic') {  // poison frog's death cloud: a squat green haze with rising bubbles
       if (p < 0.15 && blink(15)) continue;
       const rx = Math.round(fx.radius / PX), ry = Math.round(rx * 0.6);
@@ -4068,7 +4246,7 @@ function renderBestiary() {
     const nsc = textW(norm(e.name), 2) <= tw ? 2 : 1;
     drawText(e.name, tx, y0 + 1, C.white, { scale: nsc, outline: C.black, grad: e.boss ? RED_GRAD : GOLD_GRAD });
     let sy = y0 + 4 + 7 * nsc + 3;
-    drawText(e.boss ? `BOSS ${fmtTime(e.at)}` : e.act > 1 ? `FOUND IN ACT ${ROMAN[e.act]}` : `FIRST SEEN ${fmtTime(e.at)}`, tx, sy, e.boss ? C.red : ACT_COL[e.act] || C.cyan);
+    drawText(e.boss ? `ACT ${ROMAN[e.act]} BOSS` : e.act > 1 ? `FOUND IN ACT ${ROMAN[e.act]}` : `FIRST SEEN ${fmtTime(e.at)}`, tx, sy, e.boss ? C.red : ACT_COL[e.act] || C.cyan);
     sy += 10;
     const maxOf = f => Math.max(...BEST_ENTRIES.filter(q => !q.boss).map(q => q[f]));
     for (const [label, f, col] of [['HP', 'hp', C.green], ['SPD', 'speed', C.cyan], ['DMG', 'dmg', C.red]]) {
