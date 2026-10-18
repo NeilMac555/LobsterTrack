@@ -929,7 +929,8 @@ const ASSET_FILES = ['warrior', 'wizard', 'ranger', 'rogue', 'cleric',
   'bat', 'imp', 'scarab', 'shaman', 'hound', 'guard', 'knight', 'skills',
   'assassin', 'mech', 'burger', 'lizdoc', 'feral', 'neil', 'zoe', 'crypt', 'butcher', 'banshee', 'golem',
   'desert', 'fly', 'maggot', 'lizard', 'orb',
-  'jungle', 'snake', 'treant', 'plant', 'mosquito', 'monkey', 'frog'];
+  'jungle', 'snake', 'treant', 'plant', 'mosquito', 'monkey', 'frog',
+  'ocean', 'axolotl', 'piranha', 'jelly', 'crab', 'shark', 'squid', 'eel'];
 const assets = {};
 function loadAssets() {
   return Promise.all(ASSET_FILES.map(name => new Promise((res, rej) => {
@@ -1019,7 +1020,7 @@ function prepareSprites() {
   // palette-swapped variants, the way cartridges reused one sprite for a tougher foe
   for (const f of ['slime', 'skeleton', 'goblin', 'orc', 'bat', 'imp', 'scarab', 'shaman', 'guard',
     'assassin', 'burger', 'lizdoc', 'feral', 'banshee', 'golem', 'fly', 'maggot', 'lizard',
-    'snake', 'treant', 'plant', 'mosquito', 'monkey', 'frog']) {
+    'snake', 'treant', 'plant', 'mosquito', 'monkey', 'frog', 'piranha', 'jelly', 'crab', 'shark', 'squid', 'eel']) {
     SPR[f].elite = bakeSheet(assets[f], 'saturate(2.2) brightness(1.15)');
   }
   SPR.minotaur.boss2 = bakeSheet(assets.minotaur, 'hue-rotate(140deg) saturate(1.4)');
@@ -1078,6 +1079,14 @@ const SHEETS = {
   monkey:   { file: 'monkey',   size: 44, rows: STD, frames: { idle: 1, walk: 8, attack: 4, death: 4 } },
   frog:     { file: 'frog',     size: 208, rows: { idle: 0, air: 1, walk: 2, attack: 3, death: 4 },   // air = [rising, falling]
               frames: { idle: 1, air: 2, walk: 5, attack: 10, death: 3 } },
+  // Act IV ocean (+ the axolotl ally)
+  axolotl:  { file: 'axolotl',  size: 32,  rows: STD, frames: { idle: 1, walk: 4, attack: 3, death: 1 } },
+  piranha:  { file: 'piranha',  size: 32,  rows: STD, frames: { idle: 1, walk: 4, attack: 4, death: 6 } },
+  jelly:    { file: 'jelly',    size: 64,  rows: STD, frames: { idle: 1, walk: 4, attack: 3, death: 4 } },
+  crab:     { file: 'crab',     size: 128, rows: STD, frames: { idle: 1, walk: 6, attack: 10, death: 5 } },
+  shark:    { file: 'shark',    size: 80,  rows: STD, frames: { idle: 1, walk: 4, attack: 4, death: 3 } },
+  squid:    { file: 'squid',    size: 64,  rows: STD, frames: { idle: 1, walk: 6, attack: 6, death: 8 } },
+  eel:      { file: 'eel',      size: 96,  rows: STD, frames: { idle: 1, walk: 4, attack: 3, death: 2 } },
 };
 // painted skill icons (assets/skills.png): row 0 = 32x32, row 1 = 16x16, in this order
 const SKILL_ORDER = ['optic', 'claws', 'storm', 'orbs', 'nova', 'cards', 'boots', 'vitality',
@@ -1336,7 +1345,7 @@ function drawOceanFloor() {
   for (let iy = iy0 - 1; iy * CT - camY < H; iy++) {
     for (let ix = ix0 - 1; ix * CT - camX < W; ix++) {
       const h = hash2(ix * 7 + 3, iy * 11 + 5);
-      if (h % 6) continue;
+      if (h % 9) continue;
       const d = (h >>> 4) % 8, dx = ((h >>> 8) % 17) - 8, dy = ((h >>> 13) % 17) - 8;
       ctx.drawImage(img, d * CT, 176, CT, CT, ix * CT - camX + dx, iy * CT - camY + dy, CT, CT);
     }
@@ -1406,7 +1415,7 @@ const state = {
 const ACT2_LEVEL = 5;   // = 4 level-ups
 const ACT3_LEVEL = 10;  // the jungle
 const ACT4_LEVEL = 15;  // the ocean
-const ACT_LEVEL = { 2: ACT2_LEVEL, 3: ACT3_LEVEL };   // Act IV (ACT4_LEVEL) is switched on once its creatures land
+const ACT_LEVEL = { 2: ACT2_LEVEL, 3: ACT3_LEVEL, 4: ACT4_LEVEL };
 const ACT_NAMES = { 2: ['ACT II', 'THE BURNING SANDS'], 3: ['ACT III', 'THE STRANGLING JUNGLE'], 4: ['ACT IV', 'THE DROWNED DEPTHS'] };
 const ACT_COL = { 2: '#FFDB00', 3: '#24DB24', 4: '#49DBFF' };
 const ROMAN = ['', 'I', 'II', 'III', 'IV'];
@@ -1466,12 +1475,12 @@ const ACT3_TYPES = [ ['snake','mosquito'], ['snake','mosquito'], ['snake','plant
   ['monkey','snake','treant','frog','plant'], ['treant','frog','monkey','snake','mosquito','plant'],
   ['frog','treant','monkey','snake','mosquito','plant','mech'] ];
 // Act IV: the ocean. Piranha shoals and crabs first, then jellyfish, eels, octopuses and sharks
-const ACT4_TYPES = [ ['piranha','crab'], ['piranha','crab'], ['piranha','jelly','crab'], ['crab','eel','piranha'],
-  ['jelly','piranha','eel','crab'], ['octopus','piranha','crab'], ['eel','jelly','octopus','piranha'],
-  ['shark','piranha','crab'], ['octopus','eel','shark','piranha'], ['jelly','shark','octopus','crab'],
-  ['shark','eel','piranha','jelly','octopus'], ['octopus','shark','crab','eel','piranha'],
-  ['shark','jelly','octopus','eel','crab'], ['shark','octopus','eel','jelly','piranha','crab'],
-  ['shark','octopus','eel','jelly','piranha','crab','knight'] ];
+const ACT4_TYPES = [ ['crab','piranha'], ['crab','piranha'], ['crab','jelly','piranha'], ['eel','crab','piranha'],
+  ['jelly','eel','crab','piranha'], ['squid','crab','piranha'], ['eel','jelly','squid','piranha'],
+  ['shark','crab','piranha'], ['squid','eel','shark','piranha'], ['jelly','shark','squid','crab'],
+  ['shark','eel','jelly','squid','piranha'], ['squid','shark','crab','eel','piranha'],
+  ['shark','jelly','squid','eel','crab'], ['shark','squid','eel','jelly','crab','piranha'],
+  ['shark','squid','eel','jelly','crab','piranha','knight'] ];
 function currentWave() {
   const m = Math.min(WAVES.length - 1, Math.floor(state.time / 60));
   if (state.act === 4) return { min: WAVES[m].min, interval: WAVES[m].interval, types: ACT4_TYPES[m] };
@@ -1758,7 +1767,8 @@ function nearestEnemies(n) {
 //       scuttle = slow sidelong crawl, caster = keeps its distance and lobs fireballs,
 //       pounce = crouch, then a long locked-direction leap,
 //       blink = teleports to your flank after a puff of smoke,
-//       rooted = never moves (bites and spits), slither = S-curve crawl, then a coiled strike
+//       rooted = never moves (bites and spits), slither = S-curve crawl, then a coiled strike,
+//       drift = a slow pulsing sway on the current
 // healer = patches up nearby enemies; bolt = what a caster shoots; poison = touch poisons you (and dies in a toxic cloud)
 // cap = most of that kind alive at once (big or ranged foes would swamp the screen)
 const ENEMY_TYPES = {
@@ -1783,6 +1793,13 @@ const ENEMY_TYPES = {
   monkey:   { sprite: 'monkey',   name: 'DEMON MONKEY',    hp: 34,  speed: 140, dmg: 10, r: 10, xp: 4, move: 'caster',  pop: '#DB2424', bolt: 'coconut', cap: 12 },
   frog:     { sprite: 'frog',     name: 'GIANT POISON FROG', hp: 70, speed: 80, dmg: 7,  r: 15, xp: 6, move: 'hop',     pop: '#4992FF', poison: true, cap: 8, scale: 0.75 },
   treant:   { sprite: 'treant',   name: 'VINE TREANT',     hp: 200, speed: 40,  dmg: 26, r: 16, xp: 10, move: 'straight', pop: '#49B624', cap: 6 },
+  // Act IV ocean
+  piranha:  { sprite: 'piranha',  name: 'PIRANHA SHOAL',   hp: 8,   speed: 150, dmg: 6,  r: 7,  xp: 1, move: 'zigzag',  pop: '#DB2492', cap: 40, swarm: [3, 5] },
+  crab:     { sprite: 'crab',     name: 'GIANT CRAB',      hp: 80,  speed: 55,  dmg: 14, r: 14, xp: 5, move: 'scuttle', pop: '#DB4924' },
+  jelly:    { sprite: 'jelly',    name: 'STINGING JELLYFISH', hp: 40, speed: 45, dmg: 8, r: 12, xp: 4, move: 'drift',   pop: '#B692FF', fly: 10, shock: true, cap: 12 },
+  eel:      { sprite: 'eel',      name: 'ELECTRIC EEL',    hp: 40,  speed: 115, dmg: 12, r: 10, xp: 4, move: 'slither', pop: '#4992FF', shock: true },
+  squid:    { sprite: 'squid',    name: 'INK SQUID',       hp: 50,  speed: 70,  dmg: 10, r: 12, xp: 5, move: 'caster',  pop: '#B624DB', bolt: 'ink', cap: 8 },
+  shark:    { sprite: 'shark',    name: 'GREAT SHARK',     hp: 140, speed: 80,  dmg: 24, r: 16, xp: 8, move: 'charge',  pop: '#9292B6', cap: 6 },
   banshee:  { sprite: 'banshee',  name: 'SCREAMING BANSHEE', hp: 40, speed: 82, dmg: 10, r: 10, xp: 5, move: 'banshee', pop: '#B6DBFF', fly: 10, cap: 8 },
   mech:     { sprite: 'mech',     name: 'SENTINEL MECH',   hp: 420, speed: 40,  dmg: 22, r: 18, xp: 12, move: 'caster', pop: '#2449FF', cap: 4, bolt: 'laser' },
   golem:    { sprite: 'golem',    name: 'IRON GOLEM',    hp: 10,  speed: 54,  dmg: 8,  r: 10, xp: 1, move: 'straight', pop: '#B6A48C' },
@@ -1870,6 +1887,12 @@ const BEST_DESC = {
   monkey: 'A shrieking demon ape. Keeps its distance, circles you and hurls coconuts.',
   frog: 'A giant poison dart frog. Its touch poisons you, and it bursts into a toxic cloud when it dies.',
   treant: 'A walking tangle of jungle vines. Slow, enormous and very, very hard to cut down.',
+  piranha: 'Shoals of three to five toothy little fish that dart in from every side.',
+  crab: 'An armoured giant that scuttles sideways and snaps with huge claws. Tough to crack.',
+  jelly: 'Drifts slowly on the current. Brush against it and its sting jolts you, leaving you sluggish.',
+  eel: 'Slithers through the water, then lunges. Its touch is electric.',
+  squid: 'Keeps its distance and squirts ink that blots out your view.',
+  shark: 'Circles, freezes... then charges like a torpedo. Get out of the way.',
   banshee: 'A wailing ghost. Her scream hurts and leaves you terrified (slowed). Kill her before she screams.',
   boss1: 'Upgraded Minotaur with far more armour. Arrives at 10:00.',
   boss2: 'The final protocol. Three times the size. Arrives at 14:00.',
@@ -2147,6 +2170,7 @@ function hireAxolotl() {
   const w = state.wildAxo;
   state.ally = { x: w.x, y: w.y, t: ALLY_TIME, animT: 0, cd: 0.3, biteCd: 0, attackAge: 9, face: 1, moving: false };
   state.wildAxo = null;
+  for (let i = banners.length - 1; i >= 0; i--) if (banners[i].text === norm('AN AXOLOTL WANTS TO HELP!')) banners.splice(i, 1);
   burstParticles(w.x, w.y - 8, '#FF92DB', 16);
   announce('AXOLOTL JOINS YOU!', '#FF92DB', 2.2, 4, `MERCENARY FOR ${ALLY_TIME} SECONDS`);
   jingle([784, 988, 1175, 1568], 0.08, 0.05);
@@ -2921,6 +2945,12 @@ function update(dt) {
           e.casting = CAST_WINDUP;
           e.castT = rand(2.2, 3.0);
         }
+      } else if (e.move === 'drift') {
+        // jellyfish: a slow sway, propelled in pulses
+        const sway = Math.sin(e.animT * 1.6 + e.orbitSign) * 1.1;
+        const nx = px - py * sway, ny = py + px * sway, nl = Math.hypot(nx, ny) || 1;
+        px = nx / nl; py = ny / nl;
+        spd *= 0.4 + 0.9 * Math.max(0, Math.sin(e.animT * 3));
       } else if (e.move === 'slither') {
         // viper: S-curve slither, then a coiled pause and a lightning strike
         e.leapCd -= dt;
@@ -3395,6 +3425,7 @@ function renderWorld() {
       const anim = al.attackAge < 0.3 ? 'attack' : al.moving ? 'walk' : 'idle';
       const n = frameCount('axolotl', anim);
       const frame = anim === 'attack' ? Math.min(n - 1, Math.floor(al.attackAge / 0.3 * n)) : animFrame(al.animT, anim, 'axolotl');
+      ring(toDX(al.x), toDY(al.y + 12), 9 + (Math.floor(uiTime * 4) % 2), '#FF6DB6');   // easy to spot in a crowd
       axoDraw(al, anim, frame, al.face < 0);
     } });
   }
@@ -3466,6 +3497,12 @@ function renderWorld() {
     if (b.style === 'thorn') {   // man-eater: a dark green spike, point first
       line(x - ux * 5, y - uy * 5, x, y, '#246D00', 2);
       rect(x, y, 1, 1, '#B6FF49');
+      continue;
+    }
+    if (b.style === 'ink') {     // ink squid: a wobbling black-violet glob with a trail
+      for (let k = 1; k <= 3; k++) disc(Math.round(x - ux * k * 3), Math.round(y - uy * k * 3), Math.max(1, 3 - k), '#24123A');
+      disc(x, y, 3 + (Math.floor(b.t * 10) % 2), '#24123A');
+      rect(x - 1, y - 2, 1, 1, '#6D49B6');
       continue;
     }
     if (b.style === 'coconut') { // demon monkey: a tumbling brown nut
@@ -3892,7 +3929,7 @@ function renderTitle() {
     if (on && blink(3)) drawCursor(Math.round(W / 2 - w / 2) - 10, y);
     addHit(Math.round(W / 2 - w / 2) - 14, y - 4, w + 28, 14, 'title:' + i);
   });
-  const credit = 'ART: CALCIUMTRICE / ANSIMUZ / REDSHRIKE / BJERK / YURINIKOLAI / CRAFTPIX / DCSS / LPC / OPP / SHEPARDSKIN';
+  const credit = 'ART: CALCIUMTRICE / ANSIMUZ / REDSHRIKE / BJERK / YURINIKOLAI / CRAFTPIX / DCSS / LPC / OPP / SEVARIHK / SHEPARDSKIN';
   if (credit.length * 6 < W - 8) drawText(credit, W / 2, H - 10, C.grey, { align: 'center', shadow: false });
   else {
     drawText('ART: CALCIUMTRICE / ANSIMUZ / BJERK / DCSS', W / 2, H - 20, C.grey, { align: 'center', shadow: false });

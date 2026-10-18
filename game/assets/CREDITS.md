@@ -188,3 +188,32 @@ listed in [`CREDITS-LPC.md`](CREDITS-LPC.md).
   https://opengameart.org/content/opp2017-sprites-characters-objects-effects —
   blue dart-frog palette, hop frames remapped to it, 2x.
 - The jungle theme "Green Hell" is an original FM composition.
+
+## Act IV: The Drowned Depths
+
+- `ocean.png` — seabed sand and the anchor from "Underwater Tiles" by **Sevarihk**,
+  **CC-BY 4.0**: https://opengameart.org/content/underwater-tiles; sea totems, the
+  rock arch, red coral and kelp from the "Underwater Diving Pack" by **ansimuz**
+  (Luis Zuno), **CC0**: https://opengameart.org/content/underwater-diving-pack;
+  sea grass, corals, anemone, shell, starfish and rock decals from "Sea World Pack"
+  by **avodhel**, **CC0**: https://opengameart.org/content/sea-world-pack
+- `piranha.png` (Piranha Shoal) — fish and death puff from the "Underwater Diving
+  Pack" by **ansimuz**, **CC0** (link above).
+- `jelly.png` (Stinging Jellyfish) — "Jellyfish" by **Diligent Dodo** (Stendhal),
+  **CC-BY-SA 3.0**: https://opengameart.org/content/jellyfish-0 — so this sheet is
+  shared under CC-BY-SA 3.0 too.
+- `crab.png` (Giant Crab) — the crab from "Enemy Galore I" by **Admurin**
+  (https://admurin.itch.io/), **CC-BY 4.0**: https://opengameart.org/content/enemy-galore-i — 2x.
+- `shark.png` (Great Shark) — "Shark Sprites (animated, 4-directional)" by
+  **Sevarihk**, **CC-BY 4.0**:
+  https://opengameart.org/content/shark-sprites-animated-4-directional — downscaled.
+- `squid.png` (Ink Squid) — "Squidimus" by **NateTheCoder**, **CC-BY 3.0**:
+  https://opengameart.org/content/squidimus-free-2d-pixel-art-character —
+  recoloured purple, the whip swoosh inked.
+- `eel.png` (Electric Eel) — the eel from the "Pond Pals Art Pack" by **Scott Matott
+  and Sammy Matott**, **OGA-BY 3.0**: https://opengameart.org/content/pond-pals-art-pack
+  — recoloured electric blue, 2x.
+- `axolotl.png` (the axolotl mercenary) — "Komodo" by **teasloth**, **CC0**:
+  https://opengameart.org/content/komodo — recoloured as a pink (leucistic)
+  axolotl with gill stalks added. (No freely licensed axolotl sprite exists.)
+- The undersea theme "Drowned Depths" is an original FM composition.
