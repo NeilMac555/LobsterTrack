@@ -36,6 +36,10 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy: act bosses — each act's level (5/10/15/20) summons a
+  giant boss that must die before the portal opens (Butcher, Maggot
+  Queen, Elder Treant, Kraken); beating the Kraken wins (survival timer
+  and timed Minotaurs removed); HP tuned ~40s→~90s fights — `ca5ceb0`
 - Mutant Academy: Act IV "The Drowned Depths" — third portal at level
   15; seabed with deep-water light and bubbles; piranha shoals, giant
   crabs, stinging jellyfish, electric eels, ink squids, great sharks;
