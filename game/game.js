@@ -222,6 +222,7 @@ const BASS_GALLOP = [0, 0, 12, 0, 0, 12, 0, 12];   // semitone offsets on the 8t
 function musicTick(ahead = 0.18) {   // ahead: how far to schedule (offline renders pass a long one)
   if (!music.on || muted || !audioCtx) return;
   if (music.song === 2) { desertTick(ahead); return; }
+  if (music.song === 3) { jungleTick(ahead); return; }
   const bpm = 152, sd = 60 / bpm / 4;
   // never play catch-up after mute/background throttling — snap to now
   if (music.nextT < audioCtx.currentTime - 0.1) music.nextT = audioCtx.currentTime + 0.05;
@@ -336,6 +337,69 @@ function desertTick(ahead) {
     }
     // late game: double-time riq
     if (scene === 'play' && state.time > 300 && s % 2 === 0) noiseHit(t, 0.02, 0.012);
+    music.step++;
+    music.nextT += sd;
+  }
+}
+// "Green Hell" — an original jungle theme in A minor pentatonic over Am-G-F-G: log drums and
+// a shaker, a syncopated marimba ostinato, a breathy wooden flute, a marimba call-and-response
+// solo, bird calls in the canopy and frogs croaking in the undergrowth.
+const JUNGLE_CH = [{ root: 'A1', tri: ['A3', 'C4', 'E4'] }, { root: 'G1', tri: ['G3', 'B3', 'D4'] },
+  { root: 'F1', tri: ['F3', 'A3', 'C4'] }, { root: 'G1', tri: ['G3', 'B3', 'D4'] }];
+const MARIMBA_STEPS = [0, 3, 6, 8, 10, 13];        // 3-3-2-2-3 clave-ish syncopation
+const MARIMBA_ARP = [0, 2, 1, 2, 0, 1];             // which chord tone on each hit
+const FLUTE_A = ['E5:6 D5:2 C5:4 A4:4', 'G4:6 A4:2 D5:8', 'C5:4 A4:2 G4:2 F4:4 G4:4', 'A4:4 C5:4 D5:4 E5:4',
+  'G5:6 E5:2 D5:4 C5:4', 'D5:6 B4:2 G4:8', 'A4:2 C5:2 D5:2 E5:2 G5:4 E5:4', 'A5:12 -:4'].map(phrase);
+const MARIMBA_B = ['A4:2 C5:2 E5:2 C5:2 -:4 G5:2 E5:2', 'D5:2 B4:2 G4:4 -:4 A4:2 B4:2', 'C5:2 A4:2 F4:2 A4:2 -:4 C5:2 E5:2',
+  'D5:2 E5:2 G5:2 E5:2 D5:4 B4:4'].map(phrase);
+const SONG3 = [{ sec: 'intro' }, { sec: 'intro', fill: true }];
+const LOOP3_AT = SONG3.length;
+FLUTE_A.forEach((mel, i) => SONG3.push({ sec: 'A', flute: mel, fill: i === 7 }));
+MARIMBA_B.forEach((mel, i) => SONG3.push({ sec: 'B', solo: mel, fill: i === 3 }));
+MARIMBA_B.forEach((mel, i) => SONG3.push({ sec: 'B2', solo: mel, flute: FLUTE_A[i * 2 + 1], fill: i === 3 }));
+// FM marimba: a 4:1 modulator with a very fast index decay gives the struck-wood "tok"
+const marimba = (t, f, vol) => { fm(t, f, 0.32, vol, 4, 2.2, 0.025); fm(t, f, 0.22, vol * 0.5, 1, 0.4, 0.05); };
+function jungleTick(ahead) {
+  const bpm = 116, sd = 60 / bpm / 4;
+  if (music.nextT < audioCtx.currentTime - 0.1) music.nextT = audioCtx.currentTime + 0.05;
+  while (music.nextT < audioCtx.currentTime + ahead) {
+    const s = music.step % 16, bar16 = Math.floor(music.step / 16);
+    let bi = bar16;
+    if (bi >= SONG3.length) bi = LOOP3_AT + (bi - LOOP3_AT) % (SONG3.length - LOOP3_AT);
+    const bar = SONG3[bi], ch = JUNGLE_CH[bar16 % 4], t = music.nextT;
+    // log drums: deep boom, a mid answer and a high slit-drum knock; tumbling run into each section
+    if (s === 0 || s === 6 || s === 10) beep(t, 95, 0.3, 'sine', 0.2, -50);
+    if (s === 3 || s === 8 || s === 14) beep(t, 150, 0.16, 'sine', 0.12, -60);
+    if (s === 12) { beep(t, 260, 0.08, 'sine', 0.08, -90); beep(t, 1300, 0.012, 'square', 0.02); }
+    if (bar.fill && s >= 8 && s % 2 === 0) beep(t, 300 - (s - 8) * 25, 0.12, 'sine', 0.12, -80);
+    noiseHit(t, 0.02, s % 4 === 2 ? 0.03 : 0.012);                                  // shaker, offbeat push
+    // bass on the chord roots, a pulse that ducks with the boom
+    if (s === 0 || s === 7 || s === 10) fm(t, hz(ch.root) * (s === 7 ? 2 : 1), sd * 2.5, 0.11, 1, 1.4, 0.12);
+    // marimba ostinato (out in the intro's first bar, softer under the solo)
+    if (!(bar.sec === 'intro' && bar16 === 0) && MARIMBA_STEPS.includes(s)) {
+      const k = MARIMBA_STEPS.indexOf(s);
+      marimba(t, hz(ch.tri[MARIMBA_ARP[k]]) * (k === 3 ? 2 : 1), bar.solo ? 0.03 : 0.045);
+    }
+    // marimba solo with a tremolo on long notes
+    if (bar.solo) for (const ev of bar.solo) {
+      if (ev.at !== s) continue;
+      marimba(t, ev.f, 0.06);
+      if (ev.len >= 4) { marimba(t + sd, ev.f, 0.035); marimba(t + 2 * sd, ev.f, 0.025); }
+    }
+    // wooden flute: breathy FM with a scoop up into long notes
+    if (bar.flute) for (const ev of bar.flute) {
+      if (ev.at !== s) continue;
+      const dur = ev.len * sd * 0.95;
+      if (ev.len >= 4) fm(t, ev.f * 0.94, 0.05, 0.025, 1, 0.4, 0.05, true);
+      const t0 = ev.len >= 4 ? t + 0.04 : t;
+      fm(t0, ev.f, dur, 0.042, 1, 0.45, 0.4, true);
+      fm(t0, ev.f * 3.002, dur, 0.006, 1, 0.2, 0.4, true);                              // breath
+    }
+    // canopy: a bird's three-chirp call every other bar, a frog croak answering
+    if (bar16 % 2 === 1 && (s === 4 || s === 5 || s === 6)) beep(t, 2300 + (s - 4) * 300, 0.07, 'sine', 0.018, 1100);
+    if (bar16 % 4 === 2 && s === 14) { beep(t, 70, 0.12, 'square', 0.03, 30); beep(t + 0.14, 66, 0.12, 'square', 0.025, 30); }
+    // late game: the drummers double up
+    if (scene === 'play' && state.time > 480 && s % 2 === 1) beep(t, 190, 0.06, 'sine', 0.06, -60);
     music.step++;
     music.nextT += sd;
   }
@@ -1087,7 +1151,7 @@ function scanEnv() {
       const oh = obstacleAt(ix, iy);
       if (oh) {
         const kind = (oh >>> 3) % 8;
-        obs.push({ x: ix * TILE + TILE / 2, y: iy * TILE + TILE / 2, r: state.act === 2 ? DESERT_R[kind % 5] : PROP_R[kind], kind });
+        obs.push({ x: ix * TILE + TILE / 2, y: iy * TILE + TILE / 2, r: state.act === 3 ? JUNGLE_R[kind % 6] : state.act === 2 ? DESERT_R[kind % 5] : PROP_R[kind], kind });
         continue;
       }
       if (brazierAt(ix, iy)) {
@@ -1175,7 +1239,29 @@ function drawDesertFloor() {
   }
 }
 const DESERT_R = [8, 8, 8, 11, 15];   // palms (trunks), sandstone pillar, rock pile
+// Act III jungle: grass/moss/mud floor, flower/vine/fern decals, jungle trees and boulders
+// (same sheet layout as the desert: 16 floor tiles, 48x64 props at y=64, decals at y=128)
+function drawJungleFloor() {
+  const img = SPR.jungle.base;
+  const ix0 = Math.floor(camX / CT), iy0 = Math.floor(camY / CT);
+  for (let iy = iy0; iy * CT - camY < H; iy++) {
+    for (let ix = ix0; ix * CT - camX < W; ix++) {
+      const t = (hash2(ix, iy) >>> 4) % 16;
+      ctx.drawImage(img, (t % 8) * CT, (t >> 3) * CT, CT, CT, ix * CT - camX, iy * CT - camY, CT, CT);
+    }
+  }
+  for (let iy = iy0 - 1; iy * CT - camY < H; iy++) {
+    for (let ix = ix0 - 1; ix * CT - camX < W; ix++) {
+      const h = hash2(ix * 7 + 3, iy * 11 + 5);
+      if (h % 4) continue;                       // the undergrowth is thick
+      const d = (h >>> 4) % 8, dx = ((h >>> 8) % 17) - 8, dy = ((h >>> 13) % 17) - 8;
+      ctx.drawImage(img, d * CT, 128, CT, CT, ix * CT - camX + dx, iy * CT - camY + dy, CT, CT);
+    }
+  }
+}
+const JUNGLE_R = [9, 9, 9, 10, 13, 15];   // jungle trees (trunks), a giant fern, boulders
 function drawFloor() {
+  if (state.act === 3) { drawJungleFloor(); return; }
   if (state.act === 2) { drawDesertFloor(); return; }
   drawCryptTiles(0, 0, W, H, CT, camX, camY);
   // decals: blood splatter, puddles and the odd bone
@@ -1197,6 +1283,7 @@ const PROP_R = [11, 11, 14, 14, 14, 13, 16, 11];
 function drawObstacle(o) {
   const x = toDX(o.x), y = toDY(o.y);
   if (x < -40 || x > W + 40 || y < -70 || y > H + 40) return;
+  if (state.act === 3) { ctx.drawImage(SPR.jungle.base, (o.kind % 6) * 48, 64, 48, 64, x - 24, y - 60, 48, 64); return; }
   if (state.act === 2) { ctx.drawImage(SPR.desert.base, (o.kind % 5) * 48, 64, 48, 64, x - 24, y - 60, 48, 64); return; }
   ctx.drawImage(SPR.crypt.base, o.kind * CT, 2 * CT, CT, CT, x - CT / 2, y - CT + 6, CT, CT);
 }
@@ -1232,6 +1319,10 @@ const state = {
 };
 // Act II: after this many level-ups' worth of levels a town portal carries you to the desert
 const ACT2_LEVEL = 5;   // = 4 level-ups
+const ACT3_LEVEL = 10;  // the jungle
+const ACT_LEVEL = { 2: ACT2_LEVEL };   // Act III (ACT3_LEVEL) is switched on once its creatures land
+const ACT_NAMES = { 2: ['ACT II', 'THE BURNING SANDS'], 3: ['ACT III', 'THE STRANGLING JUNGLE'] };
+const ROMAN = ['', 'I', 'II', 'III'];
 const PORTAL_TIME = 1.8;
 
 // Berserk orb (a nod to DOOM's berserk pack): 30s of invulnerability, speed and amplified powers
@@ -1280,8 +1371,16 @@ const ACT2_TYPES = [
   ['scarab', 'lizard', 'maggot', 'fly', 'knight'],
   ['scarab', 'lizard', 'maggot', 'fly', 'mech', 'banshee'],
 ];
+// Act III: the jungle. Mosquito swarms and vipers first, then man-eaters, monkeys, frogs and treants
+const ACT3_TYPES = [ ['snake','mosquito'], ['snake','mosquito'], ['snake','plant','mosquito'], ['snake','monkey','mosquito'],
+  ['monkey','snake','plant','mosquito'], ['frog','snake','monkey','mosquito'], ['snake','treant','frog','mosquito'],
+  ['frog','monkey','plant','mosquito'], ['treant','snake','frog','mosquito'], ['monkey','treant','plant','frog'],
+  ['snake','frog','monkey','banshee','mosquito'], ['treant','frog','monkey','knight','mosquito'],
+  ['monkey','snake','treant','frog','plant'], ['treant','frog','monkey','snake','mosquito','plant'],
+  ['frog','treant','monkey','snake','mosquito','plant','mech'] ];
 function currentWave() {
   const m = Math.min(WAVES.length - 1, Math.floor(state.time / 60));
+  if (state.act === 3) return { min: WAVES[m].min, interval: WAVES[m].interval, types: ACT3_TYPES[m] };
   return state.act === 2 ? { min: WAVES[m].min, interval: WAVES[m].interval, types: ACT2_TYPES[m] } : WAVES[m];
 }
 
@@ -1291,7 +1390,7 @@ const EVENT_PERIOD = 30;
 const player = {
   x: 0, y: 0, r: 14, speed: 150, hp: 100, maxHp: 100,
   regen: 0, armor: 0, magnetR: 70, dmgMult: 1, cdMult: 1,
-  facing: { x: 1, y: 0 }, hurtCd: 0, fearT: 0, color: '#FFDB00', name: '',
+  facing: { x: 1, y: 0 }, hurtCd: 0, fearT: 0, poisonT: 0, poisonTick: 0, color: '#FFDB00', name: '',
   sprite: 'ranger', face: 1, moving: false, animT: 0, attackAge: 99,
   critChance: 0.12, drawScale: SCALE,
   weapons: [], passives: {},
@@ -1664,14 +1763,18 @@ const BEST_DESC = {
   boss2: 'The final protocol. Three times the size. Arrives at 14:00.',
 };
 const firstWave = kind => { const i = WAVES.findIndex(w => w.types.includes(kind)); return i < 0 ? 99 : i; };
-const act2Only = kind => !WAVES.some(w => w.types.includes(kind)) && ACT2_TYPES.some(t => t.includes(kind));
-// every enemy in order of first appearance, then the three bosses
+// the act a creature first turns up in (1 = the cathedral)
+const actOf = kind => WAVES.some(w => w.types.includes(kind)) ? 1 : ACT2_TYPES.some(t => t.includes(kind)) ? 2 : 3;
+const firstActWave = (kind, table) => { const i = table.findIndex(t => t.includes(kind)); return i < 0 ? 99 : i; };
+// every enemy in order of first appearance (act by act), then the bosses
 const BEST_ENTRIES = Object.keys(ENEMY_TYPES)
-  .sort((a, b) => firstWave(a) - firstWave(b) || ENEMY_TYPES[a].hp - ENEMY_TYPES[b].hp)
+  .sort((a, b) => actOf(a) - actOf(b) || firstWave(a) - firstWave(b)
+    || firstActWave(a, actOf(a) === 2 ? ACT2_TYPES : ACT3_TYPES) - firstActWave(b, actOf(b) === 2 ? ACT2_TYPES : ACT3_TYPES)
+    || ENEMY_TYPES[a].hp - ENEMY_TYPES[b].hp)
   .map(k => {
     const t = ENEMY_TYPES[k];
     return { key: k, name: t.name, sheet: t.sprite, variant: null, hp: t.hp, speed: t.speed, dmg: t.dmg,
-      xp: t.xp, at: firstWave(k) * 60, boss: false, act2: act2Only(k) };
+      xp: t.xp, at: firstWave(k) * 60, boss: false, act: actOf(k) };
   })
   .concat(BOSSES.map(b => ({ key: b.key, name: b.name, sheet: b.sprite, variant: b.variant,
     hp: b.hp, speed: b.speed, dmg: b.dmg, xp: b.xp, at: b.at, boss: true })));
@@ -1693,20 +1796,48 @@ function makeEnemy(kind, x, y, opts = {}) {
     castT: rand(1.5, 3), casting: 0,       // caster: cooldown, windup left
     leapCd: rand(0.5, 2), leapT: 0, crouch: 0, lx: 0, ly: 0, // pounce
     blinkCd: rand(2, 4), fade: 0, healT: rand(1, 3), bolt: t.bolt || 'fire', healer: !!t.healer,
-    screamCd: rand(2, 4), screaming: 0, reckless: !!t.reckless,
+    screamCd: rand(2, 4), screaming: 0, reckless: !!t.reckless, poison: !!t.poison,
   };
 }
 const CAST_WINDUP = 0.6, LEAP_TIME = 0.42;
-function shootFireball(e) {   // shaman fireball, mech laser bolt or maggot acid spit
-  const laser = e.bolt === 'laser', acid = e.bolt === 'acid', hy = laser ? 30 : acid ? 18 : 8;
-  const dx = player.x - e.x, dy = player.y - (e.y - hy), d = Math.hypot(dx, dy) || 1;
-  const spd = laser ? 230 : acid ? 175 : 150;
+// shaman fireball, mech laser, maggot acid, man-eater thorns, demon-monkey coconuts
+const BOLTS = {
+  fire:    { hy: 8,  spd: 150, r: 6, dmg: 1.2 },
+  laser:   { hy: 30, spd: 230, r: 5, dmg: 1 },
+  acid:    { hy: 18, spd: 175, r: 6, dmg: 1.2 },
+  thorn:   { hy: 20, spd: 240, r: 4, dmg: 0.8, n: 3 },   // a three-thorn fan
+  coconut: { hy: 22, spd: 165, r: 6, dmg: 1.1 },
+};
+function shootFireball(e) {
+  const B = BOLTS[e.bolt] || BOLTS.fire;
+  const dx = player.x - e.x, dy = player.y - (e.y - B.hy), d = Math.hypot(dx, dy) || 1;
   if (ebullets.length > 60) return;
-  ebullets.push({ x: e.x + (dx > 0 ? 8 : -8), y: e.y - hy, vx: dx / d * spd, vy: dy / d * spd,
-    r: laser ? 5 : 6, dmg: e.dmg * (laser ? 1 : 1.2), life: 3.5, t: 0, style: laser ? 'laser' : acid ? 'acid' : 'fire' });
-  if (laser) sfx(1400, 0.12, 'square', 0.03, -900);
-  else if (acid) sfx(220, 0.14, 'square', 0.035, -120);
+  const n = B.n || 1, a0 = Math.atan2(dy, dx);
+  for (let i = 0; i < n; i++) {
+    const a = a0 + (i - (n - 1) / 2) * 0.22;
+    ebullets.push({ x: e.x + (dx > 0 ? 8 : -8), y: e.y - B.hy, vx: Math.cos(a) * B.spd, vy: Math.sin(a) * B.spd,
+      r: B.r, dmg: e.dmg * B.dmg, life: 3.5, t: 0, style: e.bolt || 'fire', poison: e.bolt === 'thorn' });
+  }
+  if (e.bolt === 'laser') sfx(1400, 0.12, 'square', 0.03, -900);
+  else if (e.bolt === 'acid') sfx(220, 0.14, 'square', 0.035, -120);
+  else if (e.bolt === 'thorn') sfx(1800, 0.06, 'square', 0.025, -1200);
+  else if (e.bolt === 'coconut') { sfx(520, 0.1, 'triangle', 0.04, 300); sfx(880, 0.08, 'square', 0.02, 400); }   // monkey shriek
   else sfx(330, 0.18, 'sawtooth', 0.035, -200);
+}
+// poison: a damage-over-time that ignores the hurt cooldown (frogs, man-eater thorns, toxic clouds)
+function poisonPlayer(secs = 4) {
+  if (state.berserkT > 0) return;
+  if (player.poisonT <= 0) { popText(player.x, player.y - 52, 'POISONED!', '#92FF24'); sfx(180, 0.25, 'square', 0.04, -60); }
+  player.poisonT = Math.max(player.poisonT || 0, secs);
+}
+// man-eaters erupt from the undergrowth a short way off, ahead of you more often than not
+function rootedSpot(e) {
+  const fa = Math.atan2(player.facing.y, player.facing.x);
+  const a = Math.random() < 0.6 ? fa + rand(-0.9, 0.9) : rand(0, TAU), d = rand(150, 240);
+  e.x = player.x + Math.cos(a) * d; e.y = player.y + Math.sin(a) * d;
+  resolveObstacles(e);
+  burstParticles(e.x, e.y, '#246D00', 8);
+  burstParticles(e.x, e.y, '#6D4924', 5);
 }
 let lastScreamSnd = -9;
 function bansheeScream(e, d) {
@@ -1743,7 +1874,15 @@ function spawnEnemy(kind) {
   }
   announceType(kind);
   const a = rand(0, TAU), d = spawnRadius();
-  enemies.push(makeEnemy(kind, player.x + Math.cos(a) * d, player.y + Math.sin(a) * d));
+  const x = player.x + Math.cos(a) * d, y = player.y + Math.sin(a) * d;
+  if (kind === 'mosquito') {   // mosquitoes never come alone
+    const n = randInt(5, 8);
+    for (let i = 0; i < n; i++) enemies.push(makeEnemy(kind, x + rand(-30, 30), y + rand(-30, 30)));
+    return;
+  }
+  const e = makeEnemy(kind, x, y);
+  if (e.move === 'rooted') rootedSpot(e);
+  enemies.push(e);
 }
 
 function spawnElite() {
@@ -1781,7 +1920,7 @@ function spawnSweep() {
   const px = -dirY, py = dirX; // perpendicular
   const spd = 170;
   for (let i = -14; i <= 14; i++) {
-    const e = makeEnemy(state.act === 2 ? 'fly' : 'skeleton', cx + px * i * 34 + rand(-10, 10), cy + py * i * 34 + rand(-10, 10),
+    const e = makeEnemy(['skeleton', 'skeleton', 'fly', 'mosquito'][state.act], cx + px * i * 34 + rand(-10, 10), cy + py * i * 34 + rand(-10, 10),
       { hpMul: 0.06, xpMul: 1, spdMul: 1 });
     e.sweep = { vx: dirX * spd, vy: dirY * spd, life: 14 };
     enemies.push(e);
@@ -1797,7 +1936,7 @@ function startBerserk() {
   }
   state.berserkT = BERSERK_TIME;
   player.hp = player.maxHp;            // like the pack it's named after: full health too
-  player.fearT = 0;
+  player.fearT = 0; player.poisonT = 0;
   state.flash = 1; state.shake = 16; state.hitstop = Math.max(state.hitstop, 0.15);
   announce('BERSERK!', C.red, 2.4, 5, 'RIP AND TEAR');
   burstParticles(player.x, player.y - 14, '#FF2400', 30);
@@ -1833,10 +1972,10 @@ function openPortal() {
   sfx(220, 1.4, 'sine', 0.07, 660);
   sfx(330, 1.4, 'triangle', 0.04, 990);
 }
-function enterAct2() {
-  state.act = 2;
+function enterAct(n) {
+  state.act = n;
   state.portalT = -1;                       // done: never reopens
-  // bosses and elites follow you through; the rest of Act I's rabble stays behind
+  // bosses and elites follow you through; the rest of the old act's rabble stays behind
   const followers = enemies.filter(e => e.boss || e.elite);
   enemies.length = 0; ebullets.length = 0; corpses.length = 0;
   for (const e of followers) {
@@ -1848,8 +1987,8 @@ function enterAct2() {
   state.spawnTimer = 1.2;
   state.flash = 1;
   state.shake = 6;
-  announce('ACT II', C.yellow, 3, 5, 'THE BURNING SANDS');
-  music.song = 2; music.step = 0;           // the desert theme starts from its intro
+  announce(ACT_NAMES[n][0], n === 3 ? C.green : C.yellow, 3, 5, ACT_NAMES[n][1]);
+  music.song = n; music.step = 0;           // each act's theme starts from its intro
   sfx(880, 0.5, 'sine', 0.06, -500);
 }
 function spawnBoss(def) {
@@ -1915,6 +2054,11 @@ function killEnemy(e) {
   corpses.push({ sprite: e.sprite, scale: e.scale, variant: e.variant,
     x: e.x, groundY: groundYOf(e), flip: player.x < e.x, animT: 0 });
   burstParticles(e.x, e.y - e.r * 0.5, e.pop || '#B66D24', e.boss ? 26 : e.elite ? 16 : 8);
+  if (e.poison) {   // poison frogs burst into a lingering toxic cloud
+    effects.push({ type: 'toxic', x: e.x, y: e.y, radius: e.elite ? 80 : 46, life: 3, maxLife: 3 });
+    burstParticles(e.x, e.y - 8, '#92FF24', 10);
+    sfx(140, 0.3, 'square', 0.04, -60);
+  }
   if (e.kind === 'mech') {   // mechs go out with a bang
     effects.push({ type: 'boom', x: e.x, y: e.y - 20, radius: 46, life: 0.35, maxLife: 0.35 });
     burstParticles(e.x, e.y - 24, '#FF9200', 14);
@@ -2325,12 +2469,12 @@ function update(dt) {
   }
 
   // Act II: the town portal opens once you've levelled enough, then carries you through
-  if (state.act === 1 && state.level >= ACT2_LEVEL && state.portalT <= 0) openPortal();
+  if (ACT_LEVEL[state.act + 1] && state.level >= ACT_LEVEL[state.act + 1] && state.portalT <= 0) openPortal();
   if (state.portalT > 0) {
     state.portalT -= dt;
     player.hurtCd = Math.max(player.hurtCd, 0.2);              // safe while stepping through
     if (Math.random() < 0.6) burstParticles(player.x + rand(-14, 14), player.y + rand(-10, 20), Math.random() < 0.5 ? '#49B6FF' : '#DBFFFF', 1);
-    if (state.portalT <= 0) enterAct2();
+    if (state.portalT <= 0) enterAct(state.act + 1);
   }
 
   // VS-style wave spawner: keep the quota filled, then trickle one of each type
@@ -2378,6 +2522,22 @@ function update(dt) {
   // player movement + animation clocks
   const { mx, my } = moveInput();
   player.fearT = Math.max(0, (player.fearT || 0) - dt);
+  for (const fx of effects) {
+    if (fx.type === 'toxic' && fx.life > 0.4 && dist2(fx.x, fx.y, player.x, player.y) < (fx.radius + player.r * 0.5) ** 2) poisonPlayer(2);
+  }
+  if (player.poisonT > 0) {
+    player.poisonT -= dt;
+    player.poisonTick -= dt;
+    if (state.berserkT > 0) player.poisonT = 0;
+    else if (player.poisonTick <= 0) {
+      player.poisonTick = 0.5;
+      const dmg = Math.max(1, Math.round(player.maxHp * 0.015));
+      player.hp -= dmg;
+      popNum(player.x + rand(-8, 8), player.y - 36, '-' + dmg, false, '#92FF24');
+      burstParticles(player.x, player.y - 10, '#92FF24', 2);
+      if (player.hp <= 0) endGame(false);
+    }
+  }
   if (state.berserkT > 0) {
     const was = state.berserkT;
     state.berserkT -= dt;
@@ -2560,6 +2720,33 @@ function update(dt) {
           sfx(900, 0.08, 'square', 0.025, -600);
         }
         if (e.fade > 0) { e.fade -= dt; spd = 0; }
+      } else if (e.move === 'rooted') {
+        // man-eater: never moves; snaps at anything in reach and spits poison thorns
+        spd = 0;
+        e.castT -= dt;
+        if (e.casting > 0) {
+          e.casting -= dt;
+          if (e.casting <= 0) shootFireball(e);
+        } else if (e.castT <= 0 && d < 280 && d > 50) {
+          e.casting = CAST_WINDUP;
+          e.castT = rand(2.2, 3.0);
+        }
+      } else if (e.move === 'slither') {
+        // viper: S-curve slither, then a coiled pause and a lightning strike
+        e.leapCd -= dt;
+        if (e.leapT > 0) {
+          e.leapT -= dt;
+          px = e.lx; py = e.ly; spd *= 2.4;
+        } else if (e.crouch > 0) {
+          e.crouch -= dt;
+          spd = 0;
+          if (e.crouch <= 0) { e.leapT = LEAP_TIME; e.lx = px; e.ly = py; sfx(1100, 0.08, 'sawtooth', 0.02, -700); }
+        } else {
+          const sway = Math.sin(e.animT * 5 + e.orbitSign) * 0.85;
+          const nx = px - py * sway, ny = py + px * sway, nl = Math.hypot(nx, ny) || 1;
+          px = nx / nl; py = ny / nl;
+          if (e.leapCd <= 0 && d < 100) { e.crouch = 0.22; e.leapCd = rand(1.5, 2.2); spd = 0; }
+        }
       } else if (e.move === 'pounce') {
         e.leapCd -= dt;
         if (e.leapT > 0) {                     // mid-air: locked heading, no steering
@@ -2600,10 +2787,14 @@ function update(dt) {
           const k = 26 / Math.max(1, d);
           e.x += (e.x - player.x) * k; e.y += (e.y - player.y) * k;
         }
-      } else hurtPlayer(e.dmg);
+      } else {
+        hurtPlayer(e.dmg);
+        if (e.poison) poisonPlayer();
+      }
     }
     // never despawn — like VS, stragglers teleport to a fresh angle and rejoin the hunt
-    if (!e.boss && !e.sweep && d > Math.max(VW, VH) * 1.2) {
+    if (e.move === 'rooted' && !e.elite && d > Math.max(VW, VH) * 0.9) rootedSpot(e);
+    else if (!e.boss && !e.sweep && d > Math.max(VW, VH) * 1.2) {
       const a = rand(0, TAU), sd = spawnRadius();
       e.x = player.x + Math.cos(a) * sd;
       e.y = player.y + Math.sin(a) * sd;
@@ -2620,7 +2811,8 @@ function update(dt) {
     let dead = b.life <= 0;
     if (!dead && dist2(b.x, b.y, player.x, player.y) < (player.r + b.r) ** 2) {
       hurtPlayer(b.dmg);
-      burstParticles(b.x, b.y, '#FF9200', 5);
+      if (b.poison) poisonPlayer(2.5);
+      burstParticles(b.x, b.y, b.style === 'coconut' ? '#924900' : b.style === 'thorn' ? '#49B600' : '#FF9200', 5);
       dead = true;
     }
     if (!dead) {
@@ -2678,12 +2870,13 @@ function update(dt) {
     const p = pickups[i];
     if (dist2(p.x, p.y, player.x, player.y) >= (player.r + 14) ** 2) continue;
     // food waits on the floor until you actually need it
-    if (p.type === 'food' && player.hp >= player.maxHp) continue;
+    if (p.type === 'food' && player.hp >= player.maxHp && player.poisonT <= 0) continue;
     pickups.splice(i, 1);
     if (p.type === 'food') {
       const f = FOOD[p.food];
       const gain = Math.min(player.maxHp - player.hp, Math.round(player.maxHp * f.heal));
       player.hp += gain;
+      player.poisonT = 0;   // any food settles the poison
       popText(player.x, player.y - 44, `${f.name} +${gain}`, C.green);
       burstParticles(p.x, p.y - 4, f.col, p.food === 'medkit' ? 14 : 8);
       sfx(440, 0.09, 'square', 0.05, 220);
@@ -2804,7 +2997,8 @@ function renderDarkness() {
   const g = darkG;
   g.globalCompositeOperation = 'source-over';
   g.clearRect(0, 0, W, H);
-  g.fillStyle = `rgba(6,0,10,${DARKNESS})`;
+  // the jungle is canopy shade (green-black, lighter) rather than crypt dark
+  g.fillStyle = state.act === 3 ? 'rgba(0,18,6,0.5)' : `rgba(6,0,10,${DARKNESS})`;
   g.fillRect(0, 0, W, H);
   g.globalCompositeOperation = 'destination-out';
   const punch = (wx, wy, r) => {
@@ -2813,6 +3007,14 @@ function renderDarkness() {
     g.drawImage(s, x - (s.width >> 1), y - (s.height >> 1));
   };
   const flick = Math.floor(uiTime * 8) % 3;
+  if (state.act === 3) {   // dappled sunlight: shafts break through the canopy at fixed spots
+    const S = 150, sx0 = Math.floor((player.x - VW / 2) / S) - 1, sy0 = Math.floor((player.y - VH / 2) / S) - 1;
+    for (let sy = sy0; sy * S < player.y + VH / 2 + S; sy++) for (let sx = sx0; sx * S < player.x + VW / 2 + S; sx++) {
+      const h = hash2(sx * 5 + 1, sy * 9 + 2);
+      if (h % 3) continue;
+      punch(sx * S + (h >>> 5) % S, sy * S + (h >>> 11) % S, 26 + (h >>> 17) % 22);
+    }
+  }
   punch(player.x, player.y - 10, (state.berserkT > 0 ? 140 : 112) + flick * 2);
   for (const bz of state.brazList || []) punch(bz.x, bz.y - 12, 42 + ((Math.floor(uiTime * 7 + bz.x) % 3) * 2));
   for (const b of ebullets) punch(b.x, b.y, b.style === 'laser' ? 12 : 22);
@@ -3022,6 +3224,18 @@ function renderWorld() {
       rect(x - 1, y - 2, 1, 1, '#FFFFB6');
       continue;
     }
+    if (b.style === 'thorn') {   // man-eater: a dark green spike, point first
+      line(x - ux * 5, y - uy * 5, x, y, '#246D00', 2);
+      rect(x, y, 1, 1, '#B6FF49');
+      continue;
+    }
+    if (b.style === 'coconut') { // demon monkey: a tumbling brown nut
+      disc(x, y, 3, '#492400');
+      disc(x, y, 2, '#926D24');
+      const sp = Math.floor(b.t * 12) % 4;
+      rect(x - 1 + (sp & 1), y - 1 + (sp >> 1), 1, 1, '#DBB66D');
+      continue;
+    }
     if (b.style === 'laser') {   // mech: hot cyan streak with a white core
       line(x - ux * 9, y - uy * 9, x, y, C.blue, 3);
       line(x - ux * 7, y - uy * 7, x, y, C.cyan, 2);
@@ -3086,6 +3300,24 @@ function renderWorld() {
     } else if (fx.type === 'heal') {   // lizard doctor's pulse: a green ring expanding outward
       const rr = (fx.radius / PX) * (1 - p);
       ring(cx, cy, rr, p > 0.5 ? '#92FF92' : C.green);
+    } else if (fx.type === 'toxic') {  // poison frog's death cloud: a squat green haze with rising bubbles
+      if (p < 0.15 && blink(15)) continue;
+      const rx = Math.round(fx.radius / PX), ry = Math.round(rx * 0.6);
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      for (let k = 0; k < 2; k++) {
+        ctx.fillStyle = k ? 'rgba(73,182,0,0.22)' : 'rgba(36,109,0,0.3)';
+        const sx = rx * (1 - k * 0.35), sy = ry * (1 - k * 0.35);
+        for (let dy = -Math.round(sy); dy <= Math.round(sy); dy++) {
+          const hw = Math.round(sx * Math.sqrt(Math.max(0, 1 - (dy / (sy + 0.5)) ** 2)) * (1 + 0.08 * Math.sin(uiTime * 5 + dy)));
+          ctx.fillRect(cx - hw, cy + dy, hw * 2 + 1, 1);
+        }
+      }
+      ctx.restore();
+      for (let k = 0; k < 4; k++) {
+        const ph = (uiTime * 0.8 + k * 0.27 + fx.x * 0.01) % 1;
+        rect(cx + Math.round(Math.sin(k * 2.3 + fx.y) * rx * 0.6), cy - Math.round(ph * ry * 2), 2, 2, ph > 0.7 ? '#DBFF92' : '#92FF24');
+      }
     }
   }
 
@@ -3119,7 +3351,7 @@ function renderHUD() {
   const low = frac < 0.3;
   if (!(low && blink(4))) {
     const fw = Math.round(bw * frac);
-    rect(x + 1, by + 1, fw, 5, frac > 0.5 ? C.yellow : low ? C.red : C.orange);
+    rect(x + 1, by + 1, fw, 5, player.poisonT > 0 ? '#49DB00' : frac > 0.5 ? C.yellow : low ? C.red : C.orange);
     rect(x + 1, by + 1, fw, 1, '#FFFFB6');
   }
   for (let i = 8; i < bw; i += 8) rect(x + 1 + i, by + 1, 1, 5, C.black);
@@ -3523,7 +3755,7 @@ function renderBestiary() {
     const nsc = textW(norm(e.name), 2) <= tw ? 2 : 1;
     drawText(e.name, tx, y0 + 1, C.white, { scale: nsc, outline: C.black, grad: e.boss ? RED_GRAD : GOLD_GRAD });
     let sy = y0 + 4 + 7 * nsc + 3;
-    drawText(e.boss ? `BOSS ${fmtTime(e.at)}` : e.act2 ? 'FOUND IN ACT II' : `FIRST SEEN ${fmtTime(e.at)}`, tx, sy, e.boss ? C.red : e.act2 ? C.yellow : C.cyan);
+    drawText(e.boss ? `BOSS ${fmtTime(e.at)}` : e.act > 1 ? `FOUND IN ACT ${ROMAN[e.act]}` : `FIRST SEEN ${fmtTime(e.at)}`, tx, sy, e.boss ? C.red : e.act === 3 ? C.green : e.act === 2 ? C.yellow : C.cyan);
     sy += 10;
     const maxOf = f => Math.max(...BEST_ENTRIES.filter(q => !q.boss).map(q => q[f]));
     for (const [label, f, col] of [['HP', 'hp', C.green], ['SPD', 'speed', C.cyan], ['DMG', 'dmg', C.red]]) {
@@ -3539,7 +3771,7 @@ function renderBestiary() {
   } else {
     drawText('???', tx, y0 + 1, C.lgrey, { scale: 2, outline: C.black });
     drawText(e.boss ? 'BOSS' : 'NOT MET YET', tx, y0 + 22, C.grey);
-    drawText(e.act2 ? 'APPEARS IN ACT II' : `APPEARS ${fmtTime(e.at)}`, tx, y0 + 32, e.act2 ? C.yellow : C.cyan);
+    drawText(e.act > 1 ? `APPEARS IN ACT ${ROMAN[e.act]}` : `APPEARS ${fmtTime(e.at)}`, tx, y0 + 32, e.act === 3 ? C.green : e.act === 2 ? C.yellow : C.cyan);
     drawText('SURVIVE LONGER TO MEET IT.', x0, y0 + 74, C.lgrey);
   }
 
