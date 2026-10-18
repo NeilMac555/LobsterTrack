@@ -36,6 +36,13 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy Sanctuary pass: Diablo-style cathedral arena (DCSS CC0
+  cobbles, blood/bone decals, columns/statues/sarcophagus props), darkness
+  with a stepped light radius + torch/projectile lights, the Butcher boss
+  at 7:30 (LPC-built, cleaver chop, "AH... FRESH MEAT!", troll roar),
+  Screaming Banshees (scream = damage + terrified slow). Fixed black floor
+  tiles from signed hash shifts — `053d394`
+
 - Mutant Academy heroes Neil + Zoe: Neil (bald, beard, tee, jeans) with
   Diablo II-style Blessed Hammer spiral; Zoe (10, pigtails, glasses, punk
   black/red outfit) lobbing Exploding Sushi. LPC-generator art downscaled
