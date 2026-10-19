@@ -10,6 +10,12 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 ## Next
 
+- Mutant Academy select screen on 4:3 screens (e.g. 1280x960, W=320):
+  the hero panel runs off the bottom and the hint text overlaps it. Not
+  new; needs a compact layout for short, narrow screens.
+- Mutant Academy tests: with random maps a few timing/brightness checks
+  are flaky (act5 hellfire/cultist/devilkin ~1 run in 3; sanctuary light
+  radius, butcher chest once each). Seed the map in tests.
 - Duplicate match rows from fixture reschedules: DB sweep found ~20
   pairs of matches (same two teams, commence_time <48h apart) across
   Ligue 1, Serie A, La Liga and Bundesliga — early-season fixtures
@@ -43,6 +49,13 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy: Karateh Masta — unlockable hero (beat the game) who
+  throws piercing ninja death stars; locked silhouette on the select
+  screen, NEW HERO UNLOCKED on the results — `23fb1f6`
+- Mutant Academy: sinister new jungle theme (A phrygian, war drums,
+  drone, dissonant xylophone); jungle opened up — more rivers with deep
+  channels and wooden bridges/footbridges, sunlit clearings, a third of
+  the trees — `57df1b2`
 - Mutant Academy: real act maps (seeded per run: roads, rivers, lakes,
   ridges, templated structures, one landmark per act; walls/deep liquid
   solid, water slows, lava burns, bog poisons; DCSS CC0 terrain sheets)
