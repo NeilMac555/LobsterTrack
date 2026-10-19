@@ -145,6 +145,14 @@ listed in [`CREDITS-LPC.md`](CREDITS-LPC.md).
 - `hurt-karate` — thebardofblasphemy's CC0 male grunts (the `hurt-ace` take),
   pitched up 12% into a sharper shout.
 
+## The story's narration (`sfx/intro-1.mp3` … `intro-7.mp3`)
+
+Read by the **"Norman"** voice for **Piper** text-to-speech (Piper: MIT,
+https://github.com/rhasspy/piper; voice: https://huggingface.co/rhasspy/piper-voices,
+`en_US-norman-medium`, trained on **public-domain** LibriVox recordings by Bryce
+Beattie — https://brycebeattie.com/files/tts/). Rendered for this game from its own
+script, pitched down 5% and given a light 10-bit crunch and echo.
+
 ## Sanctuary: cathedral floor, props, the Butcher, banshees
 
 - `crypt.png` — floors (grey and blood-soaked cobbles, tomb stone, pebbles),

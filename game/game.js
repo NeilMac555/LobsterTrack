@@ -172,7 +172,8 @@ const sndHurt = () => sfx(110, 0.2, 'sawtooth', 0.08, -40);
 // Sampled hurt voices, one per hero (Biski meows) — see assets/CREDITS.md.
 // Decoded once audio is unlocked; until then (or on file:// pages) the synth thud stands in.
 const VOICE_FILES = ['visor', 'wildcat', 'skywitch', 'ace', 'mender', 'biski', 'neil', 'zoe', 'ana', 'karate'];
-const SFX_FILES = ['banshee-scream', 'butcher-roar'];   // assets/sfx/<name>.mp3
+const SFX_FILES = ['banshee-scream', 'butcher-roar',   // assets/sfx/<name>.mp3
+  'intro-1', 'intro-2', 'intro-3', 'intro-4', 'intro-5', 'intro-6', 'intro-7'];   // the story's narration
 const voiceBuf = {};
 let voicesRequested = false, lastVoiceT = -9;
 function loadVoices() {
@@ -204,6 +205,7 @@ function playSample(name, vol = 0.6) {
     g.gain.value = vol;
     src.connect(g); g.connect(audioOut());
     src.start();
+    return src;
   } catch (e) {}
 }
 function hurtVoice(id) {
@@ -1873,7 +1875,7 @@ function resolveTerrain(ent) {
 // terrain tiles over the act's floor: paths, interiors, walls (with a drop shadow) and animated liquid
 function drawTerrain() {
   const img = SPR['map' + state.act]?.base;
-  if (!img) return;
+  if (!img || (scene !== 'play' && scene !== 'over')) return;   // menus and the story show plain floor
   const ix0 = Math.floor(camX / CT), iy0 = Math.floor(camY / CT);
   const fr = Math.floor(uiTime * 3) % 4;
   for (let iy = iy0; iy * CT - camY < H; iy++) {
@@ -2014,7 +2016,7 @@ function secretDrawables(list) {
 }
 
 // big floor props sit on plain ground: decals keep off everything else
-const bareCell = (ix, iy) => cellAt(ix, iy) === T_FLOOR;
+const bareCell = (ix, iy) => (scene !== 'play' && scene !== 'over') || cellAt(ix, iy) === T_FLOOR;
 function drawMapProp(o) {
   const x = toDX(o.x), y = toDY(o.y), img = SPR['map' + state.act]?.base;
   if (!img || x < -24 || x > W + 24 || y < -40 || y > H + 24) return;
@@ -3311,10 +3313,20 @@ window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; }
 
 function uiKey(k) {
   if (scene === 'title') {
-    if (k === 'arrowup' || k === 'w') { titleSel = (titleSel + 2) % 3; sndMove(); }
-    else if (k === 'arrowdown' || k === 's') { titleSel = (titleSel + 1) % 3; sndMove(); }
+    if (k === 'arrowup' || k === 'w') { titleSel = (titleSel + 3) % 4; sndMove(); }
+    else if (k === 'arrowdown' || k === 's') { titleSel = (titleSel + 1) % 4; sndMove(); }
     else if (k === 'b') openBestiary();
-    else if (OK_KEYS.has(k)) { if (titleSel === 2) toggleGraphics(); else if (titleSel === 1) openBestiary(); else toSelect(); }
+    else if (OK_KEYS.has(k)) {
+      if (titleSel === 3) toggleGraphics();
+      else if (titleSel === 2) openBestiary();
+      else if (titleSel === 1) startIntro('title');
+      else if (!introSeen()) startIntro('select');   // the first START tells the story
+      else toSelect();
+    }
+    return;
+  }
+  if (scene === 'intro') {
+    if (OK_KEYS.has(k) || k === 'escape') endIntro();
     return;
   }
   if (scene === 'bestiary') {
@@ -5183,6 +5195,168 @@ function attractBackdrop(darkness) {
   drawFloor();
   rect(0, 0, W, H, `rgba(0,0,0,${darkness})`);
 }
+// ---------- the story ----------
+// A Mega Drive-style attract story: letterboxed scenes made from the game's own art, each line typed out
+// and read aloud (Piper TTS, the public-domain "Norman" voice — see assets/CREDITS.md), a funeral bell
+// and a low choir under it. It plays before the first game and from STORY on the title; any button skips.
+const INTRO = [
+  { text: 'LONG AGO, THE DEVIL WAS CAST DOWN, AND SEALED BENEATH THE EARTH.', show: 'sleeps' },
+  { text: 'BUT HIS EVIL HAS FOUND A WAY BACK INTO OUR WORLD.', show: 'crypt' },
+  { text: 'IT SEEPS THROUGH A RUINED CATHEDRAL... THE BURNING SANDS... A STRANGLING JUNGLE... AND THE DROWNED DEPTHS BELOW.', show: 'acts' },
+  { text: 'IF IT REACHES THE SURFACE, THE EARTH WILL BE CORRUPTED, FOREVER.', show: 'hell' },
+  { text: 'ONLY THE STUDENTS OF THE MUTANT ACADEMY STAND IN HIS WAY.', show: 'heroes' },
+  { text: 'FIGHT THROUGH FIVE ACTS. DESTROY HIS CHAMPIONS. DESCEND TO THE GATES OF HELL...', show: 'bosses' },
+  { text: '...AND SLAY THE DEVIL, BEFORE HE RISES.', show: 'rises' },
+];
+const INTRO_KEY = 'mutant-academy-intro-seen';
+const introSeen = () => { try { return !!localStorage.getItem(INTRO_KEY); } catch (e) { return true; } };
+let intro = null;
+function startIntro(then) {
+  scene = 'intro';
+  intro = { i: -1, t: 0, then };
+  try { audioOut(); unlockAudio(); } catch (e) {}
+  loadVoices();
+  try { localStorage.setItem(INTRO_KEY, '1'); } catch (e) {}
+  nextIntroPanel();
+}
+function nextIntroPanel() {
+  intro.i++; intro.t = 0; intro.voiced = 0; intro.dur = 0; intro.typed = 0;
+  if (intro.i >= INTRO.length) { endIntro(); return; }
+  try {   // a bell tolls for each scene, the choir holds a minor chord beneath it
+    const t = audioCtx.currentTime + 0.02;
+    fm(t, hz('E3'), 2.4, 0.045, 2.76, 3, 1.6); fm(t, hz('E2'), 2.2, 0.03, 1.41, 2, 1.4);
+    for (const n of (intro.i === INTRO.length - 1 ? ['E3', 'A#3', 'D4'] : ['E3', 'G3', 'B3'])) fm(t, hz(n), 5.5, 0.011, 1, 0.3, 2, true);
+  } catch (e) {}
+}
+function endIntro() {
+  if (!intro) return;
+  try { intro.src && intro.src.stop(); } catch (e) {}
+  const then = intro.then;
+  intro = null;
+  if (then === 'title') { scene = 'title'; sndOk(); } else toSelect();
+}
+function updateIntro(dt) {
+  intro.t += dt;
+  const p = INTRO[intro.i], key = 'intro-' + (intro.i + 1), buf = sampleBuf[key];
+  // the narrator speaks as soon as his line has decoded; without audio the text keeps a steady pace
+  if (!intro.voiced && buf && intro.t > 0.35 && intro.t < 1.5 && !muted) {
+    intro.src = playSample(key, 0.95);
+    intro.voiced = buf.duration;
+    intro.vt = intro.t;
+    intro.dur = intro.t + buf.duration + 1.1;
+  }
+  if (!intro.dur && intro.t >= 1.5) intro.dur = Math.max(4, p.text.length * 0.065 + 2);
+  // typewriter: keeps pace with the voice, or blips along on its own
+  const cps = intro.voiced ? p.text.length / (intro.voiced * 0.92) : 16;
+  const typed = Math.min(p.text.length, Math.floor(Math.max(0, intro.t - (intro.vt ?? 0.35)) * cps));
+  if (typed > intro.typed && !intro.voiced && p.text[typed - 1] !== ' ') sfx(1200, 0.025, 'square', 0.012);
+  intro.typed = typed;
+  if (intro.dur && intro.t >= intro.dur) nextIntroPanel();
+}
+// a walking line-up of sheets across the screen; each entry [sheetKey, scale]
+function introParade(list, gy, speed, t, gap = 70, dir = 1) {
+  list.forEach(([key, k], i) => {
+    const def = SHEETS[key], set = SPR[def.file];
+    if (!set) return;
+    const s = def.size, dw = Math.round(s * k), span = list.length * gap + W;
+    let x = ((t * speed + i * gap) % span) - gap;
+    if (dir < 0) x = W - x;
+    const f = Math.floor(t * 10 + i * 3) % frameCount(key, 'walk');
+    const sh = shadowSprite(Math.max(6, Math.round(dw / 5)));
+    ctx.drawImage(sh, Math.round(x) - (sh.width >> 1), gy - (sh.height >> 1));
+    ctx.save();
+    if (dir < 0) { ctx.translate(Math.round(x), 0); ctx.scale(-1, 1); ctx.translate(-Math.round(x), 0); }
+    ctx.drawImage(set.base, f * s, def.rows.walk * s, s, s, Math.round(x - dw / 2), gy - dw + Math.round(3 * k), dw, dw);
+    ctx.restore();
+  });
+}
+function introFloor(act, t, panX, panY, dark) {
+  const was = state.act;
+  state.act = act;
+  camX = Math.floor(panX + t * 10); camY = Math.floor(panY + t * 4);
+  drawFloor();
+  state.act = was;
+  if (dark) rect(0, 0, W, H, dark);
+}
+function introEmbers(t, n, col) {   // sparks drifting up out of the dark
+  for (let k = 0; k < n; k++) {
+    const h = hash2(k, 77), ph = (t * (0.15 + (h % 7) / 40) + (h % 100) / 100) % 1;
+    const x = (h >>> 8) % W + Math.sin(t * 2 + k) * 6, y = H - ph * H;
+    if (ph < 0.85 || blink(12)) rect(Math.round(x), Math.round(y), 1, 1, ph < 0.5 ? col : '#FF6D00');
+  }
+}
+function renderIntro() {
+  const p = INTRO[intro.i], t = intro.t;
+  if (!p) return;
+  const lines = wrapText(p.text, W - 32), barB = 14 + lines.length * 10, barT = 18;
+  const midY = barT + Math.round((H - barT - barB) / 2), floorY = H - barB - 12;
+  switch (p.show) {
+    case 'sleeps': {   // the Devil, asleep under the earth: a black shape breathing in the red dark
+      for (let y = 0; y < H; y += 4) rect(0, y, W, 4, `rgb(${Math.round(20 + y / H * 70)},0,${Math.round(8 + y / H * 6)})`);
+      introEmbers(t, 40, '#FFB600');
+      const def = SHEETS.devil, s = def.size, k = Math.min(1.4, (H - barT - barB) / s * 1.5) * (1 + Math.sin(t * 1.4) * 0.02), dw = Math.round(s * k);
+      ctx.drawImage(SPR.devil.shade, 0, def.rows.idle * s, s, s, Math.round(W / 2 - dw / 2), Math.round(floorY - dw * 0.85), dw, dw);
+      rect(0, floorY + 6, W, H - floorY, '#100000');
+      break;
+    }
+    case 'crypt':   // the evil seeps back: the dead walk the cathedral
+      introFloor(1, t, 300, 80, 'rgba(0,0,0,0.45)');
+      introParade([['skeleton', 1], ['golem', 1], ['banshee', 1], ['skeleton', 1], ['imp', 1], ['butcher', 0.5]], floorY, 26, t);
+      break;
+    case 'acts': {     // a montage of the four lands, a beat each, with their creatures
+      const d = intro.dur || 7, q = Math.min(3, Math.floor(t / (d / 4)));
+      const crowds = [[['skeleton', 1], ['knight', 0.7], ['banshee', 1]], [['scarab', 1], ['fly', 1], ['lizard', 1], ['maggot', 1]],
+        [['snake', 0.6], ['monkey', 1], ['treant', 0.7], ['plant', 0.6]], [['piranha', 1], ['shark', 0.6], ['squid', 0.7], ['crab', 0.4]]];
+      introFloor(q + 1, t, 200 + q * 900, 120, q === 0 ? 'rgba(0,0,0,0.4)' : q === 2 ? 'rgba(0,12,0,0.25)' : q === 3 ? 'rgba(0,10,40,0.3)' : null);
+      introParade(crowds[q], floorY, 30, t, 80, q % 2 ? -1 : 1);
+      if ((t % (d / 4)) < 0.12) rect(0, 0, W, H, 'rgba(255,255,255,0.5)');   // a flash on each cut
+      break;
+    }
+    case 'hell':      // corruption: hell's floor, pulsing red, fire rising
+      introFloor(5, t, 600, 300, `rgba(${Math.round(60 + Math.sin(t * 3) * 30)},0,0,0.35)`);
+      introEmbers(t, 70, '#FFDB00');
+      introParade([['hellbeast', 0.6], ['fireskull', 0.8], ['cultist', 0.6], ['nightmare', 0.55], ['ghoul', 0.9], ['devilkin', 0.9]], floorY, 34, t, 72, -1);
+      break;
+    case 'heroes':    // the class steps up
+      introFloor(1, t, 900, 500, 'rgba(0,0,30,0.25)');
+      introParade(HEROES.filter(h => !heroLocked(h)).map(h => [h.sprite, h.id === 'biski' ? 1.25 : 1]), floorY, 40, t, 46);
+      break;
+    case 'bosses': {  // his champions, one after another
+      for (let y = 0; y < H; y += 4) rect(0, y, W, 4, `rgb(${Math.round(10 + y / H * 30)},0,${Math.round(18 + y / H * 20)})`);
+      introEmbers(t, 30, '#B692FF');
+      const d = intro.dur || 8, champs = [['butcher', 0.9, 'attack'], ['maggot', 1.6, 'attack'], ['treant', 1.1, 'walk'], ['kraken', 1.1, 'swim']];
+      const n = Math.min(champs.length, 1 + Math.floor(t / (d / 4)));
+      for (let i = 0; i < n; i++) {
+        const [key, k, anim] = champs[i], def = SHEETS[key], s = def.size, dw = Math.round(s * k);
+        const x = Math.round(W * (i + 0.5) / champs.length), f = Math.floor(t * 8) % frameCount(key, anim);
+        ctx.drawImage(SPR[def.file][key === 'treant' ? 'elite' : 'base'] || SPR[def.file].base, f * s, (def.rows[anim] ?? def.rows.walk) * s, s, s, x - (dw >> 1), floorY - dw + Math.round(3 * k), dw, dw);
+      }
+      break;
+    }
+    case 'rises': {   // he wakes: full colour, rising out of the fire
+      for (let y = 0; y < H; y += 4) rect(0, y, W, 4, `rgb(${Math.round(40 + y / H * 120)},${Math.round(y / H * 20)},0)`);
+      introEmbers(t, 90, '#FFDB00');
+      const def = SHEETS.devil, s = def.size, k = Math.min(1.3, (H - barT - barB) / s * 1.5), dw = Math.round(s * k);
+      const rise = Math.min(1, t / 2.5), shake = t < 3 && !REDUCED ? Math.round(Math.sin(t * 40) * 2) : 0;
+      const f = Math.floor(t * 8) % frameCount('devil', 'walk');
+      ctx.drawImage(SPR.devil.base, f * s, def.rows.walk * s, s, s, Math.round(W / 2 - dw / 2) + shake, Math.round(floorY - dw * (0.3 + rise * 0.6)), dw, dw);
+      if (intro.dur && t > intro.dur - 0.5) rect(0, 0, W, H, `rgba(255,255,255,${Math.min(1, (t - intro.dur + 0.5) * 2)})`);
+      break;
+    }
+  }
+  // letterbox, the text, and the skip prompt
+  rect(0, 0, W, barT, C.black);
+  rect(0, H - barB, W, barB, C.black);
+  let left = intro.typed;
+  lines.forEach((ln, i) => {
+    const shown = ln.slice(0, Math.max(0, left));
+    left -= ln.length + 1;
+    drawText(shown, W / 2 - textW(ln) / 2, H - barB + 7 + i * 10, C.white);
+  });
+  if (blink(1.5)) drawText(W >= 300 ? 'PRESS START TO SKIP' : 'TAP TO SKIP', W - 6, 6, C.grey, { align: 'right', shadow: false });
+  addHit(0, 0, W, H, 'any');
+}
+
 function renderTitle() {
   attractBackdrop(0.55);
   drawParade(H - 26);
@@ -5202,7 +5376,7 @@ function renderTitle() {
   drawText('THE DANGER ROOM HAS GONE ROGUE.', W / 2, ty, C.lgrey, { align: 'center' });
   drawText('SURVIVE FIVE ACTS. SLAY THE DEVIL.', W / 2, ty + 10, C.lgrey, { align: 'center' });
   // START GAME / BESTIARY, the classic title-screen pair, and the graphics switch
-  const my = Math.round(H * 0.56), items = ['START GAME', 'BESTIARY', 'GRAPHICS: ' + (HD ? 'HD' : 'RETRO')];
+  const my = Math.round(H * 0.53), items = ['START GAME', 'STORY', 'BESTIARY', 'GRAPHICS: ' + (HD ? 'HD' : 'RETRO')];
   addHit(0, 0, W, H, 'any');
   items.forEach((label, i) => {
     const y = my + i * 14, on = i === titleSel, w = textW(label);
@@ -5448,7 +5622,7 @@ function render() {
     g.globalAlpha = 1;
     g.globalCompositeOperation = 'source-over';
   }
-  const menuScene = scene === 'loading' || scene === 'error' || scene === 'title' || scene === 'select' || scene === 'bestiary';
+  const menuScene = scene === 'loading' || scene === 'error' || scene === 'title' || scene === 'select' || scene === 'bestiary' || scene === 'intro';
   // lit HD: the world goes to its own canvas and through WebGL; #game becomes the clear HUD layer
   const lit = litOn && !menuScene;
   ctx = lit ? worldCtx : uiCtx;
@@ -5456,6 +5630,7 @@ function render() {
   rect(0, 0, W, H, C.black);
   if (scene === 'loading' || scene === 'error') { renderBoot(); return; }
   if (scene === 'title') { renderTitle(); return; }
+  if (scene === 'intro') { renderIntro(); return; }
   if (scene === 'select') { renderSelect(); return; }
   if (scene === 'bestiary') { renderBestiary(); return; }
   renderWorld();
@@ -5503,6 +5678,7 @@ function loop(t) {
   uiTime += dt;
   if (scene === 'play' && !menus.length) update(dt);
   else if (scene === 'over') updateTally(dt);
+  else if (scene === 'intro') updateIntro(dt);
   menuTick(dt);
   render();
   requestAnimationFrame(loop);
