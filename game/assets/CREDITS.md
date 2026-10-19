@@ -82,6 +82,22 @@ https://opengameart.org/content/painterly-spell-icons-part-1 (and parts 2–4).
 Modifications: 14 icons selected, downscaled to 32x32 and 16x16 and packed
 into one sheet (the game then snaps them to the Mega Drive palette).
 
+A further 25 icons from the same packs (same licence, same modifications) mark
+the newer abilities:
+
+- Powers — Arc Jumper `lightning-magenta-2`, Ricochet Glaive `slice-orange-2`,
+  Singularity `air-burst-sky-2`, Cryo Field `ice-sky-2`, Blaze Trail
+  `fire-arrows-2`, Danger Room Decoy `link-spirit-2`, Nine Lives `wild-jade-2`,
+  Psi Mines `explosion-royal-2`.
+- Traits — Duplicator `link-blue-2`, Amplifier `light-royal-2`, Lingering
+  `fog-magenta-3`, Luck `leaf-royal-2`, Thorns `vines-eerie-2`, Second Wind
+  `haste-royal-2`, Curse `horror-red-2`.
+- Evolutions — Omega Beam `beam-red-2`, Feral Frenzy `wild-orange-2`, Thunder
+  God `lighting-fire-2`, Iron Halo `protect-orange-2`, Soul Nova `light-jade-2`,
+  Hammer of Heaven `light-air-fire-2`, Omakase Barrage `explosion-orange-2`, Plague
+  Flask `horror-acid-2`, Thousand Stars `needles-sky-2`, Full House
+  `runes-magenta-2`.
+
 ## Second enemy batch
 
 - `assassin.png` (Assassin) — "Assassin" by **Merry Dream Games**, based on

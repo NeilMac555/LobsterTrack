@@ -1236,7 +1236,10 @@ const SHEETS = {
 };
 // painted skill icons (assets/skills.png): row 0 = 32x32, row 1 = 16x16, in this order
 const SKILL_ORDER = ['optic', 'claws', 'storm', 'orbs', 'nova', 'cards', 'boots', 'vitality',
-  'regen', 'magnet', 'power', 'focus', 'plating', 'heal', 'hammer', 'sushi', 'acid', 'stars'];
+  'regen', 'magnet', 'power', 'focus', 'plating', 'heal', 'hammer', 'sushi', 'acid', 'stars',
+  'arc', 'glaive', 'hole', 'cryo', 'blaze', 'decoy', 'kittens', 'mines',            // the second wave of powers
+  'dupe', 'amp', 'linger', 'luck', 'thorns', 'wind', 'curse',                        // ...of traits
+  'omega', 'frenzy', 'thunder', 'halo', 'soul', 'heaven', 'omakase', 'plague', 'thousand', 'fullhouse'];   // evolutions
 // projectile sprites on the sheet's bottom row (y=48): hammer 14px, nigiri 16px, maki 16px, acid flask 16px, throwing star 16px
 const PROJ = { hammer: [0, 49, 14, 14], nigiri: [16, 48, 16, 16], maki: [32, 48, 16, 16], flask: [48, 48, 16, 16], star: [64, 48, 16, 16] };
 // draw a projectile centred on (x, y), turned in quarter steps so pixels stay square
@@ -2065,6 +2068,7 @@ const state = {
   shake: 0, flash: 0, killTimes: [], streakTier: 0,
   hitstop: 0, lastGemT: -9, gemCombo: 0, heartT: 0, foodT: 60,
   act: 1, portalT: 0, berserkT: 0,
+  ult: 0, ultQueue: [], ultGuardT: 0, catnadoT: 0, decoy: null,   // hero ultimates; the decoy hologram
   ally: null, wildAxo: null, allyT: 0, inkT: 0,
   actBoss: null, bossCleared: 0, clearT: 0,
 };
@@ -2083,8 +2087,9 @@ const PORTAL_TIME = 1.8;
 // Berserk orb (a nod to DOOM's berserk pack): 20s of invulnerability, speed and amplified powers
 const BERSERK_TIME = 20;
 const BERSERK = { speed: 1.75, dmg: 3, cd: 0.4 };
-const amp = () => state.berserkT > 0 ? 1.5 : 1;    // area of every blast, slash and orbit
-const ampN = () => state.berserkT > 0 ? 1 : 0;     // one extra projectile per volley
+const amp = () => (state.berserkT > 0 ? 1.5 : 1) * player.area;   // area of every blast, slash and orbit (Amplifier)
+const ampN = () => (state.berserkT > 0 ? 1 : 0) + player.dupes;   // extra projectiles per volley (Duplicator)
+const durMul = () => player.dur;                                  // how long pools, fields and summons last (Lingering)
 const orbOnFloor = () => state.berserkT > 0 || pickups.some(p => p.type === 'berserk');
 
 // VS-style wave table: one entry per minute. `min` is the enemy-count quota —
@@ -2151,7 +2156,8 @@ const ACT5_TYPES = [ ['ghoul','fireskull'], ['ghoul','fireskull','imp'], ['ghoul
 function currentWave() {
   const m = Math.min(WAVES.length - 1, Math.floor(state.time / 60));
   const types = [null, WAVES[m].types, ACT2_TYPES[m], ACT3_TYPES[m], ACT4_TYPES[m], ACT5_TYPES[m]][state.act] || WAVES[m].types;
-  return { min: Math.max(6, Math.min(actScale().cap, Math.round(WAVES[m].min * actScale().n))), interval: WAVES[m].interval, types };
+  const curse = 1 + player.curse * 0.15;   // the Curse trait: more of them
+  return { min: Math.max(6, Math.min(Math.round(actScale().cap * curse), Math.round(WAVES[m].min * actScale().n * curse))), interval: WAVES[m].interval, types };
 }
 
 // map events: every 30s, alternating a converging ring and a screen-sweeping swarm
@@ -2163,6 +2169,7 @@ const player = {
   facing: { x: 1, y: 0 }, hurtCd: 0, fearT: 0, poisonT: 0, poisonTick: 0, color: '#FFDB00', name: '',
   sprite: 'ranger', face: 1, moving: false, animT: 0, attackAge: 99,
   critChance: 0.12, drawScale: SCALE,
+  area: 1, dupes: 0, dur: 1, luck: 0, thorns: 0, revives: 0, curse: 0,   // what the traits change
   weapons: [], passives: {},
 };
 
@@ -2192,6 +2199,14 @@ const WEAPON_DEFS = {
     desc: 'Fires a searing energy beam at the nearest threat.',
     cd: 0.9,
     fire(w) {
+      if (w.evo) {   // Omega Beam: a held beam per target that burns through the line
+        const targets = nearestEnemies(1 + ampN());
+        if (!targets.length) return false;
+        for (const t of targets) effects.push({ type: 'beam', a: Math.atan2(t.y - player.y, t.x - player.x), len: 560 * amp(), w: 12 * amp(),
+          dmg: 22 * player.dmgMult, tickT: 0, life: 0.6, maxLife: 0.6 });
+        sfx(180, 0.5, 'sawtooth', 0.04, 260);
+        return true;
+      }
       const n = 1 + Math.floor((w.level - 1) / 2) + ampN(); // 1,1,2,2,3
       const targets = nearestEnemies(n);
       if (!targets.length) return false;
@@ -2212,29 +2227,33 @@ const WEAPON_DEFS = {
     desc: 'A savage melee slash in the direction you move.',
     cd: 1.0,
     fire(w) {
-      const range = (85 + w.level * 15) * amp();
+      const range = (85 + w.level * 15) * amp() * (w.evo ? 1.15 : 1);
       const arc = (100 + w.level * 12) * Math.PI / 180;
       const fa = Math.atan2(player.facing.y, player.facing.x);
-      const dirs = w.level >= 5 ? [fa, fa + Math.PI] : [fa];
-      let hitAny = false;
+      const dirs = w.evo ? [fa, fa + Math.PI / 2, fa + Math.PI, fa - Math.PI / 2] : w.level >= 5 ? [fa, fa + Math.PI] : [fa];
+      let hits = 0;
       for (const dir of dirs) {
         effects.push({ type: 'slash', x: player.x, y: player.y, a: dir, arc, range, life: 0.18, maxLife: 0.18 });
-        for (const e of enemies) {
+        for (const e of [...enemies]) {
           if (dist2(e.x, e.y, player.x, player.y) > (range + e.r) ** 2) continue;
           let da = Math.atan2(e.y - player.y, e.x - player.x) - dir;
           while (da > Math.PI) da -= TAU;
           while (da < -Math.PI) da += TAU;
           if (Math.abs(da) < arc / 2) {
-            damageEnemy(e, (16 + w.level * 8) * player.dmgMult);
+            damageEnemy(e, (16 + w.level * 8) * player.dmgMult * (w.evo ? 1.3 : 1));
             e.x += Math.cos(dir) * 14; e.y += Math.sin(dir) * 14; // knockback
-            hitAny = true;
+            hits++;
           }
         }
         for (const bz of state.brazList || []) {
           if (dist2(bz.x, bz.y, player.x, player.y) < (range + 14) ** 2) damageBrazier(bz, 20);
         }
       }
-      if (hitAny) sfx(300, 0.06, 'sawtooth', 0.04);
+      if (w.evo) {   // Feral Frenzy: every hit heals a little and quickens the next swipe
+        if (hits) player.hp = Math.min(player.maxHp, player.hp + Math.min(10, hits * 1.2));
+        w.haste = Math.min(0.55, hits * 0.06);
+      }
+      if (hits) sfx(300, 0.06, 'sawtooth', 0.04);
       return true;
     },
   },
@@ -2243,13 +2262,15 @@ const WEAPON_DEFS = {
     desc: 'Lightning hammers random enemies near you.',
     cd: 2.2,
     fire(w) {
-      const bolts = (1 + w.level) * (1 + ampN());
+      const bolts = 1 + w.level + ampN() * 2 + (w.evo ? 3 : 0);
       const inRange = enemies.filter(e => dist2(e.x, e.y, player.x, player.y) < (380 * amp()) ** 2);
       if (!inRange.length) return false;
+      const dmg = (20 + w.level * 9) * player.dmgMult;
       for (let i = 0; i < bolts; i++) {
         const t = pick(inRange);
-        damageEnemy(t, (20 + w.level * 9) * player.dmgMult);
+        damageEnemy(t, dmg);
         effects.push({ type: 'bolt', x: t.x, y: t.y, life: 0.22, maxLife: 0.22 });
+        if (w.evo) chainFrom(t, 2, 150, dmg * 0.6, '#FFDB49');   // Thunder God: each bolt arcs on
       }
       sfx(1200, 0.1, 'sawtooth', 0.035, -600);
       return true;
@@ -2267,17 +2288,8 @@ const WEAPON_DEFS = {
     desc: 'A telepathic shockwave ripples out, hitting everything.',
     cd: 3.4,
     fire(w) {
-      const radius = (150 + w.level * 35) * amp();
-      effects.push({ type: 'nova', x: player.x, y: player.y, radius, life: 0.4, maxLife: 0.4 });
-      for (const e of enemies) {
-        if (dist2(e.x, e.y, player.x, player.y) < (radius + e.r) ** 2) {
-          damageEnemy(e, (14 + w.level * 7) * player.dmgMult);
-        }
-      }
-      for (const bz of state.brazList || []) {
-        if (dist2(bz.x, bz.y, player.x, player.y) < (radius + 14) ** 2) damageBrazier(bz, 15);
-      }
-      sfx(200, 0.3, 'sine', 0.07, 150);
+      novaPulse(w, 1);
+      if (w.evo) w.echoT = 0.4;   // Soul Nova: a second pulse follows
       return true;
     },
   },
@@ -2290,7 +2302,7 @@ const WEAPON_DEFS = {
       w.spin = (w.spin || 0) + 2.1;                // each cast starts at a new angle
       for (let i = 0; i < n; i++) {
         bullets.push({ kind: 'hammer', cx: player.x, cy: player.y - 10, a0: w.spin + (TAU * i) / n,
-          t: 0, life: 1.35, x: player.x, y: player.y, r: (9 + w.level) * amp(),
+          t: 0, life: 1.35, x: player.x, y: player.y, r: (9 + w.level) * amp(), evo: w.evo, dropT: 0,
           dmg: (14 + w.level * 7) * player.dmgMult, hit: new Set(), hitBz: new Set() });
       }
       sfx(880, 0.14, 'triangle', 0.03, 300);
@@ -2308,7 +2320,7 @@ const WEAPON_DEFS = {
       for (let i = 0; i < n; i++) {
         const t = targets[i % targets.length];
         bullets.push({ kind: 'sushi', sx: player.x, sy: player.y - 14, tx: t.x + rand(-14, 14), ty: t.y + rand(-14, 14),
-          t: 0, T: 0.55 + i * 0.08, x: player.x, y: player.y, h: 0, r: 0, maki: Math.random() < 0.5,
+          t: 0, T: 0.55 + i * 0.08, x: player.x, y: player.y, h: 0, r: 0, maki: Math.random() < 0.5, evo: w.evo,
           dmg: (20 + w.level * 8) * player.dmgMult, aoe: (44 + w.level * 7) * amp(), life: 2 });
       }
       sfx(520, 0.08, 'triangle', 0.03, 260);
@@ -2326,9 +2338,9 @@ const WEAPON_DEFS = {
       for (let i = 0; i < n; i++) {
         const t = targets[i % targets.length];
         bullets.push({ kind: 'acid', sx: player.x, sy: player.y - 14, tx: t.x + rand(-16, 16), ty: t.y + rand(-16, 16),
-          t: 0, T: 0.5 + i * 0.08, x: player.x, y: player.y, h: 0, r: 0, life: 2,
+          t: 0, T: 0.5 + i * 0.08, x: player.x, y: player.y, h: 0, r: 0, life: 2, plague: w.evo,
           dmg: (10 + w.level * 4) * player.dmgMult, aoe: (40 + w.level * 7) * amp(),
-          tick: (5 + w.level * 3) * player.dmgMult, dur: 2.2 + w.level * 0.3 });
+          tick: (5 + w.level * 3) * player.dmgMult, dur: (2.2 + w.level * 0.3) * durMul() });
       }
       sfx(700, 0.07, 'triangle', 0.03, 300);
       return true;
@@ -2337,18 +2349,18 @@ const WEAPON_DEFS = {
   stars: {
     name: 'Death Stars',
     desc: 'A fan of spinning throwing stars that slice through several foes each.',
-    cd: 0.75,
+    cd: 0.75, evoCd: 0.8,
     fire(w) {
       const n = 2 + Math.floor(w.level / 2) + ampN();   // 2,3,3,4,4
       const targets = nearestEnemies(n);
       if (!targets.length) return false;
       for (let i = 0; i < n; i++) {
         const t = targets[i % targets.length], spread = i < targets.length ? 0 : (i % 2 ? 1 : -1) * 0.22 * Math.ceil(i / 2);
-        const a = Math.atan2(t.y - player.y, t.x - player.x) + spread;
+        const a = Math.atan2(t.y - player.y, t.x - player.x) + spread, sp = w.evo ? 560 : 470;
         bullets.push({
-          x: player.x, y: player.y - 16, vx: Math.cos(a) * 470, vy: Math.sin(a) * 470,
+          x: player.x, y: player.y - 16, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
           r: 6 * amp(), dmg: (9 + w.level * 5) * player.dmgMult, life: 1.1, t: 0,
-          kind: 'star', pierce: 1 + Math.floor(w.level / 2), hits: new Set(),
+          kind: 'star', pierce: 1 + Math.floor(w.level / 2), hits: new Set(), bounce: w.evo ? 4 : 0,   // Thousand Stars ricochet
         });
       }
       sfx(1400, 0.05, 'triangle', 0.025, -600);   // the swish
@@ -2366,14 +2378,276 @@ const WEAPON_DEFS = {
         bullets.push({
           x: player.x, y: player.y - 14, vx: Math.cos(a) * 340, vy: Math.sin(a) * 340,
           r: 6, dmg: (14 + w.level * 6) * player.dmgMult, life: 1.4,
-          kind: 'card', aoe: (55 + w.level * 8) * amp(),
+          kind: 'card', aoe: (55 + w.level * 8) * amp(), split: w.evo,   // Full House deals out more
         });
       }
       sfx(660, 0.05, 'triangle', 0.03);
       return true;
     },
   },
+  // ---- the second wave of powers ----
+  arc: {
+    name: 'Arc Jumper',
+    desc: 'A bolt that leaps from foe to foe, one more jump each rank.',
+    cd: 1.3,
+    fire(w) {
+      const first = nearestEnemies(1 + ampN());
+      if (!first.length || dist2(first[0].x, first[0].y, player.x, player.y) > 420 * 420) return false;
+      for (const t of first) {
+        const dmg = (14 + w.level * 6) * player.dmgMult;
+        damageEnemy(t, dmg);
+        effects.push({ type: 'chain', pts: [[player.x, player.y - 14], [t.x, t.y - 10]], col: '#FF6DFF', life: 0.2, maxLife: 0.2 });
+        chainFrom(t, 2 + w.level, 150 * amp(), dmg * 0.9, '#FF6DFF');
+      }
+      sfx(1800, 0.08, 'square', 0.03, -1300);
+      return true;
+    },
+  },
+  glaive: {
+    name: 'Ricochet Glaive',
+    desc: 'A spinning blade flies out and comes back, cutting on both passes.',
+    cd: 1.5,
+    fire(w) {
+      const n = 1 + Math.floor((w.level - 1) / 2) + ampN();   // 1,1,2,2,3
+      const t = nearestEnemies(1)[0];
+      const base = t ? Math.atan2(t.y - player.y, t.x - player.x) : Math.atan2(player.facing.y, player.facing.x);
+      for (let i = 0; i < n; i++) {
+        const a = base + (i - (n - 1) / 2) * 0.55;
+        bullets.push({ kind: 'glaive', x: player.x, y: player.y - 12, a, out: true, d: 0, reach: (230 + w.level * 20) * amp(),
+          r: 12 * amp(), dmg: (16 + w.level * 7) * player.dmgMult, t: 0, life: 4, hit: new Set() });
+      }
+      sfx(600, 0.2, 'sawtooth', 0.025, 400);
+      return true;
+    },
+  },
+  hole: {
+    name: 'Singularity',
+    desc: 'Opens a black hole that drags the horde together, then implodes.',
+    cd: 6,
+    fire(w) {
+      // the crowd: whichever nearby enemy has the most company
+      const cand = nearestEnemies(12);
+      if (!cand.length) return false;
+      let best = cand[0], most = -1;
+      for (const c of cand) { let k = 0; for (const e of enemies) if (dist2(e.x, e.y, c.x, c.y) < 120 * 120) k++; if (k > most) { most = k; best = c; } }
+      effects.push({ type: 'hole', x: best.x, y: best.y, radius: (110 + w.level * 12) * amp(), life: (1.8 + w.level * 0.15) * durMul(), maxLife: (1.8 + w.level * 0.15) * durMul(),
+        tick: (4 + w.level * 2) * player.dmgMult, boom: (30 + w.level * 18) * player.dmgMult, tickT: 0 });
+      sfx(90, 1.4, 'sine', 0.06, -50);
+      return true;
+    },
+  },
+  cryo: {
+    name: 'Cryo Field',
+    desc: 'Freezes everything near you solid. Frozen foes take extra damage and shatter.',
+    cd: 4.5,
+    fire(w) {
+      const r = (110 + w.level * 14) * amp(), t = (1 + w.level * 0.2) * durMul();
+      effects.push({ type: 'cryo', x: player.x, y: player.y, radius: r, life: 0.45, maxLife: 0.45 });
+      let n = 0;
+      for (const e of enemies) {
+        if (dist2(e.x, e.y, player.x, player.y) > (r + e.r) ** 2) continue;
+        if (e.boss) { e.chillT = t; continue; }   // bosses are only slowed
+        e.freezeT = t; e.shatter = (10 + w.level * 6) * player.dmgMult; n++;
+      }
+      for (const e of [...enemies]) if (dist2(e.x, e.y, player.x, player.y) <= (r + e.r) ** 2) damageEnemy(e, (5 + w.level * 3) * player.dmgMult);   // frostbite
+
+      sfx(2400, 0.25, 'triangle', 0.03, -1800); sfx(300, 0.3, 'square', 0.02, -200);
+      return true;
+    },
+  },
+  blaze: {
+    name: 'Blaze Trail',
+    desc: 'You leave a trail of fire wherever you run.',
+    cd: 0.14,
+    fire(w) {
+      if (!player.moving) return false;
+      if (effects.filter(f => f.type === 'flame').length > 60) return false;
+      const life = (1.3 + w.level * 0.2) * durMul();
+      effects.push({ type: 'flame', x: player.x + rand(-4, 4), y: player.y + 14, radius: (16 + w.level * 2) * amp(), life, maxLife: life,
+        dmg: (4 + w.level * 3) * player.dmgMult, tickT: 0 });
+      return true;
+    },
+  },
+  decoy: {
+    name: 'Danger Room Decoy',
+    desc: 'A hologram of you that monsters chase. When it fades, it explodes.',
+    cd: 8,
+    fire(w) {
+      if (state.decoy) return false;
+      state.decoy = { x: player.x + player.facing.x * 40, y: player.y + player.facing.y * 40, t: (3.5 + w.level * 0.5) * durMul(),
+        dmg: (40 + w.level * 22) * player.dmgMult, r: (110 + w.level * 10) * amp(), sprite: player.sprite, scale: player.drawScale };
+      sfx(1000, 0.2, 'sine', 0.03, 600);
+      return true;
+    },
+  },
+  kittens: {
+    name: 'Nine Lives',
+    desc: 'Ghost kittens hunt down whatever comes near you.',
+    cd: 0,
+    tick(w, dt) {   // the kittens live in the weapon: each picks a target, pounces and bites
+      const n = Math.min(6, 2 + Math.floor(w.level / 2) + ampN());
+      w.kits = w.kits || [];
+      while (w.kits.length < n) w.kits.push({ x: player.x + rand(-20, 20), y: player.y + rand(-20, 20), biteT: 0, animT: rand(0, 2), flip: false });
+      w.kits.length = n;
+      for (const k of w.kits) {
+        k.animT += dt; k.biteT -= dt;
+        if (!k.tgt || !enemies.includes(k.tgt) || dist2(k.tgt.x, k.tgt.y, player.x, player.y) > 380 * 380) {
+          k.tgt = null; let bd = 330 * 330;
+          for (const e of enemies) { const d2 = dist2(e.x, e.y, k.x, k.y); if (d2 < bd && dist2(e.x, e.y, player.x, player.y) < 380 * 380) { bd = d2; k.tgt = e; } }
+        }
+        const tx = k.tgt ? k.tgt.x : player.x + Math.cos(k.animT) * 30, ty = k.tgt ? k.tgt.y : player.y + 18;
+        const dx = tx - k.x, dy = ty - k.y, d = Math.hypot(dx, dy) || 1, sp = 250 * dt;
+        if (d > 10) { k.x += dx / d * Math.min(sp, d); k.y += dy / d * Math.min(sp, d); k.flip = dx < 0; }
+        if (k.tgt && d < k.tgt.r + 14 && k.biteT <= 0) { k.biteT = 0.4; damageEnemy(k.tgt, (14 + w.level * 7) * player.dmgMult); }
+      }
+    },
+    fire() { return false; },
+  },
+  mines: {
+    name: 'Psi Mines',
+    desc: 'Drops mines behind you that blow up whatever follows.',
+    cd: 1.6,
+    fire(w) {
+      if (effects.filter(f => f.type === 'mine').length >= 5 + w.level) return false;
+      effects.push({ type: 'mine', x: player.x, y: player.y + 12, arm: 0.5, life: 25 * durMul(), maxLife: 25 * durMul(),
+        dmg: (30 + w.level * 13) * player.dmgMult, radius: (60 + w.level * 6) * amp() });
+      sfx(400, 0.05, 'square', 0.02);
+      return true;
+    },
+  },
 };
+// ---------- hero ultimates ----------
+// Every kill charges the meter (a full bar is about ULT_KILLS kills; elites and bosses give more). When it's
+// full, E / Q (or the ULT button on touch) unleashes the hero's signature move, with a moment of invulnerability.
+const ULT_KILLS = 70;
+const ultK = () => player.dmgMult * (1 + state.level * 0.08);   // ultimates keep pace with the run
+const ultTargets = r => enemies.filter(e => dist2(e.x, e.y, player.x, player.y) < r * r);
+function ultSeq(n, gap, fn) { for (let i = 0; i < n; i++) state.ultQueue.push({ t: i * gap, fn: () => fn(i) }); }
+function ultBurst(x, y, r, dmg, col) {
+  effects.push({ type: 'boom', x, y, radius: r, life: 0.3, maxLife: 0.3 });
+  for (const e of [...enemies]) if (dist2(e.x, e.y, x, y) < (r + e.r) ** 2) damageEnemy(e, dmg);
+  if (col) burstParticles(x, y, col, 8);
+}
+const ULTS = {
+  visor: { name: 'OPTIC SWEEP', col: '#FF4949', fire() {   // a full turn of the eye beam
+    effects.push({ type: 'sweep', a0: Math.atan2(player.facing.y, player.facing.x), len: 620, w: 16, dmg: 110 * ultK(), hit: new Set(), life: 1.3, maxLife: 1.3 });
+    sfx(160, 1.3, 'sawtooth', 0.06, 300); } },
+  wildcat: { name: 'ADAMANT TEMPEST', col: '#FFDB00', fire() {   // eight slashes spinning all the way round
+    ultSeq(8, 0.12, i => {
+      const a = i * TAU / 8, r = 190;
+      effects.push({ type: 'slash', x: player.x, y: player.y, a, arc: 1.4, range: r, life: 0.2, maxLife: 0.2 });
+      for (const e of [...enemies]) { if (dist2(e.x, e.y, player.x, player.y) > (r + e.r) ** 2) continue;
+        let da = Math.atan2(e.y - player.y, e.x - player.x) - a; while (da > Math.PI) da -= TAU; while (da < -Math.PI) da += TAU;
+        if (Math.abs(da) < 0.75) damageEnemy(e, 70 * ultK()); }
+      sfx(300 + i * 40, 0.08, 'sawtooth', 0.05);
+    }); } },
+  skywitch: { name: 'THUNDERSTORM', col: '#49DBFF', fire() {   // thirty bolts, each arcing on
+    ultSeq(30, 0.065, () => {
+      const t = pick(ultTargets(460));
+      if (!t) return;
+      damageEnemy(t, 90 * ultK());
+      effects.push({ type: 'bolt', x: t.x, y: t.y, life: 0.25, maxLife: 0.25 });
+      chainFrom(t, 2, 150, 45 * ultK(), '#92DBFF');
+      if (Math.random() < 0.3) sfx(1300, 0.12, 'sawtooth', 0.04, -900);
+    }); } },
+  ace: { name: 'ROYAL FLUSH', col: '#B649FF', fire() {   // the whole deck, in a ring
+    for (let k = 0; k < 52; k++) { const a = k * TAU / 52;
+      bullets.push({ x: player.x, y: player.y - 14, vx: Math.cos(a) * 320, vy: Math.sin(a) * 320, r: 6, dmg: 45 * ultK(), life: 1.6, kind: 'card', aoe: 60 }); }
+    sfx(660, 0.4, 'triangle', 0.05, 600); } },
+  mender: { name: 'SANCTUARY', col: '#24DB24', fire() {   // full heal and a vast pulse that throws them back
+    player.hp = player.maxHp; state.ultGuardT = 3;
+    effects.push({ type: 'nova', x: player.x, y: player.y, radius: 440, life: 0.7, maxLife: 0.7 });
+    for (const e of [...enemies]) { if (dist2(e.x, e.y, player.x, player.y) > 440 * 440) continue;
+      damageEnemy(e, 160 * ultK()); const a = Math.atan2(e.y - player.y, e.x - player.x); e.x += Math.cos(a) * 90; e.y += Math.sin(a) * 90; }
+    jingle([523, 659, 784, 1047], 0.09, 0.06); } },
+  biski: { name: 'CATNADO', col: '#9292FF', fire() {   // four seconds of untouchable, shredding speed
+    state.catnadoT = 4; state.ultGuardT = 4;
+    effects.push({ type: 'catnado', x: player.x, y: player.y, life: 4, maxLife: 4 });
+    sfx(900, 0.6, 'sawtooth', 0.04, -500); } },
+  neil: { name: 'HAMMERFALL', col: '#FFDB49', fire() {   // two waves of twelve hammers
+    ultSeq(2, 0.6, () => { for (let k = 0; k < 12; k++) bullets.push({ kind: 'hammer', cx: player.x, cy: player.y - 10, a0: k * TAU / 12, t: 0, life: 1.8,
+      x: player.x, y: player.y, r: 14, dmg: 60 * ultK(), hit: new Set(), hitBz: new Set(), dropT: 0 }); sfx(880, 0.3, 'triangle', 0.05, 400); }); } },
+  zoe: { name: 'SUSHI METEOR', col: '#FF49B6', fire() {   // one enormous sushi, onto the biggest crowd
+    const cand = ultTargets(420); let best = cand[0], most = -1;
+    for (const c of cand) { let k = 0; for (const e of enemies) if (dist2(e.x, e.y, c.x, c.y) < 150 * 150) k++; if (k > most) { most = k; best = c; } }
+    const tx = best ? best.x : player.x + player.facing.x * 150, ty = best ? best.y : player.y + player.facing.y * 150;
+    bullets.push({ kind: 'sushi', sx: player.x, sy: player.y - 14, tx, ty, t: 0, T: 0.9, x: player.x, y: player.y, h: 0, r: 0, maki: false, mega: true,
+      dmg: 380 * ultK(), aoe: 240, life: 3 });
+    sfx(400, 0.9, 'triangle', 0.05, -300); } },
+  ana: { name: 'ACID RAIN', col: '#92FF24', fire() {   // two dozen flasks rain down around you
+    ultSeq(24, 0.06, () => { const a = rand(0, TAU), d = rand(40, 300), tx = player.x + Math.cos(a) * d, ty = player.y + Math.sin(a) * d;
+      bullets.push({ kind: 'acid', sx: tx + rand(-30, 30), sy: ty - 260, tx, ty, t: 0, T: 0.5, x: tx, y: ty, h: 0, r: 0, life: 2,
+        dmg: 40 * ultK(), aoe: 55, tick: 16 * ultK(), dur: 3 * durMul() }); }); } },
+  karate: { name: 'SHURIKEN TYPHOON', col: '#FF2424', fire() {   // three rings of stars
+    ultSeq(3, 0.25, wv => { for (let k = 0; k < 24; k++) { const a = k * TAU / 24 + wv * 0.13;
+      bullets.push({ x: player.x, y: player.y - 16, vx: Math.cos(a) * 480, vy: Math.sin(a) * 480, r: 7, dmg: 45 * ultK(), life: 1.2, t: 0, kind: 'star', pierce: 3, hits: new Set() }); }
+      sfx(1400, 0.1, 'triangle', 0.04, -800); }); } },
+};
+function gainUlt(v) {
+  const was = state.ult;
+  state.ult = Math.min(1, was + v);
+  if (was < 1 && state.ult >= 1 && scene === 'play') {
+    announce('ULTIMATE READY!', '#FFDB49', 1.8, 2, touch.used ? 'TAP ULT' : 'PRESS E');
+    jingle([784, 1175], 0.07, 0.05);
+  }
+}
+function fireUlt() {
+  const u = ULTS[player.heroId];
+  if (!u || state.ult < 1 || scene !== 'play' || menus.length) return;
+  state.ult = 0;
+  state.ultGuardT = Math.max(state.ultGuardT, 1.5);
+  state.flash = 0.6; state.shake = Math.max(state.shake, 6);
+  announce(u.name + '!', u.col, 1.6, 6);
+  u.fire();
+}
+function updateUlt(dt) {
+  state.ultGuardT = Math.max(0, state.ultGuardT - dt);
+  state.catnadoT = Math.max(0, state.catnadoT - dt);
+  for (let i = state.ultQueue.length - 1; i >= 0; i--) {
+    const q = state.ultQueue[i];
+    if ((q.t -= dt) <= 0) { state.ultQueue.splice(i, 1); q.fn(); }
+  }
+}
+// Visor's sweep: the beam turns a full circle, cutting each foe once
+function updateSweep(fx) {
+  fx.x = player.x; fx.y = player.y - 14;
+  fx.a = fx.a0 + (1 - fx.life / fx.maxLife) * TAU * 1.1;
+  const ux = Math.cos(fx.a), uy = Math.sin(fx.a);
+  for (const e of [...enemies]) {
+    if (fx.hit.has(e)) continue;
+    const rx = e.x - fx.x, ry = e.y - fx.y, along = rx * ux + ry * uy;
+    if (along < 0 || along > fx.len || Math.abs(rx * uy - ry * ux) > fx.w + e.r) continue;
+    fx.hit.add(e); damageEnemy(e, fx.dmg);
+  }
+}
+
+// lightning that arcs from one foe to the next nearest, n times
+function chainFrom(t, n, range, dmg, col) {
+  const hit = new Set([t]);
+  let cur = t;
+  for (let k = 0; k < n; k++) {
+    let next = null, bd = range * range;
+    for (const e of enemies) { if (hit.has(e)) continue; const d2 = dist2(e.x, e.y, cur.x, cur.y); if (d2 < bd) { bd = d2; next = e; } }
+    if (!next) break;
+    hit.add(next);
+    effects.push({ type: 'chain', pts: [[cur.x, cur.y - 10], [next.x, next.y - 10]], col, life: 0.2, maxLife: 0.2 });
+    damageEnemy(next, dmg);
+    cur = next;
+  }
+}
+function novaPulse(w, k) {
+  const radius = (150 + w.level * 35) * amp();
+  effects.push({ type: 'nova', x: player.x, y: player.y, radius, life: 0.4, maxLife: 0.4 });
+  let hits = 0;
+  for (const e of [...enemies]) {
+    if (dist2(e.x, e.y, player.x, player.y) < (radius + e.r) ** 2) { damageEnemy(e, (14 + w.level * 7) * player.dmgMult * k); hits++; }
+  }
+  for (const bz of state.brazList || []) {
+    if (dist2(bz.x, bz.y, player.x, player.y) < (radius + 14) ** 2) damageBrazier(bz, 15);
+  }
+  if (w.evo && hits) player.hp = Math.min(player.maxHp, player.hp + Math.min(12, hits * 0.4));   // Soul Nova heals
+  sfx(200, 0.3, 'sine', 0.07, 150);
+}
 
 // ---------- passives ----------
 const PASSIVE_DEFS = {
@@ -2391,7 +2665,38 @@ const PASSIVE_DEFS = {
     apply() { player.cdMult *= 0.9; } },
   plating: { name: 'Steel Skin', desc: 'Blocks 2 damage from every hit per rank.',
     apply() { player.armor += 2; } },
+  dupe: { name: 'Duplicator', desc: 'Every power fires one more projectile per rank.', max: 2,
+    apply() { player.dupes += 1; } },
+  amp: { name: 'Amplifier', desc: '+15% area on every blast, slash, field and orbit per rank.',
+    apply() { player.area *= 1.15; } },
+  linger: { name: 'Lingering', desc: 'Pools, fields, flames and summons last 20% longer per rank.',
+    apply() { player.dur *= 1.2; } },
+  luck: { name: 'Luck', desc: '+5% critical chance per rank, and treasure chests hold more.',
+    apply() { player.luck += 1; player.critChance += 0.05; } },
+  thorns: { name: 'Thorns', desc: 'Monsters that touch you take 150% of the hit back per rank.',
+    apply() { player.thorns += 1.5; } },
+  wind: { name: 'Second Wind', desc: 'Once per rank: when you would fall, rise again at half health in a blast.', max: 2,
+    apply() { player.revives += 1; } },
+  curse: { name: 'Curse', desc: '+15% more monsters and +15% more experience per rank. Risky.',
+    apply() { player.curse += 1; } },
 };
+const passiveMax = id => PASSIVE_DEFS[id].max || MAX_LEVEL;
+// evolutions: a power at full rank plus its partner trait becomes something new at the next treasure chest
+const EVOLUTIONS = {
+  optic:  { with: 'focus',    key: 'omega',     name: 'Omega Beam',        desc: 'A continuous beam that burns through everything in its path.' },
+  claws:  { with: 'vitality', key: 'frenzy',    name: 'Feral Frenzy',      desc: 'Four-way slashes that heal you, faster with every hit.' },
+  storm:  { with: 'magnet',   key: 'thunder',   name: 'Thunder God',       desc: 'More bolts, and each one arcs on to two more foes.' },
+  orbs:   { with: 'plating',  key: 'halo',      name: 'Iron Halo',         desc: 'More orbs, and they smash enemy shots out of the air.' },
+  nova:   { with: 'regen',    key: 'soul',      name: 'Soul Nova',         desc: 'Pulses twice and heals you for every foe it hits.' },
+  hammer: { with: 'power',    key: 'heaven',    name: 'Hammer of Heaven',  desc: 'The hammers leave a trail of holy fire.' },
+  sushi:  { with: 'boots',    key: 'omakase',   name: 'Omakase Barrage',   desc: 'Every explosion scatters three more sushi bombs.' },
+  acid:   { with: 'magnet',   key: 'plague',    name: 'Plague Flask',      desc: 'The acid infects: victims rot, and burst into new puddles.' },
+  stars:  { with: 'focus',    key: 'thousand',  name: 'Thousand Stars',    desc: 'Faster stars that ricochet from foe to foe.' },
+  cards:  { with: 'luck',     key: 'fullhouse', name: 'Full House',        desc: 'Every card that explodes deals out four more.' },
+};
+const canEvolve = w => !w.evo && EVOLUTIONS[w.id] && w.level >= MAX_LEVEL && !!player.passives[EVOLUTIONS[w.id].with];
+const weaponIcon = w => w.evo ? EVOLUTIONS[w.id].key : w.id;
+const weaponName = w => w.evo ? EVOLUTIONS[w.id].name : WEAPON_DEFS[w.id].name;
 const HEAL_DEF = { name: 'Field Medkit', desc: 'Everything is maxed out. Restore 50 HP instead.' };
 
 // ---------- heroes (Danger Room avatars) ----------
@@ -3013,6 +3318,7 @@ function damageEnemy(e, dmg) {
   if (e.burrowed) return;   // the Maggot Queen underground
   const crit = Math.random() < player.critChance;
   if (crit) dmg *= 2.2;
+  if (e.freezeT > 0) dmg *= 1.5;   // frozen foes break easily
   e.hp -= dmg;
   // white hit-flash, rate-limited: a target under constant fire still shows its sprite
   if (e.flash < -0.08) e.flash = 0.06;
@@ -3049,6 +3355,14 @@ function killEnemy(e) {
   if (i === -1) return;
   enemies.splice(i, 1);
   state.kills++;
+  gainUlt(e.boss ? 0.25 : e.elite ? 0.05 : 1 / ULT_KILLS);
+  if (e.freezeT > 0 && e.shatter) {   // Cryo Field: the frozen shatter into shards that cut their neighbours
+    burstParticles(e.x, e.y - 10, '#DBFFFF', 10);
+    for (const o of [...enemies]) if (dist2(o.x, o.y, e.x, e.y) < 60 * 60) damageEnemy(o, e.shatter);
+  }
+  if (e.plagueT > 0) {   // Plague Flask: the dead burst into fresh acid
+    effects.push({ type: 'acidpool', x: e.x, y: e.y, radius: 32 * amp(), life: 1.8 * durMul(), maxLife: 1.8 * durMul(), dmg: e.plagueDmg, tickT: 0.15, plague: true });
+  }
   bestKill(e.boss ? e.bestKey : e.kind);
   trackStreak();
   corpses.push({ sprite: e.sprite, scale: e.scale, variant: e.variant,
@@ -3104,18 +3418,35 @@ function groundYOf(e) { return e.y + e.r * 0.9; }
 
 // ---------- player damage / xp ----------
 function hurtPlayer(dmg) {
-  if (player.hurtCd > 0 || state.berserkT > 0) return;
+  if (player.hurtCd > 0 || state.berserkT > 0 || state.ultGuardT > 0) return false;
   const taken = Math.max(1, dmg - player.armor);
   player.hp -= taken;
   player.hurtCd = 0.5;
   state.shake = Math.max(state.shake, 5);
   popNum(player.x, player.y - 40, '-' + Math.round(taken), false, C.red);
   hurtVoice(player.heroId);
-  if (player.hp <= 0) endGame(false);
+  if (player.hp <= 0 && player.revives > 0) secondWind();
+  else if (player.hp <= 0) endGame(false);
+  return true;
+}
+// Second Wind: back on your feet at half health, in a blast that clears some room
+function secondWind() {
+  player.revives--;
+  player.hp = Math.round(player.maxHp / 2);
+  player.hurtCd = 2.5;
+  state.flash = 1; state.shake = 12; state.hitstop = 0.15;
+  effects.push({ type: 'nova', x: player.x, y: player.y, radius: 260, life: 0.6, maxLife: 0.6 });
+  for (const e of [...enemies]) {
+    if (dist2(e.x, e.y, player.x, player.y) > 260 * 260) continue;
+    damageEnemy(e, 150 * player.dmgMult);
+    const a = Math.atan2(e.y - player.y, e.x - player.x); e.x += Math.cos(a) * 60; e.y += Math.sin(a) * 60;
+  }
+  announce('SECOND WIND!', '#92FFFF', 2.2, 7);
+  jingle([523, 659, 784, 1047], 0.08, 0.07);
 }
 
 function gainXp(v) {
-  state.xp += v;
+  state.xp += v * (1 + player.curse * 0.15);   // ...and more to learn from them
   while (state.xp >= state.xpNeed) {
     state.xp -= state.xpNeed;
     state.level++;
@@ -3182,7 +3513,7 @@ function upgradeChoices() {
     const rank = player.passives[id] || 0;
     const isNew = rank === 0;
     if (isNew && Object.keys(player.passives).length >= MAX_PASSIVES) continue;
-    if (rank >= MAX_LEVEL) continue;
+    if (rank >= passiveMax(id)) continue;
     opts.push({ kind: 'passive', id, rank, isNew });
   }
   for (let i = opts.length - 1; i > 0; i--) {
@@ -3204,18 +3535,29 @@ function applyChoice(o) {
 function chestUpgrade() {
   const opts = [];
   for (const w of player.weapons) if (w.level < MAX_LEVEL) opts.push({ kind: 'weapon', id: w.id });
-  for (const [id, rank] of Object.entries(player.passives)) if (rank < MAX_LEVEL) opts.push({ kind: 'passive', id });
+  for (const [id, rank] of Object.entries(player.passives)) if (rank < passiveMax(id)) opts.push({ kind: 'passive', id });
   return opts.length ? pick(opts) : null;
+}
+function evolveWeapon(w, m) {
+  const ev = EVOLUTIONS[w.id];
+  w.evo = true;
+  m.rewards.push({ icon: ev.key, name: 'EVOLVED: ' + ev.name, rank: 0, evo: true });
+  announce(norm(ev.name) + '!', '#FFDB49', 2.5, 6, 'EVOLUTION');
+  jingle([392, 523, 659, 784, 1047, 1319, 1568], 0.07, 0.07);
+  state.flash = 1;
 }
 function rollChest(m) {
   sndChest();
   state.flash = 0.3;
-  const roll = Math.random();
+  const roll = Math.random() + player.luck * 0.08;   // Luck tips the odds towards the jackpot
   const n = roll < 0.6 ? 1 : roll < 0.92 ? 3 : 5; // jackpot odds, VS-style
   m.goldBonus = randInt(20, 60) * n;
   state.gold += m.goldBonus;
   m.rewards = [];
-  for (let i = 0; i < n; i++) {
+  // an evolution, if one is ready, always comes first
+  const ready = player.weapons.find(canEvolve);
+  if (ready) evolveWeapon(ready, m);
+  for (let i = m.rewards.length; i < n; i++) {
     const up = chestUpgrade();
     if (up) {
       if (up.kind === 'weapon') addWeapon(up.id); else addPassive(up.id);
@@ -3336,6 +3678,7 @@ window.addEventListener('keydown', e => {
   if (GAME_KEYS.has(k) && !e.ctrlKey && !e.metaKey && !e.altKey) e.preventDefault();
   if (e.repeat) return;               // menus react to fresh presses only
   if (k === 'm') { setMuted(!muted); return; }
+  if ((k === 'e' || k === 'q') && scene === 'play' && !menus.length) { fireUlt(); return; }   // the ultimate
   uiKey(k);
 });
 window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
@@ -3416,6 +3759,7 @@ function onHit(id, down) {
   const i = Number(arg);
   if (kind === 'any' || kind === 'start') { if (down) uiKey('enter'); return; }
   if (kind === 'back') { if (down) closeBestiary(); return; }
+  if (kind === 'ult') { if (down) fireUlt(); return; }
   if (kind === 'title') {
     if (i === titleSel) { if (down) uiKey('enter'); }
     else { titleSel = i; sndMove(); if (down) uiKey('enter'); }   // a tap on an item means it
@@ -3443,10 +3787,11 @@ function onHit(id, down) {
     else { m.sel = i; sndMove(); }
   }
 }
-const touch = { active: false, id: null, ox: 0, oy: 0, dx: 0, dy: 0 };
+const touch = { active: false, id: null, ox: 0, oy: 0, dx: 0, dy: 0, used: false };
 canvas.addEventListener('pointerdown', e => {
   e.preventDefault();
   canvas.focus();
+  if (e.pointerType === 'touch') touch.used = true;   // prompts say TAP rather than PRESS
   const p = toBuf(e), id = hitAt(p);
   if (scene === 'play' && !menus.length) {
     if (id && id.startsWith('icon:')) { onHit(id, true); return; }
@@ -3606,6 +3951,7 @@ function update(dt) {
   const ground = groundAt(player.x, player.y);
   let spd = player.speed * (player.fearT > 0 && state.berserkT <= 0 ? 0.55 : 1);   // banshee terror slows you
   if (ground) spd *= ground.slow;                                                  // wading through water, bog or lava
+  if (state.catnadoT > 0) spd *= 1.6;
   player.x += mx * spd * dt;
   player.y += my * spd * dt;
   groundHazard(ground, dt);
@@ -3620,9 +3966,10 @@ function update(dt) {
   // weapons
   for (const w of player.weapons) {
     const def = WEAPON_DEFS[w.id];
+    if (def.tick) { def.tick(w, dt); continue; }
     if (def.passiveOrbit) {
-      const count = 1 + w.level + ampN() * 2;
-      const radius = (70 + w.level * 10) * amp();
+      const count = 1 + w.level + ampN() * 2 + (w.evo ? 2 : 0);
+      const radius = (70 + w.level * 10) * amp() * (w.evo ? 1.15 : 1);
       const spd = (2.4 + w.level * 0.25) * (1 + ampN());
       w.orbitA += spd * dt;
       w.tick = (w.tick || 0) - dt;
@@ -3632,6 +3979,9 @@ function update(dt) {
         const a = w.orbitA + (TAU * i) / count;
         const ox = player.x + Math.cos(a) * radius, oy = player.y + Math.sin(a) * radius;
         w.orbPos.push({ x: ox, y: oy });
+        if (w.evo) for (let j = ebullets.length - 1; j >= 0; j--) {   // Iron Halo: shots break on the orbs
+          if (dist2(ebullets[j].x, ebullets[j].y, ox, oy) < 16 * 16) { burstParticles(ebullets[j].x, ebullets[j].y, '#DBDBDB', 4); ebullets.splice(j, 1); }
+        }
         if (canHit) {
           for (const e of enemies) {
             if (dist2(e.x, e.y, ox, oy) < (e.r + 9) ** 2) {
@@ -3644,8 +3994,9 @@ function update(dt) {
       continue;
     }
     w.timer -= dt;
+    if (w.echoT > 0 && (w.echoT -= dt) <= 0) novaPulse(w, 0.6);   // Soul Nova's second pulse
     if (w.timer <= 0) {
-      if (def.fire(w)) { w.timer = def.cd * player.cdMult; player.attackAge = 0; }
+      if (def.fire(w)) { w.timer = def.cd * player.cdMult * (w.evo && def.evoCd || 1) * (1 - (w.haste || 0)); player.attackAge = 0; }
       else w.timer = 0.1; // no target yet — retry soon
     }
   }
@@ -3653,7 +4004,7 @@ function update(dt) {
   // bullets
   for (let i = bullets.length - 1; i >= 0; i--) {
     const b = bullets[i];
-    if (b.kind === 'hammer' || b.kind === 'sushi' || b.kind === 'acid') {
+    if (b.kind === 'hammer' || b.kind === 'sushi' || b.kind === 'acid' || b.kind === 'glaive') {
       if (updateSpecialBullet(b, dt)) { bullets[i] = bullets[bullets.length - 1]; bullets.pop(); }
       continue;
     }
@@ -3676,9 +4027,19 @@ function update(dt) {
             for (const e2 of [...enemies]) {
               if (dist2(e2.x, e2.y, b.x, b.y) < (b.aoe + e2.r) ** 2) damageEnemy(e2, b.dmg);
             }
+            if (b.split) for (let k = 0; k < 4; k++) {   // Full House: four more cards fly out of the blast
+              const a = k * TAU / 4 + rand(-0.4, 0.4);
+              bullets.push({ x: b.x, y: b.y, vx: Math.cos(a) * 300, vy: Math.sin(a) * 300, r: 5, dmg: b.dmg * 0.6, life: 0.6, kind: 'card', aoe: b.aoe * 0.7 });
+            }
             dead = true;
           } else {
             damageEnemy(e, b.dmg);
+            if (b.bounce > 0) {   // Thousand Stars: off this one and on to the next
+              let next = null, bd = 230 * 230;
+              for (const e2 of enemies) { if (e2 === e || b.hits.has(e2)) continue; const d2 = dist2(e2.x, e2.y, b.x, b.y); if (d2 < bd) { bd = d2; next = e2; } }
+              b.bounce--;
+              if (next) { const a = Math.atan2(next.y - b.y, next.x - b.x), sp = Math.hypot(b.vx, b.vy); b.vx = Math.cos(a) * sp; b.vy = Math.sin(a) * sp; b.life = Math.max(b.life, 0.6); break; }
+            }
             if (b.pierce > 0) b.pierce--;
             else dead = true;
           }
@@ -3689,6 +4050,14 @@ function update(dt) {
     if (dead) { bullets[i] = bullets[bullets.length - 1]; bullets.pop(); }
   }
 
+  updateDecoy(dt);
+  updateUlt(dt);
+  // Plague Flask rot ticks on infected foes (in its own pass: a tick can kill)
+  for (const e of [...enemies]) {
+    if (!(e.plagueT > 0)) continue;
+    e.plagueT -= dt; e.plagueTick = (e.plagueTick || 0) - dt;
+    if (e.plagueTick <= 0) { e.plagueTick = 0.5; burstParticles(e.x, e.y - 12, '#92DB24', 2); damageEnemy(e, e.plagueDmg); }
+  }
   // enemies chase player — each archetype moves differently
   for (let i = enemies.length - 1; i >= 0; i--) {
     const e = enemies[i];
@@ -3703,7 +4072,10 @@ function update(dt) {
       e.sweep.life -= dt;
       if (e.sweep.life <= 0) { enemies[i] = enemies[enemies.length - 1]; enemies.pop(); continue; }
     } else {
-      let spd = e.speed, px = dx / d, py = dy / d;
+      let spd = e.speed * (e.chillT > 0 ? 0.5 : 1), px = dx / d, py = dy / d;
+      if (e.chillT > 0) e.chillT -= dt;
+      const dc = state.decoy;   // the Danger Room decoy draws everything nearby (bosses aren't fooled)
+      if (dc && !e.boss) { const qx = dc.x - e.x, qy = dc.y - e.y, qd = Math.hypot(qx, qy) || 1; if (qd < 340) { px = qx / qd; py = qy / qd; } }
       if (e.move === 'hop') {
         spd *= Math.max(0.05, Math.sin(e.animT * 5)) * 1.7; // lunge... rest... lunge
       } else if (e.move === 'zigzag') {
@@ -3960,16 +4332,16 @@ function update(dt) {
       }
     }
     if (d < e.r + player.r && !e.burrowed) {
-      if (state.berserkT > 0) {   // berserk: you are the hazard now — touching things hurts THEM
+      if (state.berserkT > 0 || state.catnadoT > 0) {   // berserk (or Biski's catnado): touching things hurts THEM
         e.ramT = (e.ramT || 0) - dt;
         if (e.ramT <= 0) {
           e.ramT = 0.2;
-          damageEnemy(e, 25 * player.dmgMult);
+          damageEnemy(e, state.catnadoT > 0 ? 40 * ultK() : 25 * player.dmgMult);
           const k = 26 / Math.max(1, d);
           e.x += (e.x - player.x) * k; e.y += (e.y - player.y) * k;
         }
-      } else {
-        hurtPlayer(e.dmg);
+      } else if (!(e.freezeT > 0)) {   // a frozen monster can't bite
+        if (hurtPlayer(e.dmg) && player.thorns) damageEnemy(e, e.dmg * player.thorns * player.dmgMult);   // Thorns
         if (e.poison) poisonPlayer();
         if (e.shock && state.berserkT <= 0) {   // jellyfish and eels: a jolt that leaves you sluggish
           if (player.fearT <= 0.2) { popText(player.x, player.y - 52, 'ZAPPED!', '#FFFF49'); effects.push({ type: 'bolt', x: player.x, y: player.y, life: 0.18, maxLife: 0.18 }); sfx(1600, 0.12, 'sawtooth', 0.03, -1200); }
@@ -3986,6 +4358,7 @@ function update(dt) {
     }
     // walkers wade through liquid (a teleport back into the fight is left alone), then walls and props push them out;
     // fliers pass over everything
+    if (e.freezeT > 0) { e.freezeT -= dt; e.x = ox; e.y = oy; }   // frozen solid: going nowhere
     if (!e.fly) {
       const g = !e.boss && groundAt(e.x, e.y);
       if (g && Math.abs(e.x - ox) + Math.abs(e.y - oy) < 40) { e.x = ox + (e.x - ox) * g.slow; e.y = oy + (e.y - oy) * g.slow; }
@@ -4131,16 +4504,23 @@ function update(dt) {
   for (let i = effects.length - 1; i >= 0; i--) {
     const fx = effects[i];
     fx.life -= dt;
-    if (fx.type === 'acidpool') {
+    if (fx.type === 'acidpool' || fx.type === 'flame' || fx.type === 'holyfire') {   // ground that burns whatever stands in it
       fx.tickT -= dt;
       if (fx.tickT <= 0) {
         fx.tickT = 0.3;
         for (let j = enemies.length - 1; j >= 0; j--) {
           const e = enemies[j];
-          if (e && !e.fly && dist2(e.x, e.y, fx.x, fx.y) < (fx.radius + e.r * 0.5) ** 2) damageEnemy(e, fx.dmg);
+          if (!e || (e.fly && fx.type !== 'holyfire') || dist2(e.x, e.y, fx.x, fx.y) >= (fx.radius + e.r * 0.5) ** 2) continue;
+          if (fx.plague && !e.boss) { e.plagueT = 3 * durMul(); e.plagueDmg = fx.dmg * 0.6; }   // Plague Flask infects
+          damageEnemy(e, fx.dmg);
         }
       }
     }
+    if (fx.type === 'catnado') { fx.x = player.x; fx.y = player.y; }
+    if (fx.type === 'beam') updateBeam(fx, dt);
+    if (fx.type === 'sweep') updateSweep(fx);
+    if (fx.type === 'hole') updateHole(fx, dt);
+    if (fx.type === 'mine' && updateMine(fx, dt)) fx.life = 0;
     if (fx.type === 'shock' && !fx.hit) {   // a rolling ring: it only hurts where the wavefront is
       const r = fx.radius * (1 - fx.life / fx.maxLife), dd = Math.hypot(player.x - fx.x, player.y - fx.y);
       if (Math.abs(dd - r) < 18) { fx.hit = true; hurtPlayer(fx.dmg); }
@@ -4170,10 +4550,15 @@ function update(dt) {
 // Exploding Sushi: lobbed in an arc, detonates where it lands. Returns true when finished.
 function updateSpecialBullet(b, dt) {
   b.t += dt;
+  if (b.kind === 'glaive') return updateGlaive(b, dt);
   if (b.kind === 'hammer') {
     const rr = 8 + 100 * b.t, ang = b.a0 + 5.2 * b.t;
     b.x = b.cx + Math.cos(ang) * rr;
     b.y = b.cy + Math.sin(ang) * rr * 0.85;
+    if (b.evo && (b.dropT -= dt) <= 0) {   // Hammer of Heaven: holy fire where it passes
+      b.dropT = 0.11;
+      effects.push({ type: 'holyfire', x: b.x, y: b.y + 8, radius: 18 * amp(), life: 1.4 * durMul(), maxLife: 1.4 * durMul(), dmg: b.dmg * 0.35, tickT: 0 });
+    }
     for (let j = enemies.length - 1; j >= 0; j--) {
       const e = enemies[j];
       if (!e || b.hit.has(e) || dist2(e.x, e.y, b.x, b.y) >= (e.r + b.r) ** 2) continue;
@@ -4199,11 +4584,17 @@ function updateSpecialBullet(b, dt) {
       if (e && dist2(e.x, e.y, b.x, b.y) < (b.aoe * 0.7 + e.r) ** 2) damageEnemy(e, b.dmg);
     }
     for (const bz of state.brazList || []) if (dist2(bz.x, bz.y, b.x, b.y) < (b.aoe + 14) ** 2) damageBrazier(bz, 12);
-    effects.push({ type: 'acidpool', x: b.x, y: b.y, radius: b.aoe, life: b.dur, maxLife: b.dur, dmg: b.tick, tickT: 0 });
+    effects.push({ type: 'acidpool', x: b.x, y: b.y, radius: b.aoe, life: b.dur, maxLife: b.dur, dmg: b.tick, tickT: 0, plague: b.plague });
     sfx(900, 0.12, 'square', 0.03, -700); sfx(160, 0.3, 'sawtooth', 0.03, -80);   // smash + hiss
     return true;
   }
   effects.push({ type: 'boom', x: b.x, y: b.y, radius: b.aoe, life: 0.3, maxLife: 0.3 });
+  if (b.mega) { state.shake = 14; state.flash = 0.7; burstParticles(b.x, b.y, '#FF6D49', 30); }
+  if (b.evo && !b.mini) for (let k = 0; k < 3; k++) {   // Omakase Barrage: three more bombs scatter from the blast
+    const a = rand(0, TAU), d = rand(50, 100);
+    bullets.push({ kind: 'sushi', sx: b.x, sy: b.y, tx: b.x + Math.cos(a) * d, ty: b.y + Math.sin(a) * d, t: 0, T: 0.35 + k * 0.06,
+      x: b.x, y: b.y, h: 0, r: 0, maki: Math.random() < 0.5, mini: true, dmg: b.dmg * 0.55, aoe: b.aoe * 0.65, life: 2 });
+  }
   burstParticles(b.x, b.y, '#FFFFFF', 6);               // rice
   burstParticles(b.x, b.y, b.maki ? '#24DB49' : '#FF6D49', 5);
   for (let j = enemies.length - 1; j >= 0; j--) {
@@ -4215,6 +4606,83 @@ function updateSpecialBullet(b, dt) {
   }
   sfx(120, 0.25, 'sawtooth', 0.05, -60);
   return true;
+}
+
+// Ricochet Glaive: out along its line, then home to wherever you are; a fresh set of cuts each way
+function updateGlaive(b, dt) {
+  const sp = 420 * dt;
+  if (b.out) {
+    b.x += Math.cos(b.a) * sp; b.y += Math.sin(b.a) * sp; b.d += sp;
+    if (b.d >= b.reach) { b.out = false; b.hit = new Set(); }
+  } else {
+    const dx = player.x - b.x, dy = player.y - 12 - b.y, d = Math.hypot(dx, dy);
+    if (d < 18) return true;
+    b.x += dx / d * sp * 1.15; b.y += dy / d * sp * 1.15;
+  }
+  for (let j = enemies.length - 1; j >= 0; j--) {
+    const e = enemies[j];
+    if (!e || b.hit.has(e) || dist2(e.x, e.y, b.x, b.y) >= (e.r + b.r) ** 2) continue;
+    b.hit.add(e);
+    damageEnemy(e, b.dmg);
+  }
+  return b.t > b.life;
+}
+// Omega Beam: held from your eyes along its line, burning everything on it every tenth of a second
+function updateBeam(fx, dt) {
+  fx.x = player.x; fx.y = player.y - 14;
+  fx.tickT -= dt;
+  if (fx.tickT > 0) return;
+  fx.tickT = 0.1;
+  const ux = Math.cos(fx.a), uy = Math.sin(fx.a);
+  for (const e of [...enemies]) {
+    const rx = e.x - fx.x, ry = e.y - fx.y, along = rx * ux + ry * uy;
+    if (along < 0 || along > fx.len) continue;
+    if (Math.abs(rx * uy - ry * ux) < fx.w + e.r) damageEnemy(e, fx.dmg);
+  }
+}
+// Singularity: pulls the crowd in, grinds it, then implodes
+function updateHole(fx, dt) {
+  for (const e of enemies) {
+    if (e.boss) continue;
+    const dx = fx.x - e.x, dy = fx.y - e.y, d = Math.hypot(dx, dy);
+    if (d > fx.radius * 1.6 || d < 4) continue;
+    const pull = Math.min(d, 150 * dt);
+    e.x += dx / d * pull; e.y += dy / d * pull;
+  }
+  fx.tickT -= dt;
+  if (fx.tickT <= 0) {
+    fx.tickT = 0.25;
+    for (const e of [...enemies]) if (dist2(e.x, e.y, fx.x, fx.y) < fx.radius * fx.radius) damageEnemy(e, fx.tick);
+  }
+  if (fx.life - dt <= 0) {   // the implosion
+    effects.push({ type: 'boom', x: fx.x, y: fx.y, radius: fx.radius, life: 0.35, maxLife: 0.35 });
+    for (const e of [...enemies]) if (dist2(e.x, e.y, fx.x, fx.y) < (fx.radius + e.r) ** 2) damageEnemy(e, fx.boom);
+    burstParticles(fx.x, fx.y, '#B692FF', 18);
+    state.shake = Math.max(state.shake, 6);
+    sfx(60, 0.5, 'sawtooth', 0.07, 200);
+  }
+}
+// Psi Mines: arm, wait, and go off under the first foe to step close
+function updateMine(fx, dt) {
+  if ((fx.arm -= dt) > 0) return false;
+  const trig = enemies.find(e => !e.fly && dist2(e.x, e.y, fx.x, fx.y) < (26 + e.r) ** 2);
+  if (!trig) return false;
+  effects.push({ type: 'boom', x: fx.x, y: fx.y, radius: fx.radius, life: 0.3, maxLife: 0.3 });
+  for (const e of [...enemies]) if (dist2(e.x, e.y, fx.x, fx.y) < (fx.radius + e.r) ** 2) damageEnemy(e, fx.dmg);
+  burstParticles(fx.x, fx.y, '#DB92FF', 10);
+  sfx(110, 0.3, 'sawtooth', 0.06, -60);
+  return true;
+}
+// the Decoy hologram: counts down, then goes off
+function updateDecoy(dt) {
+  const d = state.decoy;
+  if (!d || (d.t -= dt) > 0) return;
+  effects.push({ type: 'boom', x: d.x, y: d.y, radius: d.r, life: 0.35, maxLife: 0.35 });
+  effects.push({ type: 'nova', x: d.x, y: d.y, radius: d.r, life: 0.35, maxLife: 0.35 });
+  for (const e of [...enemies]) if (dist2(e.x, e.y, d.x, d.y) < (d.r + e.r) ** 2) damageEnemy(e, d.dmg);
+  state.shake = Math.max(state.shake, 5);
+  sfx(90, 0.4, 'sawtooth', 0.07, -40);
+  state.decoy = null;
 }
 
 // ---------- Diablo-style light radius ----------
@@ -4276,6 +4744,14 @@ function sceneLights(emit) {
   for (const bz of state.brazList || []) emit(bz.x, bz.y - 12, 42 + ((Math.floor(uiTime * 7 + bz.x) % 3) * 2), 'fire');
   for (const b of ebullets) emit(b.x, b.y, b.style === 'laser' ? 12 : 22, LIGHT_COL[b.style] ? b.style : 'fireball');
   for (const fx of effects) if (fx.type === 'boom' || fx.type === 'bolt' || fx.type === 'nova') emit(fx.x, fx.y, Math.max(16, (fx.radius || 30) / PX), fx.type);
+  for (const fx of effects) {
+    if (fx.type === 'flame') emit(fx.x, fx.y, 16, 'fire');
+    else if (fx.type === 'holyfire') emit(fx.x, fx.y, 16, 'hammer');
+    else if (fx.type === 'beam' || fx.type === 'sweep') { const a = fx.a ?? fx.a0; for (let k = 1; k <= 4; k++) emit(fx.x + Math.cos(a) * fx.len * k / 4, fx.y + Math.sin(a) * fx.len * k / 4, 22, 'fireball'); }
+    else if (fx.type === 'hole') emit(fx.x, fx.y, fx.radius / PX, 'nova');
+    else if (fx.type === 'cryo') emit(fx.x, fx.y, fx.radius / PX, 'bubble');
+  }
+  if (state.decoy) emit(state.decoy.x, state.decoy.y, 30, 'portal');
   for (const b of bullets) if (b.kind === 'hammer' || b.kind === 'bubble') emit(b.x, b.y, 14, b.kind);
   if (state.ally) emit(state.ally.x, state.ally.y - 8, 34, 'ally');
   if (state.actBoss) emit(state.actBoss.x, state.actBoss.y - state.actBoss.r, state.actBoss.r * 2.4, 'boss');   // bosses are never lost in the dark
@@ -4927,7 +5403,8 @@ function renderWorld() {
       if (frame === undefined) frame = animFrame(e.animT, anim, e.sprite);
       const lift = e.fly ? e.fly + Math.round(Math.sin(e.animT * 9) * 3) : anim === 'air' ? Math.round(Math.sin(e.animT * 5) * 26) : 0;
       drawSprite(e.sprite, anim, frame, e.x, groundYOf(e), e.lx && e.leapT > 0 ? e.lx < 0 : player.x < e.x,
-        e.scale, e.flash > 0 || shriek ? 'white' : e.variant, lift);
+        e.scale, e.flash > 0 || shriek || e.freezeT > 0 ? 'white' : e.variant, lift);
+      if (e.freezeT > 0 && !bbList) ring(toDX(e.x), toDY(groundYOf(e)), Math.round(e.r / PX) + 3, '#92DBFF');   // the ice
     } });
   }
   const hurtBlink = player.hurtCd > 0 && state.berserkT <= 0 && Math.floor(uiTime * 20) % 2 === 0;
@@ -4963,6 +5440,18 @@ function renderWorld() {
       axoDraw(al, anim, frame, al.face < 0);
     } });
   }
+  // the decoy hologram (flickering) and Nine Lives' ghost kittens
+  const dc = state.decoy;
+  if (dc && (dc.t > 0.6 || blink(10))) drawables.push({ y: dc.y + 20, draw() {
+    ctx.globalAlpha = blink(8) ? 0.45 : 0.6;
+    drawSprite(dc.sprite, 'walk', Math.floor(uiTime * 10) % frameCount(dc.sprite, 'walk'), dc.x, dc.y + 20, dc.x > player.x, dc.scale, 'white');
+    ctx.globalAlpha = 1;
+  } });
+  for (const w of player.weapons) for (const k of w.kits || []) drawables.push({ y: k.y + 12, draw() {
+    ctx.globalAlpha = 0.75;
+    drawSprite('biski', 'walk', Math.floor(k.animT * 12) % frameCount('biski', 'walk'), k.x, k.y + 12, k.flip, SCALE, 'white');
+    ctx.globalAlpha = 1;
+  } });
   drawables.push({ y: player.y + 20, draw() {
     if (hurtBlink) return;
     const anim = player.attackAge < 0.45 ? 'attack' : (player.moving ? 'walk' : 'idle');
@@ -5004,13 +5493,21 @@ function renderWorld() {
     if (b.kind === 'sushi') {    // lobbed: shadow on the floor, sushi up in the arc
       const hy = Math.round(b.h / PX);
       rect(x - 3, y + 1, 7, 2, 'rgba(0,0,0,0.4)');
-      drawProj(b.maki ? 'maki' : 'nigiri', x, y - hy, Math.floor(b.t * 10));
+      if (b.mega) { ctx.save(); ctx.translate(x, y - hy); ctx.scale(3, 3); drawProj('nigiri', 0, 0, Math.floor(b.t * 6)); ctx.restore(); }   // Zoe's meteor
+      else drawProj(b.maki ? 'maki' : 'nigiri', x, y - hy, Math.floor(b.t * 10));
       continue;
     }
     if (b.kind === 'bubble') {   // axolotl spit: a wobbling bubble with a highlight
       const r = 3 + (Math.floor(b.life * 12) % 2);
       ring(x, y, r, '#B6FFFF');
       rect(x - 1, y - 2, 1, 1, C.white);
+      continue;
+    }
+    if (b.kind === 'glaive') {    // Ricochet Glaive: a spinning steel cross with hot edges
+      const sp = b.t * 22, R = Math.round(b.r / PX) + 2;
+      for (let k = 0; k < 2; k++) { const a = sp + k * Math.PI / 2, dx = Math.cos(a) * R, dy = Math.sin(a) * R;
+        line(x - dx, y - dy, x + dx, y + dy, '#DBDBDB'); rect(Math.round(x + dx), Math.round(y + dy), 2, 2, '#FF9200'); rect(Math.round(x - dx), Math.round(y - dy), 2, 2, '#FF9200'); }
+      disc(x, y, 1, C.white);
       continue;
     }
     if (b.kind === 'star') {      // a throwing star, spinning in quarter turns
@@ -5128,6 +5625,43 @@ function renderWorld() {
       const r = (fx.radius / PX) * (1 - p);
       ring(cx, cy, r, p > 0.3 ? C.white : '#FFB66D');
       ring(cx, cy, Math.max(1, r - 3), '#DB6D24');
+    } else if (fx.type === 'flame' || fx.type === 'holyfire') {   // Blaze Trail fire / Hammer of Heaven's holy fire
+      if (p < 0.2 && blink(15)) continue;
+      const holy = fx.type === 'holyfire', rx = Math.max(2, Math.round(fx.radius / PX * (0.6 + p * 0.4))), fl = (Math.floor(uiTime * 12) + (fx.x | 0)) % 3;
+      disc(cx, cy, rx, holy ? 'rgba(255,219,73,0.35)' : 'rgba(219,73,0,0.4)');
+      disc(cx, cy - 1, Math.max(1, rx - 2 - fl), holy ? 'rgba(255,255,219,0.55)' : 'rgba(255,146,0,0.55)');
+      if (fl === 0) rect(cx + ((fx.x | 0) % 5) - 2, cy - rx - 2, 1, 2, holy ? C.white : '#FFDB00');
+    } else if (fx.type === 'beam' || fx.type === 'sweep') {   // Omega Beam / Optic Sweep
+      const sweep = fx.type === 'sweep', L = fx.len / PX, ux = Math.cos(fx.a ?? fx.a0), uy = Math.sin(fx.a ?? fx.a0), wob = Math.floor(uiTime * 30) % 2;
+      const ex = cx + ux * L, ey = cy + uy * L, nx = -uy, ny = ux;
+      for (const [o, col] of [[3 + wob, sweep ? '#DB2400' : '#B60000'], [2, '#FF4949'], [1, '#FF9292'], [0, C.white]])
+        for (const sg of o ? [-o, o] : [0]) line(cx + nx * sg, cy + ny * sg, ex + nx * sg, ey + ny * sg, col);
+      disc(cx, cy, 3 + wob, '#FF9292');
+    } else if (fx.type === 'chain') {   // arcing lightning between two foes
+      const [[ax, ay], [bx, by]] = fx.pts, x0 = toDX(ax), y0 = toDY(ay), x1 = toDX(bx), y1 = toDY(by);
+      if (!fx.mid) fx.mid = [rand(-6, 6), rand(-6, 6)];
+      const mx = (x0 + x1) / 2 + fx.mid[0], my = (y0 + y1) / 2 + fx.mid[1];
+      line(x0, y0, mx, my, fx.col); line(mx, my, x1, y1, fx.col);
+      if (p > 0.5) { line(x0, y0 - 1, mx, my - 1, C.white); line(mx, my - 1, x1, y1 - 1, C.white); }
+    } else if (fx.type === 'hole') {   // Singularity: a black core inside a spinning purple rim
+      const R = fx.radius / PX, grow = Math.min(1, (1 - p) * 6);
+      for (let k = 0; k < 3; k++) arcDots(cx, cy, R * (0.45 + k * 0.22) * grow, uiTime * (4 - k) + k, uiTime * (4 - k) + k + 2.2, k ? '#6D24B6' : '#DB92FF', 2);
+      disc(cx, cy, Math.max(2, Math.round(R * 0.28 * grow)), '#000000');
+      ring(cx, cy, Math.max(3, Math.round(R * 0.28 * grow)), '#B692FF');
+    } else if (fx.type === 'cryo') {   // Cryo Field: a ring of frost rushing out
+      const rr = (fx.radius / PX) * (1 - p * 0.9);
+      ring(cx, cy, rr, p > 0.5 ? C.white : '#92DBFF'); ring(cx, cy, rr - 2, '#49B6FF');
+      for (let k = 0; k < 10; k++) { const a = k * TAU / 10 + p; rect(Math.round(cx + Math.cos(a) * rr), Math.round(cy + Math.sin(a) * rr * 0.8), 2, 2, C.white); }
+    } else if (fx.type === 'catnado') {   // Biski's Catnado: a whirlwind of claw streaks spinning round the hero
+      const spin = uiTime * 14;
+      for (let k = 0; k < 4; k++) for (let j = 0; j < 2; j++) {   // a funnel widening as it rises, two streaks per tier
+        const rr = 12 + k * 5, a0 = spin * (1 - k * 0.12) + k * 1.7 + j * Math.PI;
+        for (let s = 0; s < 9; s++) { const a = a0 + s * 0.2;
+          rect(Math.round(cx + Math.cos(a) * rr), Math.round(cy + 2 - k * 7 + Math.sin(a) * rr * 0.4), 2, s > 6 ? 2 : 1, s > 6 ? C.white : k % 2 ? '#DBDBFF' : '#9292FF'); }
+      }
+    } else if (fx.type === 'mine') {   // Psi Mines: a squat disc, its light blinking faster once armed
+      disc(cx, cy, 3, '#24004A'); ring(cx, cy, 3, '#9249DB');
+      if (fx.arm > 0 ? blink(2) : blink(6)) rect(cx, cy - 1, 1, 1, fx.arm > 0 ? '#92DBFF' : '#FF2424');
     } else if (fx.type === 'acidpool') {   // Ana's acid: a bright, bubbling puddle that fades at the end
       if (p < 0.15 && blink(15)) continue;
       const rx = Math.round(fx.radius / PX), ry = Math.round(rx * 0.55);
@@ -5307,7 +5841,18 @@ function renderHUD() {
     pips(lx + 2, ly + 18, rank);
     lx += 19;
   };
-  for (const w of player.weapons) slot(w.id, w.level);
+  for (const w of player.weapons) slot(weaponIcon(w), w.level);
+  // the ultimate meter, bottom right; full, it glows and (on touch) becomes a button
+  const u = ULTS[player.heroId];
+  if (u) {
+    const mw = 58, mx = W - mw - 6, my = H - 20, full = state.ult >= 1;
+    rect(mx - 1, my - 1, mw + 2, 16, C.black);
+    rect(mx, my, mw, 14, full ? (blink(4) ? '#6D4900' : '#492400') : '#000024');
+    rect(mx + 2, my + 9, mw - 4, 3, C.pipOff);
+    rect(mx + 2, my + 9, Math.round((mw - 4) * state.ult), 3, full ? (blink(6) ? C.white : C.yellow) : u.col);
+    drawText(full ? (touch.used ? 'TAP: ULT!' : 'E: ULT!') : 'ULT', mx + 3, my + 1, full ? C.yellow : C.lgrey, { shadow: false });
+    if (full) addHit(mx - 6, my - 8, mw + 12, 26, 'ult');
+  }
   if (Object.keys(player.passives).length) lx += 4;
   for (const [id, rank] of Object.entries(player.passives)) slot(id, rank);
 }
@@ -5347,6 +5892,15 @@ function windowTitle(text, x, y, ww, grad) {
   return 7 * sc;
 }
 // VS-style cards: a big framed painting per choice, its name, type and what it does
+// a line on the card naming the evolution a pick leads to
+function evoHint(o) {
+  if (o.kind === 'weapon' && EVOLUTIONS[o.id]) return '+' + norm(PASSIVE_DEFS[EVOLUTIONS[o.id].with].name) + ' = ' + norm(EVOLUTIONS[o.id].name);
+  if (o.kind === 'passive') {
+    const w = player.weapons.find(w => !w.evo && EVOLUTIONS[w.id] && EVOLUTIONS[w.id].with === o.id);
+    if (w) return 'EVOLVES ' + norm(WEAPON_DEFS[w.id].name) + ' AT RANK 5';
+  }
+  return '';
+}
 function renderLevelUp(m) {
   dim();
   const ww = menuWidth(300), x = Math.round((W - ww) / 2);
@@ -5354,14 +5908,16 @@ function renderLevelUp(m) {
   const headH = 7 * (textW('LEVEL UP!', 2) <= ww - 12 ? 2 : 1);
   const rows = m.choices.map(o => {
     const lines = wrapText(optDef(o).desc, tw).slice(0, 3);
-    return { o, lines, h: Math.max(40, 16 + lines.length * 9 + 4) };
+    const hint = evoHint(o);
+    if (hint) lines.push(...wrapText(hint, tw).slice(0, 1));
+    return { o, lines, hint: !!hint, h: Math.max(40, 16 + lines.length * 9 + 4) };
   });
   const h = 8 + headH + 8 + rows.reduce((t, r) => t + r.h + 2, 0) + 4;
   const y = Math.max(4, Math.round((H - h) / 2));
   drawWindow(x, y, ww, h);
   windowTitle('LEVEL UP!', x, y + 7, ww, GOLD_GRAD);
   let ry = y + 8 + headH + 8;
-  rows.forEach(({ o, lines, h: rh }, i) => {
+  rows.forEach(({ o, lines, hint, h: rh }, i) => {
     const on = i === m.sel, def = optDef(o);
     if (on) {
       rect(x + 3, ry, ww - 6, rh, C.selBar);
@@ -5379,7 +5935,7 @@ function renderLevelUp(m) {
     else pips(x + ww - 27, ry + 5, o.rank, o.rank + 1, 3);
     const nameEnd = tx + textW(norm(def.name)) + 6;
     if (nameEnd + 30 < x + ww - 32) drawText(kind, nameEnd, ry + 4, o.kind === 'weapon' ? C.orange : C.cyan);
-    lines.forEach((ln, k) => drawText(ln, tx, ry + 15 + k * 9, on ? C.white : C.lgrey));
+    lines.forEach((ln, k) => drawText(ln, tx, ry + 15 + k * 9, hint && k === lines.length - 1 ? C.yellow : on ? C.white : C.lgrey));
     addHit(x + 3, ry, ww - 6, rh, 'row:' + i);
     ry += rh + 2;
   });
@@ -5430,11 +5986,11 @@ function renderPause(m) {
   if (two) {
     drawText('POWERS', x + 8, top, C.cyan);
     drawText('TRAITS', x + 8 + cw, top, C.cyan);
-    ws.forEach((w, i) => entry(x + 8, top + 14 + i * 18, w.id, WEAPON_DEFS[w.id].name, w.level));
+    ws.forEach((w, i) => entry(x + 8, top + 14 + i * 18, weaponIcon(w), weaponName(w), w.level));
     ps.forEach(([id, r], i) => entry(x + 8 + cw, top + 14 + i * 18, id, PASSIVE_DEFS[id].name, r));
   } else {
     drawText('LOADOUT', x + 8, top, C.cyan);
-    const all = ws.map(w => [w.id, WEAPON_DEFS[w.id].name, w.level])
+    const all = ws.map(w => [weaponIcon(w), weaponName(w), w.level])
       .concat(ps.map(([id, r]) => [id, PASSIVE_DEFS[id].name, r]));
     all.forEach(([id, name, r], i) => entry(x + 8, top + 14 + i * 18, id, name, r));
   }
