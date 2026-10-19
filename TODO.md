@@ -20,7 +20,12 @@ session; update before finishing (move cards, add new ones, trim Done).
 - Mutant Academy tests: with random maps a couple of checks were flaky
   once each (sanctuary light radius, butcher chest). Act V's flake was a
   level-up menu pausing the game mid-test — fixed in the test (no
-  level-ups, seeded map). Seed the map in the other tests too.
+  level-ups, seeded map). Seed the map in the other tests too. The
+  Neil/Zoe hero test had the same level-up flake; fixed the same way.
+- Mutant Academy ability balance: in a rank-5 damage probe, Singularity
+  and evolved Feral Frenzy / Full House are near the top, while Iron Halo
+  and Omega Beam gain little over their base powers. Tune after some
+  real runs. Ultimates have no PS1-mode check yet beyond "no errors".
 - Duplicate match rows from fixture reschedules: DB sweep found ~20
   pairs of matches (same two teams, commence_time <48h apart) across
   Ligue 1, Serie A, La Liga and Bundesliga — early-season fixtures
@@ -54,6 +59,7 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy: 10 evolutions (rank-5 power + partner trait at a chest), 8 new powers, 7 new traits, an ultimate for each of the 10 heroes, 25 new CC-BY icons (bb842ab)
 - Mutant Academy: PS1 3D graphics mode, prototype — Act I's cathedral in
   3D (WebGL2: ground plane from the 2D renderer, wall blocks with a
   cutaway, billboard sprites, light map, fog, dither, vertex wobble,
