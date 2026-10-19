@@ -13,9 +13,10 @@ session; update before finishing (move cards, add new ones, trim Done).
 - Mutant Academy select screen on 4:3 screens (e.g. 1280x960, W=320):
   the hero panel runs off the bottom and the hint text overlaps it. Not
   new; needs a compact layout for short, narrow screens.
-- Mutant Academy tests: with random maps a few timing/brightness checks
-  are flaky (act5 hellfire/cultist/devilkin ~1 run in 3; sanctuary light
-  radius, butcher chest once each). Seed the map in tests.
+- Mutant Academy tests: with random maps a couple of checks were flaky
+  once each (sanctuary light radius, butcher chest). Act V's flake was a
+  level-up menu pausing the game mid-test — fixed in the test (no
+  level-ups, seeded map). Seed the map in the other tests too.
 - Duplicate match rows from fixture reschedules: DB sweep found ~20
   pairs of matches (same two teams, commence_time <48h apart) across
   Ligue 1, Serie A, La Liga and Bundesliga — early-season fixtures
@@ -49,6 +50,9 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy: voiced retro story intro (7 letterboxed scenes, typed
+  text read by Piper's public-domain "Norman" voice, bell + choir); plays
+  before the first game and from STORY on the title, skippable — `1267488`
 - Mutant Academy: Karateh Masta — unlockable hero (beat the game) who
   throws piercing ninja death stars; locked silhouette on the select
   screen, NEW HERO UNLOCKED on the results — `23fb1f6`
