@@ -36,6 +36,14 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy: per-act scaling — fewer, tougher monsters each act
+  (on-screen Act III 62→37, IV 97→35, V 138→51), act quota caps, trickle
+  cap, thinner events; steeper xp curve — `f845b83`
+- Mutant Academy: Act V "The Gates of Hell" — Kraken opens hell; the
+  Devil (final boss, level 25) and six hell minions (ansimuz CC0,
+  Sevarihk CC-BY); bosses lit in the dark — `27396e6` (base `aeda639`)
+- Mutant Academy: harder balance — far fewer health pickups, berserk
+  20s; WIP Act V hell level, music, hellfire rain — `aeda639`
 - Mutant Academy: new hero Ana (black glasses, blonde curls) with the
   Acid Flask weapon (shatters into burning puddles), icon + voice; hero
   select up/down now wrap within a column for the 9-hero grid — `8754b1b`
