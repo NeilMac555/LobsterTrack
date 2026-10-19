@@ -226,6 +226,7 @@ function musicTick(ahead = 0.18) {   // ahead: how far to schedule (offline rend
   if (music.song === 2) { desertTick(ahead); return; }
   if (music.song === 3) { jungleTick(ahead); return; }
   if (music.song === 4) { oceanTick(ahead); return; }
+  if (music.song === 5) { hellTick(ahead); return; }
   const bpm = 152, sd = 60 / bpm / 4;
   // never play catch-up after mute/background throttling — snap to now
   if (music.nextT < audioCtx.currentTime - 0.1) music.nextT = audioCtx.currentTime + 0.05;
@@ -455,6 +456,59 @@ function oceanTick(ahead) {
     if (bar.whale && s === 4) { beep(t, 180, 1.6, 'sine', 0.035, 140); beep(t + 1.6, 320, 1.4, 'sine', 0.025, -160); }
     // late game: the bass starts to pulse on the 8ths
     if (lateGame(600) && s % 2 === 0 && s !== 0 && s !== 10) fm(t, hz(ch.root), sd * 1.5, 0.05, 1, 1, 0.1);
+    music.step++;
+    music.nextT += sd;
+  }
+}
+// "Gates of Hell" — an original infernal theme in E phrygian (E F G A B C D): a funeral bell tolls, a
+// choir chants on minor chords, palm-muted power chords chug and lurch to the tritone (A#), toms pound,
+// and a double kick and a rising organ scream take over in the second half.
+const HELL_CH = [{ root: 'E2', choir: ['E4', 'G4', 'B4'] }, { root: 'F2', choir: ['F4', 'A4', 'C5'] },
+  { root: 'E2', choir: ['E4', 'G4', 'B4'] }, { root: 'A#1', choir: ['A#3', 'D4', 'E4'] }];
+const CHUG = [0, 2, 3, 6, 8, 10, 11, 14];            // the riff's 16th-note grid
+const CHOIR_B = ['B4:8 C5:4 B4:4', 'A4:8 G4:4 F4:4', 'G4:4 A4:4 B4:4 C5:4', 'B4:12 -:4'].map(phrase);
+const SONG5 = [{ sec: 'intro' }, { sec: 'intro' }, { sec: 'intro', riff: true }, { sec: 'intro', riff: true, fill: true }];
+const LOOP5_AT = SONG5.length;
+for (let i = 0; i < 8; i++) SONG5.push({ sec: 'A', riff: true, fill: i === 7 });
+CHOIR_B.forEach((mel, i) => SONG5.push({ sec: 'B', riff: true, mel, dbl: true, fill: i === 3 }));
+CHOIR_B.forEach((mel, i) => SONG5.push({ sec: 'B2', riff: true, mel, dbl: true, oct: true, fill: i === 3 }));
+function hellTick(ahead) {
+  const bpm = 132, sd = 60 / bpm / 4;
+  if (music.nextT < audioCtx.currentTime - 0.1) music.nextT = audioCtx.currentTime + 0.05;
+  while (music.nextT < audioCtx.currentTime + ahead) {
+    const s = music.step % 16, bar16 = Math.floor(music.step / 16);
+    let bi = bar16;
+    if (bi >= SONG5.length) bi = LOOP5_AT + (bi - LOOP5_AT) % (SONG5.length - LOOP5_AT);
+    const bar = SONG5[bi], ch = HELL_CH[bar16 % 4], t = music.nextT;
+    // the bell: an inharmonic FM toll on every bar's downbeat
+    if (s === 0) { fm(t, hz('E3'), 1.6, 0.05, 2.76, 3, 1.2); fm(t, hz('E2'), 1.4, 0.03, 1.41, 2, 1); }
+    // choir: two slightly detuned soft voices on the chord, swelling over the whole bar
+    if (s === 0) for (const n of ch.choir) { fm(t, hz(n), 16 * sd, 0.016, 1, 0.3, 1.2, true); fm(t, hz(n) * 1.006, 16 * sd, 0.012, 1, 0.25, 1.2, true); }
+    // drums: toms on the riff, snare-crack on 2 and 4 once the riff is in, double kick in the B sections
+    if (bar.riff) {
+      if (s === 0 || s === 6 || s === 10) beep(t, 70, 0.22, 'sine', 0.2, -40);
+      if (s === 4 || s === 12) { noiseHit(t, 0.12, 0.09); beep(t, 180, 0.08, 'triangle', 0.05, -80); }
+      if (bar.dbl && s % 2 === 1) beep(t, 62, 0.1, 'sine', 0.12, -30);
+      if (s % 2 === 0) noiseHit(t, 0.02, 0.015);
+    } else if (s === 8) beep(t, 55, 0.6, 'sine', 0.14, -20);           // intro: a lone heartbeat drum
+    if (bar.fill && s >= 12) beep(t, 220 - (s - 12) * 35, 0.1, 'sine', 0.12, -90);
+    // the riff: palm-muted root+fifth chugs, a stab up to the tritone on the last 16th
+    if (bar.riff && CHUG.includes(s)) {
+      const f = hz(ch.root) * (s === 15 ? Math.pow(2, 6 / 12) : 1);
+      fm(t, f * 2, sd * 1.3, 0.03, 1, 7, 0.04);
+      fm(t, f * 2 * 1.4983, sd * 1.3, 0.022, 1, 7, 0.04);
+      fm(t, f, sd * 1.3, 0.05, 1, 2, 0.05);
+    }
+    if (bar.riff && s === 15) fm(t, hz(ch.root) * 2 * Math.pow(2, 6 / 12), sd, 0.03, 1, 7, 0.03);
+    // B sections: a screaming organ-brass line over the top
+    if (bar.mel) for (const ev of bar.mel) {
+      if (ev.at !== s) continue;
+      const f = bar.oct ? ev.f * 2 : ev.f, dur = ev.len * sd * 0.95;
+      fm(t, f, dur, 0.034, 2, 1.6, 0.5, true);
+      fm(t, f * 1.005, dur, 0.022, 1, 2.4, 0.4, true);
+    }
+    // late game / boss: a frantic tremolo-picked line doubles the root
+    if (lateGame(780) && bar.riff && s % 2 === 1) fm(t, hz(ch.root) * 4, sd * 0.8, 0.014, 1, 4, 0.03);
     music.step++;
     music.nextT += sd;
   }
@@ -803,8 +857,8 @@ const FOOD = {
 // mostly fish, sometimes chicken, rarely the full medipack
 function rollFood(rich = false) {
   const r = Math.random();
-  if (rich) return r < 0.35 ? 'fish' : r < 0.8 ? 'chicken' : 'medkit';
-  return r < 0.6 ? 'fish' : r < 0.9 ? 'chicken' : 'medkit';
+  if (rich) return r < 0.5 ? 'fish' : r < 0.9 ? 'chicken' : 'medkit';
+  return r < 0.7 ? 'fish' : r < 0.95 ? 'chicken' : 'medkit';
 }
 const ICON_ROWS = {
   optic: ['..........', '.KKKK.....', 'KRRRRKKKKK', 'KRWWRRRRRR', 'KRWWWWWWWW',
@@ -932,7 +986,8 @@ const ASSET_FILES = ['warrior', 'wizard', 'ranger', 'rogue', 'cleric',
   'assassin', 'mech', 'burger', 'lizdoc', 'feral', 'neil', 'zoe', 'ana', 'crypt', 'butcher', 'banshee', 'golem',
   'desert', 'fly', 'maggot', 'lizard', 'orb',
   'jungle', 'snake', 'treant', 'plant', 'mosquito', 'monkey', 'frog',
-  'ocean', 'axolotl', 'piranha', 'jelly', 'crab', 'shark', 'squid', 'eel', 'kraken'];
+  'ocean', 'axolotl', 'piranha', 'jelly', 'crab', 'shark', 'squid', 'eel', 'kraken',
+  'hell'];
 const assets = {};
 function loadAssets() {
   return Promise.all(ASSET_FILES.map(name => new Promise((res, rej) => {
@@ -1228,7 +1283,7 @@ function scanEnv() {
       const oh = obstacleAt(ix, iy);
       if (oh) {
         const kind = (oh >>> 3) % 8;
-        obs.push({ x: ix * TILE + TILE / 2, y: iy * TILE + TILE / 2, r: state.act === 4 ? OCEAN_R[kind % 6] : state.act === 3 ? JUNGLE_R[kind % 6] : state.act === 2 ? DESERT_R[kind % 5] : PROP_R[kind], kind });
+        obs.push({ x: ix * TILE + TILE / 2, y: iy * TILE + TILE / 2, r: state.act === 5 ? HELL_R[kind % 6] : state.act === 4 ? OCEAN_R[kind % 6] : state.act === 3 ? JUNGLE_R[kind % 6] : state.act === 2 ? DESERT_R[kind % 5] : PROP_R[kind], kind });
         continue;
       }
       if (brazierAt(ix, iy)) {
@@ -1268,9 +1323,9 @@ function damageBrazier(bz, dmg) {
   brazierDead.add(bz.key);
   brazierDamageMap.delete(bz.key);
   const roll = Math.random();
-  if (roll < 0.40) pickups.push({ x: bz.x, y: bz.y, type: 'gold', v: randInt(15, 40) });
-  else if (roll < 0.70) pickups.push({ x: bz.x, y: bz.y, type: 'food', food: rollFood(true) });
-  else if (roll < 0.85) gems.push({ x: bz.x, y: bz.y, v: 8 });
+  if (roll < 0.45) pickups.push({ x: bz.x, y: bz.y, type: 'gold', v: randInt(15, 40) });
+  else if (roll < 0.57) pickups.push({ x: bz.x, y: bz.y, type: 'food', food: rollFood(true) });
+  else if (roll < 0.87) gems.push({ x: bz.x, y: bz.y, v: 8 });
   else if (roll < 0.94) pickups.push({ x: bz.x, y: bz.y, type: 'vac' });
   else if (roll < 0.97 || orbOnFloor()) pickups.push({ x: bz.x, y: bz.y, type: 'nuke' });
   else pickups.push({ x: bz.x, y: bz.y, type: 'berserk' });
@@ -1357,7 +1412,28 @@ function drawOceanFloor() {
   }
 }
 const OCEAN_R = [12, 12, 12, 14, 14, 16];
+// Act V hell: demonic flesh-cobble, lava pools, scorched ground and bones; altars of fire, pentagram gates, a demon bust
+function drawHellFloor() {
+  const img = SPR.hell.base;
+  const ix0 = Math.floor(camX / CT), iy0 = Math.floor(camY / CT);
+  for (let iy = iy0; iy * CT - camY < H; iy++) {
+    for (let ix = ix0; ix * CT - camX < W; ix++) {
+      const t = (hash2(ix, iy) >>> 4) % 16;
+      ctx.drawImage(img, (t % 8) * CT, (t >> 3) * CT, CT, CT, ix * CT - camX, iy * CT - camY, CT, CT);
+    }
+  }
+  for (let iy = iy0 - 1; iy * CT - camY < H; iy++) {
+    for (let ix = ix0 - 1; ix * CT - camX < W; ix++) {
+      const h = hash2(ix * 7 + 3, iy * 11 + 5);
+      if (h % 7) continue;
+      const d = (h >>> 4) % 8, dx = ((h >>> 8) % 17) - 8, dy = ((h >>> 13) % 17) - 8;
+      ctx.drawImage(img, d * CT, 176, CT, CT, ix * CT - camX + dx, iy * CT - camY + dy, CT, CT);
+    }
+  }
+}
+const HELL_R = [12, 22, 22, 18, 12, 22];
 function drawFloor() {
+  if (state.act === 5) { drawHellFloor(); return; }
   if (state.act === 4) { drawOceanFloor(); return; }
   if (state.act === 3) { drawJungleFloor(); return; }
   if (state.act === 2) { drawDesertFloor(); return; }
@@ -1381,7 +1457,7 @@ const PROP_R = [11, 11, 14, 14, 14, 13, 16, 11];
 function drawObstacle(o) {
   const x = toDX(o.x), y = toDY(o.y);
   if (x < -48 || x > W + 48 || y < -20 || y > H + 120) return;
-  if (state.act >= 3) { ctx.drawImage(SPR[state.act === 4 ? 'ocean' : 'jungle'].base, (o.kind % 6) * 80, 64, 80, 112, x - 40, y - 102, 80, 112); return; }
+  if (state.act >= 3) { ctx.drawImage(SPR[['', '', '', 'jungle', 'ocean', 'hell'][state.act]].base, (o.kind % 6) * 80, 64, 80, 112, x - 40, y - 102, 80, 112); return; }
   if (state.act === 2) { ctx.drawImage(SPR.desert.base, (o.kind % 5) * 48, 64, 48, 64, x - 24, y - 60, 48, 64); return; }
   ctx.drawImage(SPR.crypt.base, o.kind * CT, 2 * CT, CT, CT, x - CT / 2, y - CT + 6, CT, CT);
 }
@@ -1411,7 +1487,7 @@ const state = {
   time: 0, kills: 0, level: 1, xp: 0, xpNeed: 5, gold: 0, goldShown: 0,
   spawnTimer: 0, bossesSpawned: 0, eventsFired: 0, elitesSpawned: 0,
   shake: 0, flash: 0, killTimes: [], streakTier: 0,
-  hitstop: 0, lastGemT: -9, gemCombo: 0, heartT: 0, foodT: 35,
+  hitstop: 0, lastGemT: -9, gemCombo: 0, heartT: 0, foodT: 60,
   act: 1, portalT: 0, berserkT: 0,
   ally: null, wildAxo: null, allyT: 0, inkT: 0,
   actBoss: null, bossCleared: 0, clearT: 0,
@@ -1420,13 +1496,16 @@ const state = {
 const ACT2_LEVEL = 5;   // = 4 level-ups (the Butcher's level; beat him and the portal opens)
 const ACT3_LEVEL = 10;  // the jungle
 const ACT4_LEVEL = 15;  // the ocean
-const ACT_NAMES = { 2: ['ACT II', 'THE BURNING SANDS'], 3: ['ACT III', 'THE STRANGLING JUNGLE'], 4: ['ACT IV', 'THE DROWNED DEPTHS'] };
-const ACT_COL = { 2: '#FFDB00', 3: '#24DB24', 4: '#49DBFF' };
-const ROMAN = ['', 'I', 'II', 'III', 'IV'];
+const ACT_NAMES = { 2: ['ACT II', 'THE BURNING SANDS'], 3: ['ACT III', 'THE STRANGLING JUNGLE'], 4: ['ACT IV', 'THE DROWNED DEPTHS'],
+  5: ['ACT V', 'THE GATES OF HELL'] };
+const ACT_COL = { 2: '#FFDB00', 3: '#24DB24', 4: '#49DBFF', 5: '#FF4924' };
+const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V'];
+// the run ends with the last act that has a boss (Act V once the Devil is in)
+const finalAct = () => Math.max(...BOSSES.map(b => b.act));
 const PORTAL_TIME = 1.8;
 
-// Berserk orb (a nod to DOOM's berserk pack): 30s of invulnerability, speed and amplified powers
-const BERSERK_TIME = 30;
+// Berserk orb (a nod to DOOM's berserk pack): 20s of invulnerability, speed and amplified powers
+const BERSERK_TIME = 20;
 const BERSERK = { speed: 1.75, dmg: 3, cd: 0.4 };
 const amp = () => state.berserkT > 0 ? 1.5 : 1;    // area of every blast, slash and orbit
 const ampN = () => state.berserkT > 0 ? 1 : 0;     // one extra projectile per volley
@@ -1485,8 +1564,16 @@ const ACT4_TYPES = [ ['crab','piranha'], ['crab','piranha'], ['crab','jelly','pi
   ['shark','eel','jelly','squid','piranha'], ['squid','shark','crab','eel','piranha'],
   ['shark','jelly','squid','eel','crab'], ['shark','squid','eel','jelly','crab','piranha'],
   ['shark','squid','eel','jelly','crab','piranha','knight'] ];
+// Act V: hell. Every demon there is, harder, faster and more of them
+const ACT5_TYPES = [ ['imp','bat'], ['imp','bat','wolf'], ['imp','wolf','shaman'], ['bat','imp','guard','wolf'],
+  ['imp','shaman','wolf','guard'], ['wolf','knight','imp','bat'], ['imp','guard','shaman','knight'],
+  ['wolf','imp','knight','bat','guard'], ['imp','knight','guard','shaman','wolf'], ['bat','wolf','knight','guard','imp'],
+  ['imp','knight','guard','wolf','shaman','bat'], ['knight','imp','wolf','guard','shaman','bat'],
+  ['imp','knight','guard','wolf','shaman','bat'], ['knight','guard','imp','wolf','shaman','bat'],
+  ['knight','guard','imp','wolf','shaman','bat'] ];
 function currentWave() {
   const m = Math.min(WAVES.length - 1, Math.floor(state.time / 60));
+  if (state.act === 5) return { min: Math.round(WAVES[m].min * 1.3), interval: WAVES[m].interval * 0.85, types: ACT5_TYPES[m] };
   if (state.act === 4) return { min: WAVES[m].min, interval: WAVES[m].interval, types: ACT4_TYPES[m] };
   if (state.act === 3) return { min: Math.round(WAVES[m].min * 0.8), interval: WAVES[m].interval * 1.15, types: ACT3_TYPES[m] };
   return state.act === 2 ? { min: WAVES[m].min, interval: WAVES[m].interval, types: ACT2_TYPES[m] } : WAVES[m];
@@ -1853,11 +1940,11 @@ const BOSSES = [
   // the Elder Treant: thorn storms, man-eaters sprouting around you, eruptions of roots
   { key: 'eldertreant', act: 3, name: 'THE ELDER TREANT', hp: 38000, speed: 32, dmg: 36, r: 48,
     xp: 160, scale: 5, variant: 'elite', sprite: 'treant', move: 'elder', intro: 'THE FOREST AWAKENS' },
-  // the Kraken: tentacle slams, torpedo dashes, ink that swallows the screen; beating it wins the game
+  // the Kraken: tentacle slams, torpedo dashes, ink that swallows the screen; beating it opens the way to hell
   { key: 'kraken', act: 4, name: 'THE KRAKEN', hp: 80000, speed: 42, dmg: 40, r: 56,
     xp: 250, scale: 5, variant: null, sprite: 'kraken', move: 'kraken', intro: 'SOMETHING VAST RISES...' },
 ];
-const ACT_BOSS_LEVEL = { 1: ACT2_LEVEL, 2: ACT3_LEVEL, 3: ACT4_LEVEL, 4: 20 };
+const ACT_BOSS_LEVEL = { 1: ACT2_LEVEL, 2: ACT3_LEVEL, 3: ACT4_LEVEL, 4: 20, 5: 25 };
 
 function hpScale() {
   const m = state.time / 60;
@@ -1932,8 +2019,8 @@ const BEST_DESC = {
 const firstWave = kind => { const i = WAVES.findIndex(w => w.types.includes(kind)); return i < 0 ? 99 : i; };
 // the act a creature first turns up in (1 = the cathedral)
 const actOf = kind => WAVES.some(w => w.types.includes(kind)) ? 1 : ACT2_TYPES.some(t => t.includes(kind)) ? 2
-  : ACT3_TYPES.some(t => t.includes(kind)) ? 3 : 4;
-const ACT_TABLE = { 2: () => ACT2_TYPES, 3: () => ACT3_TYPES, 4: () => ACT4_TYPES };
+  : ACT3_TYPES.some(t => t.includes(kind)) ? 3 : ACT4_TYPES.some(t => t.includes(kind)) ? 4 : 5;
+const ACT_TABLE = { 2: () => ACT2_TYPES, 3: () => ACT3_TYPES, 4: () => ACT4_TYPES, 5: () => ACT5_TYPES };
 const firstActWave = (kind, table) => { const i = table.findIndex(t => t.includes(kind)); return i < 0 ? 99 : i; };
 // every enemy in order of first appearance (act by act), then the bosses
 const BEST_ENTRIES = Object.keys(ENEMY_TYPES)
@@ -1951,12 +2038,13 @@ const BEST_ENTRIES = Object.keys(ENEMY_TYPES)
 function makeEnemy(kind, x, y, opts = {}) {
   const t = ENEMY_TYPES[kind];
   bestSeen(kind);
-  const hpMul = (opts.hpMul ?? 1) * rand(0.85, 1.25);
+  const hell = state.act === 5;   // hell's spawn are tougher and hit harder
+  const hpMul = (opts.hpMul ?? 1) * rand(0.85, 1.25) * (hell ? 1.5 : 1);
   const hp = t.hp * hpScale() * hpMul;
   return {
     x, y, hp, maxHp: hp,
     speed: t.speed * spdScale() * rand(0.9, 1.1) * (opts.spdMul ?? 1),
-    dmg: t.dmg * dmgScale(), r: Math.round(t.r * (opts.rMul ?? 1)), xp: Math.ceil(t.xp * (opts.xpMul ?? 1)),
+    dmg: t.dmg * dmgScale() * (hell ? 1.3 : 1), r: Math.round(t.r * (opts.rMul ?? 1)), xp: Math.ceil(t.xp * (opts.xpMul ?? 1)),
     sprite: t.sprite, scale: (opts.scale ?? SCALE) * (t.scale ?? 1), variant: opts.variant ?? null,
     move: t.move, boss: false, elite: !!opts.elite, sweep: opts.sweep ?? null,
     flash: -1, animT: rand(0, 10), chargeT: rand(0, 4), pop: t.pop,
@@ -2112,7 +2200,7 @@ function spawnSweep() {
   const px = -dirY, py = dirX; // perpendicular
   const spd = 170;
   for (let i = -14; i <= 14; i++) {
-    const e = makeEnemy(['skeleton', 'skeleton', 'fly', 'mosquito', 'piranha'][state.act], cx + px * i * 34 + rand(-10, 10), cy + py * i * 34 + rand(-10, 10),
+    const e = makeEnemy(['skeleton', 'skeleton', 'fly', 'mosquito', 'piranha', 'imp'][state.act], cx + px * i * 34 + rand(-10, 10), cy + py * i * 34 + rand(-10, 10),
       { hpMul: 0.06, xpMul: 1, spdMul: 1 });
     e.sweep = { vx: dirX * spd, vy: dirY * spd, life: 14 };
     enemies.push(e);
@@ -2248,6 +2336,8 @@ function enterAct(n) {
   state.shake = 6;
   banners.length = 0;                       // stale "new threat" news from the old act
   announce(ACT_NAMES[n][0], ACT_COL[n], 3, 5, ACT_NAMES[n][1]);
+  state.fireT = 6;                          // hell gives you a moment before the fire starts
+  state.ally = null; state.wildAxo = null;   // the axolotl stays in its ocean
   state.allyT = rand(20, 30);               // the ocean's axolotl turns up a little after you arrive
   music.song = n; music.step = 0;           // each act's theme starts from its intro
   sfx(880, 0.5, 'sine', 0.06, -500);
@@ -2275,6 +2365,7 @@ function spawnBoss(def) {
 }
 function summonActBoss() {
   const def = BOSSES.find(b => b.act === state.act);
+  if (!def) return;
   state.actBoss = spawnBoss(def);
   state.actBoss.actBoss = true;
 }
@@ -2341,7 +2432,8 @@ function killEnemy(e) {
     state.bossCleared = state.act;
     state.clearT = 3;
     state.flash = 1; state.shake = 18;
-    announce(state.act < 4 ? 'ACT CLEARED!' : 'VICTORY!', C.yellow, 3, 6, state.act < 4 ? 'A PORTAL WILL OPEN...' : 'THE DEPTHS ARE SAFE');
+    const last = state.act >= finalAct();
+    announce(last ? 'VICTORY!' : 'ACT CLEARED!', C.yellow, 3, 6, last ? 'HELL FALLS SILENT' : state.act === 4 ? 'THE ABYSS OPENS BELOW...' : 'A PORTAL WILL OPEN...');
     jingle([523, 659, 784, 1047, 1319], 0.1, 0.06);
     for (const o of [...enemies]) if (o !== e) { burstParticles(o.x, o.y - 8, o.pop || '#B66D24', 3); enemies.splice(enemies.indexOf(o), 1); }
     ebullets.length = 0;
@@ -2353,15 +2445,15 @@ function killEnemy(e) {
       gems.push({ x: e.x + Math.cos(a) * d, y: e.y + Math.sin(a) * d, v: Math.ceil(e.xp / 8) });
     }
     pickups.push({ x: e.x, y: e.y, type: 'chest' }); // jackpot time
-    if (e.elite && Math.random() < 0.5) pickups.push({ x: e.x + 22, y: e.y + 6, type: 'food', food: rollFood(true) });
+    if (e.elite && Math.random() < 0.2) pickups.push({ x: e.x + 22, y: e.y + 6, type: 'food', food: rollFood(true) });
     if (!orbOnFloor() && (e.boss || Math.random() < 0.3)) pickups.push({ x: e.x - 22, y: e.y + 6, type: 'berserk' });
     state.shake = 8;
   } else {
     gems.push({ x: e.x, y: e.y, v: e.xp });
     const r = Math.random();
     if (r < 0.04) pickups.push({ x: e.x + rand(-8, 8), y: e.y + rand(-8, 8), type: 'gold', v: randInt(5, 15) });
-    else if (r < 0.046 && !e.sweep) pickups.push({ x: e.x + rand(-8, 8), y: e.y + rand(-8, 8), type: 'food', food: rollFood() });
-    else if (r < 0.0472 && state.time > 45 && !orbOnFloor()) pickups.push({ x: e.x, y: e.y, type: 'berserk' });   // rare: ~1 in 830 kills
+    else if (r < 0.0415 && !e.sweep) pickups.push({ x: e.x + rand(-8, 8), y: e.y + rand(-8, 8), type: 'food', food: rollFood() });   // ~1 in 670 kills
+    else if (r < 0.0427 && state.time > 45 && !orbOnFloor()) pickups.push({ x: e.x, y: e.y, type: 'berserk' });   // rare: ~1 in 830 kills
     if (gems.length > 450) {
       const old = gems.shift();
       gems[Math.floor(Math.random() * gems.length)].v += old.v;
@@ -2758,7 +2850,7 @@ function update(dt) {
   if (state.clearT > 0) {
     state.clearT -= dt;
     if (state.clearT <= 0) {
-      if (state.act < 4) openPortal();
+      if (state.act < finalAct()) openPortal();
       else { endGame(true); return; }
     }
   }
@@ -2797,11 +2889,11 @@ function update(dt) {
     state.elitesSpawned = eliteDue + 1;
     spawnElite();
   }
-  // a snack turns up on the floor nearby every 40-55s (never more than 4 lying around)
+  // a snack turns up on the floor nearby every 75-100s (never more than 2 lying around)
   state.foodT -= dt;
   if (state.foodT <= 0) {
-    state.foodT = rand(40, 55);
-    if (pickups.filter(p => p.type === 'food').length < 4) {
+    state.foodT = rand(75, 100);
+    if (pickups.filter(p => p.type === 'food').length < 2) {
       const a = rand(0, TAU), d = rand(110, 190);
       const p = { x: player.x + Math.cos(a) * d, y: player.y + Math.sin(a) * d, r: 10, type: 'food', food: rollFood() };
       resolveObstacles(p);
@@ -2814,6 +2906,15 @@ function update(dt) {
   const { mx, my } = moveInput();
   player.fearT = Math.max(0, (player.fearT || 0) - dt);
   state.inkT = Math.max(0, state.inkT - dt);
+  if (state.act === 5 && state.portalT <= 0 && state.clearT <= 0) {   // hellfire rains down on marked rings around you
+    state.fireT = (state.fireT ?? 6) - dt;
+    if (state.fireT <= 0) {
+      state.fireT = state.actBoss ? rand(1.6, 2.4) : rand(2.2, 3.4);
+      const a = rand(0, TAU), d = rand(0, 150);
+      effects.push({ type: 'warn', x: player.x + Math.cos(a) * d, y: player.y + Math.sin(a) * d, radius: 44, life: 1.1, maxLife: 1.1,
+        dmg: 14 + state.time / 30, col: '#FF6D00' });
+    }
+  }
   if (state.act === 4) updateAxolotl(dt);
   for (const fx of effects) {
     if (fx.type === 'toxic' && fx.life > 0.4 && dist2(fx.x, fx.y, player.x, player.y) < (fx.radius + player.r * 0.5) ** 2) poisonPlayer(2);
@@ -3427,7 +3528,7 @@ function renderDarkness() {
   g.globalCompositeOperation = 'source-over';
   g.clearRect(0, 0, W, H);
   // the jungle is canopy shade (green-black, lighter) rather than crypt dark
-  g.fillStyle = state.act === 4 ? 'rgba(0,14,40,0.55)' : state.act === 3 ? 'rgba(0,18,6,0.5)' : `rgba(6,0,10,${DARKNESS})`;
+  g.fillStyle = state.act === 5 ? 'rgba(22,0,0,0.66)' : state.act === 4 ? 'rgba(0,14,40,0.55)' : state.act === 3 ? 'rgba(0,18,6,0.5)' : `rgba(6,0,10,${DARKNESS})`;
   g.fillRect(0, 0, W, H);
   g.globalCompositeOperation = 'destination-out';
   const punch = (wx, wy, r) => {
@@ -3436,6 +3537,14 @@ function renderDarkness() {
     g.drawImage(s, x - (s.width >> 1), y - (s.height >> 1));
   };
   const flick = Math.floor(uiTime * 8) % 3;
+  if (state.act === 5) {   // hellfire glow: fixed vents of flickering light across the waste
+    const S = 160, sx0 = Math.floor((player.x - VW / 2) / S) - 1, sy0 = Math.floor((player.y - VH / 2) / S) - 1;
+    for (let sy = sy0; sy * S < player.y + VH / 2 + S; sy++) for (let sx = sx0; sx * S < player.x + VW / 2 + S; sx++) {
+      const h = hash2(sx * 9 + 2, sy * 5 + 7);
+      if (h % 5) continue;
+      punch(sx * S + (h >>> 5) % S, sy * S + (h >>> 11) % S, 16 + (h >>> 17) % 12 + ((Math.floor(uiTime * 9) + h) % 3) * 2);
+    }
+  }
   if (state.act === 4) {   // caustics: rippling pools of surface light drift slowly across the seabed
     const S = 130, drift = uiTime * 9, sx0 = Math.floor((player.x - VW / 2 - drift) / S) - 1, sy0 = Math.floor((player.y - VH / 2) / S) - 1;
     for (let sy = sy0; sy * S < player.y + VH / 2 + S; sy++) for (let sx = sx0; sx * S + drift < player.x + VW / 2 + S; sx++) {
@@ -3851,6 +3960,21 @@ function renderWorld() {
     }
   }
 
+  if (state.act === 5) {   // ash drifting down, embers spiralling up — anchored to the world like the ocean's bubbles
+    const S = 70, x0 = Math.floor(camX * PX / S) - 1, y0 = Math.floor(camY * PX / S) - 1;
+    for (let gy = y0; gy * S < (camY + H) * PX + S; gy++) for (let gx = x0; gx * S < (camX + W) * PX + S; gx++) {
+      const h = hash2(gx * 13 + 1, gy * 3 + 9);
+      if (h % 3 === 0) {   // ash: grey flakes falling and swaying
+        const ph = (uiTime * 0.22 + (h % 101) / 101) % 1;
+        const ax = toDX(gx * S + (h >>> 6) % S + Math.sin(uiTime * 1.4 + h) * 8), ay = toDY(gy * S + ph * S * 2);
+        rect(ax, ay, (h & 64) ? 2 : 1, 1, (h & 32) ? '#929292' : '#6D6D6D');
+      } else if (h % 5 === 1) {   // embers: rising, flickering out
+        const ph = (uiTime * 0.5 + (h % 89) / 89) % 1;
+        const ex = toDX(gx * S + (h >>> 6) % S + Math.sin(uiTime * 3 + h) * 4), ey = toDY(gy * S + S - ph * S * 1.8);
+        if (ph < 0.8 || blink(10)) rect(ex, ey, 1, 1, ph < 0.4 ? '#FFDB49' : ph < 0.7 ? '#FF9200' : '#DB2400');
+      }
+    }
+  }
   if (state.act === 4) {   // streams of bubbles rising off the seabed, anchored to the world
     const S = 90, x0 = Math.floor(camX * PX / S) - 1, y0 = Math.floor(camY * PX / S) - 1;
     for (let gy = y0; gy * S < (camY + H) * PX + S; gy++) for (let gx = x0; gx * S < (camX + W) * PX + S; gx++) {
