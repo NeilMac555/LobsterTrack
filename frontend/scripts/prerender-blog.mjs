@@ -329,16 +329,11 @@ ${PRO.faqs.map(([q, a]) => `<h3>${esc(q)}</h3><p>${esc(a)}</p>`).join('\n')}`,
       keywords: ['steam moves', 'sharp money', 'football betting', 'line movement'],
     },
     noscriptHtml: `<h1>Steam Results | SteamWatch</h1>
-<p>Do steam moves win? SteamWatch records every significant pre-kickoff price shortening (3+ percentage points of implied probability at Pinnacle) across major European leagues and tracks what happened next.</p>
-<h2>The all-time record (27 January 2026 to 1 September 2026)</h2>
-<ul>
-  <li>531 steam moves tracked through to a result. 216 won (40.7%), 128 drew, 187 lost.</li>
-  <li>Backing every one blind at the price when the move was detected returned -3.5% (-18.7 units at flat 1 unit stakes).</li>
-  <li>Drifters, the moves going the other way: 797 tracked, 284 won (35.6%), blind backing returned -3.5%.</li>
-</ul>
-<p>A steam move tells you the market changed its mind, it does not tell you the market was wrong. The per-team rankings, updated after every result, show which sides the money has been right about this season.</p>
-<p>Leagues covered: Premier League, La Liga, Bundesliga, Serie A, Ligue 1, Champions League, Europa League.</p>
-<p><a href="https://www.steamwatch.io/blog/what-are-steam-moves-in-football-betting">What is a steam move?</a> · <a href="https://www.steamwatch.io/drifters">Drifters</a> · <a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
+<p>Current-season team selections whose Pinnacle 1X2 price shortened by at least 3 percentage points from the first recorded quote, observed in the final two hours before kickoff.</p>
+<p>Each team counts once per fixture, using its largest qualifying recorded move. P/L uses flat 1 unit stakes at that price. Draw selections are excluded; drawn matches lose a team win bet. Pending and interrupted fixtures are excluded from settled P/L.</p>
+<p>The interactive table refreshes every minute and on tab return, with league, minimum-sample and last-30-day filters. Enable JavaScript to load current totals. Team rankings require at least three settled selections.</p>
+<p>This describes all qualifying recorded team movements, independently of Telegram delivery. Largest-move returns are a descriptive record, not a first-alert betting strategy.</p>
+<p><a href="https://www.steamwatch.io/steam-results">Steam Results</a> · <a href="https://www.steamwatch.io/drifters">Drifters</a> · <a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
   },
   {
     path: 'tools/hedge-calculator',
@@ -546,15 +541,11 @@ ${PRO.faqs.map(([q, a]) => `<h3>${esc(q)}</h3><p>${esc(a)}</p>`).join('\n')}`,
       keywords: ['drifters', 'odds drift', 'football betting', 'line movement'],
     },
     noscriptHtml: `<h1>Drifters | SteamWatch</h1>
-<p>A drifter is a selection whose odds lengthened before kickoff — its implied probability fell. SteamWatch tracks every drift across major European leagues and records what happened next: win rates and profit/loss for the moves going the other way.</p>
-<h2>The all-time record (27 January 2026 to 1 September 2026)</h2>
-<ul>
-  <li>797 drifters tracked through to a result. 284 won (35.6%), 200 drew, 313 lost.</li>
-  <li>Backing every drifter blind at the drifted price returned -3.5% (-28.0 units at flat 1 unit stakes).</li>
-  <li>For comparison, backing every steam move blind over the same period also returned -3.5% across 531 moves.</li>
-</ul>
-<p>Leagues covered: Premier League, La Liga, Bundesliga, Serie A, Ligue 1, Champions League, Europa League.</p>
-<p><a href="https://www.steamwatch.io/blog/what-is-a-drifter-in-football-betting">What is a drifter?</a> · <a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
+<p>Current-season team selections whose Pinnacle 1X2 price lengthened by at least 3 percentage points from the first recorded quote, observed in the final two hours before kickoff.</p>
+<p>Each team counts once per fixture, using its largest qualifying recorded move. P/L uses flat 1 unit stakes at that price. Draw selections are excluded; drawn matches lose a team win bet. Pending and interrupted fixtures are excluded from settled P/L.</p>
+<p>The interactive table refreshes every minute and on tab return, with league, minimum-sample and last-30-day filters. Enable JavaScript to load current totals. Team rankings require at least three settled selections.</p>
+<p>This describes all qualifying recorded team movements, independently of Telegram delivery. Largest-move returns are a descriptive record, not a first-alert betting strategy.</p>
+<p><a href="https://www.steamwatch.io/steam-results">Steam Results</a> · <a href="https://www.steamwatch.io/drifters">Drifters</a> · <a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
   },
   {
     path: 'team-pnl',
