@@ -36,6 +36,9 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy: new hero Ana (black glasses, blonde curls) with the
+  Acid Flask weapon (shatters into burning puddles), icon + voice; hero
+  select up/down now wrap within a column for the 9-hero grid — `8754b1b`
 - Mutant Academy: act bosses — each act's level (5/10/15/20) summons a
   giant boss that must die before the portal opens (Butcher, Maggot
   Queen, Elder Treant, Kraken); beating the Kraken wins (survival timer
