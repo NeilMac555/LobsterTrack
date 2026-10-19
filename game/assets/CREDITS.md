@@ -24,6 +24,15 @@ https://opengameart.org/content/cat-sprites
 (frames mirrored to face right and rearranged into this project's
 10-frames-per-row sheet layout)
 
+## Act maps (`map1.png`–`map5.png`)
+
+Walls, paving, water, lava, bog, statues, altars, fountains, gateways and the
+secrets' treasures (Biski's cat statue, the golden idol, the goldfish, the
+quokka, chests and gold) are **Dungeon Crawl Stone Soup** tiles, **CC0**
+(public domain): https://opengameart.org/content/dungeon-crawl-32x32-tiles —
+picked and packed into one 32px sheet per act. The desert's "X" is DCSS's
+diagonal sigil laid over its mirror image.
+
 ## HD sheets (`hd/`)
 
 `hd/<name>.png` is a 2x version of `<name>.png` for the HD graphics mode; each

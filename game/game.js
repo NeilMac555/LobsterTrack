@@ -1040,7 +1040,8 @@ const ASSET_FILES = ['warrior', 'wizard', 'ranger', 'rogue', 'cleric',
   'desert', 'fly', 'maggot', 'lizard', 'orb',
   'jungle', 'snake', 'treant', 'plant', 'mosquito', 'monkey', 'frog',
   'ocean', 'axolotl', 'piranha', 'jelly', 'crab', 'shark', 'squid', 'eel', 'kraken',
-  'hell', 'hellbeast', 'fireskull', 'ghoul', 'cultist', 'nightmare', 'devilkin', 'devil'];
+  'hell', 'hellbeast', 'fireskull', 'ghoul', 'cultist', 'nightmare', 'devilkin', 'devil',
+  'map1', 'map2', 'map3', 'map4', 'map5'];
 const assets = {};
 function loadAssets() {
   return Promise.all(ASSET_FILES.map(name => new Promise((res, rej) => {
@@ -1347,6 +1348,7 @@ function scanEnv() {
   const obs = [], braz = [];
   for (let iy = y0; iy <= y1; iy++) {
     for (let ix = x0; ix <= x1; ix++) {
+      if (cellOf(ix * TILE + TILE / 2, iy * TILE + TILE / 2) !== T_FLOOR) continue;   // the map's own features come first
       const oh = obstacleAt(ix, iy);
       if (oh) {
         const kind = (oh >>> 3) % 8;
@@ -1361,11 +1363,23 @@ function scanEnv() {
       }
     }
   }
+  // props placed by the map: statues, altars, columns, and the act's big floor props (palms, trees, coral)
+  const mx0 = Math.floor(x0 * TILE / MC), mx1 = Math.ceil(x1 * TILE / MC), my0 = Math.floor(y0 * TILE / MC), my1 = Math.ceil(y1 * TILE / MC);
+  for (let cy = my0; cy <= my1; cy++) for (let cx = mx0; cx <= mx1; cx++) {
+    const p = cellAt(cx, cy) >> 8;
+    if (!p) continue;
+    const x = cx * MC + MC / 2, y = cy * MC + MC / 2;
+    if (p >= 17) {
+      const kind = p - 17;
+      obs.push({ x, y, kind, r: state.act === 5 ? HELL_R[kind % 6] : state.act === 4 ? OCEAN_R[kind % 6] : state.act === 3 ? JUNGLE_R[kind % 6] : state.act === 2 ? DESERT_R[kind % 5] : PROP_R[kind] });
+    } else obs.push({ x, y: y + 8, r: PROP_MAP_R, mapProp: p });
+  }
   state.obsList = obs;
   state.brazList = braz;
 }
 
 function resolveObstacles(ent) {
+  resolveTerrain(ent);
   if (!state.obsList) return;
   const er = ent.r || 12;
   for (const o of state.obsList) {
@@ -1428,10 +1442,11 @@ function drawDesertFloor() {
       ctx.drawImage(img, (t % 8) * CT, (t >> 3) * CT, CT, CT, ix * CT - camX, iy * CT - camY, CT, CT);
     }
   }
+  drawTerrain();
   for (let iy = iy0 - 1; iy * CT - camY < H; iy++) {
     for (let ix = ix0 - 1; ix * CT - camX < W; ix++) {
       const h = hash2(ix * 7 + 3, iy * 11 + 5);
-      if (h % 13) continue;
+      if (h % 13) continue; if (!bareCell(ix, iy)) continue;
       const d = (h >>> 4) % 7, dx = ((h >>> 8) % 17) - 8, dy = ((h >>> 13) % 17) - 8;
       ctx.drawImage(img, d * CT, 128, CT, CT, ix * CT - camX + dx, iy * CT - camY + dy, CT, CT);
     }
@@ -1449,10 +1464,11 @@ function drawJungleFloor() {
       ctx.drawImage(img, (t % 8) * CT, (t >> 3) * CT, CT, CT, ix * CT - camX, iy * CT - camY, CT, CT);
     }
   }
+  drawTerrain();
   for (let iy = iy0 - 1; iy * CT - camY < H; iy++) {
     for (let ix = ix0 - 1; ix * CT - camX < W; ix++) {
       const h = hash2(ix * 7 + 3, iy * 11 + 5);
-      if (h % 4) continue;                       // the undergrowth is thick
+      if (h % 4) continue; if (!bareCell(ix, iy)) continue;                       // the undergrowth is thick
       const d = (h >>> 4) % 8, dx = ((h >>> 8) % 17) - 8, dy = ((h >>> 13) % 17) - 8;
       ctx.drawImage(img, d * CT, 176, CT, CT, ix * CT - camX + dx, iy * CT - camY + dy, CT, CT);
     }
@@ -1469,10 +1485,11 @@ function drawOceanFloor() {
       ctx.drawImage(img, (t % 8) * CT, (t >> 3) * CT, CT, CT, ix * CT - camX, iy * CT - camY, CT, CT);
     }
   }
+  drawTerrain();
   for (let iy = iy0 - 1; iy * CT - camY < H; iy++) {
     for (let ix = ix0 - 1; ix * CT - camX < W; ix++) {
       const h = hash2(ix * 7 + 3, iy * 11 + 5);
-      if (h % 9) continue;
+      if (h % 9) continue; if (!bareCell(ix, iy)) continue;
       const d = (h >>> 4) % 8, dx = ((h >>> 8) % 17) - 8, dy = ((h >>> 13) % 17) - 8;
       ctx.drawImage(img, d * CT, 176, CT, CT, ix * CT - camX + dx, iy * CT - camY + dy, CT, CT);
     }
@@ -1489,10 +1506,11 @@ function drawHellFloor() {
       ctx.drawImage(img, (t % 8) * CT, (t >> 3) * CT, CT, CT, ix * CT - camX, iy * CT - camY, CT, CT);
     }
   }
+  drawTerrain();
   for (let iy = iy0 - 1; iy * CT - camY < H; iy++) {
     for (let ix = ix0 - 1; ix * CT - camX < W; ix++) {
       const h = hash2(ix * 7 + 3, iy * 11 + 5);
-      if (h % 7) continue;
+      if (h % 7) continue; if (!bareCell(ix, iy)) continue;
       const d = (h >>> 4) % 8, dx = ((h >>> 8) % 17) - 8, dy = ((h >>> 13) % 17) - 8;
       ctx.drawImage(img, d * CT, 176, CT, CT, ix * CT - camX + dx, iy * CT - camY + dy, CT, CT);
     }
@@ -1505,6 +1523,7 @@ function drawFloor() {
   if (state.act === 3) { drawJungleFloor(); return; }
   if (state.act === 2) { drawDesertFloor(); return; }
   drawCryptTiles(0, 0, W, H, CT, camX, camY);
+  drawTerrain();
   // decals: blood splatter, puddles and the odd bone
   const img = SPR.crypt.base;
   const ix0 = Math.floor(camX / CT) - 1, iy0 = Math.floor(camY / CT) - 1;
@@ -1512,7 +1531,7 @@ function drawFloor() {
   for (let iy = iy0; iy <= iy1; iy++) {
     for (let ix = ix0; ix <= ix1; ix++) {
       const h = hash2(ix * 7 + 3, iy * 11 + 5);
-      if (h % 6) continue;
+      if (h % 6) continue; if (!bareCell(ix, iy)) continue;
       const d = (h >>> 4) % 8, dx = ((h >>> 8) % 17) - 8, dy = ((h >>> 13) % 17) - 8;
       ctx.drawImage(img, d * CT, 3 * CT, CT, CT, ix * CT - camX + dx, iy * CT - camY + dy, CT, CT);
     }
@@ -1522,6 +1541,7 @@ function drawFloor() {
 // solid props: crumbled columns, demonic statues, a sarcophagus, the blood fountain
 const PROP_R = [11, 11, 14, 14, 14, 13, 16, 11];
 function drawObstacle(o) {
+  if (o.mapProp) { drawMapProp(o); return; }
   const x = toDX(o.x), y = toDY(o.y);
   if (x < -48 || x > W + 48 || y < -20 || y > H + 120) return;
   if (state.act >= 3) { ctx.drawImage(SPR[['', '', '', 'jungle', 'ocean', 'hell'][state.act]].base, (o.kind % 6) * 80, 64, 80, 112, x - 40, y - 102, 80, 112); return; }
@@ -1543,6 +1563,415 @@ function drawBrazierLight(bz) {
   if (x < -50 || x > W + 50 || y < -50 || y > H + 50) return;
   const l = lightSprite(Math.floor(uiTime * 6 + bz.x) % 3 === 0 ? 34 : 36);
   ctx.drawImage(l, x - (l.width >> 1), y - (l.height >> 1));
+}
+
+// ---------- act maps ----------
+// Every act is a laid-out map around the spot where you arrive, rebuilt with a fresh seed each run.
+// The world is a grid of 64-unit cells (one 32-dot floor tile each). A cell is, in order of priority:
+//   the act's secret (+ a clear margin) > the clear arrival area > a structure stamped from a template
+//   (one per 16x16-cell chunk, often) > roads (which bridge rivers) > rock ridges > lakes > rivers >
+//   ground patches > the act's ordinary floor.
+// Walls and deep liquid are solid for walkers (fliers pass over), shallow liquid slows, lava burns.
+// Art: assets/map<act>.png (Dungeon Crawl Stone Soup tiles, CC0) — rows: wall A, wall B, floor A,
+// floor B, liquid A x4 + liquid B x4 frames, props A, props B, specials.
+const MC = 64;                              // world units per map cell (= CT dots)
+const T_FLOOR = 0, T_FA = 1, T_FB = 2, T_WA = 3, T_WB = 4, T_LA = 5, T_LB = 6;
+const FAKE = 8;                             // looks like its type, but is open ground (secret entrances)
+// cell code: type | FAKE | variant << 4 | prop << 8 (prop: 1-8 props A, 9-16 props B, 17-24 the act's big floor props)
+const cellType = c => c & 7;
+const PROP_MAP_R = 12;
+// templates: ' ' leaves the cell to the biome, '_' forces plain floor
+//   . : floor A (two variant sets)  , ; floor B   # B walls A / B   ~ = liquid A / B   X Y Z fake wall A / wall B / liquid B
+//   0-7 props A  a-h props B  P-W the act's big floor props (palms, trees, coral...)  * the secret
+const MAPDEF = {
+  1: {   // the Cathedral: chapels, sealed vaults, pillared naves, blood-fountain plazas, flooded cellars, graveyards
+    road: 34, liqA: { slow: 0.6 }, liqB: { solid: true },
+    lakes: { scale: 12, t: 0.82, deep: 0.9 }, patch: { scale: 8, t: 0.66, props: ['a', 'b', '4', '5'], chance: 0.12 },
+    density: 0.5, ruin: 0.12,
+    structs: [
+      ['###########', '#....c....#', '#.0.....0.#', '#...,,,...#', '#.0.,,,.0.#', '#...,,,...#', '#.0.,,,.0.#', '#...,,,...#', '####,,,####'],
+      ['BBBBBBBBB', 'B.......B', 'B.5.6.5.B', 'B.......B', 'B.5.d.5.B', 'B.......B', 'BBBB.BBBB'],
+      ['1.......1.......1', '..:::::::::::::..', '..:,,,,,,,,,,,:..', '..:::::::::::::..', '1.......1.......1'],
+      ['  ,,,,,  ', ' ,,,,,,, ', ',,2,,,3,,', ',,,,7,,,,', ',,3,,,2,,', ' ,,,,,,, ', '  ,,,,,  '],
+      ['#########', '#~~~~~~~#', '#~~===~~#', '#~~===~~#', '#~~~~~~~#', '####.####'],
+      ['  e   f  ', ' ;;;;;;; ', 'e;a;b;a;f', ' ;;;;;;; ', 'f;b;a;b;e', ' ;;;;;;; ', '  e   f  '],
+    ],
+    secret: { kind: 'shrine', tpl: ['#######', '#.....#', '#..*..#', '#.....#', '###X###'] },
+  },
+  2: {   // the Burning Sands: sandstone temples, obelisk courts, colonnades, mesas, oases ringed by palms, dry riverbeds
+    road: 38, liqA: { slow: 0.6 }, liqB: { solid: true },
+    ridges: { scale: 7, t: 0.8 }, lakes: { scale: 13, t: 0.8, deep: 0.87, shore: ['P', 'Q', 'R'], shoreChance: 0.3 },
+    rivers: { scale: 30, w: 0.03, as: 'fb' }, patch: { scale: 9, t: 0.7, props: ['T', 'U', '5'], chance: 0.08 },
+    density: 0.45, ruin: 0.2,
+    structs: [
+      ['###...###', '#.......#', '#.0.4.0.#', '#.......#', '#.1.7.1.#', '#.......#', '####.####'],
+      ['  6   6  ', '         ', '6  :::  6', '   :3:   ', '6  :::  6', '         ', '  6   6  '],
+      ['0.0.0.0.0', ':::::::::', '0.0.0.0.0'],
+      ['##.##.###', '#.......#', '..a...b..', '#.......#', '###.##.##'],
+      [' P   Q ', '  ~~~  ', 'R ~=~ P', '  ~~~  ', ' Q   R '],
+    ],
+    secret: { kind: 'dig', tpl: [' BBBBB ', 'BB;;;BB', 'B;;*;;B', 'BB;;;BB', ' BBYBB '] },
+  },
+  3: {   // the Strangling Jungle: rivers, poison bogs, vine thickets, overgrown temples, stone circles, mangrove groves
+    road: 36, liqA: { slow: 0.55 }, liqB: { slow: 0.5, poison: true },
+    ridges: { scale: 6, t: 0.82, wall: T_WA }, lakes: { scale: 10, t: 0.8, liq: T_LB, shore: ['0', '1', '2'], shoreChance: 0.25 },
+    rivers: { scale: 26, w: 0.035, bank: ['0', '1', '2', 'P'], bankChance: 0.12 }, patch: { scale: 7, t: 0.6, props: ['V', 'W'], chance: 0.05 },
+    density: 0.45, ruin: 0.18,
+    structs: [
+      ['BBB.BBB', 'B.....B', 'B.4.5.B', 'B..a..B', 'B.....B', 'BBB.BBB'],
+      ['  4 4  ', ' 4   4 ', '4  6  4', ' 4   4 ', '  4 4  '],
+      [' 0 1 2 ', '2 0 1 0', ' 1 2 0 ', '0 2 1 2'],
+      ['BBBBBBBBB', 'B,,,,,,,B', 'B,b,,,b,B', ',,,,7,,,,', 'B,b,,,b,B', 'B,,,,,,,B', 'BBBB,BBBB'],
+    ],
+    secret: { kind: 'idol', tpl: ['#########', '#,,,,,,,#', '#,,,*,,,#', '#,,,,,,,#', '#,,,,,,,#', '####X####'] },
+  },
+  4: {   // the Drowned Depths: sunken temples, statue rings, reefs, kelp forests, ink pools, dark trenches
+    road: 40, liqA: { slow: 0.6 }, liqB: { slow: 0.6 },
+    ridges: { scale: 7, t: 0.78 }, lakes: { scale: 11, t: 0.84 }, rivers: { scale: 24, w: 0.05, as: 'fb' },
+    patch: { scale: 8, t: 0.68, props: ['P', 'Q', 'R', 'S', 'T', 'U'], chance: 0.22 },
+    density: 0.45, ruin: 0.22,
+    structs: [
+      ['##.###.##', '#.......#', '..0...1..', '#...6...#', '..1...0..', '#.......#', '##.###.##'],
+      [' a b ', 'c 7 g', ' e f '],
+      ['#.#.#.#.#', '.........', '#.:::::.#', '..:3:2:..', '#.:::::.#', '.........', '#.#.#.#.#'],
+    ],
+    secret: { kind: 'fish', tpl: [' BBBBBBB ', 'BB.....BB', 'B...*...B', 'BB.....BB', ' BBBYBBB '] },
+  },
+  5: {   // the Gates of Hell: lava rivers and lakes, fortresses, pentagram altars, hell gates, flesh ridges, bone fields
+    road: 32, liqA: { slow: 0.7, burn: 6 }, liqB: { solid: true },
+    ridges: { scale: 6, t: 0.83 }, lakes: { scale: 10, t: 0.8, deep: 0.87 }, rivers: { scale: 24, w: 0.022 },
+    patch: { scale: 7, t: 0.6, props: ['1', 'e'], chance: 0.05 },
+    density: 0.5, ruin: 0.15,
+    structs: [
+      ['#####.#####', '#.........#', '#.0.....0.#', '#....3....#', '...........', '#.0.....0.#', '#.........#', '#####.#####'],
+      ['   a   ', ' ,,,,, ', 'b,,,,,c', ' ,,3,, ', 'c,,,,,a', ' ,,,,, ', '   b   '],
+      [' 0   0 ', '  :::  ', '  :d:  ', '  :::  ', ' 0   0 '],
+      [' 5 ; 5 ', ';;;;;;;', '5;;7;;5', ';;;;;;;', ' 5 ; 5 '],
+    ],
+    secret: { kind: 'quokka', tpl: ['=========', '==,,,,,==', '==,,*,,==', '==,,,,,==', '====Z====', '====Z====', '====Z===='] },
+  },
+};
+// each act's one big landmark, a short walk from where you arrive
+const LANDMARKS = {
+  1: ['###################', '#.......c.c.......#', '#.0.0.0.,,,.0.0.0.#', '#.......,,,.......#', '####.###,,,###.####',
+      '#.......,,,.......#', '#.2.....,,,.....2.#', '#.......,,,.......#', '#.0.0.0.,,,.0.0.0.#', '#.......,,,.......#',
+      '#.3.....,,,.....3.#', '#.......,,,.......#', '#.0.0.0.,,,.0.0.0.#', '#.......,,,.......#', '########,,,########'],
+  2: ['   #############   ', '   #...........#   ', '####.0.0.0.0.0.####', '#.......~~~.......#', '#.6....~~=~~....6.#',
+      '#.......~~~.......#', '####.0.0.0.0.0.####', '   #.....7.....#   ', '   ######.######   '],
+  3: ['~~~~~~~~~~~~~~~~~', '~BBBBBBB,BBBBBBB~', '~B,,,,,,,,,,,,,B~', '~B,BBBBB,BBBBB,B~', '~B,B,,,,,,,,,B,B~',
+      '~B,B,4,,a,,5,B,B~', '~,,,,,,,6,,,,,,,~', '~B,B,,,,,,,,,B,B~', '~B,BBBBB,BBBBB,B~', '~B,,,,,,,,,,,,,B~',
+      '~BBBBBBB,BBBBBBB~', '~~~~~~~~,~~~~~~~~'],
+  4: ['#####.#####.#####', '#.0.#.#.6.#.#.1.#', '#...#.......#...#', '##.##.##.##.##.##', '.................',
+      '##.##.##.##.##.##', '#...#.......#...#', '#.1.#.#.7.#.#.0.#', '#####.#####.#####'],
+  5: ['~~~~~~~~~~~~~~~~~~~', '~#################~', '~#.......:.......#~', '~#.3.#########.3.#~', '~#...#,,,,,,,#...#~',
+      '~#...#,a,,,b,#...#~', ':.....,,,0,,,.....:', '~#...#,c,,,a,#...#~', '~#...#,,,,,,,#...#~', '~#.3.####,####.3.#~',
+      '~#.......:.......#~', '~#################~', '~~~~~~~~~~~~~~~~~~~'],
+};
+const MAP_CHUNK = 18, MAP_CLEAR = 6;
+const mapCache = new Map();
+let mapDef = MAPDEF[1], mapSeed = 1, mapOX = 0, mapOY = 0;
+function vnoise(x, y, s) {   // smooth value noise, 0..1
+  const xi = Math.floor(x), yi = Math.floor(y), fx = x - xi, fy = y - yi;
+  const h = (a, b) => (hash2(a + s * 7919, b - s * 6271) & 0xffff) / 65535;
+  const u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy);
+  const a = h(xi, yi), b = h(xi + 1, yi), c = h(xi, yi + 1), d = h(xi + 1, yi + 1);
+  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+}
+// lay out an act's map around the hero, and hide its secret 1300-1800 units away
+function newMap(act) {
+  mapDef = MAPDEF[act] || MAPDEF[1];
+  mapSeed = (Math.random() * 1e6) | 0;
+  mapOX = Math.floor(player.x / MC); mapOY = Math.floor(player.y / MC);
+  mapCache.clear();
+  const s = mapDef.secret, a = rand(0, TAU), d = rand(1300, 1800) / MC;
+  const sx = Math.round(mapOX + Math.cos(a) * d), sy = Math.round(mapOY + Math.sin(a) * d);
+  let ix = 0, iy = 0;
+  s.tpl.forEach((row, y) => { const x = row.indexOf('*'); if (x >= 0) { ix = x; iy = y; } });
+  state.secret = { act, kind: s.kind, cx: sx - ix, cy: sy - iy, w: s.tpl[0].length, h: s.tpl.length,
+    x: (sx + 0.5) * MC, y: (sy + 0.5) * MC, found: false, sensed: false, t: 0 };
+  const lm = LANDMARKS[act], la = a + rand(1.6, 4.7), ld = rand(750, 1000) / MC;   // well away from the secret's bearing
+  state.landmark = { tpl: lm, w: lm[0].length, h: lm.length,
+    cx: Math.round(mapOX + Math.cos(la) * ld - lm[0].length / 2), cy: Math.round(mapOY + Math.sin(la) * ld - lm.length / 2) };
+}
+function tplCell(ch, cx, cy, h) {
+  const v = (h >>> 3) & 3;
+  if (ch === '.') return T_FA | v << 4;
+  if (ch === ':') return T_FA | (4 + v) << 4;
+  if (ch === ',') return T_FB | v << 4;
+  if (ch === ';') return T_FB | (4 + v) << 4;
+  if (ch === '#') return T_WA | ((h >>> 5) & 7) << 4;
+  if (ch === 'B') return T_WB | ((h >>> 5) & 7) << 4;
+  if (ch === '~') return T_LA;
+  if (ch === '=') return T_LB;
+  if (ch === 'X') return T_WA | FAKE;
+  if (ch === 'Y') return T_WB | FAKE;
+  if (ch === 'Z') return T_LB | FAKE;
+  if (ch === '_' || ch === '*') return ch === '*' ? T_FA : T_FLOOR;
+  if (ch >= '0' && ch <= '7') return T_FA | v << 4 | (1 + +ch) << 8;
+  if (ch >= 'a' && ch <= 'h') return T_FA | v << 4 | (9 + ch.charCodeAt(0) - 97) << 8;
+  if (ch >= 'P' && ch <= 'W') return T_FLOOR | (17 + ch.charCodeAt(0) - 80) << 8;
+  return -1;
+}
+const propCode = ch => tplCell(ch, 0, 0, 0) & ~0xFF;   // just the prop bits of a template character
+function genCell(cx, cy) {
+  const D = mapDef, s = state.secret, h = hash2(cx * 31 + mapSeed, cy * 17 - mapSeed);
+  if (s) {   // the secret and a 2-cell margin of plain ground around it
+    const lx = cx - s.cx, ly = cy - s.cy;
+    if (lx >= -2 && ly >= -2 && lx < s.w + 2 && ly < s.h + 2) {
+      const ch = lx >= 0 && ly >= 0 && lx < s.w && ly < s.h ? D.secret.tpl[ly][lx] : '_';
+      return ch === ' ' ? T_FLOOR : tplCell(ch, cx, cy, h);
+    }
+  }
+  const L = state.landmark;
+  if (L) {   // the landmark, with a 1-cell margin of plain ground
+    const lx = cx - L.cx, ly = cy - L.cy;
+    if (lx >= -1 && ly >= -1 && lx <= L.w && ly <= L.h) {
+      const ch = lx >= 0 && ly >= 0 && lx < L.w && ly < L.h ? L.tpl[ly][lx] : '_';
+      if (ch !== ' ') return tplCell(ch, cx, cy, h);
+    }
+  }
+  const rx = cx - mapOX, ry = cy - mapOY;
+  if (rx * rx + ry * ry < MAP_CLEAR * MAP_CLEAR) return T_FLOOR;
+  // a structure in this chunk?
+  const kx = Math.floor(rx / MAP_CHUNK), ky = Math.floor(ry / MAP_CHUNK);
+  const kh = hash2(kx * 97 + mapSeed, ky * 61 + 7);
+  if ((kh % 100) < D.density * 100) {
+    const tpl = D.structs[(kh >>> 8) % D.structs.length], tw = tpl[0].length, th = tpl.length;
+    const ox = kx * MAP_CHUNK + 1 + (kh >>> 13) % Math.max(1, MAP_CHUNK - tw - 1);
+    const oy = ky * MAP_CHUNK + 1 + (kh >>> 18) % Math.max(1, MAP_CHUNK - th - 1);
+    let lx = rx - ox, ly = ry - oy;
+    if (lx >= 0 && ly >= 0 && lx < tw && ly < th) {
+      if (kh & 2) lx = tw - 1 - lx;   // mirrored and flipped copies, so no two look alike
+      if (kh & 4) ly = th - 1 - ly;
+      const ch = tpl[ly][lx];
+      if (ch !== ' ') {
+        // ruins: some wall blocks have fallen (leaving rubble now and then)
+        if ((ch === '#' || ch === 'B') && (h % 100) < D.ruin * 100) return (h >>> 9) % 3 ? T_FA | ((h >>> 3) & 3) << 4 : T_FA | propCode('1');
+        return tplCell(ch, cx, cy, h);
+      }
+    }
+  }
+  // roads: winding stretches along a loose grid, about half of them there (they bridge rivers and cut through ridges)
+  const R = D.road, wx = rx + Math.round(Math.sin(ry / 5 + kx) * 2.5), wy = ry + Math.round(Math.sin(rx / 6 + ky) * 2.5);
+  const lxr = ((wx % R) + R) % R, lyr = ((wy % R) + R) % R;
+  if ((lxr < 2 && hash2(Math.floor(wx / R) + mapSeed, Math.floor(ry / R)) % 10 < 5) ||
+      (lyr < 2 && hash2(Math.floor(rx / R), Math.floor(wy / R) - mapSeed) % 10 < 5)) return T_FA | (4 + ((h >>> 3) & 3)) << 4;
+  if (D.ridges && vnoise(rx / D.ridges.scale, ry / D.ridges.scale, mapSeed + 5) > D.ridges.t) return (D.ridges.wall || T_WB) | ((h >>> 5) & 7) << 4;
+  if (D.lakes) {
+    const n = vnoise(rx / D.lakes.scale, ry / D.lakes.scale, mapSeed + 3);
+    if (n > D.lakes.t) return D.lakes.deep && n > D.lakes.deep ? T_LB : (D.lakes.liq || T_LA);
+    if (D.lakes.shore && n > D.lakes.t - 0.03 && (h % 1000) < D.lakes.shoreChance * 1000) return T_FLOOR | propCode(D.lakes.shore[(h >>> 4) % D.lakes.shore.length]);
+  }
+  if (D.rivers) {
+    const R = D.rivers, warp = vnoise(rx / 9, ry / 9, mapSeed + 2) * 1.4;
+    const n = Math.abs(vnoise(rx / R.scale + warp, ry / R.scale, mapSeed + 1) - 0.5);
+    if (n < R.w) return R.as === 'fb' ? T_FB | (4 + ((h >>> 3) & 3)) << 4 : T_LA;
+    if (R.bank && n < R.w * 1.6 && (h % 1000) < R.bankChance * 1000) return T_FLOOR | propCode(R.bank[(h >>> 4) % R.bank.length]);
+  }
+  if (D.patch && vnoise(rx / D.patch.scale, ry / D.patch.scale, mapSeed + 4) > D.patch.t) {
+    const P = D.patch, prop = (h % 1000) < P.chance * 1000 ? propCode(P.props[(h >>> 4) % P.props.length]) : 0;
+    return T_FB | (4 + ((h >>> 3) & 3)) << 4 | prop;
+  }
+  return T_FLOOR;
+}
+function cellAt(cx, cy) {
+  const k = (cx + 32768) * 65536 + (cy + 32768);
+  let c = mapCache.get(k);
+  if (c === undefined) {
+    if (mapCache.size > 60000) mapCache.clear();
+    c = genCell(cx, cy);
+    mapCache.set(k, c);
+  }
+  return c;
+}
+const cellOf = (wx, wy) => cellAt(Math.floor(wx / MC), Math.floor(wy / MC));
+function cellSolid(c) {
+  if (c & FAKE) return false;
+  const t = cellType(c);
+  return t === T_WA || t === T_WB || (t === T_LB && !!mapDef.liqB.solid);
+}
+const solidAt = (wx, wy) => cellSolid(cellOf(wx, wy));
+// the ground under a walker: { slow, burn, poison } or null
+function groundAt(wx, wy) {
+  const c = cellOf(wx, wy), t = cellType(c);
+  if (c & FAKE) return null;
+  return t === T_LA ? mapDef.liqA : t === T_LB && !mapDef.liqB.solid ? mapDef.liqB : null;
+}
+// lava burns, the jungle bog poisons
+function groundHazard(g, dt) {
+  state.groundT = Math.max(0, (state.groundT || 0) - dt);
+  if (!g || state.groundT > 0) return;
+  if (g.burn) {
+    state.groundT = 0.5;
+    if (state.berserkT <= 0 && player.hurtCd <= 0) popText(player.x, player.y - 56, 'BURNING!', '#FF6D00');
+    hurtPlayer(g.burn);
+    burstParticles(player.x, player.y + 8, '#FF9200', 3);
+  } else if (g.poison) { state.groundT = 1; poisonPlayer(1.2); }
+}
+// push a circle out of any solid cells it overlaps (it slides along walls)
+function resolveTerrain(ent) {
+  const r = ent.r || 12, demon = state.act === 5 && ent !== player;   // hell's deep lava only stops the hero
+  const solid = c => cellSolid(c) && !(demon && cellType(c) === T_LB);
+  for (let pass = 0; pass < 2; pass++) {
+    const cx0 = Math.floor((ent.x - r) / MC), cx1 = Math.floor((ent.x + r) / MC);
+    const cy0 = Math.floor((ent.y - r) / MC), cy1 = Math.floor((ent.y + r) / MC);
+    let moved = false;
+    for (let cy = cy0; cy <= cy1; cy++) for (let cx = cx0; cx <= cx1; cx++) {
+      if (!solid(cellAt(cx, cy))) continue;
+      const x0 = cx * MC, y0 = cy * MC, nx = clamp(ent.x, x0, x0 + MC), ny = clamp(ent.y, y0, y0 + MC);
+      let dx = ent.x - nx, dy = ent.y - ny;
+      const d2 = dx * dx + dy * dy;
+      if (d2 >= r * r) continue;
+      if (d2 > 0.0001) {
+        const d = Math.sqrt(d2);
+        ent.x = nx + dx / d * r; ent.y = ny + dy / d * r;
+      } else {   // centre inside the block: out through the nearest face
+        const l = ent.x - x0, rt = x0 + MC - ent.x, t = ent.y - y0, b = y0 + MC - ent.y, m = Math.min(l, rt, t, b);
+        if (m === l) ent.x = x0 - r; else if (m === rt) ent.x = x0 + MC + r; else if (m === t) ent.y = y0 - r; else ent.y = y0 + MC + r;
+      }
+      moved = true;
+    }
+    if (!moved) break;
+  }
+}
+// terrain tiles over the act's floor: paths, interiors, walls (with a drop shadow) and animated liquid
+function drawTerrain() {
+  const img = SPR['map' + state.act]?.base;
+  if (!img) return;
+  const ix0 = Math.floor(camX / CT), iy0 = Math.floor(camY / CT);
+  const fr = Math.floor(uiTime * 3) % 4;
+  for (let iy = iy0; iy * CT - camY < H; iy++) {
+    for (let ix = ix0; ix * CT - camX < W; ix++) {
+      const c = cellAt(ix, iy), t = cellType(c);
+      if (!t) continue;
+      const v = (c >> 4) & 7, x = ix * CT - camX, y = iy * CT - camY;
+      let sx = v, sy;
+      if (t === T_WA) sy = 0; else if (t === T_WB) sy = 1; else if (t === T_FA) sy = 2; else if (t === T_FB) sy = 3;
+      else { sy = 4; sx = (t === T_LB ? 4 : 0) + (fr + ix + iy) % 4; }
+      ctx.drawImage(img, sx * 32, sy * 32, 32, 32, x, y, CT, CT);
+      if ((t === T_WA || t === T_WB) && !cellSolid(cellAt(ix, iy + 1))) rect(x, y + CT, CT, 3, 'rgba(0,0,0,0.35)');
+    }
+  }
+}
+// ---------- secrets: one hidden in every act ----------
+// Each act's map hides one, 1300-1800 units from where you arrive, behind a wall (or a lava moat) with
+// one fake block you can walk through. Close by, you sense it, and the fake block glints.
+const SECRETS_KEY = 'mutant-academy-secrets';
+let secretsFound = [];
+try { secretsFound = JSON.parse(localStorage.getItem(SECRETS_KEY) || '[]'); } catch (e) {}
+const SECRET_TEXT = {
+  shrine: ['A SHRINE TO BISKI!', 'THE GOOD CAT WATCHES OVER YOU'],
+  dig: ['X MARKS THE SPOT!', 'BURIED TREASURE'],
+  idol: ['FORTUNE AND GLORY!', 'RUN!'],
+  fish: ['A GOLDFISH?!', 'HOW DID YOU GET DOWN HERE?'],
+  quokka: ['A QUOKKA... IN HELL?', 'IT SEEMS HAPPY ENOUGH'],
+};
+function secretEntrance(s) {   // world centre of the fake block
+  const tpl = MAPDEF[s.act].secret.tpl;
+  for (let y = 0; y < tpl.length; y++) { const x = tpl[y].search(/[XYZ]/); if (x >= 0) return [(s.cx + x + 0.5) * MC, (s.cy + y + 0.5) * MC]; }
+  return [s.x, s.y];
+}
+function updateSecret(dt) {
+  const s = state.secret;
+  if (!s || s.act !== state.act) return;
+  s.t += dt;
+  const d2 = dist2(player.x, player.y, s.x, s.y);
+  if (!s.sensed && !s.found && d2 < 480 * 480) {
+    s.sensed = true;
+    announce('YOU SENSE A SECRET NEARBY...', '#B692FF', 2.4, 2);
+    jingle([784, 988, 1175, 1568], 0.09, 0.04);
+  }
+  if (s.boulder) updateBoulder(s.boulder, dt);
+  if (s.found) return;
+  if (s.kind === 'fish') { s.fx = s.x + Math.cos(s.t * 1.3) * 44; s.fy = s.y + Math.sin(s.t * 2.6) * 14; }
+  else if (s.kind === 'quokka') { s.fx = s.x + Math.sin(s.t * 0.7) * 30; s.fy = s.y; }
+  else { s.fx = s.x; s.fy = s.y; }
+  if (s.kind === 'dig') {   // stand on the X to dig it up
+    if (d2 < 20 * 20) {
+      s.dig = (s.dig || 0) + dt;
+      if (Math.random() < 0.4) burstParticles(s.x + rand(-8, 8), s.y + 6, '#B6924A', 1);
+      if (Math.floor(s.dig * 4) !== Math.floor((s.dig - dt) * 4)) { sfx(140, 0.06, 'square', 0.03, -40); popText(s.x, s.y - 30, 'DIGGING...', '#DBB66D'); }
+      if (s.dig > 1.6) findSecret(s);
+    } else s.dig = 0;
+    return;
+  }
+  if (dist2(player.x, player.y, s.fx, s.fy) < (player.r + 16) ** 2) findSecret(s);
+}
+function findSecret(s) {
+  s.found = true;
+  const [t, sub] = SECRET_TEXT[s.kind];
+  announce(t, '#FFDB49', 3.5, 7, sub);
+  jingle([523, 784, 1047, 1319, 1568, 2093], 0.08, 0.06);
+  state.flash = 1;
+  burstParticles(s.fx, s.fy - 10, '#FFDB49', 24);
+  pickups.push({ x: s.fx + 24, y: s.fy + 10, type: 'chest' });
+  pickups.push({ x: s.fx - 24, y: s.fy + 10, type: 'gold', v: 100 });
+  if (s.kind === 'quokka' || s.kind === 'shrine') player.hp = player.maxHp;   // a little blessing
+  if (s.kind === 'idol') s.boulder = { x: s.x, y: s.y - MC, vy: 0, wait: 0.9, life: 7, hit: false, spin: 0 };   // the temple's last trap
+  if (!secretsFound.includes(s.act)) {
+    secretsFound.push(s.act);
+    try { localStorage.setItem(SECRETS_KEY, JSON.stringify(secretsFound)); } catch (e) {}
+  }
+}
+// the idol's boulder: a beat to realise, then it rolls for the door, crushing what's in its way
+function updateBoulder(b, dt) {
+  if (b.wait > 0) { b.wait -= dt; state.shake = Math.max(state.shake, 2); return; }
+  b.life -= dt;
+  b.vy = Math.min(260, b.vy + 380 * dt);
+  b.y += b.vy * dt;
+  b.spin += b.vy * dt;
+  state.shake = Math.max(state.shake, 3);
+  const c = cellOf(b.x, b.y + 30);
+  if (b.life <= 0 || (cellSolid(c) && !(c & FAKE) && b.y > state.secret.y + MC * 3)) {
+    burstParticles(b.x, b.y, '#6D4924', 20); sfx(80, 0.4, 'sawtooth', 0.06, -40);
+    state.secret.boulder = null;
+    return;
+  }
+  if (!b.hit && dist2(player.x, player.y, b.x, b.y) < (player.r + 28) ** 2) { b.hit = true; hurtPlayer(30); popText(player.x, player.y - 56, 'SQUASHED!', '#DBB66D'); }
+  for (const e of [...enemies]) if (!e.boss && dist2(e.x, e.y, b.x, b.y) < (e.r + 28) ** 2) damageEnemy(e, 99999);
+}
+function drawSecretFlat() {   // the X in the sand lies under everything
+  const s = state.secret;
+  if (!s || s.act !== state.act || s.kind !== 'dig') return;
+  const img = SPR['map' + s.act]?.base, x = toDX(s.x), y = toDY(s.y);
+  if (!img || x < -40 || x > W + 40 || y < -40 || y > H + 40) return;
+  ctx.drawImage(img, (s.found ? 3 : 0) * 32, 7 * 32, 32, 32, x - 16, y - 16, 32, 32);   // the X, then the dug-up chest
+}
+function secretDrawables(list) {
+  const s = state.secret;
+  if (!s || s.act !== state.act) return;
+  const img = SPR['map' + s.act]?.base;
+  if (!img) return;
+  if (s.sensed && !s.found && Math.floor(uiTime * 2) % 3 === 0) {   // the fake block glints
+    const [ex, ey] = secretEntrance(s), x = toDX(ex), y = toDY(ey), k = Math.floor(uiTime * 8) % 4;
+    list.push({ y: ey + MC, draw() { rect(x - 1 + k * 2 - 4, y - 4 + k, 1, 1, C.white); rect(x + 3 - k, y + 2, 1, 1, C.white); rect(x - k, y - 1, 2, 1, '#FFFFB6'); } });
+  }
+  if (s.boulder) {
+    const b = s.boulder;
+    list.push({ y: b.y + 24, draw() {
+      const x = toDX(b.x), y = toDY(b.y);
+      ctx.save(); ctx.translate(x, y); ctx.rotate((Math.floor(b.spin / 30) % 4) * Math.PI / 2);
+      ctx.drawImage(img, 7 * 32, 6 * 32, 32, 32, -28, -28, 56, 56); ctx.restore();
+    } });
+  }
+  if (s.kind === 'dig' || (s.found && s.kind !== 'shrine')) return;   // taken (the shrine stays)
+  const fx = s.fx ?? s.x, fy = s.fy ?? s.y, flip = s.kind === 'fish' && Math.sin(s.t * 1.3) > 0;
+  list.push({ y: fy + 10, draw() {
+    const x = toDX(fx), y = toDY(fy) + (s.kind === 'quokka' ? -Math.abs(Math.round(Math.sin(s.t * 6) * 3)) : 0);
+    if (x < -40 || x > W + 40 || y < -40 || y > H + 40) return;
+    const f = s.kind === 'fish' ? Math.floor(s.t * 4) % 2 : 0;
+    if (flip) { ctx.save(); ctx.translate(x + 16, 0); ctx.scale(-1, 1); ctx.drawImage(img, f * 32, 7 * 32, 32, 32, 0, y - 24, 32, 32); ctx.restore(); }
+    else ctx.drawImage(img, f * 32, 7 * 32, 32, 32, x - 16, y - 24, 32, 32);
+  } });
+}
+
+// big floor props sit on plain ground: decals keep off everything else
+const bareCell = (ix, iy) => cellAt(ix, iy) === T_FLOOR;
+function drawMapProp(o) {
+  const x = toDX(o.x), y = toDY(o.y), img = SPR['map' + state.act]?.base;
+  if (!img || x < -24 || x > W + 24 || y < -40 || y > H + 24) return;
+  const p = o.mapProp - 1;   // 0-7 props A (row 5), 8-15 props B (row 6)
+  ctx.drawImage(img, (p % 8) * 32, (5 + (p >> 3)) * 32, 32, 32, x - 16, y - 24, 32, 32);
 }
 
 // ---------- game constants ----------
@@ -2421,6 +2850,7 @@ function enterAct(n) {
     enemies.push(e);
   }
   brazierDead.clear(); brazierDamageMap.clear();
+  newMap(n);
   state.spawnTimer = 1.2;
   state.flash = 1;
   state.shake = 6;
@@ -2536,7 +2966,8 @@ function killEnemy(e) {
     }
     pickups.push({ x: e.x, y: e.y, type: 'chest' }); // jackpot time
     if (e.elite && Math.random() < 0.2) pickups.push({ x: e.x + 22, y: e.y + 6, type: 'food', food: rollFood(true) });
-    if (!orbOnFloor() && (e.boss || Math.random() < 0.3)) pickups.push({ x: e.x - 22, y: e.y + 6, type: 'berserk' });
+    // bosses never drop the berserk orb (it made the next act a walkover); elites sometimes do
+    if (!e.boss && !orbOnFloor() && Math.random() < 0.3) pickups.push({ x: e.x - 22, y: e.y + 6, type: 'berserk' });
     state.shake = 8;
   } else {
     gems.push({ x: e.x, y: e.y, v: e.xp });
@@ -2738,6 +3169,7 @@ function startGame(h) {
   h.mods();
   scene = 'play';
   state.running = true;
+  newMap(1);
   startMusic();
   sndOk();
   announce('READY... GO!', C.yellow, 1.6, 1);
@@ -2929,6 +3361,7 @@ function update(dt) {
   if (state.hitstop > 0) { state.hitstop -= dt; return; } // freeze-frame
   state.time += dt;
   scanEnv();
+  updateSecret(dt);
   state.goldShown += (state.gold - state.goldShown) * Math.min(1, dt * 10);
   // low-HP heartbeat
   if (player.hp / player.maxHp < 0.3) {
@@ -3038,9 +3471,12 @@ function update(dt) {
       else state.trail.shift();
     }
   } else state.trail = [];
-  const spd = player.speed * (player.fearT > 0 && state.berserkT <= 0 ? 0.55 : 1);   // banshee terror slows you
+  const ground = groundAt(player.x, player.y);
+  let spd = player.speed * (player.fearT > 0 && state.berserkT <= 0 ? 0.55 : 1);   // banshee terror slows you
+  if (ground) spd *= ground.slow;                                                  // wading through water, bog or lava
   player.x += mx * spd * dt;
   player.y += my * spd * dt;
+  groundHazard(ground, dt);
   if (mx || my) { player.facing.x = mx; player.facing.y = my; }
   player.moving = !!(mx || my);
   if (mx) player.face = mx > 0 ? 1 : -1;
@@ -3123,6 +3559,7 @@ function update(dt) {
     const e = enemies[i];
     const dx = player.x - e.x, dy = player.y - e.y;
     const d = Math.hypot(dx, dy) || 1;
+    const ox = e.x, oy = e.y;
     e.flash = Math.max(-1, e.flash - dt);
     e.animT += dt;
     if (e.sweep) {
@@ -3412,8 +3849,33 @@ function update(dt) {
       e.x = player.x + Math.cos(a) * sd;
       e.y = player.y + Math.sin(a) * sd;
     }
-    // solid obstacles push enemies out (fliers pass over)
-    if (!e.fly) resolveObstacles(e);
+    // walkers wade through liquid (a teleport back into the fight is left alone), then walls and props push them out;
+    // fliers pass over everything
+    if (!e.fly) {
+      const g = !e.boss && groundAt(e.x, e.y);
+      if (g && Math.abs(e.x - ox) + Math.abs(e.y - oy) < 40) { e.x = ox + (e.x - ox) * g.slow; e.y = oy + (e.y - oy) * g.slow; }
+      const ix = e.x - ox, iy = e.y - oy, want = ix * ix + iy * iy;
+      resolveObstacles(e);
+      // walled in: slide along the wall for a moment (turning back the other way if that fails too)
+      const blocked = want > 0.25 && want < 1600 && (e.x - ox) ** 2 + (e.y - oy) ** 2 < want * 0.1;
+      if (blocked) {
+        if (!(e.slideT > 0)) e.slideS = (e.slideT < -0.5 ? -(e.slideS || 1) : (e.slideS || (Math.random() < 0.5 ? 1 : -1)));
+        e.slideT = 0.8;
+      }
+      // still walled off after a while, out of sight: rejoin the hunt from a fresh angle, like any straggler
+      e.stuckT = blocked || (e.slideT > 0 && (e.x - ox) ** 2 + (e.y - oy) ** 2 < want * 0.3) ? (e.stuckT || 0) + dt : 0;
+      if (e.stuckT > 2.5 && !e.boss && d > Math.max(VW, VH) * 0.55) {
+        const a = rand(0, TAU), sd = spawnRadius();
+        e.x = player.x + Math.cos(a) * sd; e.y = player.y + Math.sin(a) * sd; e.stuckT = 0;
+        resolveObstacles(e);
+      }
+      if (e.slideT > 0) {
+        e.slideT -= dt;
+        e.x += -iy * e.slideS; e.y += ix * e.slideS;
+        resolveObstacles(e);
+        if (e.slideT <= 0) e.slideT = -1;   // just finished: if it sticks again, try the other way
+      } else if (e.slideT < 0) e.slideT = Math.min(0, e.slideT + dt);
+    }
   }
   resolveObstacles(player);
 
@@ -3431,6 +3893,10 @@ function update(dt) {
       }
       burstParticles(b.x, b.y, b.style === 'coconut' ? '#924900' : b.style === 'thorn' ? '#49B600' : '#FF9200', 5);
       dead = true;
+    }
+    if (!dead) {   // walls stop shots (they fly on over liquid)
+      const bc = cellOf(b.x, b.y);
+      if (!(bc & FAKE) && (cellType(bc) === T_WA || cellType(bc) === T_WB)) dead = true;
     }
     if (!dead) {
       for (const o of state.obsList || []) {
@@ -3681,6 +4147,16 @@ function sceneLights(emit) {
   }
   for (const p of pickups) emit(p.x, p.y, p.type === 'berserk' ? 34 + (Math.floor(uiTime * 6) % 2) * 3 : 11, p.type === 'berserk' ? 'rage' : 'pickup');
   if (state.portalT > 0) emit(player.x, player.y, 60, 'portal');
+  const sc = state.secret;
+  if (sc && sc.act === state.act && !sc.found) emit(sc.fx ?? sc.x, (sc.fy ?? sc.y) - 8, 18, 'gold');
+  if (sc && sc.boulder) emit(sc.boulder.x, sc.boulder.y, 30, 'hero');
+  if (state.act === 5) {   // lava glows: every third molten cell on screen is a light
+    const cx0 = Math.floor(camX / CT) - 1, cy0 = Math.floor(camY / CT) - 1;
+    for (let cy = cy0; cy * CT - camY < H + CT; cy++) for (let cx = cx0; cx * CT - camX < W + CT; cx++) {
+      const c = cellAt(cx, cy), t = cellType(c);
+      if ((t === T_LA || t === T_LB) && (hash2(cx, cy) % 3 === 0)) emit((cx + 0.5) * MC, (cy + 0.5) * MC, 30 + ((Math.floor(uiTime * 5) + cx) % 3) * 2, 'vent');
+    }
+  }
 }
 function renderDarkness() {
   if (litOn) { renderLightmap(); return; }
@@ -3946,6 +4422,7 @@ function renderWorld() {
   camY = Math.round(player.y / PX) - (H >> 1) + shy;
 
   drawFloor();
+  drawSecretFlat();
   ctx.globalCompositeOperation = 'lighter';
   for (const bz of state.brazList || []) drawBrazierLight(bz);
   ctx.globalCompositeOperation = 'source-over';
@@ -4018,6 +4495,7 @@ function renderWorld() {
   // living entities + solid props, y-sorted (painter's algorithm)
   const drawables = [];
   for (const o of state.obsList || []) drawables.push({ y: o.y + 4, draw() { drawObstacle(o); } });
+  secretDrawables(drawables);
   for (const bz of state.brazList || []) drawables.push({ y: bz.y + 8, draw() { drawBrazier(bz); } });
   for (const e of enemies) {
     drawables.push({ y: groundYOf(e), draw() {
@@ -4754,6 +5232,8 @@ function renderBestiary() {
   const tsc = textW('BESTIARY', 2) <= W - 100 ? 2 : 1;
   drawText('BESTIARY', 8, L.ty, C.white, { scale: tsc, outline: C.black, grad: GOLD_GRAD });
   drawText(`FOUND ${found}/${BEST_ENTRIES.length}`, W - 8, L.ty + 3, found === BEST_ENTRIES.length ? C.yellow : C.cyan, { align: 'right' });
+  const nSec = secretsFound.length, allSec = Object.keys(MAPDEF).length;
+  drawText(`SECRETS ${nSec}/${allSec}`, W - 8, L.ty + 12, nSec === allSec ? C.yellow : '#B692FF', { align: 'right' });
 
   // detail panel
   const e = BEST_ENTRIES[bestSel], known = bestKnown(e);
