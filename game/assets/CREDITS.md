@@ -231,3 +231,25 @@ listed in [`CREDITS-LPC.md`](CREDITS-LPC.md).
   **rapidpunches**, **CC-BY 4.0**:
   https://opengameart.org/content/great-pacific-octopus-idle-and-action —
   recoloured crimson-violet; swim frames mirrored.
+
+## Act V: The Gates of Hell
+
+- `hell.png` — demonic flesh floor, lava, fire cloud, flame altars, hell gates,
+  the stone arch and the demon bust from **Dungeon Crawl Stone Soup** tiles, **CC0**
+  (lava pools cut to rounded shapes; bones and blood from the same set).
+- `devil.png` (The Devil) — "Flying Demon" from the "Gothicvania Patreon's
+  Collection" by **ansimuz** (Luis Zuno), **CC0**:
+  https://opengameart.org/content/gothicvania-patreons-collection — mirrored, the
+  cyan skull-flame and breath recoloured to hellfire; its death uses the fire burst
+  from the "Gothicvania Church Pack" by **ansimuz**, **CC0**:
+  https://opengameart.org/content/gothicvania-church-pack
+- `hellbeast.png` (Hell Beast), `fireskull.png` (Fire Skull), `nightmare.png`
+  (Nightmare) — the same Gothicvania Patreon's Collection, **CC0** (mirrored; the
+  Nightmare's flames recoloured).
+- `ghoul.png` (Burning Ghoul), `cultist.png` (Hell Cultist) — the burning ghoul,
+  skeleton wizard and enemy-death burst from the "Gothicvania Church Pack" by
+  **ansimuz**, **CC0** (mirrored).
+- `devilkin.png` (Devilkin) — the floating demon from the "Evil Dungeon Asset Pack"
+  by **Sevarihk**, **CC-BY 4.0**: https://opengameart.org/content/evil-dungeon-asset-pack
+  — recoloured from purple to red, downscaled.
+- The hell theme "Gates of Hell" is an original FM composition.

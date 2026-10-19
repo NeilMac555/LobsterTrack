@@ -987,7 +987,7 @@ const ASSET_FILES = ['warrior', 'wizard', 'ranger', 'rogue', 'cleric',
   'desert', 'fly', 'maggot', 'lizard', 'orb',
   'jungle', 'snake', 'treant', 'plant', 'mosquito', 'monkey', 'frog',
   'ocean', 'axolotl', 'piranha', 'jelly', 'crab', 'shark', 'squid', 'eel', 'kraken',
-  'hell'];
+  'hell', 'hellbeast', 'fireskull', 'ghoul', 'cultist', 'nightmare', 'devilkin', 'devil'];
 const assets = {};
 function loadAssets() {
   return Promise.all(ASSET_FILES.map(name => new Promise((res, rej) => {
@@ -1066,8 +1066,8 @@ function rageSheet(file) {
   set.ghost = silhouette(set.base, '#920000');   // afterimages
   return (set.rage = c);
 }
-// the black cat needs a small lift so her shading survives the 9-bit palette
-const BAKE_FILTERS = { biski: 'brightness(1.6)' };
+// the black cat (and the Devil's black cloak) need a small lift so their shading survives the 9-bit palette
+const BAKE_FILTERS = { biski: 'brightness(1.6)', devil: 'brightness(1.35)' };
 function prepareSprites() {
   for (const name of ASSET_FILES) {
     const set = SPR[name] = { base: bakeSheet(assets[name], BAKE_FILTERS[name] || null) };
@@ -1077,7 +1077,8 @@ function prepareSprites() {
   // palette-swapped variants, the way cartridges reused one sprite for a tougher foe
   for (const f of ['slime', 'skeleton', 'goblin', 'orc', 'bat', 'imp', 'scarab', 'shaman', 'guard',
     'assassin', 'burger', 'lizdoc', 'feral', 'banshee', 'golem', 'fly', 'maggot', 'lizard',
-    'snake', 'treant', 'plant', 'mosquito', 'monkey', 'frog', 'piranha', 'jelly', 'crab', 'shark', 'squid', 'eel']) {
+    'snake', 'treant', 'plant', 'mosquito', 'monkey', 'frog', 'piranha', 'jelly', 'crab', 'shark', 'squid', 'eel',
+    'hellbeast', 'fireskull', 'ghoul', 'cultist', 'nightmare', 'devilkin']) {
     SPR[f].elite = bakeSheet(assets[f], 'saturate(2.2) brightness(1.15)');
   }
   SPR.minotaur.boss2 = bakeSheet(assets.minotaur, 'hue-rotate(140deg) saturate(1.4)');
@@ -1147,6 +1148,14 @@ const SHEETS = {
   eel:      { file: 'eel',      size: 96,  rows: STD, frames: { idle: 1, walk: 4, attack: 3, death: 2 } },
   kraken:   { file: 'kraken',   size: 64,  rows: { idle: 0, swim: 1, walk: 2, attack: 3, death: 4 },   // Act IV boss
               frames: { idle: 1, swim: 5, walk: 4, attack: 4, death: 4 } },
+  // Act V hell (ansimuz's Gothicvania demons + Sevarihk's devilkin) and the Devil himself
+  hellbeast: { file: 'hellbeast', size: 96, rows: STD, frames: { idle: 1, walk: 6, attack: 4, death: 5 } },
+  fireskull: { file: 'fireskull', size: 56, rows: STD, frames: { idle: 1, walk: 8, attack: 8, death: 4 } },
+  ghoul:     { file: 'ghoul',     size: 56, rows: STD, frames: { idle: 1, walk: 8, attack: 8, death: 7 } },
+  cultist:   { file: 'cultist',   size: 84, rows: CAST, frames: { idle: 1, cast: 10, walk: 5, attack: 10, death: 8 } },
+  nightmare: { file: 'nightmare', size: 96, rows: STD, frames: { idle: 1, walk: 4, attack: 4, death: 4 } },
+  devilkin:  { file: 'devilkin',  size: 56, rows: STD, frames: { idle: 1, walk: 4, attack: 4, death: 4 } },
+  devil:     { file: 'devil',     size: 240, rows: STD, frames: { idle: 1, walk: 6, attack: 11, death: 8 } },
 };
 // painted skill icons (assets/skills.png): row 0 = 32x32, row 1 = 16x16, in this order
 const SKILL_ORDER = ['optic', 'claws', 'storm', 'orbs', 'nova', 'cards', 'boots', 'vitality',
@@ -1565,12 +1574,13 @@ const ACT4_TYPES = [ ['crab','piranha'], ['crab','piranha'], ['crab','jelly','pi
   ['shark','jelly','squid','eel','crab'], ['shark','squid','eel','jelly','crab','piranha'],
   ['shark','squid','eel','jelly','crab','piranha','knight'] ];
 // Act V: hell. Every demon there is, harder, faster and more of them
-const ACT5_TYPES = [ ['imp','bat'], ['imp','bat','wolf'], ['imp','wolf','shaman'], ['bat','imp','guard','wolf'],
-  ['imp','shaman','wolf','guard'], ['wolf','knight','imp','bat'], ['imp','guard','shaman','knight'],
-  ['wolf','imp','knight','bat','guard'], ['imp','knight','guard','shaman','wolf'], ['bat','wolf','knight','guard','imp'],
-  ['imp','knight','guard','wolf','shaman','bat'], ['knight','imp','wolf','guard','shaman','bat'],
-  ['imp','knight','guard','wolf','shaman','bat'], ['knight','guard','imp','wolf','shaman','bat'],
-  ['knight','guard','imp','wolf','shaman','bat'] ];
+const ACT5_TYPES = [ ['ghoul','fireskull'], ['ghoul','fireskull','imp'], ['ghoul','cultist','fireskull'],
+  ['devilkin','ghoul','fireskull','cultist'], ['hellbeast','ghoul','fireskull','devilkin'], ['nightmare','ghoul','cultist','fireskull'],
+  ['hellbeast','devilkin','cultist','ghoul','fireskull'], ['nightmare','hellbeast','ghoul','fireskull','knight'],
+  ['ghoul','hellbeast','nightmare','cultist','devilkin','fireskull'], ['hellbeast','nightmare','devilkin','cultist','ghoul','guard'],
+  ['nightmare','hellbeast','cultist','devilkin','ghoul','fireskull','knight'], ['hellbeast','nightmare','devilkin','cultist','ghoul','fireskull'],
+  ['hellbeast','nightmare','devilkin','cultist','ghoul','fireskull','knight'], ['nightmare','hellbeast','cultist','devilkin','ghoul','fireskull','guard'],
+  ['hellbeast','nightmare','cultist','devilkin','ghoul','fireskull','knight','guard'] ];
 function currentWave() {
   const m = Math.min(WAVES.length - 1, Math.floor(state.time / 60));
   if (state.act === 5) return { min: Math.round(WAVES[m].min * 1.3), interval: WAVES[m].interval * 0.85, types: ACT5_TYPES[m] };
@@ -1913,6 +1923,13 @@ const ENEMY_TYPES = {
   eel:      { sprite: 'eel',      name: 'ELECTRIC EEL',    hp: 40,  speed: 115, dmg: 12, r: 10, xp: 4, move: 'slither', pop: '#4992FF', shock: true },
   squid:    { sprite: 'squid',    name: 'INK SQUID',       hp: 50,  speed: 70,  dmg: 10, r: 12, xp: 5, move: 'caster',  pop: '#B624DB', bolt: 'ink', cap: 8 },
   shark:    { sprite: 'shark',    name: 'GREAT SHARK',     hp: 140, speed: 80,  dmg: 24, r: 16, xp: 8, move: 'charge',  pop: '#9292B6', cap: 6 },
+  // Act V hell (and hell makes them all tougher still: +50% HP, +30% damage)
+  ghoul:     { sprite: 'ghoul',     name: 'BURNING GHOUL',  hp: 40,  speed: 135, dmg: 14, r: 10, xp: 3, move: 'straight', pop: '#FFB600' },
+  fireskull: { sprite: 'fireskull', name: 'FIRE SKULL',     hp: 18,  speed: 150, dmg: 10, r: 9,  xp: 2, move: 'flutter', pop: '#FF9200', fly: 16, cap: 40, swarm: [2, 4] },
+  cultist:   { sprite: 'cultist',   name: 'HELL CULTIST',   hp: 60,  speed: 60,  dmg: 14, r: 11, xp: 5, move: 'caster',  pop: '#924992', bolt: 'fire', cap: 10 },
+  devilkin:  { sprite: 'devilkin',  name: 'DEVILKIN',       hp: 55,  speed: 100, dmg: 18, r: 10, xp: 5, move: 'blink',   pop: '#DB2424', fly: 8, cap: 12 },
+  hellbeast: { sprite: 'hellbeast', name: 'HELL BEAST',     hp: 140, speed: 60,  dmg: 24, r: 16, xp: 8, move: 'straight', pop: '#FF4900', cap: 10 },
+  nightmare: { sprite: 'nightmare', name: 'NIGHTMARE',      hp: 110, speed: 90,  dmg: 26, r: 16, xp: 7, move: 'charge',  pop: '#FF6D00', cap: 8 },
   banshee:  { sprite: 'banshee',  name: 'SCREAMING BANSHEE', hp: 40, speed: 82, dmg: 10, r: 10, xp: 5, move: 'banshee', pop: '#B6DBFF', fly: 10, cap: 8 },
   mech:     { sprite: 'mech',     name: 'SENTINEL MECH',   hp: 420, speed: 40,  dmg: 22, r: 18, xp: 12, move: 'caster', pop: '#2449FF', cap: 4, bolt: 'laser' },
   golem:    { sprite: 'golem',    name: 'IRON GOLEM',    hp: 10,  speed: 54,  dmg: 8,  r: 10, xp: 1, move: 'straight', pop: '#B6A48C' },
@@ -1943,6 +1960,9 @@ const BOSSES = [
   // the Kraken: tentacle slams, torpedo dashes, ink that swallows the screen; beating it opens the way to hell
   { key: 'kraken', act: 4, name: 'THE KRAKEN', hp: 80000, speed: 42, dmg: 40, r: 56,
     xp: 250, scale: 5, variant: null, sprite: 'kraken', move: 'kraken', intro: 'SOMETHING VAST RISES...' },
+  // the Devil (final): breathes fans of hellfire, summons his legions, rains meteors, then fills the air with fire
+  { key: 'devil', act: 5, name: 'THE DEVIL', hp: 200000, speed: 50, dmg: 46, r: 60,
+    xp: 400, scale: 2.4, variant: null, sprite: 'devil', move: 'devil', fly: 18, intro: 'ABANDON ALL HOPE...' },
 ];
 const ACT_BOSS_LEVEL = { 1: ACT2_LEVEL, 2: ACT3_LEVEL, 3: ACT4_LEVEL, 4: 20, 5: 25 };
 
@@ -2014,6 +2034,13 @@ const BEST_DESC = {
   eel: 'Slithers through the water, then lunges. Its touch is electric.',
   squid: 'Keeps its distance and squirts ink that blots out your view.',
   shark: 'Circles, freezes... then charges like a torpedo. Get out of the way.',
+  ghoul: 'A corpse still burning. It sprints at you without slowing down.',
+  fireskull: 'Flaming skulls that dart in twos and fours. Burn them out to the bare bone.',
+  cultist: 'A robed servant of hell. Keeps its distance and hurls fireballs.',
+  devilkin: 'A grinning lesser devil. It vanishes and reappears at your flank.',
+  hellbeast: 'A horned brute wreathed in fire. Slow, huge, and it erupts into a pillar of flame when it dies.',
+  nightmare: 'A hell-horse with a burning mane. It stamps, then charges straight through you.',
+  devil: 'The Lord of Hell. Breathes fans of hellfire, calls his legions, rains meteors, and in his last fury fills the air with fire.',
   banshee: 'A wailing ghost. Her scream hurts and leaves you terrified (slowed). Kill her before she screams.',
 };
 const firstWave = kind => { const i = WAVES.findIndex(w => w.types.includes(kind)); return i < 0 ? 99 : i; };
@@ -2200,7 +2227,7 @@ function spawnSweep() {
   const px = -dirY, py = dirX; // perpendicular
   const spd = 170;
   for (let i = -14; i <= 14; i++) {
-    const e = makeEnemy(['skeleton', 'skeleton', 'fly', 'mosquito', 'piranha', 'imp'][state.act], cx + px * i * 34 + rand(-10, 10), cy + py * i * 34 + rand(-10, 10),
+    const e = makeEnemy(['skeleton', 'skeleton', 'fly', 'mosquito', 'piranha', 'fireskull'][state.act], cx + px * i * 34 + rand(-10, 10), cy + py * i * 34 + rand(-10, 10),
       { hpMul: 0.06, xpMul: 1, spdMul: 1 });
     e.sweep = { vx: dirX * spd, vy: dirY * spd, life: 14 };
     enemies.push(e);
@@ -2352,7 +2379,7 @@ function spawnBoss(def) {
     hp: def.hp, maxHp: def.hp, speed: def.speed, dmg: def.dmg, r: def.r,
     xp: def.xp, sprite: def.sprite, scale: def.scale, variant: def.variant,
     boss: true, name: def.name, flash: -1, animT: rand(0, 10), pop: def.sprite === 'butcher' ? '#B60000' : '#FF9200',
-    move: def.move, chargeT: 0, orbitSign: 1, fly: 0, key: def.key, act: def.act,
+    move: def.move, chargeT: 0, orbitSign: 1, fly: def.fly || 0, key: def.key, act: def.act,
     castT: 2, casting: 0, slamCd: 4, wind: 0, phase: 'surface', phaseT: 5, spitCd: 1.5, summonCd: 6, rootCd: 5, inkCd: 9, dashCd: 7,
     leapT: 0, crouch: 0, lx: 0, ly: 0,
   };
@@ -3214,6 +3241,34 @@ function update(dt) {
             for (let k = 0; k < 2 && countKind('squid') < 6; k++) enemies.push(makeEnemy('squid', e.x + rand(-80, 80), e.y + rand(-80, 80)));
           }
         }
+      } else if (e.move === 'devil') {
+        // hovers in; rears back and breathes a fan of hellfire; summons his legions; meteors at half health;
+        // at a quarter, rings of fire in every direction
+        const rage = e.hp < e.maxHp / 2, fury = e.hp < e.maxHp / 4;
+        e.castT -= dt; e.summonCd -= dt; e.slamCd -= dt; e.rootCd -= dt;
+        if (e.wind > 0) e.wind -= dt;
+        if (e.casting > 0) {
+          spd = 0; e.casting -= dt;
+          if (e.casting <= 0) { bossFan(e, 'fire', fury ? 13 : rage ? 11 : 9, 0.11); e.wind = 0.6; sfx(90, 0.7, 'sawtooth', 0.09, -40); }
+        } else {
+          spd *= d > 180 ? 1 : 0.4;
+          if (e.castT <= 0 && d < 400) { e.casting = 0.9; e.castT = fury ? 2.2 : rage ? 2.8 : 3.4; }
+        }
+        if (e.summonCd <= 0) {
+          e.summonCd = rage ? 8 : 11;
+          const legion = ['cultist', 'ghoul', 'devilkin'];
+          for (let k = 0; k < 6; k++) { const a = TAU * k / 6; enemies.push(makeEnemy(legion[k % 3], player.x + Math.cos(a) * 170, player.y + Math.sin(a) * 170)); }
+          burstParticles(player.x, player.y, '#FF2400', 12);
+        }
+        if (rage && e.slamCd <= 0) {   // meteors: a ring closing round you, and one right on top of you
+          e.slamCd = fury ? 3 : 4.5;
+          for (let k = 0; k < 8; k++) { const a = TAU * k / 8 + rand(-0.2, 0.2);
+            effects.push({ type: 'warn', x: player.x + Math.cos(a) * 110, y: player.y + Math.sin(a) * 110, radius: 44, life: 1.0, maxLife: 1.0, dmg: e.dmg * 0.6, col: '#FF2400' }); }
+          effects.push({ type: 'warn', x: player.x, y: player.y, radius: 50, life: 1.2, maxLife: 1.2, dmg: e.dmg * 0.7, col: '#FF2400' });
+        }
+        if (fury && e.rootCd <= 0) { e.rootCd = 2.5; bossRing(e, 'fire', 18); }
+        if (rage && !e.raged) { e.raged = true; announce('THE DEVIL IS ENRAGED!', C.red, 2, 5, 'METEORS FALL'); }
+        if (fury && !e.furied) { e.furied = true; announce('HELL BREAKS LOOSE!', C.red, 2, 5); state.shake = 16; }
       } else if (e.move === 'drift') {
         // jellyfish: a slow sway, propelled in pulses
         const sway = Math.sin(e.animT * 1.6 + e.orbitSign) * 1.1;
@@ -3568,6 +3623,7 @@ function renderDarkness() {
   for (const fx of effects) if (fx.type === 'boom' || fx.type === 'bolt' || fx.type === 'nova') punch(fx.x, fx.y, Math.max(16, (fx.radius || 30) / PX));
   for (const b of bullets) if (b.kind === 'hammer' || b.kind === 'bubble') punch(b.x, b.y, 14);
   if (state.ally) punch(state.ally.x, state.ally.y - 8, 34);
+  if (state.actBoss) punch(state.actBoss.x, state.actBoss.y - state.actBoss.r, state.actBoss.r * 2.4);   // bosses are never lost in the dark
   if (state.wildAxo) punch(state.wildAxo.x, state.wildAxo.y - 8, 40);
   for (let i = 0; i < gems.length && i < 220; i++) punch(gems[i].x, gems[i].y, 5);
   for (const p of pickups) punch(p.x, p.y, p.type === 'berserk' ? 34 + (Math.floor(uiTime * 6) % 2) * 3 : 11);
@@ -3585,6 +3641,11 @@ function bossAnim(e) {
     if (e.burrowed) return ['walk', animFrame(e.animT, 'walk', 'maggot')];
     if (e.phase === 'erupt') return ['attack', prog(e.phaseT, 1.2, 'maggot', 'attack')];
     return ['attack', 5 + Math.floor(e.animT * 8) % 7];            // risen, spitting
+  }
+  if (e.key === 'devil') {
+    if (e.casting > 0) return ['attack', Math.min(6, Math.floor((1 - e.casting / 0.9) * 7))];
+    if (e.wind > 0) return ['attack', Math.min(10, 7 + Math.floor((1 - e.wind / 0.6) * 4))];
+    return ['walk', animFrame(e.animT, 'walk', 'devil')];
   }
   if (e.key === 'kraken') {
     if (e.leapT > 0) return ['swim', animFrame(e.animT, 'swim', 'kraken')];
