@@ -10,28 +10,81 @@
 // The canvas IS the console screen: W×H "dots", CSS-scaled by a whole number of
 // device pixels with image-rendering: pixelated. One dot = one sprite pixel =
 // PX world units, so every gameplay number (speeds, radii, ranges) is unchanged.
+// Graphics modes (picked on the title screen, kept in localStorage):
+//   RETRO — exactly that screen: one backing pixel per dot, art snapped to the 512-colour palette.
+//   HD    — the same dots and layout, but each dot is 2x2 backing pixels and the sprite sheets are
+//           2x pixel art (assets/hd) in full colour. With WebGL the world is drawn on its own
+//           canvas and lit there (coloured light map + bloom, see "lighting"); the HUD stays on
+//           #game, an unlit transparent layer on top.
+const GFX_KEY = 'mutant-academy-gfx';
+const HD = (() => {
+  const q = new URLSearchParams(location.search).get('gfx');   // ?gfx=retro|hd overrides the saved choice
+  if (q) return q !== 'retro';
+  try { return localStorage.getItem(GFX_KEY) !== 'retro'; } catch (e) { return true; }
+})();
+// switching modes reloads: the sheets, palette and canvases are all chosen at boot
+function toggleGraphics() {
+  const next = HD ? 'retro' : 'hd';
+  if (!new URLSearchParams(location.search).has('gfx')) {
+    try { localStorage.setItem(GFX_KEY, next); location.reload(); return; } catch (e) {}
+  }
+  const u = new URL(location.href);
+  u.searchParams.set('gfx', next);
+  location.replace(u.href);
+}
 const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d', { alpha: false });
+let glCanvas = null, gl = null, GLX = null;   // the lighting pipeline's canvas, context and GL objects
+const LIT = HD && initLighting();   // false without WebGL: HD then draws straight onto #game
+const uiCtx = canvas.getContext('2d', { alpha: LIT });
+const worldCv = LIT ? document.createElement('canvas') : null;
+const worldCtx = LIT ? worldCv.getContext('2d', { alpha: false }) : uiCtx;
+let ctx = uiCtx;                    // where every draw goes; render() points it at the world or the HUD
 const PX = 2;
 const MIN_LINES = 240;            // at least a PAL Mega Drive's worth of lines
 let W = 320, H = 240, VW = W * PX, VH = H * PX;
+let RES = 1;                      // backing pixels per dot: 2 in HD
+
+// HD sheets are tagged .hdRes = 2. Callers keep giving source rectangles in 1x sheet pixels;
+// the display contexts scale them here, so no draw call needs to know which set is loaded.
+function hdDrawImage(g) {
+  const draw = g.drawImage;
+  g.drawImage = function (img, sx, sy, sw, sh, dx, dy, dw, dh) {
+    const r = img.hdRes;
+    if (!r || arguments.length === 5) return draw.apply(this, arguments);
+    if (arguments.length === 3) return draw.call(this, img, sx, sy, img.width / r, img.height / r);
+    return draw.call(this, img, sx * r, sy * r, sw * r, sh * r, dx, dy, dw, dh);
+  };
+}
+if (HD) { hdDrawImage(uiCtx); if (LIT) hdDrawImage(worldCtx); }
 
 function resize() {
   const dpr = window.devicePixelRatio || 1;
   const dw = Math.max(1, Math.floor(window.innerWidth * dpr));
   const dh = Math.max(1, Math.floor(window.innerHeight * dpr));
   const dot = Math.max(1, Math.floor(Math.min(dw, dh) / MIN_LINES));
+  // HD: 2 backing pixels per dot, so the view is the same as RETRO's. With an odd dot every dot is
+  // still a whole number of device pixels (the HUD stays exact); only half-dot sprite detail splits unevenly
+  RES = HD && dot >= 2 ? 2 : 1;
   W = Math.max(160, Math.floor(dw / dot));
   H = Math.max(120, Math.floor(dh / dot));
-  canvas.width = W;
-  canvas.height = H;
-  canvas.style.width = (W * dot / dpr) + 'px';
-  canvas.style.height = (H * dot / dpr) + 'px';
-  canvas.style.left = (Math.floor((dw - W * dot) / 2) / dpr) + 'px';
-  canvas.style.top = (Math.floor((dh - H * dot) / 2) / dpr) + 'px';
+  for (const c of [canvas, LIT && glCanvas, worldCv]) {
+    if (!c) continue;
+    c.width = W * RES;
+    c.height = H * RES;
+  }
+  for (const c of [canvas, LIT && glCanvas]) {
+    if (!c) continue;
+    c.style.width = (W * dot / dpr) + 'px';
+    c.style.height = (H * dot / dpr) + 'px';
+    c.style.left = (Math.floor((dw - W * dot) / 2) / dpr) + 'px';
+    c.style.top = (Math.floor((dh - H * dot) / 2) / dpr) + 'px';
+  }
   VW = W * PX;
   VH = H * PX;
-  ctx.imageSmoothingEnabled = false;
+  for (const g of [uiCtx, worldCtx]) {
+    g.setTransform(RES, 0, 0, RES, 0, 0);
+    g.imageSmoothingEnabled = false;
+  }
 }
 window.addEventListener('resize', resize);
 resize();
@@ -992,11 +1045,12 @@ const assets = {};
 function loadAssets() {
   return Promise.all(ASSET_FILES.map(name => new Promise((res, rej) => {
     const img = new Image();
-    img.onload = () => { assets[name] = img; res(); };
-    img.onerror = () => rej(new Error('failed to load assets/' + name + '.png'));
+    const key = (HD ? 'hd/' : '') + name;
+    img.onload = () => { if (HD) img.hdRes = 2; assets[name] = img; res(); };
+    img.onerror = () => rej(new Error('failed to load assets/' + key + '.png'));
     // EMBEDDED_ASSETS lets a single-file bundle (e.g. the published demo) inline
     // the sheets as data URIs instead of fetching from assets/
-    img.src = (typeof EMBEDDED_ASSETS !== 'undefined' && EMBEDDED_ASSETS[name]) || ('assets/' + name + '.png');
+    img.src = (typeof EMBEDDED_ASSETS !== 'undefined' && EMBEDDED_ASSETS[key]) || ('assets/' + key + '.png');
   })));
 }
 
@@ -1026,12 +1080,15 @@ function bakeSheet(img, filter) {
   const g = c.getContext('2d');
   if (filter) g.filter = filter;
   g.drawImage(img, 0, 0);
-  if (!mdQuantize(c)) mdPaletteApplied = false;
+  c.hdRes = img.hdRes;
+  if (HD) mdPaletteApplied = false;   // HD keeps the art's own colours
+  else if (!mdQuantize(c)) mdPaletteApplied = false;
   return c;
 }
 function silhouette(src, color) {   // hit-flash palette: every opaque pixel -> one colour
   const c = document.createElement('canvas');
   c.width = src.width; c.height = src.height;
+  c.hdRes = src.hdRes;
   const g = c.getContext('2d');
   g.drawImage(src, 0, 0);
   g.globalCompositeOperation = 'source-in';
@@ -1046,6 +1103,7 @@ function rageSheet(file) {
   if (set.rage) return set.rage;
   const c = document.createElement('canvas');
   c.width = set.base.width; c.height = set.base.height;
+  c.hdRes = set.base.hdRes;
   const g = c.getContext('2d');
   g.drawImage(set.base, 0, 0);
   try {
@@ -1053,7 +1111,7 @@ function rageSheet(file) {
     for (let i = 0; i < a.length; i += 4) {
       if (!a[i + 3]) continue;
       const L = (0.3 * a[i] + 0.59 * a[i + 1] + 0.11 * a[i + 2]) / 255;
-      const q = v => MD_LEVELS[Math.max(0, Math.min(7, Math.round(v * 7 / 255)))];
+      const q = v => HD ? v : MD_LEVELS[Math.max(0, Math.min(7, Math.round(v * 7 / 255)))];
       a[i] = q(a[i] * 0.5 + 255 * Math.min(1, L * 1.4 + 0.25) * 0.5);
       a[i + 1] = q(a[i + 1] * 0.5);
       a[i + 2] = q(a[i + 2] * 0.4);
@@ -2734,9 +2792,10 @@ window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; }
 
 function uiKey(k) {
   if (scene === 'title') {
-    if (k === 'arrowup' || k === 'w' || k === 'arrowdown' || k === 's') { titleSel ^= 1; sndMove(); }
+    if (k === 'arrowup' || k === 'w') { titleSel = (titleSel + 2) % 3; sndMove(); }
+    else if (k === 'arrowdown' || k === 's') { titleSel = (titleSel + 1) % 3; sndMove(); }
     else if (k === 'b') openBestiary();
-    else if (OK_KEYS.has(k)) { if (titleSel === 1) openBestiary(); else toSelect(); }
+    else if (OK_KEYS.has(k)) { if (titleSel === 2) toggleGraphics(); else if (titleSel === 1) openBestiary(); else toSelect(); }
     return;
   }
   if (scene === 'bestiary') {
@@ -3579,7 +3638,52 @@ function glowSprite(r) {
   glowCache.set(r, c);
   return c;
 }
+// Every light in the scene: emit(wx, wy, radius in dots, colour key). RETRO punches them out of a
+// flat darkness layer; HD + WebGL paints them, coloured, into the light map.
+function sceneLights(emit) {
+  const flick = Math.floor(uiTime * 8) % 3;
+  if (state.act === 5) {   // hellfire glow: fixed vents of flickering light across the waste
+    const S = 160, sx0 = Math.floor((player.x - VW / 2) / S) - 1, sy0 = Math.floor((player.y - VH / 2) / S) - 1;
+    for (let sy = sy0; sy * S < player.y + VH / 2 + S; sy++) for (let sx = sx0; sx * S < player.x + VW / 2 + S; sx++) {
+      const h = hash2(sx * 9 + 2, sy * 5 + 7);
+      if (h % 5) continue;
+      emit(sx * S + (h >>> 5) % S, sy * S + (h >>> 11) % S, 16 + (h >>> 17) % 12 + ((Math.floor(uiTime * 9) + h) % 3) * 2, 'vent');
+    }
+  }
+  if (state.act === 4) {   // caustics: rippling pools of surface light drift slowly across the seabed
+    const S = 130, drift = uiTime * 9, sx0 = Math.floor((player.x - VW / 2 - drift) / S) - 1, sy0 = Math.floor((player.y - VH / 2) / S) - 1;
+    for (let sy = sy0; sy * S < player.y + VH / 2 + S; sy++) for (let sx = sx0; sx * S + drift < player.x + VW / 2 + S; sx++) {
+      const h = hash2(sx * 3 + 7, sy * 13 + 1);
+      if (h % 2) continue;
+      const wob = Math.sin(uiTime * 1.3 + (h % 7)) * 5;
+      emit(sx * S + drift + (h >>> 5) % S, sy * S + (h >>> 11) % S, 22 + (h >>> 17) % 18 + wob, 'caustic');
+    }
+  }
+  if (state.act === 3) {   // dappled sunlight: shafts break through the canopy at fixed spots
+    const S = 150, sx0 = Math.floor((player.x - VW / 2) / S) - 1, sy0 = Math.floor((player.y - VH / 2) / S) - 1;
+    for (let sy = sy0; sy * S < player.y + VH / 2 + S; sy++) for (let sx = sx0; sx * S < player.x + VW / 2 + S; sx++) {
+      const h = hash2(sx * 5 + 1, sy * 9 + 2);
+      if (h % 3) continue;
+      emit(sx * S + (h >>> 5) % S, sy * S + (h >>> 11) % S, 26 + (h >>> 17) % 22, 'sun');
+    }
+  }
+  emit(player.x, player.y - 10, (state.berserkT > 0 ? 140 : 112) + flick * 2, state.berserkT > 0 ? 'berserk' : 'hero');
+  for (const bz of state.brazList || []) emit(bz.x, bz.y - 12, 42 + ((Math.floor(uiTime * 7 + bz.x) % 3) * 2), 'fire');
+  for (const b of ebullets) emit(b.x, b.y, b.style === 'laser' ? 12 : 22, LIGHT_COL[b.style] ? b.style : 'fireball');
+  for (const fx of effects) if (fx.type === 'boom' || fx.type === 'bolt' || fx.type === 'nova') emit(fx.x, fx.y, Math.max(16, (fx.radius || 30) / PX), fx.type);
+  for (const b of bullets) if (b.kind === 'hammer' || b.kind === 'bubble') emit(b.x, b.y, 14, b.kind);
+  if (state.ally) emit(state.ally.x, state.ally.y - 8, 34, 'ally');
+  if (state.actBoss) emit(state.actBoss.x, state.actBoss.y - state.actBoss.r, state.actBoss.r * 2.4, 'boss');   // bosses are never lost in the dark
+  if (state.wildAxo) emit(state.wildAxo.x, state.wildAxo.y - 8, 40, 'ally');
+  for (let i = 0; i < gems.length && i < 220; i++) {
+    const v = gems[i].v;
+    emit(gems[i].x, gems[i].y, 5, v >= 8 ? 'ruby' : v >= 5 ? 'gold' : v >= 3 ? 'blue' : 'green');
+  }
+  for (const p of pickups) emit(p.x, p.y, p.type === 'berserk' ? 34 + (Math.floor(uiTime * 6) % 2) * 3 : 11, p.type === 'berserk' ? 'rage' : 'pickup');
+  if (state.portalT > 0) emit(player.x, player.y, 60, 'portal');
+}
 function renderDarkness() {
+  if (litOn) { renderLightmap(); return; }
   if (state.act === 2) return;   // the desert is sun-bleached daylight
   if (!darkCv || darkCv.width !== W || darkCv.height !== H) {
     darkCv = document.createElement('canvas'); darkCv.width = W; darkCv.height = H;
@@ -3592,50 +3696,202 @@ function renderDarkness() {
   g.fillStyle = state.act === 5 ? 'rgba(22,0,0,0.66)' : state.act === 4 ? 'rgba(0,14,40,0.55)' : state.act === 3 ? 'rgba(0,18,6,0.5)' : `rgba(6,0,10,${DARKNESS})`;
   g.fillRect(0, 0, W, H);
   g.globalCompositeOperation = 'destination-out';
-  const punch = (wx, wy, r) => {
+  sceneLights((wx, wy, r) => {
     const s = glowSprite(r), x = toDX(wx), y = toDY(wy);
     if (x < -s.width || x > W + s.width || y < -s.height || y > H + s.height) return;
     g.drawImage(s, x - (s.width >> 1), y - (s.height >> 1));
-  };
-  const flick = Math.floor(uiTime * 8) % 3;
-  if (state.act === 5) {   // hellfire glow: fixed vents of flickering light across the waste
-    const S = 160, sx0 = Math.floor((player.x - VW / 2) / S) - 1, sy0 = Math.floor((player.y - VH / 2) / S) - 1;
-    for (let sy = sy0; sy * S < player.y + VH / 2 + S; sy++) for (let sx = sx0; sx * S < player.x + VW / 2 + S; sx++) {
-      const h = hash2(sx * 9 + 2, sy * 5 + 7);
-      if (h % 5) continue;
-      punch(sx * S + (h >>> 5) % S, sy * S + (h >>> 11) % S, 16 + (h >>> 17) % 12 + ((Math.floor(uiTime * 9) + h) % 3) * 2);
-    }
-  }
-  if (state.act === 4) {   // caustics: rippling pools of surface light drift slowly across the seabed
-    const S = 130, drift = uiTime * 9, sx0 = Math.floor((player.x - VW / 2 - drift) / S) - 1, sy0 = Math.floor((player.y - VH / 2) / S) - 1;
-    for (let sy = sy0; sy * S < player.y + VH / 2 + S; sy++) for (let sx = sx0; sx * S + drift < player.x + VW / 2 + S; sx++) {
-      const h = hash2(sx * 3 + 7, sy * 13 + 1);
-      if (h % 2) continue;
-      const wob = Math.sin(uiTime * 1.3 + (h % 7)) * 5;
-      punch(sx * S + drift + (h >>> 5) % S, sy * S + (h >>> 11) % S, 22 + (h >>> 17) % 18 + wob);
-    }
-  }
-  if (state.act === 3) {   // dappled sunlight: shafts break through the canopy at fixed spots
-    const S = 150, sx0 = Math.floor((player.x - VW / 2) / S) - 1, sy0 = Math.floor((player.y - VH / 2) / S) - 1;
-    for (let sy = sy0; sy * S < player.y + VH / 2 + S; sy++) for (let sx = sx0; sx * S < player.x + VW / 2 + S; sx++) {
-      const h = hash2(sx * 5 + 1, sy * 9 + 2);
-      if (h % 3) continue;
-      punch(sx * S + (h >>> 5) % S, sy * S + (h >>> 11) % S, 26 + (h >>> 17) % 22);
-    }
-  }
-  punch(player.x, player.y - 10, (state.berserkT > 0 ? 140 : 112) + flick * 2);
-  for (const bz of state.brazList || []) punch(bz.x, bz.y - 12, 42 + ((Math.floor(uiTime * 7 + bz.x) % 3) * 2));
-  for (const b of ebullets) punch(b.x, b.y, b.style === 'laser' ? 12 : 22);
-  for (const fx of effects) if (fx.type === 'boom' || fx.type === 'bolt' || fx.type === 'nova') punch(fx.x, fx.y, Math.max(16, (fx.radius || 30) / PX));
-  for (const b of bullets) if (b.kind === 'hammer' || b.kind === 'bubble') punch(b.x, b.y, 14);
-  if (state.ally) punch(state.ally.x, state.ally.y - 8, 34);
-  if (state.actBoss) punch(state.actBoss.x, state.actBoss.y - state.actBoss.r, state.actBoss.r * 2.4);   // bosses are never lost in the dark
-  if (state.wildAxo) punch(state.wildAxo.x, state.wildAxo.y - 8, 40);
-  for (let i = 0; i < gems.length && i < 220; i++) punch(gems[i].x, gems[i].y, 5);
-  for (const p of pickups) punch(p.x, p.y, p.type === 'berserk' ? 34 + (Math.floor(uiTime * 6) % 2) * 3 : 11);
-  if (state.portalT > 0) punch(player.x, player.y, 60);
+  });
   g.globalCompositeOperation = 'source-over';
   ctx.drawImage(darkCv, 0, 0);
+}
+
+// ---------- lighting (HD + WebGL) ----------
+// The world is drawn unlit onto worldCv. A light map at dot resolution (so light falls off in
+// chunky pixel-art bands) starts at the act's ambient colour and has every light added in its
+// own colour. WebGL multiplies the two, then blooms whatever ends up near white-hot: a quarter-size
+// bright pass, blurred, added back. Colours are in "art brightness": 1 = the sprite as drawn.
+const LIGHT_GAIN = 1.6;   // a full light-map channel = 1.6x the art, so torches and fire can run hot
+const AMBIENT = {         // crypt gloom, desert daylight, canopy shade, deep water, hellfire
+  1: [0.3, 0.27, 0.4], 2: [1, 0.98, 0.94], 3: [0.42, 0.55, 0.36], 4: [0.28, 0.42, 0.6], 5: [0.5, 0.2, 0.16] };
+const LIGHT_COL = {
+  berserk: [1.1, 0.6, 0.48], rage: [1.5, 0.3, 0.2], fire: [1.05, 0.55, 0.2], fireball: [1.2, 0.5, 0.2],
+  laser: [0.4, 1.1, 1.4], acid: [0.5, 1.3, 0.2], thorn: [0.4, 1, 0.25], ink: [0.55, 0.35, 0.9], coconut: [0.9, 0.7, 0.4],
+  boom: [1.5, 0.9, 0.4], bolt: [0.8, 1, 1.5], nova: [1, 0.85, 1.5], hammer: [1.3, 1.2, 0.6], bubble: [0.5, 1, 1.4],
+  ally: [1.1, 0.75, 1], pickup: [1.1, 1, 0.7], portal: [0.5, 0.85, 1.6],
+  green: [0.3, 1.2, 0.4], blue: [0.4, 0.8, 1.5], gold: [1.4, 1.1, 0.3], ruby: [1.5, 0.3, 0.45],
+  sun: [0.5, 0.45, 0.28], caustic: [0.3, 0.45, 0.5], vent: [1.1, 0.35, 0.08],
+};
+const DAY_LIGHTS = new Set(['boom', 'bolt', 'nova', 'rage', 'portal']);
+let litOn = LIT;          // drops to false if the world canvas can't be uploaded (tainted file:// art)
+let lightCv = null, lightG = null;
+const lightRGB = (c, k = 1) => `rgb(${c.map(v => Math.min(255, Math.round(v * k * 255 / LIGHT_GAIN))).join(',')})`;
+// the hero's and a boss's light top up whatever the act's ambient leaves, so their cores show the art
+// in its own colours (a fixed colour would wash the canopy-lit jungle out and leave the crypt murky)
+const coreLight = (top, warm) => (AMBIENT[state.act] || AMBIENT[1]).map((v, i) => Math.max(0.05, top - v) * warm[i]);
+const lightColOf = key => key === 'hero' ? coreLight(1.05, [1, 0.97, 0.88]) : key === 'boss' ? coreLight(0.95, [1, 1, 1]) : LIGHT_COL[key];
+const tintCache = new Map();
+function tintGlow(r, key, k) {   // the stepped glow in a light's colour, cached per radius/colour/strength
+  r = Math.max(2, Math.round(r));
+  const id = r + key + k + (key === 'hero' || key === 'boss' ? state.act : '');
+  let c = tintCache.get(id);
+  if (c) return c;
+  const base = glowSprite(r);
+  c = document.createElement('canvas');
+  c.width = base.width; c.height = base.height;
+  const g = c.getContext('2d');
+  g.drawImage(base, 0, 0);
+  g.globalCompositeOperation = 'source-in';
+  g.fillStyle = lightRGB(lightColOf(key), k);
+  g.fillRect(0, 0, c.width, c.height);
+  if (tintCache.size > 600) tintCache.clear();
+  tintCache.set(id, c);
+  return c;
+}
+function renderLightmap() {
+  if (!lightCv || lightCv.width !== W || lightCv.height !== H) {
+    lightCv = document.createElement('canvas'); lightCv.width = W; lightCv.height = H;
+    lightG = lightCv.getContext('2d', { alpha: false });
+  }
+  const g = lightG, day = state.act === 2;
+  g.globalCompositeOperation = 'source-over';
+  g.fillStyle = lightRGB(AMBIENT[state.act] || AMBIENT[1]);
+  g.fillRect(0, 0, W, H);
+  g.globalCompositeOperation = 'lighter';
+  sceneLights((wx, wy, r, key) => {
+    if (day && !DAY_LIGHTS.has(key)) return;   // in daylight only blasts, magic and the orb show
+    const s = tintGlow(r, key, day ? 0.3 : 1), x = toDX(wx), y = toDY(wy);
+    if (x < -s.width || x > W + s.width || y < -s.height || y > H + s.height) return;
+    g.drawImage(s, x - (s.width >> 1), y - (s.height >> 1));
+  });
+}
+
+function initLighting() {
+  try {
+    const cv = document.createElement('canvas');
+    const g = cv.getContext('webgl', { alpha: false, antialias: false, depth: false, stencil: false,
+      preserveDrawingBuffer: true });   // kept so the frame can be read back (screenshots, frameData)
+    if (!g) return false;
+    const head = 'precision mediump float; varying vec2 uv;\n';
+    const lit = 'uniform sampler2D scene, light; uniform float gain;\n' +
+      'vec3 lit(vec2 q) { return texture2D(scene, q).rgb * texture2D(light, q).rgb * gain; }\n';
+    const FS = {
+      // quarter size: average 2x2 lit pixels, keep only what's close to white-hot
+      bright: lit + 'uniform vec2 texel; uniform float thr;\n' +
+        'void main() { vec3 c = 0.25 * (lit(uv - texel) + lit(uv + texel) + lit(uv + vec2(texel.x, -texel.y)) + lit(uv + vec2(-texel.x, texel.y)));\n' +
+        '  float m = max(c.r, max(c.g, c.b)); gl_FragColor = vec4(c * smoothstep(thr, thr + 0.4, m), 1.0); }',
+      // 9-tap gaussian in 5 linear fetches
+      blur: 'uniform sampler2D src; uniform vec2 dir;\n' +
+        'void main() { vec3 c = texture2D(src, uv).rgb * 0.227027;\n' +
+        '  c += (texture2D(src, uv + dir * 1.384615).rgb + texture2D(src, uv - dir * 1.384615).rgb) * 0.316216;\n' +
+        '  c += (texture2D(src, uv + dir * 3.230769).rgb + texture2D(src, uv - dir * 3.230769).rgb) * 0.070270;\n' +
+        '  gl_FragColor = vec4(c, 1.0); }',
+      compose: lit + 'uniform sampler2D bloom; uniform float bloomK;\n' +
+        'void main() { gl_FragColor = vec4(lit(uv) + texture2D(bloom, uv).rgb * bloomK, 1.0); }',
+    };
+    const shader = (type, src) => {
+      const s = g.createShader(type);
+      g.shaderSource(s, src); g.compileShader(s);
+      if (!g.getShaderParameter(s, g.COMPILE_STATUS)) throw new Error(g.getShaderInfoLog(s));
+      return s;
+    };
+    const vs = shader(g.VERTEX_SHADER, 'attribute vec2 p; varying vec2 uv;\nvoid main() { uv = p * 0.5 + 0.5; gl_Position = vec4(p, 0.0, 1.0); }');
+    const prog = {};
+    for (const [k, src] of Object.entries(FS)) {
+      const p = g.createProgram();
+      g.attachShader(p, vs); g.attachShader(p, shader(g.FRAGMENT_SHADER, head + src));
+      g.bindAttribLocation(p, 0, 'p');
+      g.linkProgram(p);
+      if (!g.getProgramParameter(p, g.LINK_STATUS)) throw new Error(g.getProgramInfoLog(p));
+      const u = {};
+      for (let i = g.getProgramParameter(p, g.ACTIVE_UNIFORMS) - 1; i >= 0; i--) {
+        const name = g.getActiveUniform(p, i).name;
+        u[name] = g.getUniformLocation(p, name);
+      }
+      prog[k] = { p, u };
+    }
+    g.bindBuffer(g.ARRAY_BUFFER, g.createBuffer());
+    g.bufferData(g.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), g.STATIC_DRAW);
+    g.enableVertexAttribArray(0);
+    g.vertexAttribPointer(0, 2, g.FLOAT, false, 0, 0);
+    const tex = filter => {
+      const t = g.createTexture();
+      g.bindTexture(g.TEXTURE_2D, t);
+      g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MIN_FILTER, filter);
+      g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MAG_FILTER, filter);
+      g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_S, g.CLAMP_TO_EDGE);
+      g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_T, g.CLAMP_TO_EDGE);
+      return t;
+    };
+    const fb = () => ({ t: tex(g.LINEAR), f: g.createFramebuffer() });
+    GLX = { prog, scene: tex(g.NEAREST), light: tex(g.NEAREST), a: fb(), b: fb(), bw: 0, bh: 0 };
+    g.pixelStorei(g.UNPACK_FLIP_Y_WEBGL, true);   // canvases upload top-down; GL's uv origin is bottom-left
+    cv.id = 'gl';
+    cv.setAttribute('aria-hidden', 'true');
+    cv.style.cssText = 'position:absolute;display:block;pointer-events:none;image-rendering:pixelated;image-rendering:crisp-edges';
+    canvas.parentNode.insertBefore(cv, canvas);
+    glCanvas = cv; gl = g;
+    return true;
+  } catch (e) {
+    console.warn('WebGL lighting unavailable:', e.message);
+    return false;
+  }
+}
+const BLOOM = { thr: 1, k: 0.9 };   // only light pushed past the art's own brightness blooms
+function composeLit() {
+  const g = gl, X = GLX, w = W * RES, h = H * RES;
+  try {
+    g.activeTexture(g.TEXTURE0); g.bindTexture(g.TEXTURE_2D, X.scene);
+    g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, g.RGBA, g.UNSIGNED_BYTE, worldCv);
+  } catch (e) {   // a tainted world canvas can't go to the GPU: fall back to the 2D darkness
+    litOn = false;
+    glCanvas.style.display = 'none';
+    return false;
+  }
+  g.activeTexture(g.TEXTURE1); g.bindTexture(g.TEXTURE_2D, X.light);
+  g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, g.RGBA, g.UNSIGNED_BYTE, lightCv);
+  const bw = Math.max(1, w >> 2), bh = Math.max(1, h >> 2);
+  if (X.bw !== bw || X.bh !== bh) {
+    for (const t of [X.a, X.b]) {
+      g.bindTexture(g.TEXTURE_2D, t.t);
+      g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, bw, bh, 0, g.RGBA, g.UNSIGNED_BYTE, null);
+      g.bindFramebuffer(g.FRAMEBUFFER, t.f);
+      g.framebufferTexture2D(g.FRAMEBUFFER, g.COLOR_ATTACHMENT0, g.TEXTURE_2D, t.t, 0);
+    }
+    X.bw = bw; X.bh = bh;
+  }
+  const use = (k, target, vw, vh) => {
+    const P = X.prog[k];
+    g.useProgram(P.p);
+    g.bindFramebuffer(g.FRAMEBUFFER, target);
+    g.viewport(0, 0, vw, vh);
+    return P.u;
+  };
+  const draw = () => g.drawArrays(g.TRIANGLE_STRIP, 0, 4);
+  let u = use('bright', X.a.f, bw, bh);
+  g.uniform1i(u.scene, 0); g.uniform1i(u.light, 1); g.uniform1f(u.gain, LIGHT_GAIN);
+  g.uniform2f(u.texel, 1 / w, 1 / h); g.uniform1f(u.thr, BLOOM.thr);
+  draw();
+  g.activeTexture(g.TEXTURE2);
+  for (const [src, dst, dx, dy] of [[X.a, X.b, 1, 0], [X.b, X.a, 0, 1]]) {
+    g.bindTexture(g.TEXTURE_2D, src.t);
+    u = use('blur', dst.f, bw, bh);
+    g.uniform1i(u.src, 2); g.uniform2f(u.dir, dx / bw, dy / bh);
+    draw();
+  }
+  u = use('compose', null, w, h);
+  g.uniform1i(u.scene, 0); g.uniform1i(u.light, 1); g.uniform1i(u.bloom, 2); g.uniform1f(u.gain, LIGHT_GAIN);
+  g.uniform1f(u.bloomK, BLOOM.k);
+  draw();
+  return true;
+}
+// the composed frame at dot resolution, as RGBA bytes (tests read pixels through this)
+function frameData() {
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const g = c.getContext('2d');
+  if (litOn && scene !== 'title' && scene !== 'select' && scene !== 'bestiary') g.drawImage(glCanvas, 0, 0, W, H);
+  g.drawImage(canvas, 0, 0, W, H);
+  return g.getImageData(0, 0, W, H).data;
 }
 
 // Diablo-style town portal: a tall blue oval that swirls open around the hero
@@ -4056,8 +4312,9 @@ function renderWorld() {
   }
   if (state.portalT > 0) drawPortal();
   renderDarkness();
-
-  // floating numbers & text
+}
+// floating numbers & text: above the lighting, so damage always reads
+function renderFloatText() {
   for (const t of texts) {
     if (t.life < 0.15 && blink(20)) continue;
     const x = toDX(t.x), y = toDY(t.y);
@@ -4364,9 +4621,9 @@ function renderTitle() {
   drawText(l2, W / 2, y2, C.white, { scale: sc2, align: 'center', outline: C.black, drop: '#000024', grad: CYAN_GRAD });
   const ty = bot + 10;
   drawText('THE DANGER ROOM HAS GONE ROGUE.', W / 2, ty, C.lgrey, { align: 'center' });
-  drawText('SURVIVE THE CATHEDRAL FOR 15:00', W / 2, ty + 10, C.lgrey, { align: 'center' });
-  // START GAME / BESTIARY, the classic title-screen pair
-  const my = Math.round(H * 0.6), items = ['START GAME', 'BESTIARY'];
+  drawText('SURVIVE FIVE ACTS. SLAY THE DEVIL.', W / 2, ty + 10, C.lgrey, { align: 'center' });
+  // START GAME / BESTIARY, the classic title-screen pair, and the graphics switch
+  const my = Math.round(H * 0.56), items = ['START GAME', 'BESTIARY', 'GRAPHICS: ' + (HD ? 'HD' : 'RETRO')];
   addHit(0, 0, W, H, 'any');
   items.forEach((label, i) => {
     const y = my + i * 14, on = i === titleSel, w = textW(label);
@@ -4587,14 +4844,26 @@ function renderBoot() {
 
 function render() {
   hits = [];
-  ctx.globalAlpha = 1;
-  ctx.globalCompositeOperation = 'source-over';
+  for (const g of [uiCtx, worldCtx]) {
+    g.globalAlpha = 1;
+    g.globalCompositeOperation = 'source-over';
+  }
+  const menuScene = scene === 'loading' || scene === 'error' || scene === 'title' || scene === 'select' || scene === 'bestiary';
+  // lit HD: the world goes to its own canvas and through WebGL; #game becomes the clear HUD layer
+  const lit = litOn && !menuScene;
+  ctx = lit ? worldCtx : uiCtx;
+  if (lit) uiCtx.clearRect(0, 0, W, H);
   rect(0, 0, W, H, C.black);
   if (scene === 'loading' || scene === 'error') { renderBoot(); return; }
   if (scene === 'title') { renderTitle(); return; }
   if (scene === 'select') { renderSelect(); return; }
   if (scene === 'bestiary') { renderBestiary(); return; }
   renderWorld();
+  if (lit) {
+    ctx = uiCtx;
+    if (!composeLit()) uiCtx.drawImage(worldCv, 0, 0, W, H);   // GL refused the frame: show it unlit, once
+  }
+  renderFloatText();
   if (scene === 'play') {
     renderHUD();
     renderBanner();

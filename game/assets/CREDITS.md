@@ -24,6 +24,18 @@ https://opengameart.org/content/cat-sprites
 (frames mirrored to face right and rearranged into this project's
 10-frames-per-row sheet layout)
 
+## HD sheets (`hd/`)
+
+`hd/<name>.png` is a 2x version of `<name>.png` for the HD graphics mode; each
+keeps the licence and credits of its 1x sheet listed in this file (the hero
+sheets therefore stay **CC-BY-SA 3.0**). Most are upscaled with the **xBR**
+pixel-art scaling algorithm (by Hyllian; applied offline with the MIT-licensed
+xBRjs by Josep del Rio, https://github.com/joseprio/xBRjs — no new colours
+created, floor tiles scaled as wrapping tiles so they stay seamless). Where the
+1x sheet had shrunk larger source art, the HD sheet is rebuilt from that source
+instead: the skill icons (Bjerk's 256px paintings), Neil/Zoe/Ana (64px LPC
+frames), and the fire skull, devilkin and shark.
+
 ## Demon roster
 
 All licensed **CC-BY 3.0** (https://creativecommons.org/licenses/by/3.0/).
