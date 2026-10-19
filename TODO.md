@@ -5,6 +5,10 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 ## Now
 
+- Mutant Academy PS1 3D: roll out to Acts II-V (lava/water as animated
+  surfaces, bridges with height, tall trees); consider low-poly CC0 models
+  (Kenney / Quaternius) for columns, coffins and statues; billboard
+  pickups and projectiles; check phone performance on real hardware.
 - Team name normalizer gaps: Bielefeld, Greuther Fürth, Holstein Kiel,
   Ajaccio unmapped (flagged during backfill).
 
@@ -50,6 +54,10 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy: PS1 3D graphics mode, prototype — Act I's cathedral in
+  3D (WebGL2: ground plane from the 2D renderer, wall blocks with a
+  cutaway, billboard sprites, light map, fog, dither, vertex wobble,
+  affine warp); GRAPHICS cycles HD / PS1 3D / RETRO — `b585160`
 - Mutant Academy: voiced retro story intro (7 letterboxed scenes, typed
   text read by Piper's public-domain "Norman" voice, bell + choir); plays
   before the first game and from STORY on the title, skippable — `1267488`
