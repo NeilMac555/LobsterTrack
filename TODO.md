@@ -24,7 +24,8 @@ session; update before finishing (move cards, add new ones, trim Done).
   Neil/Zoe hero test had the same level-up flake; fixed the same way.
 - Mutant Academy ability balance: in a rank-5 damage probe, Singularity
   and evolved Feral Frenzy / Full House are near the top, while Iron Halo
-  and Omega Beam gain little over their base powers. Tune after some
+  and Plague Flask gain little over their base powers (Plague only pays
+  off when things die). Tune after some
   real runs. Ultimates have no PS1-mode check yet beyond "no errors".
 - Duplicate match rows from fixture reschedules: DB sweep found ~20
   pairs of matches (same two teams, commence_time <48h apart) across
