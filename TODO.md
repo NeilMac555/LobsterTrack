@@ -25,6 +25,10 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 ## Later
 
+- Mutant Academy HD: more source re-packs where the 1x sheet shrank big
+  art (LPC jungle trees 0.62x, treant 0.57x, monkey 0.69x, nightmare
+  0.6x, ghoul 0.8x) — they're on the xBR baseline for now.
+
 - Re-fit rho/drawInflation in xG mode once 2026/27 accumulates enough
   matches (fallback fit was rejected — see fit-v1.md).
 - CL/UEL restoration: needs Elo-based cross-league strengths +
@@ -36,6 +40,11 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy: HD graphics mode (default; RETRO switch on title) —
+  2x pixel-art sheets (xBR 2x baseline; icons, heroes, fire skull,
+  devilkin, shark rebuilt from larger sources), WebGL coloured banded
+  light map + bloom under an unlit HUD layer, 2D-darkness fallback —
+  `33e7f58`
 - Mutant Academy: per-act scaling — fewer, tougher monsters each act
   (on-screen Act III 62→37, IV 97→35, V 138→51), act quota caps, trickle
   cap, thinner events; steeper xp curve — `f845b83`
