@@ -108,9 +108,9 @@ Trimmed, pitch-adjusted for some heroes, normalised and re-encoded as MP3:
   **NocturnalVanguard**, **CC0**: https://opengameart.org/content/female-hurt-grunts-groans
 - `hurt-biski` — "Meow" by **IgnasD**, **CC0**: https://opengameart.org/content/meow
 
-## Heroes: Neil, Zoe and Ana
+## Heroes: Neil, Zoe, Ana and Karateh Masta
 
-`neil.png`, `zoe.png` and `ana.png` are built from Liberated Pixel Cup (LPC) parts via the
+`neil.png`, `zoe.png`, `ana.png` and `karate.png` are built from Liberated Pixel Cup (LPC) parts via the
 Universal LPC Spritesheet Character Generator (OGA-BY 3.0 / CC-BY-SA 3.0 /
 GPL 3.0 depending on part); downscaled and repacked. These sheets are
 therefore shared under **CC-BY-SA 3.0**. Every part's authors and links are
@@ -128,7 +128,13 @@ listed in [`CREDITS-LPC.md`](CREDITS-LPC.md).
 - Icon backgrounds — J. W. Bjerk's Painterly Spell Icons (CC-BY 3.0, above),
   including `fireball-acid-2` behind the acid flask.
 
-## Voices for Neil, Zoe and Ana
+## Death Stars (Karateh Masta's weapon, in `skills.png`)
+
+- Throwing star — `W_Throw004` from "496 pixel art icons for medieval/fantasy RPG",
+  original icons by **7Soul1**, compiled by **gnola14**, **CC0** (as above).
+- Icon background — `wind-red-2` from J. W. Bjerk's Painterly Spell Icons (CC-BY 3.0, above).
+
+## Voices for Neil, Zoe, Ana and Karateh Masta
 
 - `hurt-neil` — thebardofblasphemy's CC0 male grunts (above).
 - `hurt-zoe` — "Ouch" from "24 Cute Fighting Game Voice Recordings" by
@@ -136,6 +142,8 @@ listed in [`CREDITS-LPC.md`](CREDITS-LPC.md).
   https://opengameart.org/content/24-cute-fighting-game-voice-recordings
 - `hurt-ana` — "Ow" from the same "24 Cute Fighting Game Voice Recordings" by
   **bart**, **CC-BY 3.0** (trimmed, loudness-matched).
+- `hurt-karate` — thebardofblasphemy's CC0 male grunts (the `hurt-ace` take),
+  pitched up 12% into a sharper shout.
 
 ## Sanctuary: cathedral floor, props, the Butcher, banshees
 

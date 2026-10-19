@@ -171,7 +171,7 @@ const sndHurt = () => sfx(110, 0.2, 'sawtooth', 0.08, -40);
 
 // Sampled hurt voices, one per hero (Biski meows) — see assets/CREDITS.md.
 // Decoded once audio is unlocked; until then (or on file:// pages) the synth thud stands in.
-const VOICE_FILES = ['visor', 'wildcat', 'skywitch', 'ace', 'mender', 'biski', 'neil', 'zoe', 'ana'];
+const VOICE_FILES = ['visor', 'wildcat', 'skywitch', 'ace', 'mender', 'biski', 'neil', 'zoe', 'ana', 'karate'];
 const SFX_FILES = ['banshee-scream', 'butcher-roar'];   // assets/sfx/<name>.mp3
 const voiceBuf = {};
 let voicesRequested = false, lastVoiceT = -9;
@@ -1047,7 +1047,7 @@ const ASSET_FILES = ['warrior', 'wizard', 'ranger', 'rogue', 'cleric',
   'jungle', 'snake', 'treant', 'plant', 'mosquito', 'monkey', 'frog',
   'ocean', 'axolotl', 'piranha', 'jelly', 'crab', 'shark', 'squid', 'eel', 'kraken',
   'hell', 'hellbeast', 'fireskull', 'ghoul', 'cultist', 'nightmare', 'devilkin', 'devil',
-  'map1', 'map2', 'map3', 'map4', 'map5'];
+  'map1', 'map2', 'map3', 'map4', 'map5', 'karate'];
 const assets = {};
 function loadAssets() {
   return Promise.all(ASSET_FILES.map(name => new Promise((res, rej) => {
@@ -1188,6 +1188,7 @@ const SHEETS = {
   neil:     { file: 'neil',       size: 40, rows: STD, frames: { idle: 1, walk: 8, attack: 7, death: 6 } },
   zoe:      { file: 'zoe',        size: 40, rows: STD, frames: { idle: 1, walk: 8, attack: 6, death: 1 } },
   ana:      { file: 'ana',        size: 40, rows: STD, frames: { idle: 1, walk: 8, attack: 7, death: 6 } },
+  karate:   { file: 'karate',     size: 40, rows: STD, frames: { idle: 1, walk: 8, attack: 8, death: 6 } },
   butcher:  { file: 'butcher',  size: 96, rows: STD, frames: { idle: 1, walk: 8, attack: 10, death: 6 } },
   banshee:  { file: 'banshee',  size: 40, rows: STD, frames: { idle: 1, walk: 4, attack: 4, death: 2 } },
   golem:    { file: 'golem',    size: 48, rows: STD, frames: { idle: 1, walk: 7, attack: 7, death: 7 } },
@@ -1224,9 +1225,9 @@ const SHEETS = {
 };
 // painted skill icons (assets/skills.png): row 0 = 32x32, row 1 = 16x16, in this order
 const SKILL_ORDER = ['optic', 'claws', 'storm', 'orbs', 'nova', 'cards', 'boots', 'vitality',
-  'regen', 'magnet', 'power', 'focus', 'plating', 'heal', 'hammer', 'sushi', 'acid'];
-// projectile sprites on the sheet's bottom row (y=48): hammer 14px, nigiri 16px, maki 16px, acid flask 16px
-const PROJ = { hammer: [0, 49, 14, 14], nigiri: [16, 48, 16, 16], maki: [32, 48, 16, 16], flask: [48, 48, 16, 16] };
+  'regen', 'magnet', 'power', 'focus', 'plating', 'heal', 'hammer', 'sushi', 'acid', 'stars'];
+// projectile sprites on the sheet's bottom row (y=48): hammer 14px, nigiri 16px, maki 16px, acid flask 16px, throwing star 16px
+const PROJ = { hammer: [0, 49, 14, 14], nigiri: [16, 48, 16, 16], maki: [32, 48, 16, 16], flask: [48, 48, 16, 16], star: [64, 48, 16, 16] };
 // draw a projectile centred on (x, y), turned in quarter steps so pixels stay square
 function drawProj(key, x, y, quarter = 0) {
   if (!SPR.skills) return;
@@ -2301,6 +2302,27 @@ const WEAPON_DEFS = {
       return true;
     },
   },
+  stars: {
+    name: 'Death Stars',
+    desc: 'A fan of spinning throwing stars that slice through several foes each.',
+    cd: 0.75,
+    fire(w) {
+      const n = 2 + Math.floor(w.level / 2) + ampN();   // 2,3,3,4,4
+      const targets = nearestEnemies(n);
+      if (!targets.length) return false;
+      for (let i = 0; i < n; i++) {
+        const t = targets[i % targets.length], spread = i < targets.length ? 0 : (i % 2 ? 1 : -1) * 0.22 * Math.ceil(i / 2);
+        const a = Math.atan2(t.y - player.y, t.x - player.x) + spread;
+        bullets.push({
+          x: player.x, y: player.y - 16, vx: Math.cos(a) * 470, vy: Math.sin(a) * 470,
+          r: 6 * amp(), dmg: (9 + w.level * 5) * player.dmgMult, life: 1.1, t: 0,
+          kind: 'star', pierce: 1 + Math.floor(w.level / 2), hits: new Set(),
+        });
+      }
+      sfx(1400, 0.05, 'triangle', 0.025, -600);   // the swish
+      return true;
+    },
+  },
   cards: {
     name: 'Kinetic Cards',
     desc: 'Charged playing cards that detonate on impact.',
@@ -2375,7 +2397,24 @@ const HEROES = [
   { id: 'ana', name: 'Ana', sprite: 'ana', color: '#92FF24',
     tag: 'Acid thrower', desc: 'Black glasses, a mane of blonde curls and a bag of acid flasks. They shatter into puddles that eat anything standing in them.',
     weapon: 'acid', mods: () => { player.maxHp += 10; player.hp += 10; player.magnetR *= 1.15; player.cdMult *= 0.95; } },
+  // the reward for beating the game: locked until the Devil falls
+  { id: 'karate', name: 'Karateh Masta', sprite: 'karate', color: '#FF2424', unlock: 'win',
+    tag: 'Death-star thrower', desc: 'A red headband, a black belt and a bottomless gi full of ninja death stars. Fast, deadly, and never misses a beat.',
+    weapon: 'stars', mods: () => {
+      player.maxHp += 20; player.hp += 20; player.speed *= 1.2; player.critChance = 0.25; player.dmgMult *= 1.25; player.cdMult *= 0.85;
+    } },
 ];
+// unlockable heroes, kept in this browser's localStorage
+const UNLOCK_KEY = 'mutant-academy-unlocks';
+let unlocks = [];
+try { unlocks = JSON.parse(localStorage.getItem(UNLOCK_KEY) || '[]'); } catch (e) {}
+const heroLocked = h => !!h.unlock && !unlocks.includes(h.id);
+function unlockHero(id) {
+  if (unlocks.includes(id)) return false;
+  unlocks.push(id);
+  try { localStorage.setItem(UNLOCK_KEY, JSON.stringify(unlocks)); } catch (e) {}
+  return true;
+}
 // Read each hero's real stats by running their mods on a scratch copy of the
 // base player — the select screen can never disagree with the game.
 function heroStats(h) {
@@ -3230,6 +3269,7 @@ function endGame(won) {
   banners.length = 0;
   stopMusic();
   if (won) sndClear(); else sndGameOver();
+  state.unlocked = won && unlockHero('karate') ? 'KARATEH MASTA' : null;   // beating the game frees the karate master
   tally = {
     t: 0, tickT: 0, done: false,
     lines: [
@@ -3297,7 +3337,10 @@ function uiKey(k) {
       sndMove();
     }
     else if (k === 'arrowdown' || k === 's') { selIndex = selIndex + SEL_COLS < n ? selIndex + SEL_COLS : selIndex % SEL_COLS; sndMove(); }
-    else if (OK_KEYS.has(k)) startGame(HEROES[selIndex]);
+    else if (OK_KEYS.has(k)) {
+      if (heroLocked(HEROES[selIndex])) sfx(110, 0.2, 'square', 0.05, -30);   // locked: a dull buzz
+      else startGame(HEROES[selIndex]);
+    }
     return;
   }
   if (scene === 'play') {
@@ -3573,6 +3616,7 @@ function update(dt) {
       continue;
     }
     b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt;
+    if (b.t !== undefined) b.t += dt;
     let dead = b.life <= 0;
     if (!dead) {
       for (const bz of state.brazList || []) {
@@ -3582,7 +3626,9 @@ function update(dt) {
     if (!dead) {
       for (let j = 0; j < enemies.length; j++) {
         const e = enemies[j];
+        if (b.hits && b.hits.has(e)) continue;   // a piercing star cuts each foe only once
         if (dist2(e.x, e.y, b.x, b.y) < (e.r + b.r) ** 2) {
+          if (b.hits) b.hits.add(e);
           if (b.aoe) {
             effects.push({ type: 'boom', x: b.x, y: b.y, radius: b.aoe, life: 0.25, maxLife: 0.25 });
             for (const e2 of [...enemies]) {
@@ -4660,6 +4706,10 @@ function renderWorld() {
       rect(x - 1, y - 2, 1, 1, C.white);
       continue;
     }
+    if (b.kind === 'star') {      // a throwing star, spinning in quarter turns
+      drawProj('star', x, y, Math.floor(b.t * 24));
+      continue;
+    }
     if (b.kind === 'card') {
       const f = [0, 1, 2, 1][Math.floor(b.life * 16) % 4];
       ctx.drawImage(CARD[f], x - 2, y - 3);
@@ -5173,7 +5223,7 @@ function drawHeroIn(h, anim, frame, bx, by, bw, bh, k, feetY) {
   const def = SHEETS[h.sprite], s = def.size, dw = Math.round(s * k);
   ctx.save();
   ctx.beginPath(); ctx.rect(bx, by, bw, bh); ctx.clip();
-  ctx.drawImage(SPR[def.file].base, frame * s, def.rows[anim] * s, s, s,
+  ctx.drawImage(SPR[def.file][heroLocked(h) ? 'shade' : 'base'], frame * s, def.rows[anim] * s, s, s,
     Math.round(bx + bw / 2 - dw / 2), Math.round(feetY - dw + 3 * k), dw, dw);
   ctx.restore();
 }
@@ -5208,6 +5258,7 @@ function renderSelect() {
     const anim = on ? 'walk' : 'idle';
     const frame = Math.floor(uiTime * 10 + i * 2) % frameCount(h.sprite, anim);
     drawHeroIn(h, anim, frame, bx + 2, by + 2, L.cell - 4, L.cell - 4, 1, by + 38);
+    if (heroLocked(h)) drawText('?', bx + L.cell - 8, by + 4, C.lgrey);
     addHit(bx, by, L.cell, L.cell, 'hero:' + i);
   });
 
@@ -5222,6 +5273,20 @@ function renderSelect() {
   ctx.drawImage(sh, x0 + 34 - (sh.width >> 1), y0 + 60 - (sh.height >> 1));
   drawHeroIn(h, 'walk', Math.floor(uiTime * 10) % frameCount(h.sprite, 'walk'), x0 + 1, y0 + 1, 66, 66, 2, y0 + 60);
   const tx = x0 + 74, tw = L.pw - (tx - L.px) - 6;
+  const locked = heroLocked(h);
+  if (locked) {   // the unlockable hero keeps his secrets until you've won
+    drawText('???', tx, y0 + 2, C.lgrey, { scale: 2, outline: C.black });
+    drawText('LOCKED', tx, y0 + 21, C.red);
+    drawText('BEAT THE GAME', tx, y0 + 33, C.yellow);
+    drawText('TO UNLOCK', tx, y0 + 43, C.yellow);
+    wrapText('SLAY THE DEVIL IN ACT V AND A NEW HERO JOINS THE ACADEMY.', L.pw - 12).forEach((ln, i) => drawText(ln, x0, y0 + 85 + i * 9, C.white));
+    const bw = 52, bh = 15, bxs = L.px + L.pw - bw - 6, bys = L.py + L.ph - bh - 6;
+    drawWindow(bxs, bys, bw, bh, { bands: ['#494949', '#242424'], border: C.grey });
+    drawText('LOCKED', bxs + bw / 2, bys + 4, C.lgrey, { align: 'center' });
+    drawText(W >= 340 ? 'ARROWS: CHOOSE   ENTER: START   M: SOUND' : 'TAP A HERO, THEN START', W / 2, H - 12, C.grey, { align: 'center' });
+    renderCornerIcons(false);
+    return;
+  }
   const nsc = textW(norm(h.name), 2) <= tw ? 2 : 1;
   drawText(h.name, tx, y0 + 2, C.white, { scale: nsc, outline: C.black, grad: GOLD_GRAD });
   drawText(h.tag, tx, y0 + 4 + 7 * nsc + 3, C.cyan);
@@ -5358,6 +5423,10 @@ function renderResults() {
     drawText(ln.fmt ? ln.fmt(v) : String(v), wx + ww - 12, y, C.white, { align: 'right' });
   });
   if (tally.done && blink(2)) drawText('PRESS START', W / 2, wy + wh - 13, C.white, { align: 'center' });
+  if (state.unlocked && tally.done) {
+    drawText('NEW HERO UNLOCKED!', W / 2, wy + wh + 10, blink(3) ? C.yellow : C.white, { align: 'center', outline: C.black });
+    drawText(state.unlocked, W / 2, wy + wh + 22, C.white, { scale: textW(state.unlocked, 2) <= W - 16 ? 2 : 1, align: 'center', outline: C.black, grad: RED_GRAD });
+  }
   addHit(0, 0, W, H, 'any');
 }
 function renderBoot() {
