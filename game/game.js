@@ -16,15 +16,21 @@
 //           2x pixel art (assets/hd) in full colour. With WebGL the world is drawn on its own
 //           canvas and lit there (coloured light map + bloom, see "lighting"); the HUD stays on
 //           #game, an unlit transparent layer on top.
+//   PS1   — HD, plus (in Act I so far) a 3D world: the floor as a textured plane under a tilted camera,
+//           walls as blocks and everything standing as a billboard sprite, with the PlayStation's
+//           low-res, dithered, wobbling look (see "PS1 renderer").
 const GFX_KEY = 'mutant-academy-gfx';
-const HD = (() => {
-  const q = new URLSearchParams(location.search).get('gfx');   // ?gfx=retro|hd overrides the saved choice
-  if (q) return q !== 'retro';
-  try { return localStorage.getItem(GFX_KEY) !== 'retro'; } catch (e) { return true; }
+const GFX_MODES = ['hd', 'ps1', 'retro'];
+const GFX = (() => {
+  const q = new URLSearchParams(location.search).get('gfx');   // ?gfx=hd|ps1|retro overrides the saved choice
+  if (GFX_MODES.includes(q)) return q;
+  try { const m = localStorage.getItem(GFX_KEY); return GFX_MODES.includes(m) ? m : 'hd'; } catch (e) { return 'hd'; }
 })();
+const HD = GFX !== 'retro';
+const GFX_LABEL = { hd: 'HD', ps1: 'PS1 3D (ACT I)', retro: 'RETRO' };
 // switching modes reloads: the sheets, palette and canvases are all chosen at boot
 function toggleGraphics() {
-  const next = HD ? 'retro' : 'hd';
+  const next = GFX_MODES[(GFX_MODES.indexOf(GFX) + 1) % GFX_MODES.length];
   if (!new URLSearchParams(location.search).has('gfx')) {
     try { localStorage.setItem(GFX_KEY, next); location.reload(); return; } catch (e) {}
   }
@@ -35,6 +41,8 @@ function toggleGraphics() {
 const canvas = document.getElementById('game');
 let glCanvas = null, gl = null, GLX = null;   // the lighting pipeline's canvas, context and GL objects
 const LIT = HD && initLighting();   // false without WebGL: HD then draws straight onto #game
+let ps1Canvas = null, g3 = null, P3 = null;   // the PS1 renderer's canvas, WebGL2 context and GL objects
+const PS1 = GFX === 'ps1' && LIT && initPS1();
 const uiCtx = canvas.getContext('2d', { alpha: LIT });
 const worldCv = LIT ? document.createElement('canvas') : null;
 const worldCtx = LIT ? worldCv.getContext('2d', { alpha: false }) : uiCtx;
@@ -72,7 +80,8 @@ function resize() {
     c.width = W * RES;
     c.height = H * RES;
   }
-  for (const c of [canvas, LIT && glCanvas]) {
+  if (PS1) { ps1Canvas.width = W; ps1Canvas.height = H; }   // PlayStation resolution: one pixel per dot
+  for (const c of [canvas, LIT && glCanvas, PS1 && ps1Canvas]) {
     if (!c) continue;
     c.style.width = (W * dot / dpr) + 'px';
     c.style.height = (H * dot / dpr) + 'px';
@@ -1261,12 +1270,18 @@ const toDX = wx => Math.round(wx / PX) - camX;
 const toDY = wy => Math.round(wy / PX) - camY;
 
 // Draw a sheet frame with its feet anchored at world (wx, wgy).
-function drawSprite(sheetKey, anim, frame, wx, wgy, flip, wscale = SCALE, variant = null) {
+function drawSprite(sheetKey, anim, frame, wx, wgy, flip, wscale = SCALE, variant = null, lift = 0) {
   const def = SHEETS[sheetKey], set = SPR[def.file];
   if (!set) return;
   const img = (variant && set[variant]) || set.base;
   const s = def.size, k = wscale / PX;
   const dw = Math.round(s * k);
+  if (bbList) {   // PS1: stand it up as a billboard instead (feet on the ground, raised by its lift)
+    const row = def.rows[anim] ?? def.rows.idle;
+    bbPush(img, frame * s, row * s, s, s, wx / PX, wgy / PX, dw, dw, 3 * k, flip, lift / PX);
+    return;
+  }
+  wgy -= lift;
   const left = toDX(wx) - (dw >> 1);
   const top = toDY(wgy) - dw + Math.round(3 * k);   // sprites sit ~3px above the cell bottom
   if (left > W || top > H || left + dw < 0 || top + dw < 0) return;
@@ -1552,6 +1567,12 @@ function drawFloor() {
 const PROP_R = [11, 11, 14, 14, 14, 13, 16, 11];
 function drawObstacle(o) {
   if (o.mapProp) { drawMapProp(o); return; }
+  if (bbList) {   // PS1: props stand up too
+    if (state.act >= 3) bbPush(SPR[['', '', '', 'jungle', 'ocean', 'hell'][state.act]].base, (o.kind % 6) * 80, 64, 80, 112, o.x / PX, o.y / PX + 10, 80, 112, 0);
+    else if (state.act === 2) bbPush(SPR.desert.base, (o.kind % 5) * 48, 64, 48, 64, o.x / PX, o.y / PX + 4, 48, 64, 0);
+    else bbPush(SPR.crypt.base, o.kind * CT, 2 * CT, CT, CT, o.x / PX, o.y / PX + 6, CT, CT, 0);
+    return;
+  }
   const x = toDX(o.x), y = toDY(o.y);
   if (x < -48 || x > W + 48 || y < -20 || y > H + 120) return;
   if (state.act >= 3) { ctx.drawImage(SPR[['', '', '', 'jungle', 'ocean', 'hell'][state.act]].base, (o.kind % 6) * 80, 64, 80, 112, x - 40, y - 102, 80, 112); return; }
@@ -1566,6 +1587,7 @@ function drawBrazier(bz) {
   const since = uiTime - (brazierHitAt.get(bz.key) ?? -9);
   if (since < 0.15) x += blink(30) ? 1 : -1;                 // judder when struck
   const img = since < 0.06 ? SPR.tiles.white : SPR.tiles.base; // one-frame white flash
+  if (bbList) { bbPush(img, 12 * T, 8 * T, T, 2 * T, (x + camX), bz.y / PX + T / 2, T, 2 * T, 0); return; }
   ctx.drawImage(img, 12 * T, 8 * T, T, 2 * T, x - T / 2, y - T - T / 2, T, 2 * T);
 }
 function drawBrazierLight(bz) {
@@ -1895,6 +1917,7 @@ function drawTerrain() {
         }
         continue;
       }
+      if (bbList && (t === T_WA || t === T_WB)) { rect(x, y, CT, CT, '#000000'); continue; }   // PS1: a block stands here
       let sx = v, sy;
       if (t === T_WA) sy = 0; else if (t === T_WB) sy = 1; else if (t === T_FA) sy = 2; else if (t === T_FB) sy = 3;
       else { sy = 4; sx = (t === T_LB ? 4 : 0) + (fr + ix + iy) % 4; }
@@ -1999,6 +2022,7 @@ function secretDrawables(list) {
   if (s.boulder) {
     const b = s.boulder;
     list.push({ y: b.y + 24, draw() {
+      if (bbList) { bbPush(img, 7 * 32, 6 * 32, 32, 32, b.x / PX, b.y / PX + 28, 56, 56, 0); return; }
       const x = toDX(b.x), y = toDY(b.y);
       ctx.save(); ctx.translate(x, y); ctx.rotate((Math.floor(b.spin / 30) % 4) * Math.PI / 2);
       ctx.drawImage(img, 7 * 32, 6 * 32, 32, 32, -28, -28, 56, 56); ctx.restore();
@@ -2007,6 +2031,11 @@ function secretDrawables(list) {
   if (s.kind === 'dig' || (s.found && s.kind !== 'shrine')) return;   // taken (the shrine stays)
   const fx = s.fx ?? s.x, fy = s.fy ?? s.y, flip = s.kind === 'fish' && Math.sin(s.t * 1.3) > 0;
   list.push({ y: fy + 10, draw() {
+    if (bbList) {
+      bbPush(img, (s.kind === 'fish' ? Math.floor(s.t * 4) % 2 : 0) * 32, 7 * 32, 32, 32, fx / PX, fy / PX + 8, 32, 32, 0, flip,
+        s.kind === 'quokka' ? Math.abs(Math.sin(s.t * 6) * 3) : s.kind === 'fish' ? 10 : 0);
+      return;
+    }
     const x = toDX(fx), y = toDY(fy) + (s.kind === 'quokka' ? -Math.abs(Math.round(Math.sin(s.t * 6) * 3)) : 0);
     if (x < -40 || x > W + 40 || y < -40 || y > H + 40) return;
     const f = s.kind === 'fish' ? Math.floor(s.t * 4) % 2 : 0;
@@ -2021,6 +2050,7 @@ function drawMapProp(o) {
   const x = toDX(o.x), y = toDY(o.y), img = SPR['map' + state.act]?.base;
   if (!img || x < -24 || x > W + 24 || y < -40 || y > H + 24) return;
   const p = o.mapProp - 1;   // 0-7 props A (row 5), 8-15 props B (row 6)
+  if (bbList) { bbPush(img, (p % 8) * 32, (5 + (p >> 3)) * 32, 32, 32, o.x / PX, o.y / PX + 8, 32, 32, 0); return; }
   ctx.drawImage(img, (p % 8) * 32, (5 + (p >> 3)) * 32, 32, 32, x - 16, y - 24, 32, 32);
 }
 
@@ -4268,7 +4298,7 @@ function sceneLights(emit) {
   }
 }
 function renderDarkness() {
-  if (litOn) { renderLightmap(); return; }
+  if (litOn || bbList) { renderLightmap(); return; }
   if (state.act === 2) return;   // the desert is sun-bleached daylight
   if (!darkCv || darkCv.width !== W || darkCv.height !== H) {
     darkCv = document.createElement('canvas'); darkCv.width = W; darkCv.height = H;
@@ -4469,12 +4499,276 @@ function composeLit() {
   draw();
   return true;
 }
+// ---------- PS1 renderer ----------
+// The PS1 graphics mode draws the act's world in 3D (Act I so far). Nothing about the game changes: the
+// 2D renderer still draws the floor and everything that lies flat on it (tiles, decals, shadows, gems,
+// blasts, particles) — top-down, into a "ground" canvas covering the patch of floor the camera can see —
+// while everything that stands up (heroes, monsters, corpses, props, braziers) is captured as a billboard
+// (bbPush) instead of being drawn. WebGL2 then lays the ground out as a plane under a tilted perspective
+// camera, raises the map's walls as blocks, stands the billboards on their feet facing the camera, and
+// lights it all with the same light map as HD. The PlayStation look comes from: a low-res frame (one
+// pixel per dot), vertices snapped to a coarse screen grid (the wobble), affine texture mapping (the
+// warp), 15-bit colour with ordered dithering, and distance fog swallowing the edge of the world.
+let bbList = null, groundView = null, groundCv = null, groundCtx = null;
+const WALL_H = 44;                                   // block height, in dots (a floor tile is 32)
+const PS1_CAM = { pitch: 45 * Math.PI / 180, fov: 44 * Math.PI / 180 };
+const PS1_FOG = [0.05, 0.03, 0.08];
+function bbPush(img, sx, sy, sw, sh, x, z, w, h, foot, flip = false, lift = 0) {
+  bbList.push({ img, sx, sy, sw, sh, x, z, w, h, foot, flip, lift });
+}
+const m4 = {
+  persp(fy, a, n, f) { const t = 1 / Math.tan(fy / 2), r = 1 / (n - f); return [t / a, 0, 0, 0, 0, t, 0, 0, 0, 0, (n + f) * r, -1, 0, 0, 2 * n * f * r, 0]; },
+  look(e, c, u) {
+    let zx = e[0] - c[0], zy = e[1] - c[1], zz = e[2] - c[2], l = Math.hypot(zx, zy, zz); zx /= l; zy /= l; zz /= l;
+    let xx = u[1] * zz - u[2] * zy, xy = u[2] * zx - u[0] * zz, xz = u[0] * zy - u[1] * zx; l = Math.hypot(xx, xy, xz); xx /= l; xy /= l; xz /= l;
+    const yx = zy * xz - zz * xy, yy = zz * xx - zx * xz, yz = zx * xy - zy * xx;
+    return [xx, yx, zx, 0, xy, yy, zy, 0, xz, yz, zz, 0, -(xx * e[0] + xy * e[1] + xz * e[2]), -(yx * e[0] + yy * e[1] + yz * e[2]), -(zx * e[0] + zy * e[1] + zz * e[2]), 1];
+  },
+  mul(a, b) { const o = new Array(16); for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) { let v = 0; for (let k = 0; k < 4; k++) v += a[k * 4 + r] * b[c * 4 + k]; o[c * 4 + r] = v; } return o; },
+  xf(m, x, y, z) { return [m[0] * x + m[4] * y + m[8] * z + m[12], m[1] * x + m[5] * y + m[9] * z + m[13], m[2] * x + m[6] * y + m[10] * z + m[14], m[3] * x + m[7] * y + m[11] * z + m[15]]; },
+};
+// world (dots: x east, z south, y up) -> screen dots, through the last frame's camera
+function ps1Project(x, z, h = 0) {
+  const c = m4.xf(P3.vp, x, h, z);
+  return [Math.round((c[0] / c[3] * 0.5 + 0.5) * W), Math.round((0.5 - c[1] / c[3] * 0.5) * H)];
+}
+// the camera behind and above the hero, and the rectangle of floor it can see (cut off where the fog is total)
+function ps1Camera() {
+  const px = player.x / PX, pz = player.y / PX, { pitch, fov } = PS1_CAM;
+  const dist = H / (2 * Math.tan(fov / 2)) * 1.05;
+  let sx = 0, sz = 0;
+  if (state.shake > 0.5 && !REDUCED) { sx = rand(-state.shake, state.shake) / 3; sz = rand(-state.shake, state.shake) / 3; }
+  const eye = [px + sx, dist * Math.sin(pitch), pz + dist * Math.cos(pitch) + sz], tgt = [px + sx, 0, pz + sz - 12];
+  const view = m4.look(eye, tgt, [0, 1, 0]), proj = m4.persp(fov, W / H, 8, dist * 4), vp = m4.mul(proj, view);
+  const fog = [dist * 1.05, dist * 2.1];
+  // floor corners: rays through the screen corners, met with the ground (or stopped at the fog)
+  const inv = (() => {   // the inverse of the view-projection, by unprojecting with the camera's own basis
+    const t = Math.tan(fov / 2), a = W / H, f = [tgt[0] - eye[0], tgt[1] - eye[1], tgt[2] - eye[2]], fl = Math.hypot(...f);
+    const F = f.map(v => v / fl), R = [1, 0, 0], U = [R[1] * F[2] - R[2] * F[1], R[2] * F[0] - R[0] * F[2], R[0] * F[1] - R[1] * F[0]];
+    return (nx, ny) => [F[0] + R[0] * nx * t * a + U[0] * ny * t, F[1] + R[1] * nx * t * a + U[1] * ny * t, F[2] + R[2] * nx * t * a + U[2] * ny * t];
+  })();
+  let x0 = 1e9, z0 = 1e9, x1 = -1e9, z1 = -1e9;
+  for (const [nx, ny] of [[-1, -1], [1, -1], [-1, 1], [1, 1], [0, 1]]) {
+    const d = inv(nx, ny), dl = Math.hypot(...d);
+    const t = Math.min(d[1] < -1e-3 ? -eye[1] / d[1] : 1e9, fog[1] * 1.05 / dl);   // the ground, or the fog's far edge
+    const gx = eye[0] + d[0] * t, gz = eye[2] + d[2] * t;
+    x0 = Math.min(x0, gx); x1 = Math.max(x1, gx); z0 = Math.min(z0, gz); z1 = Math.max(z1, gz);
+  }
+  const gx = Math.floor(x0) - 16, gy = Math.floor(z0) - 16;
+  const gw = Math.min(W * 4, Math.ceil(x1 - x0) + 32), gh = Math.min(H * 5, Math.ceil(z1 - z0) + 32);
+  P3.vp = vp;
+  return { vp, eye, gx, gy, gw, gh, fog, up: [0, Math.cos(pitch), -Math.sin(pitch)] };
+}
+function renderPS1() {
+  const v = ps1Camera(), w0 = W, h0 = H;
+  if (!groundCv || groundCv.width !== v.gw || groundCv.height !== v.gh) {
+    groundCv = groundCv || document.createElement('canvas');
+    groundCv.width = v.gw; groundCv.height = v.gh;
+    groundCtx = groundCv.getContext('2d', { alpha: false });
+    hdDrawImage(groundCtx);
+    groundCtx.imageSmoothingEnabled = false;
+  }
+  // the 2D pass: flat things onto the ground, standing things into billboards
+  groundView = { x: v.gx, y: v.gy }; W = v.gw; H = v.gh;
+  ctx = groundCtx; bbList = [];
+  try {
+    groundCtx.globalAlpha = 1; groundCtx.globalCompositeOperation = 'source-over';
+    rect(0, 0, W, H, C.black);
+    renderWorld();
+  } finally { W = w0; H = h0; groundView = null; ctx = uiCtx; }
+  const bbs = bbList; bbList = null;
+  ps1Draw(v, bbs);
+}
+
+function initPS1() {
+  try {
+    const cv = document.createElement('canvas');
+    const g = cv.getContext('webgl2', { alpha: false, antialias: false, depth: true, preserveDrawingBuffer: true });
+    if (!g) return false;
+    const head = `#version 300 es
+precision highp float;
+uniform mat4 uVP; uniform vec2 uSnap; uniform vec4 uRect; uniform sampler2D uLight; uniform float uGain; uniform vec3 uFogCol; uniform vec2 uFog;
+`;
+    // fragment helpers: light from the light map at a floor position, distance fog, 15-bit colour with a 4x4 Bayer dither
+    const frag = head + `
+const float BAYER[16] = float[16](0.,8.,2.,10.,12.,4.,14.,6.,3.,11.,1.,9.,15.,7.,13.,5.);
+vec3 finish(vec3 c, vec2 ground, float depth) {
+  c *= texture(uLight, (ground - uRect.xy) / uRect.zw).rgb * uGain;
+  c = mix(c, uFogCol, clamp((depth - uFog.x) / (uFog.y - uFog.x), 0.0, 1.0));
+  ivec2 p = ivec2(gl_FragCoord.xy) & 3;
+  return floor(clamp(c, 0.0, 1.0) * 31.0 + (BAYER[p.y * 4 + p.x] + 0.5) / 16.0) / 31.0;
+}
+out vec4 outColor;
+`;
+    // vertex helper: snap to a coarse screen grid (the PlayStation's integer vertex coordinates)
+    const snap = 'vec4 snap(vec4 c) { c.xy = floor(c.xy / c.w * uSnap + 0.5) / uSnap * c.w; return c; }\n';
+    const SH = {
+      ground: [head + snap + `in vec2 aG; out vec3 vUVW; out vec2 vGround; out float vDepth;
+void main() { vec2 w = uRect.xy + aG * uRect.zw; vec4 c = snap(uVP * vec4(w.x, 0.0, w.y, 1.0)); gl_Position = c;
+  vUVW = vec3(aG * c.w, c.w); vGround = w; vDepth = c.w; }`,
+        frag + `uniform sampler2D uTex; in vec3 vUVW; in vec2 vGround; in float vDepth;
+void main() { vec2 uv = vUVW.xy / vUVW.z; outColor = vec4(finish(texture(uTex, uv).rgb, vGround, vDepth), 1.0); }`],
+      wall: [head + snap + `in vec3 aP; in vec2 aUV; in float aShade; in vec2 aCell; in vec2 aTile; in float aH; uniform vec2 uTileSize; uniform float uCell, uWallH;
+out vec3 vUVW; out vec2 vGround; out float vDepth, vShade;
+void main() { vec3 w = vec3((aCell.x + aP.x) * uCell, aP.y * uWallH * aH, (aCell.y + aP.z) * uCell); vec4 c = snap(uVP * vec4(w, 1.0)); gl_Position = c;
+  vUVW = vec3((aTile + aUV * uTileSize) * c.w, c.w); vGround = vec2(w.x, w.z + 2.0); vDepth = c.w; vShade = aShade; }`,
+        frag + `uniform sampler2D uTex; in vec3 vUVW; in vec2 vGround; in float vDepth, vShade;
+void main() { vec4 t = texture(uTex, vUVW.xy / vUVW.z); outColor = vec4(finish(t.rgb * vShade, vGround, vDepth), 1.0); }`],
+      sprite: [head + snap + `in vec2 aC; in vec3 aPos; in vec3 aSize; in vec4 aUV; in float aFlip; uniform vec3 uRight, uUp;
+out vec3 vUVW; out vec2 vGround; out float vDepth;
+void main() { vec3 w = aPos + uRight * (aC.x * aSize.x) + uUp * (aC.y * aSize.y - aSize.z); vec4 c = snap(uVP * vec4(w, 1.0)); gl_Position = c;
+  float u = mix(aUV.x, aUV.z, aFlip > 0.5 ? 0.5 - aC.x : aC.x + 0.5), v = mix(aUV.w, aUV.y, aC.y);
+  vUVW = vec3(vec2(u, v) * c.w, c.w); vGround = aPos.xz; vDepth = c.w; }`,
+        frag + `uniform sampler2D uTex; in vec3 vUVW; in vec2 vGround; in float vDepth;
+void main() { vec4 t = texture(uTex, vUVW.xy / vUVW.z); if (t.a < 0.5) discard; outColor = vec4(finish(t.rgb, vGround, vDepth), 1.0); }`],
+    };
+    const compile = (type, src) => { const sh = g.createShader(type); g.shaderSource(sh, src); g.compileShader(sh);
+      if (!g.getShaderParameter(sh, g.COMPILE_STATUS)) throw new Error(g.getShaderInfoLog(sh)); return sh; };
+    const prog = {};
+    for (const [k, [vs, fs]] of Object.entries(SH)) {
+      const p = g.createProgram();
+      g.attachShader(p, compile(g.VERTEX_SHADER, vs)); g.attachShader(p, compile(g.FRAGMENT_SHADER, fs)); g.linkProgram(p);
+      if (!g.getProgramParameter(p, g.LINK_STATUS)) throw new Error(g.getProgramInfoLog(p));
+      const u = {}, a = {};
+      for (let i = g.getProgramParameter(p, g.ACTIVE_UNIFORMS) - 1; i >= 0; i--) { const n = g.getActiveUniform(p, i).name.replace(/\[0\]$/, ''); u[n] = g.getUniformLocation(p, n); }
+      for (let i = g.getProgramParameter(p, g.ACTIVE_ATTRIBUTES) - 1; i >= 0; i--) { const n = g.getActiveAttrib(p, i).name; a[n] = g.getAttribLocation(p, n); }
+      prog[k] = { p, u, a };
+    }
+    const buf = data => { const b = g.createBuffer(); g.bindBuffer(g.ARRAY_BUFFER, b); g.bufferData(g.ARRAY_BUFFER, data, g.STATIC_DRAW); return b; };
+    const attr = (P, name, b, size, stride = 0, off = 0, div = 0) => {
+      const loc = P.a[name]; if (loc === undefined || loc < 0) return;
+      g.bindBuffer(g.ARRAY_BUFFER, b); g.enableVertexAttribArray(loc); g.vertexAttribPointer(loc, size, g.FLOAT, false, stride * 4, off * 4); g.vertexAttribDivisor(loc, div);
+    };
+    // the ground: a 24x24 grid (the subdivision keeps the affine warp to a PlayStation-sized wobble)
+    const N = 24, gv = [];
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+      const a = [i / N, j / N], b = [(i + 1) / N, j / N], c = [i / N, (j + 1) / N], d = [(i + 1) / N, (j + 1) / N];
+      gv.push(...a, ...b, ...c, ...b, ...d, ...c);
+    }
+    const groundVao = g.createVertexArray(); g.bindVertexArray(groundVao); attr(prog.ground, 'aG', buf(new Float32Array(gv)), 2);
+    // a wall block: five faces (no bottom), each with its own uv and shade (top bright, south face, sides, north dim)
+    const F = [
+      [[0, 1, 0], [1, 1, 0], [0, 1, 1], [1, 1, 1], 1.0],      // top
+      [[0, 1, 1], [1, 1, 1], [0, 0, 1], [1, 0, 1], 0.82],     // south (facing the camera)
+      [[1, 1, 0], [0, 1, 0], [1, 0, 0], [0, 0, 0], 0.5],      // north
+      [[0, 1, 0], [0, 1, 1], [0, 0, 0], [0, 0, 1], 0.62],     // west
+      [[1, 1, 1], [1, 1, 0], [1, 0, 1], [1, 0, 0], 0.62],     // east
+    ];
+    const wv = [];
+    for (const [A, B, Cc, D, sh] of F) for (const [P, u, v] of [[A, 0, 0], [B, 1, 0], [Cc, 0, 1], [B, 1, 0], [D, 1, 1], [Cc, 0, 1]]) wv.push(...P, u, v, sh);
+    const wallVao = g.createVertexArray(); g.bindVertexArray(wallVao);
+    const wb = buf(new Float32Array(wv));
+    attr(prog.wall, 'aP', wb, 3, 6, 0); attr(prog.wall, 'aUV', wb, 2, 6, 3); attr(prog.wall, 'aShade', wb, 1, 6, 5);
+    const wallInst = g.createBuffer();
+    attr(prog.wall, 'aCell', wallInst, 2, 5, 0, 1); attr(prog.wall, 'aTile', wallInst, 2, 5, 2, 1); attr(prog.wall, 'aH', wallInst, 1, 5, 4, 1);
+    // a billboard: a unit quad standing on its bottom edge
+    const spriteVao = g.createVertexArray(); g.bindVertexArray(spriteVao);
+    attr(prog.sprite, 'aC', buf(new Float32Array([-0.5, 0, 0.5, 0, -0.5, 1, 0.5, 1])), 2);
+    const spriteInst = g.createBuffer();
+    attr(prog.sprite, 'aPos', spriteInst, 3, 11, 0, 1); attr(prog.sprite, 'aSize', spriteInst, 3, 11, 3, 1);
+    attr(prog.sprite, 'aUV', spriteInst, 4, 11, 6, 1); attr(prog.sprite, 'aFlip', spriteInst, 1, 11, 10, 1);
+    g.bindVertexArray(null);
+    const tex = () => { const t = g.createTexture(); g.bindTexture(g.TEXTURE_2D, t);
+      for (const [k, v] of [[g.TEXTURE_MIN_FILTER, g.NEAREST], [g.TEXTURE_MAG_FILTER, g.NEAREST], [g.TEXTURE_WRAP_S, g.CLAMP_TO_EDGE], [g.TEXTURE_WRAP_T, g.CLAMP_TO_EDGE]]) g.texParameteri(g.TEXTURE_2D, k, v);
+      return t; };
+    P3 = { prog, groundVao, wallVao, wallInst, spriteVao, spriteInst, tex, sheets: new Map(), ground: tex(), light: tex(),
+      maxTex: g.getParameter(g.MAX_TEXTURE_SIZE), vp: null };
+    cv.id = 'ps1';
+    cv.setAttribute('aria-hidden', 'true');
+    cv.style.cssText = 'position:absolute;display:block;pointer-events:none;image-rendering:pixelated;image-rendering:crisp-edges;visibility:hidden';
+    canvas.parentNode.insertBefore(cv, canvas);
+    ps1Canvas = cv; g3 = g;
+    return true;
+  } catch (e) {
+    console.warn('PS1 renderer unavailable:', e.message);
+    return false;
+  }
+}
+// a sprite sheet as a texture, uploaded once (shrunk if it's bigger than the GPU allows)
+function ps1Sheet(img) {
+  let t = P3.sheets.get(img);
+  if (t) return t;
+  const g = g3;
+  let src = img;
+  if (img.width > P3.maxTex || img.height > P3.maxTex) {
+    const k = P3.maxTex / Math.max(img.width, img.height), c = document.createElement('canvas');
+    c.width = Math.floor(img.width * k); c.height = Math.floor(img.height * k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); src = c;
+  }
+  t = P3.tex();
+  g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, g.RGBA, g.UNSIGNED_BYTE, src);
+  P3.sheets.set(img, t);
+  return t;
+}
+function ps1Draw(v, bbs) {
+  const g = g3, P = P3.prog;
+  g.viewport(0, 0, W, H);
+  g.clearColor(...PS1_FOG, 1); g.clear(g.COLOR_BUFFER_BIT | g.DEPTH_BUFFER_BIT);
+  g.enable(g.DEPTH_TEST); g.depthFunc(g.LEQUAL); g.disable(g.CULL_FACE);
+  // this frame's ground and light map
+  g.activeTexture(g.TEXTURE1); g.bindTexture(g.TEXTURE_2D, P3.light);
+  g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, g.RGBA, g.UNSIGNED_BYTE, lightCv);
+  g.activeTexture(g.TEXTURE0); g.bindTexture(g.TEXTURE_2D, P3.ground);
+  g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, g.RGBA, g.UNSIGNED_BYTE, groundCv);
+  const common = p => {
+    g.useProgram(p.p);
+    g.uniformMatrix4fv(p.u.uVP, false, new Float32Array(v.vp));
+    g.uniform2f(p.u.uSnap, W * 0.35, H * 0.35);       // a coarser grid than the screen: the wobble shows
+    g.uniform4f(p.u.uRect, v.gx, v.gy, v.gw, v.gh);
+    g.uniform1i(p.u.uLight, 1); g.uniform1f(p.u.uGain, LIGHT_GAIN);
+    g.uniform3f(p.u.uFogCol, ...PS1_FOG); g.uniform2f(p.u.uFog, v.fog[0], v.fog[1]);
+    g.uniform1i(p.u.uTex, 0);
+  };
+  // the floor
+  common(P.ground);
+  g.bindVertexArray(P3.groundVao);
+  g.drawArrays(g.TRIANGLES, 0, 24 * 24 * 6);
+  // the walls: every wall cell in view becomes a block
+  const sheet = SPR['map' + state.act]?.base;
+  if (sheet) {
+    // cutaway: blocks between the camera and the hero (south of him, nearby) sink to stubs, so you never lose him
+    const inst = [], cx0 = Math.floor(v.gx / CT), cy0 = Math.floor(v.gy / CT), px = player.x / PX, pz = player.y / PX;
+    for (let cy = cy0; cy * CT < v.gy + v.gh; cy++) for (let cx = cx0; cx * CT < v.gx + v.gw; cx++) {
+      const c = cellAt(cx, cy), t = cellType(c);
+      if (t !== T_WA && t !== T_WB) continue;
+      const front = (cy + 1) * CT > pz + 4 && cy * CT < pz + CT * 4 && Math.abs((cx + 0.5) * CT - px) < CT * 5;
+      inst.push(cx, cy, ((c >> 4) & 7) * 32 / 256, (t === T_WA ? 0 : 32) / 256, front ? 0.22 : 1);
+    }
+    if (inst.length) {
+      common(P.wall);
+      g.activeTexture(g.TEXTURE0); g.bindTexture(g.TEXTURE_2D, ps1Sheet(sheet));
+      g.uniform2f(P.wall.u.uTileSize, 32 / 256, 32 / 256);
+      g.uniform1f(P.wall.u.uCell, CT); g.uniform1f(P.wall.u.uWallH, WALL_H);
+      g.bindVertexArray(P3.wallVao);
+      g.bindBuffer(g.ARRAY_BUFFER, P3.wallInst); g.bufferData(g.ARRAY_BUFFER, new Float32Array(inst), g.DYNAMIC_DRAW);
+      g.drawArraysInstanced(g.TRIANGLES, 0, 30, inst.length / 5);
+    }
+  }
+  // everything standing: one instanced draw per sprite sheet
+  if (bbs.length) {
+    common(P.sprite);
+    g.uniform3f(P.sprite.u.uRight, 1, 0, 0); g.uniform3f(P.sprite.u.uUp, ...v.up);
+    g.bindVertexArray(P3.spriteVao);
+    const groups = new Map();
+    for (const b of bbs) { let a = groups.get(b.img); if (!a) groups.set(b.img, a = []); a.push(b); }
+    for (const [img, list] of groups) {
+      const r = img.hdRes || 1, iw = img.width, ih = img.height, d = new Float32Array(list.length * 11);
+      list.forEach((b, i) => d.set([b.x, b.lift, b.z, b.w, b.h, b.foot, b.sx * r / iw, b.sy * r / ih, (b.sx + b.sw) * r / iw, (b.sy + b.sh) * r / ih, b.flip ? 1 : 0], i * 11));
+      g.activeTexture(g.TEXTURE0); g.bindTexture(g.TEXTURE_2D, ps1Sheet(img));
+      g.bindBuffer(g.ARRAY_BUFFER, P3.spriteInst); g.bufferData(g.ARRAY_BUFFER, d, g.DYNAMIC_DRAW);
+      g.drawArraysInstanced(g.TRIANGLE_STRIP, 0, 4, list.length);
+    }
+  }
+  g.bindVertexArray(null);
+}
+
 // the composed frame at dot resolution, as RGBA bytes (tests read pixels through this)
 function frameData() {
   const c = document.createElement('canvas');
   c.width = W; c.height = H;
   const g = c.getContext('2d');
-  if (litOn && scene !== 'title' && scene !== 'select' && scene !== 'bestiary') g.drawImage(glCanvas, 0, 0, W, H);
+  if (PS1 && ps1Canvas.style.visibility === 'visible') g.drawImage(ps1Canvas, 0, 0, W, H);
+  else if (litOn && scene !== 'title' && scene !== 'select' && scene !== 'bestiary') g.drawImage(glCanvas, 0, 0, W, H);
   g.drawImage(canvas, 0, 0, W, H);
   return g.getImageData(0, 0, W, H).data;
 }
@@ -4529,6 +4823,7 @@ function renderWorld() {
   }
   camX = Math.round(player.x / PX) - (W >> 1) + shx;
   camY = Math.round(player.y / PX) - (H >> 1) + shy;
+  if (groundView) { camX = groundView.x; camY = groundView.y; }   // PS1: the patch of floor the 3D camera sees
 
   drawFloor();
   drawSecretFlat();
@@ -4631,8 +4926,8 @@ function renderWorld() {
       }
       if (frame === undefined) frame = animFrame(e.animT, anim, e.sprite);
       const lift = e.fly ? e.fly + Math.round(Math.sin(e.animT * 9) * 3) : anim === 'air' ? Math.round(Math.sin(e.animT * 5) * 26) : 0;
-      drawSprite(e.sprite, anim, frame, e.x, groundYOf(e) - lift, e.lx && e.leapT > 0 ? e.lx < 0 : player.x < e.x,
-        e.scale, e.flash > 0 || shriek ? 'white' : e.variant);
+      drawSprite(e.sprite, anim, frame, e.x, groundYOf(e), e.lx && e.leapT > 0 ? e.lx < 0 : player.x < e.x,
+        e.scale, e.flash > 0 || shriek ? 'white' : e.variant, lift);
     } });
   }
   const hurtBlink = player.hurtCd > 0 && state.berserkT <= 0 && Math.floor(uiTime * 20) % 2 === 0;
@@ -4905,10 +5200,11 @@ function renderWorld() {
   renderDarkness();
 }
 // floating numbers & text: above the lighting, so damage always reads
-function renderFloatText() {
+function renderFloatText(ps1) {
   for (const t of texts) {
     if (t.life < 0.15 && blink(20)) continue;
-    const x = toDX(t.x), y = toDY(t.y);
+    let x = toDX(t.x), y = toDY(t.y);
+    if (ps1) [x, y] = ps1Project(t.x / PX, t.y / PX + 30, 30);   // lifted off the floor in the 3D view
     if (t.kind === 'num') drawNum(t.str, x, y, t.color, t.crit ? 2 : 1);
     else drawText(t.str, x, y, t.color, { align: 'center' });
   }
@@ -5376,7 +5672,7 @@ function renderTitle() {
   drawText('THE DANGER ROOM HAS GONE ROGUE.', W / 2, ty, C.lgrey, { align: 'center' });
   drawText('SURVIVE FIVE ACTS. SLAY THE DEVIL.', W / 2, ty + 10, C.lgrey, { align: 'center' });
   // START GAME / BESTIARY, the classic title-screen pair, and the graphics switch
-  const my = Math.round(H * 0.53), items = ['START GAME', 'STORY', 'BESTIARY', 'GRAPHICS: ' + (HD ? 'HD' : 'RETRO')];
+  const my = Math.round(H * 0.53), items = ['START GAME', 'STORY', 'BESTIARY', 'GRAPHICS: ' + GFX_LABEL[GFX]];
   addHit(0, 0, W, H, 'any');
   items.forEach((label, i) => {
     const y = my + i * 14, on = i === titleSel, w = textW(label);
@@ -5623,22 +5919,30 @@ function render() {
     g.globalCompositeOperation = 'source-over';
   }
   const menuScene = scene === 'loading' || scene === 'error' || scene === 'title' || scene === 'select' || scene === 'bestiary' || scene === 'intro';
-  // lit HD: the world goes to its own canvas and through WebGL; #game becomes the clear HUD layer
-  const lit = litOn && !menuScene;
+  // PS1: the act's world in 3D (Act I so far); lit HD: the world goes to its own canvas and through WebGL.
+  // Either way #game becomes the clear HUD layer on top.
+  const ps1 = PS1 && !menuScene && state.act === 1;
+  const lit = litOn && !menuScene && !ps1;
+  if (PS1) { ps1Canvas.style.visibility = ps1 ? 'visible' : 'hidden'; glCanvas.style.visibility = ps1 ? 'hidden' : 'visible'; }
   ctx = lit ? worldCtx : uiCtx;
-  if (lit) uiCtx.clearRect(0, 0, W, H);
-  rect(0, 0, W, H, C.black);
+  if (lit || ps1) uiCtx.clearRect(0, 0, W, H);
+  if (!ps1) rect(0, 0, W, H, C.black);
   if (scene === 'loading' || scene === 'error') { renderBoot(); return; }
   if (scene === 'title') { renderTitle(); return; }
   if (scene === 'intro') { renderIntro(); return; }
   if (scene === 'select') { renderSelect(); return; }
   if (scene === 'bestiary') { renderBestiary(); return; }
-  renderWorld();
-  if (lit) {
-    ctx = uiCtx;
-    if (!composeLit()) uiCtx.drawImage(worldCv, 0, 0, W, H);   // GL refused the frame: show it unlit, once
+  if (ps1) {
+    renderPS1();
+    renderFloatText(true);
+  } else {
+    renderWorld();
+    if (lit) {
+      ctx = uiCtx;
+      if (!composeLit()) uiCtx.drawImage(worldCv, 0, 0, W, H);   // GL refused the frame: show it unlit, once
+    }
+    renderFloatText();
   }
-  renderFloatText();
   if (scene === 'play') {
     renderHUD();
     renderBanner();
