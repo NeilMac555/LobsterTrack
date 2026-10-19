@@ -224,6 +224,8 @@ decisions that shape the build, with the recommendation at the time:
 
 ## Done
 
+- 2026-10-19 `30b486b` — Restore all qualifying steam rankings, refresh both movement tables every minute, recover seven missing final scores and exclude two interrupted fixtures. See docs/steam-results.md.
+
 - Match Predictor guide refreshed to the current inputs, settings and markets; four-page PDF visually checked and download versioned (475be93).
 
 - 2026-10-01: Removed the Telegram profit graph at user request; existing profit totals and settled alerts remain. Production build passed.
