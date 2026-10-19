@@ -33,6 +33,11 @@ quokka, chests and gold) are **Dungeon Crawl Stone Soup** tiles, **CC0**
 picked and packed into one 32px sheet per act. The desert's "X" is DCSS's
 diagonal sigil laid over its mirror image.
 
+The jungle's bridges (plank decks and railings in `map3.png`) are "LPC style
+wood bridges" by **Xenodora**, **CC-BY-SA 3.0** / GPL 3.0 / GPL 2.0:
+https://opengameart.org/node/15135 — so `map3.png` (and `hd/map3.png`) is
+shared under **CC-BY-SA 3.0**.
+
 ## HD sheets (`hd/`)
 
 `hd/<name>.png` is a 2x version of `<name>.png` for the HD graphics mode; each

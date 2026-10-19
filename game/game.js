@@ -398,65 +398,71 @@ function desertTick(ahead) {
     music.nextT += sd;
   }
 }
-// "Green Hell" — an original jungle theme in A minor pentatonic over Am-G-F-G: log drums and
-// a shaker, a syncopated marimba ostinato, a breathy wooden flute, a marimba call-and-response
-// solo, bird calls in the canopy and frogs croaking in the undergrowth.
-const JUNGLE_CH = [{ root: 'A1', tri: ['A3', 'C4', 'E4'] }, { root: 'G1', tri: ['G3', 'B3', 'D4'] },
-  { root: 'F1', tri: ['F3', 'A3', 'C4'] }, { root: 'G1', tri: ['G3', 'B3', 'D4'] }];
-const MARIMBA_STEPS = [0, 3, 6, 8, 10, 13];        // 3-3-2-2-3 clave-ish syncopation
-const MARIMBA_ARP = [0, 2, 1, 2, 0, 1];             // which chord tone on each hit
-const FLUTE_A = ['E5:6 D5:2 C5:4 A4:4', 'G4:6 A4:2 D5:8', 'C5:4 A4:2 G4:2 F4:4 G4:4', 'A4:4 C5:4 D5:4 E5:4',
-  'G5:6 E5:2 D5:4 C5:4', 'D5:6 B4:2 G4:8', 'A4:2 C5:2 D5:2 E5:2 G5:4 E5:4', 'A5:12 -:4'].map(phrase);
-const MARIMBA_B = ['A4:2 C5:2 E5:2 C5:2 -:4 G5:2 E5:2', 'D5:2 B4:2 G4:4 -:4 A4:2 B4:2', 'C5:2 A4:2 F4:2 A4:2 -:4 C5:2 E5:2',
-  'D5:2 E5:2 G5:2 E5:2 D5:4 B4:4'].map(phrase);
+// "Green Hell" — an original, sinister jungle theme in A phrygian (A Bb C D E F G; sharps spell the flats)
+// over A - Bb - A - E(dim): war drums beating like a heart, a low drone, a dissonant bone-xylophone
+// ostinato (minor seconds and tritones), a wavering wooden flute that falls into its notes, a hummed
+// chant in the second half, cicadas, wind in the leaves and something large growling out in the trees.
+const JUNGLE_CH = [{ root: 'A1', tri: ['A3', 'C4', 'E4'], bone: ['A2', 'A#2', 'E3', 'D#3'] },
+  { root: 'A#1', tri: ['A#3', 'D4', 'F4'], bone: ['A#2', 'B2', 'F3', 'E3'] },
+  { root: 'A1', tri: ['A3', 'C4', 'E4'], bone: ['A2', 'A#2', 'E3', 'D#3'] },
+  { root: 'E1', tri: ['E3', 'G3', 'A#3'], bone: ['E2', 'F2', 'A#2', 'B2'] }];
+const BONE_STEPS = [0, 3, 6, 10];                   // the xylophone's lopsided 3-3-4-6 figure
+const FLUTE_A = ['E5:8 F5:4 E5:4', 'D5:6 C5:2 A#4:8', 'A4:12 -:4', 'C5:4 A#4:4 A4:4 G4:4',
+  'E5:8 F5:6 E5:2', 'G5:6 F5:2 E5:4 D5:4', 'C5:4 D5:2 C5:2 A#4:8', 'A4:16'].map(phrase);
+const CHANT_B = ['A3:8 A#3:8', 'A3:8 G3:8', 'A3:4 C4:4 A#4:8', 'A3:16'].map(phrase);
 const SONG3 = [{ sec: 'intro' }, { sec: 'intro', fill: true }];
 const LOOP3_AT = SONG3.length;
 FLUTE_A.forEach((mel, i) => SONG3.push({ sec: 'A', flute: mel, fill: i === 7 }));
-MARIMBA_B.forEach((mel, i) => SONG3.push({ sec: 'B', solo: mel, fill: i === 3 }));
-MARIMBA_B.forEach((mel, i) => SONG3.push({ sec: 'B2', solo: mel, flute: FLUTE_A[i * 2 + 1], fill: i === 3 }));
-// FM marimba: a 4:1 modulator with a very fast index decay gives the struck-wood "tok"
-const marimba = (t, f, vol) => { fm(t, f, 0.32, vol, 4, 2.2, 0.025); fm(t, f, 0.22, vol * 0.5, 1, 0.4, 0.05); };
+CHANT_B.forEach((mel, i) => SONG3.push({ sec: 'B', chant: mel, growl: i === 0, fill: i === 3 }));
+CHANT_B.forEach((mel, i) => SONG3.push({ sec: 'B2', chant: mel, flute: FLUTE_A[i * 2], fill: i === 3 }));
+// FM bone xylophone: a hollow, inharmonic knock (5.4:1 modulator, fast decay)
+const boneHit = (t, f, vol) => { fm(t, f, 0.5, vol, 5.4, 1.6, 0.04); fm(t, f, 0.3, vol * 0.6, 1, 0.5, 0.08); };
 function jungleTick(ahead) {
-  const bpm = 116, sd = 60 / bpm / 4;
+  const bpm = 84, sd = 60 / bpm / 4;
   if (music.nextT < audioCtx.currentTime - 0.1) music.nextT = audioCtx.currentTime + 0.05;
   while (music.nextT < audioCtx.currentTime + ahead) {
     const s = music.step % 16, bar16 = Math.floor(music.step / 16);
     let bi = bar16;
     if (bi >= SONG3.length) bi = LOOP3_AT + (bi - LOOP3_AT) % (SONG3.length - LOOP3_AT);
-    const bar = SONG3[bi], ch = JUNGLE_CH[bar16 % 4], t = music.nextT;
-    // log drums: deep boom, a mid answer and a high slit-drum knock; tumbling run into each section
-    if (s === 0 || s === 6 || s === 10) beep(t, 95, 0.3, 'sine', 0.2, -50);
-    if (s === 3 || s === 8 || s === 14) beep(t, 150, 0.16, 'sine', 0.12, -60);
-    if (s === 12) { beep(t, 260, 0.08, 'sine', 0.08, -90); beep(t, 1300, 0.012, 'square', 0.02); }
-    if (bar.fill && s >= 8 && s % 2 === 0) beep(t, 300 - (s - 8) * 25, 0.12, 'sine', 0.12, -80);
-    noiseHit(t, 0.02, s % 4 === 2 ? 0.03 : 0.012);                                  // shaker, offbeat push
-    // bass on the chord roots, a pulse that ducks with the boom
-    if (s === 0 || s === 7 || s === 10) fm(t, hz(ch.root) * (s === 7 ? 2 : 1), sd * 2.5, 0.11, 1, 1.4, 0.12);
-    // marimba ostinato (out in the intro's first bar, softer under the solo)
-    if (!(bar.sec === 'intro' && bar16 === 0) && MARIMBA_STEPS.includes(s)) {
-      const k = MARIMBA_STEPS.indexOf(s);
-      marimba(t, hz(ch.tri[MARIMBA_ARP[k]]) * (k === 3 ? 2 : 1), bar.solo ? 0.03 : 0.045);
+    const bar = SONG3[bi], ch = JUNGLE_CH[bar16 % 4], t = music.nextT, late = lateGame(480);
+    // drone: the root and its fifth, swelling under every bar; the wind moves through the leaves
+    if (s === 0) {
+      fm(t, hz(ch.root), 16 * sd, 0.045, 1, 0.9, 1.4, true);
+      fm(t, hz(ch.root) * 1.4983 * 1.003, 16 * sd, 0.02, 1, 0.4, 1.4, true);
+      if (bar16 % 2 === 0) noiseHit(t, 0.19, 0.012);
     }
-    // marimba solo with a tremolo on long notes
-    if (bar.solo) for (const ev of bar.solo) {
-      if (ev.at !== s) continue;
-      marimba(t, ev.f, 0.06);
-      if (ev.len >= 4) { marimba(t + sd, ev.f, 0.035); marimba(t + 2 * sd, ev.f, 0.025); }
-    }
-    // wooden flute: breathy FM with a scoop up into long notes
+    // war drums: a heartbeat boom (da-DUM ... da-DUM), a rattle between, rolls into each section
+    if (bar.sec !== 'intro' || bar16 % 2 === 1) {
+      if (s === 0 || s === 8) beep(t, 72, 0.4, 'sine', 0.16, -35);
+      if (s === 3 || s === 11) beep(t, 58, 0.5, 'sine', 0.18, -25);
+      if (s === 6 || s === 14) { beep(t, 120, 0.12, 'sine', 0.06, -50); noiseHit(t, 0.04, 0.02); }
+    } else if (s === 8) beep(t, 50, 0.7, 'sine', 0.12, -15);   // intro: one far-off drum
+    if ((bar.fill || late) && s >= 12) beep(t, 140 - (s - 12) * 15, 0.1, 'sine', 0.1, -60);
+    if (bar.sec.startsWith('B') && s % 4 === 2) beep(t, 95, 0.14, 'sine', 0.09, -45);   // the drummers close in
+    // the bone xylophone
+    if (bar.sec !== 'intro' && BONE_STEPS.includes(s)) boneHit(t, hz(ch.bone[BONE_STEPS.indexOf(s)]), bar.chant ? 0.03 : 0.04);
+    // wooden flute: falls a semitone into each long note, with a slow waver
     if (bar.flute) for (const ev of bar.flute) {
       if (ev.at !== s) continue;
       const dur = ev.len * sd * 0.95;
-      if (ev.len >= 4) fm(t, ev.f * 0.94, 0.05, 0.025, 1, 0.4, 0.05, true);
-      const t0 = ev.len >= 4 ? t + 0.04 : t;
-      fm(t0, ev.f, dur, 0.042, 1, 0.45, 0.4, true);
-      fm(t0, ev.f * 3.002, dur, 0.006, 1, 0.2, 0.4, true);                              // breath
+      if (ev.len >= 4) fm(t, ev.f * 1.059, 0.09, 0.03, 1, 0.4, 0.06, true);
+      const t0 = ev.len >= 4 ? t + 0.08 : t;
+      fm(t0, ev.f, dur, 0.04, 1, 0.5, 0.5, true);
+      fm(t0, ev.f * 1.008, dur, 0.016, 1, 0.3, 0.5, true);                              // the waver
+      fm(t0, ev.f * 3.002, dur, 0.005, 1, 0.2, 0.4, true);                              // breath
     }
-    // canopy: a bird's three-chirp call every other bar, a frog croak answering
-    if (bar16 % 2 === 1 && (s === 4 || s === 5 || s === 6)) beep(t, 2300 + (s - 4) * 300, 0.07, 'sine', 0.018, 1100);
-    if (bar16 % 4 === 2 && s === 14) { beep(t, 70, 0.12, 'square', 0.03, 30); beep(t + 0.14, 66, 0.12, 'square', 0.025, 30); }
-    // late game: the drummers double up
-    if (lateGame(480) && s % 2 === 1) beep(t, 190, 0.06, 'sine', 0.06, -60);
+    // B sections: a low hummed chant, in octaves
+    if (bar.chant) for (const ev of bar.chant) {
+      if (ev.at !== s) continue;
+      const dur = ev.len * sd * 0.98;
+      fm(t, ev.f, dur, 0.022, 1, 0.35, 1, true);
+      fm(t, ev.f * 0.5 * 1.004, dur, 0.02, 1, 0.3, 1, true);
+    }
+    // the canopy: cicadas hiss in pulses; something big growls out in the trees
+    if (s % 2 === 1 && (bar16 + (s >> 2)) % 3) beep(t, 4300 + (s % 3) * 180, 0.035, 'square', 0.0035);
+    if ((bar.growl || bar16 % 6 === 3) && s === 4) { beep(t, 150, 1.1, 'sawtooth', 0.018, -80); beep(t + 0.5, 110, 0.9, 'sawtooth', 0.014, -50); }
+    // late game: the drums never stop
+    if (late && s % 2 === 1) beep(t, 85, 0.08, 'sine', 0.07, -40);
     music.step++;
     music.nextT += sd;
   }
@@ -1349,7 +1355,8 @@ function scanEnv() {
   for (let iy = y0; iy <= y1; iy++) {
     for (let ix = x0; ix <= x1; ix++) {
       if (cellOf(ix * TILE + TILE / 2, iy * TILE + TILE / 2) !== T_FLOOR) continue;   // the map's own features come first
-      const oh = obstacleAt(ix, iy);
+      let oh = obstacleAt(ix, iy);
+      if (oh && mapDef.sparseTrees && (oh >>> 11) % mapDef.sparseTrees) oh = 0;      // the jungle keeps its trees further apart
       if (oh) {
         const kind = (oh >>> 3) % 8;
         obs.push({ x: ix * TILE + TILE / 2, y: iy * TILE + TILE / 2, r: state.act === 5 ? HELL_R[kind % 6] : state.act === 4 ? OCEAN_R[kind % 6] : state.act === 3 ? JUNGLE_R[kind % 6] : state.act === 2 ? DESERT_R[kind % 5] : PROP_R[kind], kind });
@@ -1468,7 +1475,7 @@ function drawJungleFloor() {
   for (let iy = iy0 - 1; iy * CT - camY < H; iy++) {
     for (let ix = ix0 - 1; ix * CT - camX < W; ix++) {
       const h = hash2(ix * 7 + 3, iy * 11 + 5);
-      if (h % 4) continue; if (!bareCell(ix, iy)) continue;                       // the undergrowth is thick
+      if (h % 7) continue; if (!bareCell(ix, iy)) continue;                       // undergrowth, with room to move
       const d = (h >>> 4) % 8, dx = ((h >>> 8) % 17) - 8, dy = ((h >>> 13) % 17) - 8;
       ctx.drawImage(img, d * CT, 176, CT, CT, ix * CT - camX + dx, iy * CT - camY + dy, CT, CT);
     }
@@ -1575,8 +1582,9 @@ function drawBrazierLight(bz) {
 // Art: assets/map<act>.png (Dungeon Crawl Stone Soup tiles, CC0) — rows: wall A, wall B, floor A,
 // floor B, liquid A x4 + liquid B x4 frames, props A, props B, specials.
 const MC = 64;                              // world units per map cell (= CT dots)
-const T_FLOOR = 0, T_FA = 1, T_FB = 2, T_WA = 3, T_WB = 4, T_LA = 5, T_LB = 6;
-const FAKE = 8;                             // looks like its type, but is open ground (secret entrances)
+const T_FLOOR = 0, T_FA = 1, T_FB = 2, T_WA = 3, T_WB = 4, T_LA = 5, T_LB = 6, T_BRIDGE = 7;   // a bridge's variant: 0 runs E-W, 1 runs N-S
+const FAKE = 8;
+const CLEARING = 1 << 4;                    // plain ground (type 0, variant 1) kept free of trees and undergrowth, sunlit                             // looks like its type, but is open ground (secret entrances)
 // cell code: type | FAKE | variant << 4 | prop << 8 (prop: 1-8 props A, 9-16 props B, 17-24 the act's big floor props)
 const cellType = c => c & 7;
 const PROP_MAP_R = 12;
@@ -1612,11 +1620,13 @@ const MAPDEF = {
     ],
     secret: { kind: 'dig', tpl: [' BBBBB ', 'BB;;;BB', 'B;;*;;B', 'BB;;;BB', ' BBYBB '] },
   },
-  3: {   // the Strangling Jungle: rivers, poison bogs, vine thickets, overgrown temples, stone circles, mangrove groves
-    road: 36, liqA: { slow: 0.55 }, liqB: { slow: 0.5, poison: true },
-    ridges: { scale: 6, t: 0.82, wall: T_WA }, lakes: { scale: 10, t: 0.8, liq: T_LB, shore: ['0', '1', '2'], shoreChance: 0.25 },
-    rivers: { scale: 26, w: 0.035, bank: ['0', '1', '2', 'P'], bankChance: 0.12 }, patch: { scale: 7, t: 0.6, props: ['V', 'W'], chance: 0.05 },
-    density: 0.45, ruin: 0.18,
+  3: {   // the Strangling Jungle: broad rivers with deep channels, crossed by wooden bridges and footbridges; open
+         // clearings between the trees; overgrown temples, stone circles, mangrove groves
+    road: 36, roadWobble: 0, liqA: { slow: 0.55 }, liqB: { solid: true, heroOnly: true, swim: 0.5 }, sparseTrees: 3,
+    lakes: { scale: 12, t: 0.8, deep: 0.86, shore: ['0', '1', '2'], shoreChance: 0.15 },
+    rivers: { scale: 20, w: 0.085, deep: 0.5, bridges: 9, bank: ['0', '1', '2'], bankChance: 0.05 },
+    patch: { scale: 9, t: 0.55, clearing: true },
+    density: 0.35, ruin: 0.18,
     structs: [
       ['BBB.BBB', 'B.....B', 'B.4.5.B', 'B..a..B', 'B.....B', 'BBB.BBB'],
       ['  4 4  ', ' 4   4 ', '4  6  4', ' 4   4 ', '  4 4  '],
@@ -1638,7 +1648,7 @@ const MAPDEF = {
     secret: { kind: 'fish', tpl: [' BBBBBBB ', 'BB.....BB', 'B...*...B', 'BB.....BB', ' BBBYBBB '] },
   },
   5: {   // the Gates of Hell: lava rivers and lakes, fortresses, pentagram altars, hell gates, flesh ridges, bone fields
-    road: 32, liqA: { slow: 0.7, burn: 6 }, liqB: { solid: true },
+    road: 32, liqA: { slow: 0.7, burn: 6 }, liqB: { solid: true, heroOnly: true },
     ridges: { scale: 6, t: 0.83 }, lakes: { scale: 10, t: 0.8, deep: 0.87 }, rivers: { scale: 24, w: 0.022 },
     patch: { scale: 7, t: 0.6, props: ['1', 'e'], chance: 0.05 },
     density: 0.5, ruin: 0.15,
@@ -1752,10 +1762,19 @@ function genCell(cx, cy) {
     }
   }
   // roads: winding stretches along a loose grid, about half of them there (they bridge rivers and cut through ridges)
-  const R = D.road, wx = rx + Math.round(Math.sin(ry / 5 + kx) * 2.5), wy = ry + Math.round(Math.sin(rx / 6 + ky) * 2.5);
+  const R = D.road, wob = D.roadWobble ?? 2.5;   // straight roads make straight bridges
+  const wx = rx + Math.round(Math.sin(ry / 5 + kx) * wob), wy = ry + Math.round(Math.sin(rx / 6 + ky) * wob);
   const lxr = ((wx % R) + R) % R, lyr = ((wy % R) + R) % R;
-  if ((lxr < 2 && hash2(Math.floor(wx / R) + mapSeed, Math.floor(ry / R)) % 10 < 5) ||
-      (lyr < 2 && hash2(Math.floor(rx / R), Math.floor(wy / R) - mapSeed) % 10 < 5)) return T_FA | (4 + ((h >>> 3) & 3)) << 4;
+  const roadNS = lxr < 2 && hash2(Math.floor(wx / R) + mapSeed, Math.floor(ry / R)) % 10 < 5;
+  const roadEW = lyr < 2 && hash2(Math.floor(rx / R), Math.floor(wy / R) - mapSeed) % 10 < 5;
+  // bridges carry roads over rivers; rivers that want them also get footbridges every so often
+  if (D.rivers && D.rivers.as !== 'fb' && riverAt(rx, ry) < D.rivers.w) {
+    const B = D.rivers.bridges, footNS = B && ((rx % B) + B) % B < 2 && hash2(Math.floor(rx / B) + mapSeed, Math.floor(ry / 8)) % 3 === 0;
+    const footEW = B && ((ry % B) + B) % B < 2 && hash2(Math.floor(rx / 8), Math.floor(ry / B) - mapSeed) % 3 === 0;
+    if ((roadEW || footEW) && crossesRiver(rx, ry, 1, 0)) return T_BRIDGE;
+    if ((roadNS || footNS) && crossesRiver(rx, ry, 0, 1)) return T_BRIDGE | 1 << 4;
+  }
+  if (roadNS || roadEW) return T_FA | (4 + ((h >>> 3) & 3)) << 4;
   if (D.ridges && vnoise(rx / D.ridges.scale, ry / D.ridges.scale, mapSeed + 5) > D.ridges.t) return (D.ridges.wall || T_WB) | ((h >>> 5) & 7) << 4;
   if (D.lakes) {
     const n = vnoise(rx / D.lakes.scale, ry / D.lakes.scale, mapSeed + 3);
@@ -1763,16 +1782,31 @@ function genCell(cx, cy) {
     if (D.lakes.shore && n > D.lakes.t - 0.03 && (h % 1000) < D.lakes.shoreChance * 1000) return T_FLOOR | propCode(D.lakes.shore[(h >>> 4) % D.lakes.shore.length]);
   }
   if (D.rivers) {
-    const R = D.rivers, warp = vnoise(rx / 9, ry / 9, mapSeed + 2) * 1.4;
-    const n = Math.abs(vnoise(rx / R.scale + warp, ry / R.scale, mapSeed + 1) - 0.5);
-    if (n < R.w) return R.as === 'fb' ? T_FB | (4 + ((h >>> 3) & 3)) << 4 : T_LA;
+    const R = D.rivers, n = riverAt(rx, ry);
+    if (n < R.w) return R.as === 'fb' ? T_FB | (4 + ((h >>> 3) & 3)) << 4 : R.deep && n < R.w * R.deep ? T_LB : T_LA;
     if (R.bank && n < R.w * 1.6 && (h % 1000) < R.bankChance * 1000) return T_FLOOR | propCode(R.bank[(h >>> 4) % R.bank.length]);
   }
   if (D.patch && vnoise(rx / D.patch.scale, ry / D.patch.scale, mapSeed + 4) > D.patch.t) {
+    if (D.patch.clearing) return CLEARING;
     const P = D.patch, prop = (h % 1000) < P.chance * 1000 ? propCode(P.props[(h >>> 4) % P.props.length]) : 0;
     return T_FB | (4 + ((h >>> 3) & 3)) << 4 | prop;
   }
   return T_FLOOR;
+}
+// distance-like measure from a river's centre line (rivers are where it's under D.rivers.w)
+function riverAt(rx, ry) {
+  const R = mapDef.rivers, warp = vnoise(rx / 9, ry / 9, mapSeed + 2) * 1.4;
+  return Math.abs(vnoise(rx / R.scale + warp, ry / R.scale, mapSeed + 1) - 0.5);
+}
+// does a bridge running along (dx, dy) here reach dry land within a few cells both ways? (so bridges
+// cross rivers instead of running down them)
+function crossesRiver(rx, ry, dx, dy) {
+  const w = mapDef.rivers.w;
+  let a = 0, b = 0;
+  for (let k = 1; k <= 6 && !a; k++) if (riverAt(rx - dx * k, ry - dy * k) >= w) a = k;
+  for (let k = 1; k <= 6 && !b; k++) if (riverAt(rx + dx * k, ry + dy * k) >= w) b = k;
+  // and the river carries on past both sides of the deck, so it isn't hugging a bank
+  return a > 0 && b > 0 && riverAt(rx + dy * 2, ry + dx * 2) < w && riverAt(rx - dy * 2, ry - dx * 2) < w;
 }
 function cellAt(cx, cy) {
   const k = (cx + 32768) * 65536 + (cy + 32768);
@@ -1795,6 +1829,7 @@ const solidAt = (wx, wy) => cellSolid(cellOf(wx, wy));
 function groundAt(wx, wy) {
   const c = cellOf(wx, wy), t = cellType(c);
   if (c & FAKE) return null;
+  if (t === T_LB && mapDef.liqB.heroOnly) return { slow: mapDef.liqB.swim || 0.7 };   // monsters swim (or wade lava)
   return t === T_LA ? mapDef.liqA : t === T_LB && !mapDef.liqB.solid ? mapDef.liqB : null;
 }
 // lava burns, the jungle bog poisons
@@ -1810,7 +1845,7 @@ function groundHazard(g, dt) {
 }
 // push a circle out of any solid cells it overlaps (it slides along walls)
 function resolveTerrain(ent) {
-  const r = ent.r || 12, demon = state.act === 5 && ent !== player;   // hell's deep lava only stops the hero
+  const r = ent.r || 12, demon = !!mapDef.liqB.heroOnly && ent !== player;   // deep water / lava only stops the hero
   const solid = c => cellSolid(c) && !(demon && cellType(c) === T_LB);
   for (let pass = 0; pass < 2; pass++) {
     const cx0 = Math.floor((ent.x - r) / MC), cx1 = Math.floor((ent.x + r) / MC);
@@ -1845,6 +1880,18 @@ function drawTerrain() {
       const c = cellAt(ix, iy), t = cellType(c);
       if (!t) continue;
       const v = (c >> 4) & 7, x = ix * CT - camX, y = iy * CT - camY;
+      if (t === T_BRIDGE) {   // water runs under the planks; railings along the open sides
+        ctx.drawImage(img, ((fr + ix + iy) % 4) * 32, 4 * 32, 32, 32, x, y, CT, CT);
+        ctx.drawImage(img, (v ? 5 : 4) * 32, 6 * 32, 32, 32, x, y, CT, CT);
+        if (!v) {
+          if (cellType(cellAt(ix, iy - 1)) !== T_BRIDGE) ctx.drawImage(img, 6 * 32, 6 * 32, 32, 32, x, y - 26, CT, CT);
+          if (cellType(cellAt(ix, iy + 1)) !== T_BRIDGE) ctx.drawImage(img, 7 * 32, 7 * 32, 32, 32, x, y + 18, CT, CT);
+        } else {
+          if (cellType(cellAt(ix - 1, iy)) !== T_BRIDGE) ctx.drawImage(img, 6 * 32, 7 * 32, 32, 32, x - 26, y, CT, CT);
+          if (cellType(cellAt(ix + 1, iy)) !== T_BRIDGE) ctx.drawImage(img, 6 * 32, 7 * 32, 32, 32, x + 3, y, CT, CT);
+        }
+        continue;
+      }
       let sx = v, sy;
       if (t === T_WA) sy = 0; else if (t === T_WB) sy = 1; else if (t === T_FA) sy = 2; else if (t === T_FB) sy = 3;
       else { sy = 4; sx = (t === T_LB ? 4 : 0) + (fr + ix + iy) % 4; }
@@ -4129,9 +4176,13 @@ function sceneLights(emit) {
     const S = 150, sx0 = Math.floor((player.x - VW / 2) / S) - 1, sy0 = Math.floor((player.y - VH / 2) / S) - 1;
     for (let sy = sy0; sy * S < player.y + VH / 2 + S; sy++) for (let sx = sx0; sx * S < player.x + VW / 2 + S; sx++) {
       const h = hash2(sx * 5 + 1, sy * 9 + 2);
-      if (h % 3) continue;
-      emit(sx * S + (h >>> 5) % S, sy * S + (h >>> 11) % S, 26 + (h >>> 17) % 22, 'sun');
+      if (h % 2) continue;
+      emit(sx * S + (h >>> 5) % S, sy * S + (h >>> 11) % S, 32 + (h >>> 17) % 26, 'sun');
     }
+    // clearings stand in open sunlight
+    const cx0 = Math.floor(camX / CT) - 1, cy0 = Math.floor(camY / CT) - 1;
+    for (let cy = cy0; cy * CT - camY < H + CT; cy += 2) for (let cx = cx0 - (cx0 & 1); cx * CT - camX < W + CT; cx += 2)
+      if (cellAt(cx, cy) === CLEARING) emit((cx + 0.5) * MC, (cy + 0.5) * MC, 44, 'sun');
   }
   emit(player.x, player.y - 10, (state.berserkT > 0 ? 140 : 112) + flick * 2, state.berserkT > 0 ? 'berserk' : 'hero');
   for (const bz of state.brazList || []) emit(bz.x, bz.y - 12, 42 + ((Math.floor(uiTime * 7 + bz.x) % 3) * 2), 'fire');
@@ -4169,7 +4220,7 @@ function renderDarkness() {
   g.globalCompositeOperation = 'source-over';
   g.clearRect(0, 0, W, H);
   // the jungle is canopy shade (green-black, lighter) rather than crypt dark
-  g.fillStyle = state.act === 5 ? 'rgba(22,0,0,0.66)' : state.act === 4 ? 'rgba(0,14,40,0.55)' : state.act === 3 ? 'rgba(0,18,6,0.5)' : `rgba(6,0,10,${DARKNESS})`;
+  g.fillStyle = state.act === 5 ? 'rgba(22,0,0,0.66)' : state.act === 4 ? 'rgba(0,14,40,0.55)' : state.act === 3 ? 'rgba(0,18,6,0.4)' : `rgba(6,0,10,${DARKNESS})`;
   g.fillRect(0, 0, W, H);
   g.globalCompositeOperation = 'destination-out';
   sceneLights((wx, wy, r) => {
@@ -4188,7 +4239,7 @@ function renderDarkness() {
 // bright pass, blurred, added back. Colours are in "art brightness": 1 = the sprite as drawn.
 const LIGHT_GAIN = 1.6;   // a full light-map channel = 1.6x the art, so torches and fire can run hot
 const AMBIENT = {         // crypt gloom, desert daylight, canopy shade, deep water, hellfire
-  1: [0.3, 0.27, 0.4], 2: [1, 0.98, 0.94], 3: [0.42, 0.55, 0.36], 4: [0.28, 0.42, 0.6], 5: [0.5, 0.2, 0.16] };
+  1: [0.3, 0.27, 0.4], 2: [1, 0.98, 0.94], 3: [0.52, 0.64, 0.44], 4: [0.28, 0.42, 0.6], 5: [0.5, 0.2, 0.16] };
 const LIGHT_COL = {
   berserk: [1.1, 0.6, 0.48], rage: [1.5, 0.3, 0.2], fire: [1.05, 0.55, 0.2], fireball: [1.2, 0.5, 0.2],
   laser: [0.4, 1.1, 1.4], acid: [0.5, 1.3, 0.2], thorn: [0.4, 1, 0.25], ink: [0.55, 0.35, 0.9], coconut: [0.9, 0.7, 0.4],
