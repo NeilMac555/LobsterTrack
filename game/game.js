@@ -1583,10 +1583,8 @@ const ACT5_TYPES = [ ['ghoul','fireskull'], ['ghoul','fireskull','imp'], ['ghoul
   ['hellbeast','nightmare','cultist','devilkin','ghoul','fireskull','knight','guard'] ];
 function currentWave() {
   const m = Math.min(WAVES.length - 1, Math.floor(state.time / 60));
-  if (state.act === 5) return { min: Math.round(WAVES[m].min * 1.3), interval: WAVES[m].interval * 0.85, types: ACT5_TYPES[m] };
-  if (state.act === 4) return { min: WAVES[m].min, interval: WAVES[m].interval, types: ACT4_TYPES[m] };
-  if (state.act === 3) return { min: Math.round(WAVES[m].min * 0.8), interval: WAVES[m].interval * 1.15, types: ACT3_TYPES[m] };
-  return state.act === 2 ? { min: WAVES[m].min, interval: WAVES[m].interval, types: ACT2_TYPES[m] } : WAVES[m];
+  const types = [null, WAVES[m].types, ACT2_TYPES[m], ACT3_TYPES[m], ACT4_TYPES[m], ACT5_TYPES[m]][state.act] || WAVES[m].types;
+  return { min: Math.max(6, Math.min(actScale().cap, Math.round(WAVES[m].min * actScale().n))), interval: WAVES[m].interval, types };
 }
 
 // map events: every 30s, alternating a converging ring and a screen-sweeping swarm
@@ -1966,6 +1964,12 @@ const BOSSES = [
 ];
 const ACT_BOSS_LEVEL = { 1: ACT2_LEVEL, 2: ACT3_LEVEL, 3: ACT4_LEVEL, 4: 20, 5: 25 };
 
+// each act fields fewer but tougher monsters: the screen stays readable while the threat keeps climbing
+// (n = how many on screen, hp/dmg = how tough; tougher monsters are worth more xp: sqrt of the hp factor)
+// (cap = the most the quota may ever ask for in that act, however late in the run you get there)
+const ACT_SCALE = { 1: { n: 1, hp: 1, dmg: 1, cap: 999 }, 2: { n: 0.75, hp: 1.6, dmg: 1.1, cap: 42 },
+  3: { n: 0.5, hp: 2.4, dmg: 1.2, cap: 34 }, 4: { n: 0.4, hp: 3.3, dmg: 1.3, cap: 32 }, 5: { n: 0.42, hp: 4.5, dmg: 1.45, cap: 40 } };
+const actScale = () => ACT_SCALE[state.act] || ACT_SCALE[1];
 function hpScale() {
   const m = state.time / 60;
   return 1 + m * 0.5 + m * m * 0.045; // steeper than linear — late waves must threaten
@@ -2065,13 +2069,13 @@ const BEST_ENTRIES = Object.keys(ENEMY_TYPES)
 function makeEnemy(kind, x, y, opts = {}) {
   const t = ENEMY_TYPES[kind];
   bestSeen(kind);
-  const hell = state.act === 5;   // hell's spawn are tougher and hit harder
-  const hpMul = (opts.hpMul ?? 1) * rand(0.85, 1.25) * (hell ? 1.5 : 1);
+  const A = actScale();   // later acts: fewer, tougher monsters
+  const hpMul = (opts.hpMul ?? 1) * rand(0.85, 1.25) * A.hp;
   const hp = t.hp * hpScale() * hpMul;
   return {
     x, y, hp, maxHp: hp,
     speed: t.speed * spdScale() * rand(0.9, 1.1) * (opts.spdMul ?? 1),
-    dmg: t.dmg * dmgScale() * (hell ? 1.3 : 1), r: Math.round(t.r * (opts.rMul ?? 1)), xp: Math.ceil(t.xp * (opts.xpMul ?? 1)),
+    dmg: t.dmg * dmgScale() * A.dmg, r: Math.round(t.r * (opts.rMul ?? 1)), xp: Math.ceil(t.xp * (opts.xpMul ?? 1) * Math.sqrt(A.hp)),
     sprite: t.sprite, scale: (opts.scale ?? SCALE) * (t.scale ?? 1), variant: opts.variant ?? null,
     move: t.move, boss: false, elite: !!opts.elite, sweep: opts.sweep ?? null,
     flash: -1, animT: rand(0, 10), chargeT: rand(0, 4), pop: t.pop,
@@ -2208,7 +2212,7 @@ function spawnRing() {
   // no rings of casters/knights/rooted man-eaters; a wave of nothing but capped kinds falls back to any walker
   const walker = k => ENEMY_TYPES[k].move !== 'rooted' && ENEMY_TYPES[k].move !== 'caster';
   const kind = wave.types.find(k => !ENEMY_TYPES[k].cap && walker(k)) || wave.types.find(walker) || 'skeleton';
-  const n = clamp(24 + Math.floor(state.time / 60) * 6, 24, 42), d = Math.min(VW, VH) / 2 + 60; // small rings early
+  const n = Math.round(clamp(24 + Math.floor(state.time / 60) * 6, 24, 42) * Math.max(0.6, actScale().n)), d = Math.min(VW, VH) / 2 + 60; // small rings early
   for (let i = 0; i < n; i++) {
     const a = (TAU * i) / n;
     enemies.push(makeEnemy(kind, player.x + Math.cos(a) * d, player.y + Math.sin(a) * d,
@@ -2226,7 +2230,8 @@ function spawnSweep() {
   const cx = player.x + Math.cos(a) * d, cy = player.y + Math.sin(a) * d;
   const px = -dirY, py = dirX; // perpendicular
   const spd = 170;
-  for (let i = -14; i <= 14; i++) {
+  const half = Math.round(14 * Math.max(0.5, actScale().n));   // later acts sweep with a thinner wall
+  for (let i = -half; i <= half; i++) {
     const e = makeEnemy(['skeleton', 'skeleton', 'fly', 'mosquito', 'piranha', 'fireskull'][state.act], cx + px * i * 34 + rand(-10, 10), cy + py * i * 34 + rand(-10, 10),
       { hpMul: 0.06, xpMul: 1, spdMul: 1 });
     e.sweep = { vx: dirX * spd, vy: dirY * spd, life: 14 };
@@ -2507,8 +2512,8 @@ function gainXp(v) {
   while (state.xp >= state.xpNeed) {
     state.xp -= state.xpNeed;
     state.level++;
-    // fast first levels (VS hands you level 2 in seconds), steeper later
-    state.xpNeed = Math.floor(5 + state.level * 6 + state.level * state.level * 0.55);
+    // fast first levels (VS hands you level 2 in seconds), progressively steeper
+    state.xpNeed = Math.floor(5 + state.level * 7 + state.level * state.level * 1.1);   // each level costs noticeably more than the last
     sndLevel();
     state.flash = Math.max(state.flash, 0.35);
     pushMenu({ type: 'levelup' });   // one choice per level, even on multi-level jumps
@@ -2901,7 +2906,8 @@ function update(dt) {
       const deficit = Math.min(10, wave.min - alive);
       for (let i = 0; i < deficit && enemies.length < wave.min; i++) spawnEnemy(pickWeighted(wave.types));
     } else {
-      for (const kind of wave.types) if (!ENEMY_TYPES[kind].swarm) spawnEnemy(kind);   // swarms only come with top-ups
+      // the trickle (swarms only come with top-ups) stops once the screen is well over quota, or long type lists flood it
+      if (alive < wave.min * 1.25) for (const kind of wave.types) if (!ENEMY_TYPES[kind].swarm) spawnEnemy(kind);
     }
   }
   // map events: ring / sweep alternating every 30s (skip the first quiet minute)
