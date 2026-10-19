@@ -118,7 +118,7 @@ const sndHurt = () => sfx(110, 0.2, 'sawtooth', 0.08, -40);
 
 // Sampled hurt voices, one per hero (Biski meows) — see assets/CREDITS.md.
 // Decoded once audio is unlocked; until then (or on file:// pages) the synth thud stands in.
-const VOICE_FILES = ['visor', 'wildcat', 'skywitch', 'ace', 'mender', 'biski', 'neil', 'zoe'];
+const VOICE_FILES = ['visor', 'wildcat', 'skywitch', 'ace', 'mender', 'biski', 'neil', 'zoe', 'ana'];
 const SFX_FILES = ['banshee-scream', 'butcher-roar'];   // assets/sfx/<name>.mp3
 const voiceBuf = {};
 let voicesRequested = false, lastVoiceT = -9;
@@ -929,7 +929,7 @@ function pips(x, y, filled, next = filled, size = 1) {
 const ASSET_FILES = ['warrior', 'wizard', 'ranger', 'rogue', 'cleric',
   'slime', 'goblin', 'skeleton', 'orc', 'minotaur', 'tiles', 'biski',
   'bat', 'imp', 'scarab', 'shaman', 'hound', 'guard', 'knight', 'skills',
-  'assassin', 'mech', 'burger', 'lizdoc', 'feral', 'neil', 'zoe', 'crypt', 'butcher', 'banshee', 'golem',
+  'assassin', 'mech', 'burger', 'lizdoc', 'feral', 'neil', 'zoe', 'ana', 'crypt', 'butcher', 'banshee', 'golem',
   'desert', 'fly', 'maggot', 'lizard', 'orb',
   'jungle', 'snake', 'treant', 'plant', 'mosquito', 'monkey', 'frog',
   'ocean', 'axolotl', 'piranha', 'jelly', 'crab', 'shark', 'squid', 'eel', 'kraken'];
@@ -1066,6 +1066,7 @@ const SHEETS = {
   // LPC-generator heroes, downscaled to 40px cells (see assets/CREDITS.md)
   neil:     { file: 'neil',       size: 40, rows: STD, frames: { idle: 1, walk: 8, attack: 7, death: 6 } },
   zoe:      { file: 'zoe',        size: 40, rows: STD, frames: { idle: 1, walk: 8, attack: 6, death: 1 } },
+  ana:      { file: 'ana',        size: 40, rows: STD, frames: { idle: 1, walk: 8, attack: 7, death: 6 } },
   butcher:  { file: 'butcher',  size: 96, rows: STD, frames: { idle: 1, walk: 8, attack: 10, death: 6 } },
   banshee:  { file: 'banshee',  size: 40, rows: STD, frames: { idle: 1, walk: 4, attack: 4, death: 2 } },
   golem:    { file: 'golem',    size: 48, rows: STD, frames: { idle: 1, walk: 7, attack: 7, death: 7 } },
@@ -1094,9 +1095,9 @@ const SHEETS = {
 };
 // painted skill icons (assets/skills.png): row 0 = 32x32, row 1 = 16x16, in this order
 const SKILL_ORDER = ['optic', 'claws', 'storm', 'orbs', 'nova', 'cards', 'boots', 'vitality',
-  'regen', 'magnet', 'power', 'focus', 'plating', 'heal', 'hammer', 'sushi'];
-// projectile sprites on the sheet's bottom row (y=48): hammer 14px, nigiri 16px, maki 16px
-const PROJ = { hammer: [0, 49, 14, 14], nigiri: [16, 48, 16, 16], maki: [32, 48, 16, 16] };
+  'regen', 'magnet', 'power', 'focus', 'plating', 'heal', 'hammer', 'sushi', 'acid'];
+// projectile sprites on the sheet's bottom row (y=48): hammer 14px, nigiri 16px, maki 16px, acid flask 16px
+const PROJ = { hammer: [0, 49, 14, 14], nigiri: [16, 48, 16, 16], maki: [32, 48, 16, 16], flask: [48, 48, 16, 16] };
 // draw a projectile centred on (x, y), turned in quarter steps so pixels stay square
 function drawProj(key, x, y, quarter = 0) {
   if (!SPR.skills) return;
@@ -1652,6 +1653,25 @@ const WEAPON_DEFS = {
       return true;
     },
   },
+  acid: {
+    name: 'Acid Flask',
+    desc: 'Lobs flasks of acid that shatter into burning puddles.',
+    cd: 1.6,
+    fire(w) {
+      const targets = nearestEnemies(6);
+      if (!targets.length) return false;
+      const n = 1 + Math.floor(w.level / 2) + ampN(); // 1,2,2,3,3
+      for (let i = 0; i < n; i++) {
+        const t = targets[i % targets.length];
+        bullets.push({ kind: 'acid', sx: player.x, sy: player.y - 14, tx: t.x + rand(-16, 16), ty: t.y + rand(-16, 16),
+          t: 0, T: 0.5 + i * 0.08, x: player.x, y: player.y, h: 0, r: 0, life: 2,
+          dmg: (10 + w.level * 4) * player.dmgMult, aoe: (40 + w.level * 7) * amp(),
+          tick: (5 + w.level * 3) * player.dmgMult, dur: 2.2 + w.level * 0.3 });
+      }
+      sfx(700, 0.07, 'triangle', 0.03, 300);
+      return true;
+    },
+  },
   cards: {
     name: 'Kinetic Cards',
     desc: 'Charged playing cards that detonate on impact.',
@@ -1723,6 +1743,9 @@ const HEROES = [
       player.maxHp += 60; player.hp += 60; player.speed *= 1.3; player.critChance = 0.3; player.regen += 1.5;
       player.armor += 2; player.dmgMult *= 1.75; player.cdMult *= 0.7; player.magnetR *= 1.6;
     } },
+  { id: 'ana', name: 'Ana', sprite: 'ana', color: '#92FF24',
+    tag: 'Acid thrower', desc: 'Black glasses, a mane of blonde curls and a bag of acid flasks. They shatter into puddles that eat anything standing in them.',
+    weapon: 'acid', mods: () => { player.maxHp += 10; player.hp += 10; player.magnetR *= 1.15; player.cdMult *= 0.95; } },
 ];
 // Read each hero's real stats by running their mods on a scratch copy of the
 // base player — the select screen can never disagree with the game.
@@ -2605,8 +2628,13 @@ function uiKey(k) {
     const n = HEROES.length;
     if (k === 'arrowleft' || k === 'a') { selIndex = (selIndex + n - 1) % n; sndMove(); }
     else if (k === 'arrowright' || k === 'd') { selIndex = (selIndex + 1) % n; sndMove(); }
-    else if (k === 'arrowup' || k === 'w') { selIndex = (selIndex + n - SEL_COLS) % n; sndMove(); }
-    else if (k === 'arrowdown' || k === 's') { selIndex = (selIndex + SEL_COLS) % n; sndMove(); }
+    // up/down stay in the same column and wrap within it (the last row may be short)
+    else if (k === 'arrowup' || k === 'w') {
+      const c = selIndex % SEL_COLS;
+      selIndex = selIndex - SEL_COLS >= 0 ? selIndex - SEL_COLS : c + SEL_COLS * Math.floor((n - 1 - c) / SEL_COLS);
+      sndMove();
+    }
+    else if (k === 'arrowdown' || k === 's') { selIndex = selIndex + SEL_COLS < n ? selIndex + SEL_COLS : selIndex % SEL_COLS; sndMove(); }
     else if (OK_KEYS.has(k)) startGame(HEROES[selIndex]);
     return;
   }
@@ -2864,7 +2892,7 @@ function update(dt) {
   // bullets
   for (let i = bullets.length - 1; i >= 0; i--) {
     const b = bullets[i];
-    if (b.kind === 'hammer' || b.kind === 'sushi') {
+    if (b.kind === 'hammer' || b.kind === 'sushi' || b.kind === 'acid') {
       if (updateSpecialBullet(b, dt)) { bullets[i] = bullets[bullets.length - 1]; bullets.pop(); }
       continue;
     }
@@ -3281,6 +3309,16 @@ function update(dt) {
   for (let i = effects.length - 1; i >= 0; i--) {
     const fx = effects[i];
     fx.life -= dt;
+    if (fx.type === 'acidpool') {
+      fx.tickT -= dt;
+      if (fx.tickT <= 0) {
+        fx.tickT = 0.3;
+        for (let j = enemies.length - 1; j >= 0; j--) {
+          const e = enemies[j];
+          if (e && !e.fly && dist2(e.x, e.y, fx.x, fx.y) < (fx.radius + e.r * 0.5) ** 2) damageEnemy(e, fx.dmg);
+        }
+      }
+    }
     if (fx.type === 'shock' && !fx.hit) {   // a rolling ring: it only hurts where the wavefront is
       const r = fx.radius * (1 - fx.life / fx.maxLife), dd = Math.hypot(player.x - fx.x, player.y - fx.y);
       if (Math.abs(dd - r) < 18) { fx.hit = true; hurtPlayer(fx.dmg); }
@@ -3325,12 +3363,24 @@ function updateSpecialBullet(b, dt) {
     }
     return b.t >= b.life;
   }
-  // sushi
+  // sushi + acid flasks: lobbed in an arc
   const p = Math.min(1, b.t / b.T);
   b.x = b.sx + (b.tx - b.sx) * p;
   b.y = b.sy + (b.ty - b.sy) * p;
   b.h = Math.sin(p * Math.PI) * (36 + Math.hypot(b.tx - b.sx, b.ty - b.sy) * 0.15);
   if (p < 1) return false;
+  if (b.kind === 'acid') {   // the flask shatters: a splash, then a puddle that keeps eating whatever stands in it
+    burstParticles(b.x, b.y, '#B6FF49', 8);
+    burstParticles(b.x, b.y, '#DBFFFF', 3);                // glass
+    for (let j = enemies.length - 1; j >= 0; j--) {
+      const e = enemies[j];
+      if (e && dist2(e.x, e.y, b.x, b.y) < (b.aoe * 0.7 + e.r) ** 2) damageEnemy(e, b.dmg);
+    }
+    for (const bz of state.brazList || []) if (dist2(bz.x, bz.y, b.x, b.y) < (b.aoe + 14) ** 2) damageBrazier(bz, 12);
+    effects.push({ type: 'acidpool', x: b.x, y: b.y, radius: b.aoe, life: b.dur, maxLife: b.dur, dmg: b.tick, tickT: 0 });
+    sfx(900, 0.12, 'square', 0.03, -700); sfx(160, 0.3, 'sawtooth', 0.03, -80);   // smash + hiss
+    return true;
+  }
   effects.push({ type: 'boom', x: b.x, y: b.y, radius: b.aoe, life: 0.3, maxLife: 0.3 });
   burstParticles(b.x, b.y, '#FFFFFF', 6);               // rice
   burstParticles(b.x, b.y, b.maki ? '#24DB49' : '#FF6D49', 5);
@@ -3631,6 +3681,12 @@ function renderWorld() {
       drawProj('hammer', x, y, Math.floor(b.t * 14));
       continue;
     }
+    if (b.kind === 'acid') {     // lobbed flask, tumbling, with its shadow on the floor
+      const hy = Math.round(b.h / PX);
+      rect(x - 3, y + 1, 7, 2, 'rgba(0,0,0,0.4)');
+      drawProj('flask', x, y - hy, Math.floor(b.t * 12));
+      continue;
+    }
     if (b.kind === 'sushi') {    // lobbed: shadow on the floor, sushi up in the arc
       const hy = Math.round(b.h / PX);
       rect(x - 3, y + 1, 7, 2, 'rgba(0,0,0,0.4)');
@@ -3754,6 +3810,26 @@ function renderWorld() {
       const r = (fx.radius / PX) * (1 - p);
       ring(cx, cy, r, p > 0.3 ? C.white : '#FFB66D');
       ring(cx, cy, Math.max(1, r - 3), '#DB6D24');
+    } else if (fx.type === 'acidpool') {   // Ana's acid: a bright, bubbling puddle that fades at the end
+      if (p < 0.15 && blink(15)) continue;
+      const rx = Math.round(fx.radius / PX), ry = Math.round(rx * 0.55);
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      for (let k = 0; k < 2; k++) {
+        ctx.fillStyle = k ? 'rgba(146,255,36,0.22)' : 'rgba(73,182,0,0.3)';
+        const sx = rx * (1 - k * 0.4), sy = ry * (1 - k * 0.4);
+        for (let dy = -Math.round(sy); dy <= Math.round(sy); dy++) {
+          const hw = Math.round(sx * Math.sqrt(Math.max(0, 1 - (dy / (sy + 0.5)) ** 2)));
+          ctx.fillRect(cx - hw, cy + dy, hw * 2 + 1, 1);
+        }
+      }
+      ctx.restore();
+      for (let k = 0; k < 5; k++) {   // bubbles pop up all over it
+        const ph = (uiTime * 2.2 + k * 0.37 + fx.x * 0.013) % 1;
+        if (ph > 0.6) continue;
+        const bx = cx + Math.round(Math.sin(k * 2.1 + fx.y) * rx * 0.7), by = cy + Math.round(Math.cos(k * 1.7 + fx.x) * ry * 0.6);
+        rect(bx, by - Math.round(ph * 3), ph < 0.4 ? 2 : 1, ph < 0.4 ? 2 : 1, ph < 0.3 ? '#DBFF92' : '#92FF24');
+      }
     } else if (fx.type === 'toxic') {  // poison frog's death cloud: a squat green haze with rising bubbles
       if (p < 0.15 && blink(15)) continue;
       const rx = Math.round(fx.radius / PX), ry = Math.round(rx * 0.6);
