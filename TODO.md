@@ -25,6 +25,9 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 ## Later
 
+- Mutant Academy maps: enemies still press against walls on screen (~2-10%
+  of walkers at a time, worst in hell); real pathfinding (flow field to
+  the hero) would fix it if it bothers players.
 - Mutant Academy HD: more source re-packs where the 1x sheet shrank big
   art (LPC jungle trees 0.62x, treant 0.57x, monkey 0.69x, nightmare
   0.6x, ghoul 0.8x) — they're on the xBR baseline for now.
@@ -40,6 +43,12 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy: real act maps (seeded per run: roads, rivers, lakes,
+  ridges, templated structures, one landmark per act; walls/deep liquid
+  solid, water slows, lava burns, bog poisons; DCSS CC0 terrain sheets)
+  and one hidden secret per act (Biski shrine, X marks the spot, idol +
+  boulder, goldfish, quokka in hell; SECRETS n/5 in bestiary); bosses
+  no longer drop berserk — `f067dfa`
 - Mutant Academy: HD graphics mode (default; RETRO switch on title) —
   2x pixel-art sheets (xBR 2x baseline; icons, heroes, fire skull,
   devilkin, shark rebuilt from larger sources), WebGL coloured banded
