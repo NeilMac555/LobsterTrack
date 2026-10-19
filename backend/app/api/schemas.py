@@ -146,6 +146,12 @@ class SteamResultsResponse(BaseModel):
     many are still building a sample (they appear in `moves` but have
     no rankings row yet)."""
     source: str = "legacy"
+    qualifying_moves: int = 0
+    pending_moves: int = 0
+    excluded_moves: int = 0
+    generated_at: Optional[datetime] = None
+    latest_move_at: Optional[datetime] = None
+    latest_settled_kickoff: Optional[datetime] = None
     total_alerts: int = 0
     pending_alerts: int = 0
     profit_units: float = 0

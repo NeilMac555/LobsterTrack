@@ -1,8 +1,9 @@
 import '../research-ui.css';
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { getSteamResults } from '../api';
-import type { SteamResultsData } from '../types';
+
+import { useMoveResults } from '../hooks/useMoveResults';
+import MoveResultsStatus from '../components/MoveResultsStatus';
 import { LEAGUE_CONFIG, VISIBLE_LEAGUES } from '../types';
 import LeagueLogo from '../components/LeagueLogo';
 import { Helmet } from 'react-helmet-async';
@@ -56,35 +57,11 @@ export default function SteamResultsPage() {
     }
   }, [league, setSearchParams]);
 
-  const [data, setData] = useState<SteamResultsData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const [sortField, setSortField] = useState<SortField>('profit_loss');
+  const [sortField, setSortField] = useState<SortField>('total_moves');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
-  const [minMoves, setMinMoves] = useState<MinMoves>(5);
+  const [minMoves, setMinMoves] = useState<MinMoves>(3);
   const [daysFilter, setDaysFilter] = useState<number | null>(null);
-
-  useEffect(() => {
-    async function fetchData() {
-      setLoading(true);
-      setError(null);
-      try {
-        const result = await getSteamResults({
-          league: league || undefined,
-          limit: 200,
-          days: daysFilter || undefined,
-        });
-        setData(result);
-      } catch (err) {
-        setError('Failed to load steam results. Is the backend running?');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, [league, daysFilter]);
+  const { data, loading, error, checkedAt, retry } = useMoveResults('steam', league, daysFilter);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -117,13 +94,11 @@ export default function SteamResultsPage() {
     );
   }
 
-  if (error) {
+  if (error && !data) {
     return (
       <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 text-center">
         <p className="text-red-400">{error}</p>
-        <p className="text-slate-500 mt-2 text-sm">
-          Make sure the backend is running at http://localhost:8000
-        </p>
+        <button onClick={retry} className="text-cyan-400 underline mt-3">Try again</button>
       </div>
     );
   }
@@ -164,34 +139,34 @@ export default function SteamResultsPage() {
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Steam Results</h1>
             <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em]">
-              Confirmed Telegram alerts &middot; prices at time sent
+              All qualifying team steam moves &middot; Pinnacle 1X2
             </p>
             <Link to="/blog/what-are-steam-moves-in-football-betting" className="text-[11px] font-mono uppercase tracking-[0.1em] text-cyan-400 hover:text-cyan-300 mt-1.5 inline-block">What is a steam move? &rarr;</Link>
           </div>
         </div>
       </div>
 
-      <div className="mb-5 text-sm text-slate-400 space-y-2">
-        <p>Flat 1u per confirmed Telegram alert at the price sent. Draw selections are included; a draw bet wins when the match is drawn. Filters use the date the alert was sent.</p>
-        <p>{data.total_alerts ?? data.total_moves} alerts · {data.total_moves} settled · {data.pending_alerts ?? 0} awaiting results.</p>
-        <p className="text-white">Net P/L: {formatPL(data.profit_units ?? 0)} · ROI: {data.roi_percent == null ? '·' : `${data.roi_percent.toFixed(2)}%`}</p>
-        <p>Team rankings cover home/away selections only. Overall totals include every settled alert, including draws.</p>
+      <div className="mb-4 text-sm text-slate-400 space-y-2">
+        <p>Home and away selections that shortened by 3+ percentage points from the first recorded Pinnacle price, observed within two hours of kickoff. Includes qualifying moves whether or not a Telegram alert was sent.</p>
+        <p>Each team counts once per match, using its largest qualifying move. P/L uses a flat 1u at that recorded price. Draw selections are excluded; a team bet loses if the match is drawn. Filters use the fixture date.</p>
+        <p className="text-white">Net P/L: {formatPL(data.profit_units ?? 0)} · ROI: {data.roi_percent == null ? '—' : `${data.roi_percent.toFixed(2)}%`}</p>
       </div>
+      <MoveResultsStatus data={data} checkedAt={checkedAt} error={error} />
       {/* Stats Banner — terminal stat strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4 sm:mb-6">
         <div className="bg-slate-800/80 rounded-xl border border-slate-700/60 px-3 sm:px-4 py-2.5 sm:py-3">
-          <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">Settled alerts</div>
+          <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">Settled moves</div>
           <div className="text-2xl sm:text-3xl font-mono font-bold tabular-nums tracking-tight text-white leading-none mt-1.5">
             {data.total_moves}
           </div>
-          <div className="text-[10px] sm:text-xs text-slate-500 mt-1">settled Telegram selections</div>
+          <div className="text-[10px] sm:text-xs text-slate-500 mt-1">settled team selections</div>
         </div>
         <div className="bg-slate-800/80 rounded-xl border border-emerald-500/30 px-3 sm:px-4 py-2.5 sm:py-3">
           <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-emerald-400/80 font-semibold">Win Rate</div>
           <div className="text-2xl sm:text-3xl font-mono font-bold tabular-nums tracking-tight text-emerald-400 leading-none mt-1.5">
             {data.win_rate !== null ? `${data.win_rate}%` : '—'}
           </div>
-          <div className="text-[10px] sm:text-xs text-slate-500 mt-1">at the alerted price</div>
+          <div className="text-[10px] sm:text-xs text-slate-500 mt-1">at the recorded move price</div>
         </div>
         <div className="bg-slate-800/80 rounded-xl border border-slate-700/60 px-3 sm:px-4 py-2.5 sm:py-3">
           <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">W / D / L</div>
@@ -207,7 +182,7 @@ export default function SteamResultsPage() {
         <div className="bg-slate-800/80 rounded-xl border border-slate-700/60 px-3 sm:px-4 py-2.5 sm:py-3">
           <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-amber-400/80 font-semibold">Avg Move</div>
           <div className="text-2xl sm:text-3xl font-mono font-bold tabular-nums tracking-tight text-amber-400 leading-none mt-1.5">
-            {data.avg_movement_percent !== null ? `${data.avg_movement_percent}%` : '—'}
+            {data.avg_movement_percent !== null ? `${data.avg_movement_percent}pp` : '—'}
           </div>
           <div className="text-[10px] sm:text-xs text-slate-500 mt-1">steam size</div>
         </div>
@@ -353,7 +328,7 @@ export default function SteamResultsPage() {
               Last 30d
             </button>
             <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 ml-auto tabular-nums">
-              {data.season_label ? `${data.season_label} · ` : ''}{filteredRankings.length} {filteredRankings.length === 1 ? 'team' : 'teams'} · {data.min_moves_for_rankings ?? 3}+ moves to rank
+              {data.season_label ? `${data.season_label} · ` : ''}{filteredRankings.length} {filteredRankings.length === 1 ? 'team' : 'teams'} · {minMoves}+ moves to rank
             </span>
           </div>
 
@@ -454,7 +429,7 @@ export default function SteamResultsPage() {
                       </td>
                       <td className="px-3 py-2.5 text-center">
                         <span className="font-mono font-bold text-sm tabular-nums text-slate-300">
-                          {team.avg_move_size !== null ? `${team.avg_move_size}%` : '—'}
+                          {team.avg_move_size !== null ? `${team.avg_move_size}pp` : '—'}
                         </span>
                       </td>
                       <td className="px-3 py-2.5 text-center">
@@ -515,7 +490,7 @@ export default function SteamResultsPage() {
                         <span className="text-slate-500 mx-1">win</span>
                         <span className="text-slate-600 mx-1">·</span>
                         <span className="text-slate-300 font-bold">
-                          {team.avg_move_size !== null ? `${team.avg_move_size}%` : '—'}
+                          {team.avg_move_size !== null ? `${team.avg_move_size}pp` : '—'}
                         </span>
                         <span className="text-slate-500 mx-1">move</span>
                       </div>
@@ -529,9 +504,9 @@ export default function SteamResultsPage() {
       )}
 
       <section className="mt-6 mb-6 bg-slate-800/50 rounded-xl p-4 overflow-x-auto">
-        <h2 className="text-lg font-semibold text-white mb-3">Recent settled Telegram alerts</h2>
+        <h2 className="text-lg font-semibold text-white mb-3">Recent settled steam moves</h2>
         <table className="w-full text-sm text-left">
-          <thead className="text-slate-400"><tr><th className="p-2">Sent</th><th className="p-2">Selection</th><th className="p-2">Alert odds</th><th className="p-2">Result</th><th className="p-2">P/L</th></tr></thead>
+          <thead className="text-slate-400"><tr><th className="p-2">Detected</th><th className="p-2">Selection</th><th className="p-2">Move odds</th><th className="p-2">Result</th><th className="p-2">P/L</th></tr></thead>
           <tbody>{data.moves.map(move => <tr key={move.id} className="border-t border-slate-700">
             <td className="p-2 text-slate-400">{new Date(move.detected_at.endsWith('Z') ? move.detected_at : `${move.detected_at}Z`).toLocaleString()}</td>
             <td className="p-2"><Link className="text-cyan-400" to={`/match/${move.match_id}`}>{move.team_name}</Link></td>
@@ -540,7 +515,7 @@ export default function SteamResultsPage() {
             <td className={`p-2 ${move.won ? 'text-emerald-400' : 'text-red-400'}`}>{formatPL(move.won ? move.current_odds-1 : -1)}</td>
           </tr>)}</tbody>
         </table>
-        <p className="text-xs text-slate-500 mt-3">Showing up to 200 settled alerts. Summary totals include all alerts in the selected period.</p>
+        <p className="text-xs text-slate-500 mt-3">Showing up to 200 settled selections. Totals cover the full selected period. Largest-move prices describe the observed moves; they are not a first-alert betting strategy or Telegram performance.</p>
       </section>
 
       {/* Empty state when no data at all */}

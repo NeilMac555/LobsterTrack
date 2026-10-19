@@ -6,8 +6,8 @@ export async function getPredictorBaselines(): Promise<import('../types').Predic
   return fetchJson<import('../types').PredictorBaselinesResponse>(`${API_BASE}/predictor-baselines`);
 }
 
-async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url);
+async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
+  const response = await fetch(url, options);
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`);
   }
@@ -124,7 +124,7 @@ export async function getSteamResults(params?: {
   if (params?.days) searchParams.set('days', String(params.days));
 
   const query = searchParams.toString();
-  return fetchJson<SteamResultsData>(`${API_BASE}/steam-results${query ? `?${query}` : ''}`);
+  return fetchJson<SteamResultsData>(`${API_BASE}/steam-results${query ? `?${query}` : ''}`, { cache: 'no-store' });
 }
 
 export async function getDrifterResults(params?: {
@@ -139,7 +139,7 @@ export async function getDrifterResults(params?: {
   if (params?.days) searchParams.set('days', String(params.days));
 
   const query = searchParams.toString();
-  return fetchJson<SteamResultsData>(`${API_BASE}/drifter-results${query ? `?${query}` : ''}`);
+  return fetchJson<SteamResultsData>(`${API_BASE}/drifter-results${query ? `?${query}` : ''}`, { cache: 'no-store' });
 }
 
 export async function getClosingLines(params?: {

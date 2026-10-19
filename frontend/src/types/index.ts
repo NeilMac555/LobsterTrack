@@ -153,6 +153,12 @@ export interface TeamSteamRanking {
 }
 
 export interface SteamResultsData {
+  qualifying_moves?: number;
+  pending_moves?: number;
+  excluded_moves?: number;
+  generated_at?: string | null;
+  latest_move_at?: string | null;
+  latest_settled_kickoff?: string | null;
   source?: string;
   total_alerts?: number;
   pending_alerts?: number;

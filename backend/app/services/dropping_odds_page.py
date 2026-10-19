@@ -71,23 +71,15 @@ MARKET_LABEL = {"1x2": "1X2", "totals": "Totals", "spreads": "Asian handicap"}
 
 
 def steam_record_sentence(db: Session) -> str:
-    """Live Steam Results record for the current season, the same numbers
-    /api/steam-results reports: confirmed alerts with a result, 1 unit at
-    the post-move (alert) price."""
+    """Same all-qualifying-move cohort as the Steam Results page."""
     from app.api.routes import _season_start, _season_label
-    from app.services.telegram_results import alert_moves
-    try:
-        moves = [m for m in alert_moves(db, since=_season_start()) if m.result_updated]
-    except Exception:
-        moves = []
-    if not moves:
-        return "The season's record of every logged steam move is on Steam Results."
-    n = len(moves)
-    wins = sum(1 for m in moves if m.won)
-    profit = sum((m.current_odds - 1) if m.won else -1 for m in moves)
-    roi = 100.0 * profit / n
-    return (f"So far in {_season_label()} SteamWatch has logged {n} steam moves: {100.0 * wins / n:.1f}% won, and backing "
-            f"every one with 1 unit at the post-move price returned {roi:+.1f}%.")
+    from app.services.market_move_results import market_move_report
+    report = market_move_report(db, 1, _season_start(), _season_label(), limit=1)
+    if not report['total_moves']:
+        return "The season's record of qualifying steam moves is on Steam Results."
+    return (f"So far in {_season_label()} SteamWatch has recorded {report['total_moves']} settled team steam moves: "
+            f"{report['win_rate']:.1f}% won. Flat 1u at each selection's largest recorded qualifying move price "
+            f"returned {report['roi_percent']:+.1f}%. This is a descriptive movement record, not Telegram alert performance.")
 
 
 def intro_html(record: str) -> str:

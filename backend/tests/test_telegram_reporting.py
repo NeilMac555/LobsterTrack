@@ -6,7 +6,7 @@ from unittest.mock import patch
 from app.models import Base,Match,SteamMove,SyndicateAlert,AlertResult
 from app.services.telegram_results import alert_moves
 from app.services.results_fetcher import ResultsFetcher
-from app.api.routes import get_steam_results,get_syndicate_moves,get_steam_moves
+from app.api.routes import get_telegram_results,get_syndicate_moves,get_steam_moves
 
 class TelegramReportingTests(unittest.TestCase):
  def setUp(self):
@@ -20,7 +20,7 @@ class TelegramReportingTests(unittest.TestCase):
   self.db.commit()
  def test_sent_price_draws_pending_and_no_phantom_bets(self):
   self.add('win');self.add('draw','draw',3.5,(1,1));self.add('loss',score=(0,1));self.add('pending',score=None);self.add('unsent',sent=False)
-  report=asyncio.run(get_steam_results(db=self.db,league=None,limit=1,days=None))
+  report=asyncio.run(get_telegram_results(db=self.db,league=None,limit=1,days=None))
   self.assertEqual(report.total_alerts,4);self.assertEqual(report.pending_alerts,1)
   self.assertEqual(report.total_moves,3);self.assertEqual(report.total_wins,2)
   self.assertAlmostEqual(report.profit_units,2.41);self.assertEqual(len(report.moves),1)
@@ -32,7 +32,7 @@ class TelegramReportingTests(unittest.TestCase):
   self.add('pending',score=None)
   self.assertEqual(alert_moves(self.db,league='other'),[])
   self.assertEqual(alert_moves(self.db,until=self.now-timedelta(days=1)),[])
-  report=asyncio.run(get_steam_results(db=self.db,league=None,limit=200,days=None))
+  report=asyncio.run(get_telegram_results(db=self.db,league=None,limit=200,days=None))
   self.assertEqual(report.total_moves,0);self.assertEqual(report.profit_units,0)
   self.assertEqual(report.profit_history,[])
  def test_telegram_only_fixture_gets_settled(self):

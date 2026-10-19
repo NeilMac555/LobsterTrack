@@ -47,7 +47,7 @@ export default function DroppingOddsPage() {
       .then((r) => {
         if (cancelled || !r.total_moves) return;
         const roi = r.roi_percent ?? 0;
-        setRecord(`So far in ${r.season_label ?? 'this season'} SteamWatch has logged ${r.total_moves} steam moves: ${(r.win_rate ?? 0).toFixed(1)}% won, and backing every one with 1 unit at the post-move price returned ${roi > 0 ? '+' : ''}${roi.toFixed(1)}%.`);
+        setRecord(`So far in ${r.season_label ?? 'this season'} SteamWatch has recorded ${r.total_moves} settled team steam moves: ${(r.win_rate ?? 0).toFixed(1)}% won. Flat 1u at each selection's largest recorded qualifying move price returned ${roi > 0 ? '+' : ''}${roi.toFixed(1)}%. This is a descriptive movement record, not Telegram alert performance.`);
       })
       .catch(() => {});
     return () => { cancelled = true; };

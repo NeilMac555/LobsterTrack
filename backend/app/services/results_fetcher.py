@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.config import get_settings
 from app.models import Match, SteamMove, AlertResult
 from app.services.telegram_results import alert_moves
+from app.services.result_recovery import recover_results, unfinished_status
 from app.models.database import SessionLocal
 
 logger = structlog.get_logger()
@@ -61,6 +62,18 @@ class ResultsFetcher:
                 logger.debug("No steam moves pending result updates")
                 return summary
 
+            # Recover exact historical fixtures and source-verified exceptions first.
+            # The live provider cannot repair matches older than its 3-day window.
+            summary["recovered_results"] = recover_results(db, pending_moves)
+            db.flush()
+            summary["steam_moves_updated"] += summary["recovered_results"]
+            pending_moves = [m for m in pending_moves if not m.result_updated]
+            matches = {m.id: m for m in db.query(Match).filter(Match.id.in_({m.match_id for m in pending_moves}))}
+            held = {id for id, match in matches.items() if unfinished_status(match)}
+            summary["postponed_or_suspended_matches"] = len(held)
+            pending_moves = [m for m in pending_moves if m.match_id not in held]
+            summary["matches_checked"] = len({m.match_id for m in pending_moves})
+
             # Group by sport_key to minimize API calls
             moves_by_league = {}
             for move in pending_moves:
@@ -77,13 +90,16 @@ class ResultsFetcher:
                         summary["leagues_processed"] += 1
                         summary["steam_moves_updated"] += updated
                     except Exception as e:
-                        error_msg = f"{sport_key}: {str(e)}"
+                        error_msg = f"{sport_key}: {type(e).__name__}"
                         summary["errors"].append(error_msg)
-                        logger.error("Failed to fetch results", sport_key=sport_key, error=str(e))
+                        logger.error("Failed to fetch results", sport_key=sport_key, error=type(e).__name__)
 
             for move in telegram_pending:
                 if move.result_updated:
                     db.merge(AlertResult(match_id=move.match_id, home_score=move.home_score, away_score=move.away_score))
+            summary["unresolved_matches"] = len({m.match_id for m in pending_moves if not m.result_updated})
+            if summary["unresolved_matches"]:
+                logger.warning("Completed-fixture results need recovery", count=summary["unresolved_matches"])
             db.commit()
             logger.info("Results update complete", **summary)
 

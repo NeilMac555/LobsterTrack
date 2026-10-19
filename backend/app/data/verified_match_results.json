@@ -1,0 +1,97 @@
+{
+  "d0232ff2ec2fc373112664dc8a322910": {
+    "home_team": "AC Milan",
+    "away_team": "Venezia",
+    "date": "2026-08-28",
+    "sport_key": "soccer_italy_serie_a",
+    "status": "completed",
+    "home_score": 2,
+    "away_score": 0,
+    "source": "https://www.acmilan.com/en/news/articles/stats/2026-08-28/ac-milan-v-venezia-all-the-numbers-from-the-game",
+    "verified_on": "2026-10-19"
+  },
+  "057f16c17beffe8b70b4624868e833dc": {
+    "home_team": "Cardiff City",
+    "away_team": "Sheffield United",
+    "date": "2026-08-29",
+    "sport_key": "soccer_efl_champ",
+    "status": "completed",
+    "home_score": 2,
+    "away_score": 2,
+    "source": "https://www.skysports.com/football/cardiff-city-vs-sheffield-united/560525",
+    "verified_on": "2026-10-19"
+  },
+  "d824443a97dfe00630e64d166b01493c": {
+    "home_team": "Rayo Vallecano",
+    "away_team": "Real Racing Club de Santander",
+    "date": "2026-09-05",
+    "sport_key": "soccer_spain_la_liga",
+    "status": "completed",
+    "home_score": 3,
+    "away_score": 2,
+    "source": "https://footballdatabase.com/scores/2026-09-05",
+    "verified_on": "2026-10-19"
+  },
+  "f6818fa1fcc5a44a608c6b85fb01c197": {
+    "home_team": "Nice",
+    "away_team": "Le Mans FC",
+    "date": "2026-09-05",
+    "sport_key": "soccer_france_ligue_one",
+    "status": "completed",
+    "home_score": 1,
+    "away_score": 1,
+    "source": "https://ligue1.com/en/match-sheet/l1_championship_match_73844/match-history",
+    "verified_on": "2026-10-19"
+  },
+  "47ff26574f91f0a98af6b3ed0089c8fb": {
+    "home_team": "Charlton Athletic",
+    "away_team": "Portsmouth",
+    "date": "2026-09-12",
+    "sport_key": "soccer_efl_champ",
+    "status": "completed",
+    "home_score": 0,
+    "away_score": 0,
+    "source": "https://www.skysports.com/football/charlton-athletic-vs-portsmouth/5042993480706324232",
+    "verified_on": "2026-10-19"
+  },
+  "5d6f9accd6f79ae4216dfd29ccc342b2": {
+    "home_team": "Feyenoord",
+    "away_team": "Como",
+    "date": "2026-10-14",
+    "sport_key": "soccer_uefa_champs_league",
+    "status": "completed",
+    "home_score": 3,
+    "away_score": 2,
+    "source": "https://www.uefa.com/uefachampionsleague/news/02a8-2174c9e9019d-f909a77bd77a-1000--2026-27-champions-league-all-the-league-phase-fixtures/",
+    "verified_on": "2026-10-19"
+  },
+  "2903ee092f7e08c549b130a3d394ac3c": {
+    "home_team": "LASK",
+    "away_team": "Liverpool",
+    "date": "2026-10-14",
+    "sport_key": "soccer_uefa_champs_league",
+    "status": "completed",
+    "home_score": 3,
+    "away_score": 6,
+    "source": "https://www.uefa.com/uefachampionsleague/news/02a8-2174c9e9019d-f909a77bd77a-1000--2026-27-champions-league-all-the-league-phase-fixtures/",
+    "verified_on": "2026-10-19"
+  },
+  "4ef67376b662c2859f73bde7f7210388": {
+    "home_team": "Levante",
+    "away_team": "Athletic Bilbao",
+    "date": "2026-09-16",
+    "sport_key": "soccer_spain_la_liga",
+    "status": "postponed",
+    "source": "https://www.athletic-club.eus/noticias/2026/09/16/suspendido-el-levante-ud-athletic-club-de-la-jornada-6-de-laliga/",
+    "verified_on": "2026-10-19"
+  },
+  "349c47668fdd909039a9408c14cad8bc": {
+    "home_team": "Rayo Vallecano",
+    "away_team": "Athletic Bilbao",
+    "date": "2026-10-10",
+    "sport_key": "soccer_spain_la_liga",
+    "status": "suspended",
+    "source": "https://www.athletic-club.eus/en/news/2026/10/10/the-athletic-club-squad-returns-to-bilbao/",
+    "verified_on": "2026-10-19"
+  }
+}

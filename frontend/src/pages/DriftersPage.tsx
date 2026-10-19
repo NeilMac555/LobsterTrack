@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { getDrifterResults } from '../api';
-import type { SteamResultsData } from '../types';
+
+import { useMoveResults } from '../hooks/useMoveResults';
+import MoveResultsStatus from '../components/MoveResultsStatus';
 import { LEAGUE_CONFIG, VISIBLE_LEAGUES } from '../types';
 import LeagueLogo from '../components/LeagueLogo';
 import { Helmet } from 'react-helmet-async';
@@ -55,35 +56,11 @@ export default function DriftersPage() {
     }
   }, [league, setSearchParams]);
 
-  const [data, setData] = useState<SteamResultsData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const [sortField, setSortField] = useState<SortField>('profit_loss');
+  const [sortField, setSortField] = useState<SortField>('total_moves');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
-  const [minMoves, setMinMoves] = useState<MinMoves>(5);
+  const [minMoves, setMinMoves] = useState<MinMoves>(3);
   const [daysFilter, setDaysFilter] = useState<number | null>(null);
-
-  useEffect(() => {
-    async function fetchData() {
-      setLoading(true);
-      setError(null);
-      try {
-        const result = await getDrifterResults({
-          league: league || undefined,
-          limit: 200,
-          days: daysFilter || undefined,
-        });
-        setData(result);
-      } catch (err) {
-        setError('Failed to load drifter results. Is the backend running?');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, [league, daysFilter]);
+  const { data, loading, error, checkedAt, retry } = useMoveResults('drift', league, daysFilter);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -116,13 +93,11 @@ export default function DriftersPage() {
     );
   }
 
-  if (error) {
+  if (error && !data) {
     return (
       <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 text-center">
         <p className="text-red-400">{error}</p>
-        <p className="text-slate-500 mt-2 text-sm">
-          Make sure the backend is running at http://localhost:8000
-        </p>
+        <button onClick={retry} className="text-cyan-400 underline mt-3">Try again</button>
       </div>
     );
   }
@@ -186,6 +161,12 @@ export default function DriftersPage() {
 
       {isSubscribed && <>
 
+      <div className="mb-4 text-sm text-slate-400 space-y-2">
+        <p>Home and away selections that drifted by 3+ percentage points from the first recorded Pinnacle price, observed within two hours of kickoff. Each team counts once per match, using its largest qualifying move.</p>
+        <p>P/L uses a flat 1u at that recorded price. Draw selections are excluded; a team bet loses if the match is drawn. Filters use the fixture date. This is a descriptive movement record, not a first-alert betting strategy.</p>
+      </div>
+      <MoveResultsStatus data={data} checkedAt={checkedAt} error={error} />
+
       {/* Stats Banner — terminal stat strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4 sm:mb-6">
         <div className="bg-slate-800/80 rounded-xl border border-slate-700/60 px-3 sm:px-4 py-2.5 sm:py-3">
@@ -216,7 +197,7 @@ export default function DriftersPage() {
         <div className="bg-slate-800/80 rounded-xl border border-slate-700/60 px-3 sm:px-4 py-2.5 sm:py-3">
           <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-red-400/80 font-semibold">Avg Move</div>
           <div className="text-2xl sm:text-3xl font-mono font-bold tabular-nums tracking-tight text-red-400 leading-none mt-1.5">
-            {data.avg_movement_percent !== null ? `${data.avg_movement_percent}%` : '—'}
+            {data.avg_movement_percent !== null ? `${data.avg_movement_percent}pp` : '—'}
           </div>
           <div className="text-[10px] sm:text-xs text-slate-500 mt-1">drift size</div>
         </div>
@@ -337,7 +318,7 @@ export default function DriftersPage() {
               Last 30d
             </button>
             <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 ml-auto tabular-nums">
-              {data.season_label ? `${data.season_label} · ` : ''}{filteredRankings.length} {filteredRankings.length === 1 ? 'team' : 'teams'} · {data.min_moves_for_rankings ?? 3}+ moves to rank
+              {data.season_label ? `${data.season_label} · ` : ''}{filteredRankings.length} {filteredRankings.length === 1 ? 'team' : 'teams'} · {minMoves}+ moves to rank
             </span>
           </div>
 
@@ -438,7 +419,7 @@ export default function DriftersPage() {
                       </td>
                       <td className="px-3 py-2.5 text-center">
                         <span className="font-mono font-bold text-sm tabular-nums text-slate-300">
-                          {team.avg_move_size !== null ? `${team.avg_move_size}%` : '—'}
+                          {team.avg_move_size !== null ? `${team.avg_move_size}pp` : '—'}
                         </span>
                       </td>
                       <td className="px-3 py-2.5 text-center">
@@ -499,7 +480,7 @@ export default function DriftersPage() {
                         <span className="text-slate-500 mx-1">win</span>
                         <span className="text-slate-600 mx-1">·</span>
                         <span className="text-slate-300 font-bold">
-                          {team.avg_move_size !== null ? `${team.avg_move_size}%` : '—'}
+                          {team.avg_move_size !== null ? `${team.avg_move_size}pp` : '—'}
                         </span>
                         <span className="text-slate-500 mx-1">move</span>
                       </div>
