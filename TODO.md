@@ -16,7 +16,13 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 - Mutant Academy select screen on 4:3 screens (e.g. 1280x960, W=320):
   the hero panel runs off the bottom and the hint text overlaps it. Not
-  new; needs a compact layout for short, narrow screens.
+  new; needs a compact layout for short, narrow screens. The new PERK
+  lines and modifier buttons make the panel taller still.
+- Mutant Academy economy: shop prices (about 10k gold to max everything)
+  and challenge rewards are a first guess, not tuned against real runs.
+  Watch how many runs a full shop takes; pots and the goblin are the
+  easiest levers. Academy progress lives in browser localStorage only
+  (lost if site data is cleared; not shared between devices).
 - Mutant Academy tests: with random maps a couple of checks were flaky
   once each (sanctuary light radius, butcher chest). Act V's flake was a
   level-up menu pausing the game mid-test — fixed in the test (no
@@ -60,6 +66,7 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy: Academy shop and gold bank, challenge board, weighted level-ups with reroll/skip/banish, breakable pots, 5 new map events, a perk per hero, Hyper/Hurry modifiers (fa7cc37)
 - Mutant Academy: 10 evolutions (rank-5 power + partner trait at a chest), 8 new powers, 7 new traits, an ultimate for each of the 10 heroes, 25 new CC-BY icons (bb842ab)
 - Mutant Academy: PS1 3D graphics mode, prototype — Act I's cathedral in
   3D (WebGL2: ground plane from the 2D renderer, wall blocks with a
