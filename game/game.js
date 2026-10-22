@@ -1362,6 +1362,8 @@ const FLOOR_TILES = [
 // deterministic environment: solid crate/barrel obstacles + destructible braziers
 function obstacleAt(ix, iy) { const h = hash2(ix * 13 + 7, iy * 17 + 3); return h % 67 === 0 ? h : 0; }
 function brazierAt(ix, iy) { const h = hash2(ix * 3 + 1, iy * 5 + 9); return h % 131 === 0 ? h : 0; }
+function potAt(ix, iy) { const h = hash2(ix * 7 + 5, iy * 11 + 2); return h % 61 === 0 ? h : 0; }   // a cluster of breakable pots
+const POT_SPOTS = [[-22, -8], [18, -16], [2, 14], [30, 10], [-26, 22]];
 const BRAZIER_HP = 26;
 const brazierDamageMap = new Map(); // "ix,iy" -> damage taken
 const brazierHitAt = new Map();     // "ix,iy" -> uiTime of the last hit (for shake + flash)
@@ -1387,6 +1389,12 @@ function scanEnv() {
         const key = ix + ',' + iy;
         if (!brazierDead.has(key)) {
           braz.push({ key, x: ix * TILE + TILE / 2, y: iy * TILE + TILE / 2, r: 14 });
+        }
+      } else {
+        const ph = potAt(ix, iy);
+        if (ph) for (let k = 0, n = 2 + ph % 4; k < n; k++) {
+          const key = ix + ',' + iy + 'p' + k;
+          if (!brazierDead.has(key)) braz.push({ key, pot: true, x: ix * TILE + TILE / 2 + POT_SPOTS[k][0], y: iy * TILE + TILE / 2 + POT_SPOTS[k][1], r: 8 });
         }
       }
     }
@@ -1424,6 +1432,7 @@ function resolveObstacles(ent) {
 
 // braziers are the slot-machine lamps: break one, get a prize
 function damageBrazier(bz, dmg) {
+  if (bz.pot) { breakPot(bz); return; }
   const cur = (brazierDamageMap.get(bz.key) || 0) + dmg;
   brazierDamageMap.set(bz.key, cur);
   brazierHitAt.set(bz.key, uiTime);
@@ -1440,6 +1449,39 @@ function damageBrazier(bz, dmg) {
   else pickups.push({ x: bz.x, y: bz.y, type: 'berserk' });
   effects.push({ type: 'boom', x: bz.x, y: bz.y - 10, radius: 40, life: 0.3, maxLife: 0.3 });
   sfx(400, 0.15, 'triangle', 0.07, -150);
+}
+
+// pots: one hit (or a walk into them) smashes them; small change, a gem, now and then a snack or a power-up
+function breakPot(bz) {
+  if (brazierDead.has(bz.key)) return;
+  brazierDead.add(bz.key);
+  burstParticles(bz.x, bz.y - 6, POT_PALS[state.act].A, 7);
+  sfx(900 + rand(0, 400), 0.07, 'square', 0.04, -700);
+  const r = Math.random(), x = bz.x, y = bz.y;
+  if (r < 0.45) pickups.push({ x, y, type: 'gold', v: randInt(2, 6) });
+  else if (r < 0.7) gems.push({ x, y, v: 3 });
+  else if (r < 0.76) pickups.push({ x, y, type: 'food', food: rollFood() });
+  else if (r < 0.8) pickups.push({ x, y, type: pick(['vac', 'rush', 'aegis']) });
+}
+const POT_ROWS = ['...KKKK...', '..KLLLLK..', '...KAAK...', '..KHAAAK..', '.KHAAAADK.', 'KHAAAAAADK',
+  'KHABBBBADK', 'KHAAAAAADK', 'KAAAAAAADK', '.KAAAAADK.', '..KDDDDK..', '...KKKK...'];
+// one pot per act: a stone urn, a clay pot, a jade jar, a coral amphora, an obsidian urn
+const POT_PALS = {
+  1: { K: '#000000', L: '#B6B6B6', H: '#DBDBDB', A: '#929292', D: '#494949', B: '#6D2424' },
+  2: { K: '#240000', L: '#FFB66D', H: '#FFB66D', A: '#DB6D24', D: '#924900', B: '#FFDB92' },
+  3: { K: '#002400', L: '#92DB92', H: '#92FF92', A: '#24926D', D: '#004924', B: '#DBB624' },
+  4: { K: '#000024', L: '#FFB6B6', H: '#FFDBB6', A: '#FF6D6D', D: '#92244A', B: '#49DBFF' },
+  5: { K: '#000000', L: '#B69292', H: '#926D6D', A: '#4A3636', D: '#241212', B: '#FF4900' },
+};
+let POT_IMG = null;
+function drawPot(bz) {
+  if (!POT_IMG) POT_IMG = {};
+  const img = POT_IMG[state.act] || (POT_IMG[state.act] = pixmap(POT_ROWS, POT_PALS[state.act] || POT_PALS[1], 'pot' + state.act));
+  const x = toDX(bz.x), y = toDY(bz.y);
+  if (x < -12 || x > W + 12 || y < -16 || y > H + 12) return;
+  if (bbList) { bbPush(img, 0, 0, 10, 12, x + camX, bz.y / PX + 1, 10, 12, 0); return; }
+  drawShadowAt(bz.x, bz.y + 2, 5);
+  ctx.drawImage(img, x - 5, y - 11);
 }
 
 // Sanctuary cathedral floor (Dungeon Crawl Stone Soup CC0 tiles, 32px): worn grey cobbles, the odd
@@ -2071,6 +2113,9 @@ const state = {
   ult: 0, ultQueue: [], ultGuardT: 0, catnadoT: 0, decoy: null,   // hero ultimates; the decoy hologram
   ally: null, wildAxo: null, allyT: 0, inkT: 0,
   actBoss: null, bossCleared: 0, clearT: 0,
+  rerolls: 0, skips: 0, banishes: 0, banished: [],   // level-up tools (the Academy shop buys more)
+  goldRushT: 0, cursedT: 0, shrine: null, well: null,  // map events
+  combo: 0, comboT: 0, hitN: 0, lastHurtT: 0, ultsFired: 0, evolved: 0, goblins: 0, mods: [],
 };
 // Act II: after this many level-ups' worth of levels a town portal carries you to the desert
 const ACT2_LEVEL = 5;   // = 4 level-ups (the Butcher's level; beat him and the portal opens)
@@ -2156,7 +2201,7 @@ const ACT5_TYPES = [ ['ghoul','fireskull'], ['ghoul','fireskull','imp'], ['ghoul
 function currentWave() {
   const m = Math.min(WAVES.length - 1, Math.floor(state.time / 60));
   const types = [null, WAVES[m].types, ACT2_TYPES[m], ACT3_TYPES[m], ACT4_TYPES[m], ACT5_TYPES[m]][state.act] || WAVES[m].types;
-  const curse = 1 + player.curse * 0.15;   // the Curse trait: more of them
+  const curse = (1 + player.curse * 0.15) * (state.cursedT > 0 ? 1.6 : 1);   // the Curse trait (and a cursed shrine): more of them
   return { min: Math.max(6, Math.min(Math.round(actScale().cap * curse), Math.round(WAVES[m].min * actScale().n * curse))), interval: WAVES[m].interval, types };
 }
 
@@ -2170,6 +2215,7 @@ const player = {
   sprite: 'ranger', face: 1, moving: false, animT: 0, attackAge: 99,
   critChance: 0.12, drawScale: SCALE,
   area: 1, dupes: 0, dur: 1, luck: 0, thorns: 0, revives: 0, curse: 0,   // what the traits change
+  xpMult: 1, goldMult: 1, cards: 3,                                        // ...and the Academy shop
   weapons: [], passives: {},
 };
 
@@ -2595,6 +2641,7 @@ function fireUlt() {
   const u = ULTS[player.heroId];
   if (!u || state.ult < 1 || scene !== 'play' || menus.length) return;
   state.ult = 0;
+  state.ultsFired++;
   state.ultGuardT = Math.max(state.ultGuardT, 1.5);
   state.flash = 0.6; state.shake = Math.max(state.shake, 6);
   announce(u.name + '!', u.col, 1.6, 6);
@@ -2671,8 +2718,8 @@ const PASSIVE_DEFS = {
     apply() { player.area *= 1.15; } },
   linger: { name: 'Lingering', desc: 'Pools, fields, flames and summons last 20% longer per rank.',
     apply() { player.dur *= 1.2; } },
-  luck: { name: 'Luck', desc: '+5% critical chance per rank, and treasure chests hold more.',
-    apply() { player.luck += 1; player.critChance += 0.05; } },
+  luck: { name: 'Luck', desc: '+5% critical chance per rank and richer chests. At rank 3, level-ups offer a fourth card.',
+    apply() { player.luck += 1; player.critChance += 0.05; if (player.luck >= 3) player.cards = Math.max(player.cards, 4); } },
   thorns: { name: 'Thorns', desc: 'Monsters that touch you take 150% of the hit back per rank.',
     apply() { player.thorns += 1.5; } },
   wind: { name: 'Second Wind', desc: 'Once per rank: when you would fall, rise again at half health in a blast.', max: 2,
@@ -2751,6 +2798,102 @@ function unlockHero(id) {
   unlocks.push(id);
   try { localStorage.setItem(UNLOCK_KEY, JSON.stringify(unlocks)); } catch (e) {}
   return true;
+}
+
+// ---------- the Academy: gold banked between runs, permanent upgrades, challenges, run modifiers ----------
+const META_KEY = 'mutant-academy-meta';
+const meta = { bank: 0, ups: {}, done: [], played: [], mods: [] };
+try { Object.assign(meta, JSON.parse(localStorage.getItem(META_KEY) || '{}')); } catch (e) {}
+function saveMeta() { try { localStorage.setItem(META_KEY, JSON.stringify(meta)); } catch (e) {} }
+const upRank = id => meta.ups[id] || 0;
+// cost is per rank: buying rank r+1 costs cost * (r+1)
+const SHOP = [
+  { id: 'vigor', icon: 'vitality', name: 'Vigor', desc: '+10 max HP per rank.', max: 5, cost: 80,
+    apply: r => { player.maxHp += 10 * r; player.hp += 10 * r; } },
+  { id: 'might', icon: 'power', name: 'Might', desc: '+5% damage per rank.', max: 5, cost: 120, apply: r => { player.dmgMult *= 1 + 0.05 * r; } },
+  { id: 'swift', icon: 'boots', name: 'Swiftness', desc: '+4% movement speed per rank.', max: 3, cost: 100, apply: r => { player.speed *= 1 + 0.04 * r; } },
+  { id: 'reach', icon: 'magnet', name: 'Reach', desc: '+15% pickup radius per rank.', max: 3, cost: 60, apply: r => { player.magnetR *= 1 + 0.15 * r; } },
+  { id: 'haste', icon: 'focus', name: 'Haste', desc: 'Powers recharge 3% faster per rank.', max: 3, cost: 150, apply: r => { player.cdMult *= 1 - 0.03 * r; } },
+  { id: 'growth', icon: 'soul', name: 'Growth', desc: '+8% experience per rank.', max: 3, cost: 120, apply: r => { player.xpMult *= 1 + 0.08 * r; } },
+  { id: 'greed', icon: 'gold', name: 'Greed', desc: '+10% gold per rank.', max: 3, cost: 100, apply: r => { player.goldMult *= 1 + 0.1 * r; } },
+  { id: 'reroll', icon: 'cards', name: 'Reroll', desc: 'One more level-up reroll per run, per rank.', max: 3, cost: 100, apply: r => { state.rerolls += r; } },
+  { id: 'skip', icon: 'decoy', name: 'Skip', desc: 'One more level-up skip per run, per rank.', max: 3, cost: 50, apply: r => { state.skips += r; } },
+  { id: 'banish', icon: 'curse', name: 'Banish', desc: 'One more banish per run, per rank: strike a card from the run.', max: 3, cost: 100, apply: r => { state.banishes += r; } },
+  { id: 'charge', icon: 'thunder', name: 'Head Start', desc: 'Start every run with the ultimate 25% charged per rank.', max: 2, cost: 200, apply: r => { state.ult = 0.25 * r; } },
+  { id: 'card', icon: 'fullhouse', name: 'Fourth Card', desc: 'Level-ups offer four choices instead of three.', max: 1, cost: 1200, apply: () => { player.cards = 4; } },
+  { id: 'revival', icon: 'wind', name: 'Revival', desc: 'Rise again once per run at half health.', max: 1, cost: 900, apply: r => { player.revives += r; } },
+];
+const shopCost = it => it.cost * (upRank(it.id) + 1);
+function buyUpgrade(it) {
+  if (upRank(it.id) >= it.max || meta.bank < shopCost(it)) { sfx(110, 0.2, 'square', 0.05, -30); return false; }
+  meta.bank -= shopCost(it);
+  meta.ups[it.id] = upRank(it.id) + 1;
+  saveMeta();
+  jingle([659, 784, 1047], 0.06, 0.05);
+  return true;
+}
+// run modifiers, picked on the hero select screen: harder or faster runs that pay more gold
+const MODS = [
+  { id: 'hyper', key: 'h', name: 'HYPER', desc: 'Monsters 25% faster and more frequent, you 10% faster. Gold x1.5.', gold: 1.5 },
+  { id: 'hurry', key: 'u', name: 'HURRY', desc: '+50% experience, so acts end sooner. Gold x1.25.', gold: 1.25 },
+];
+const modOn = id => state.mods.includes(id);
+// challenges: each pays once, straight into the Academy's bank
+const CHALLENGES = [
+  { id: 'act2', name: 'Into the Sands', desc: 'Reach Act II.', gold: 100, test: () => state.act >= 2 },
+  { id: 'goblin', name: 'Goblin Slayer', desc: 'Catch a treasure goblin.', gold: 150, test: () => state.goblins >= 1 },
+  { id: 'evolve', name: 'Evolution', desc: 'Evolve a power.', gold: 200, test: () => state.evolved >= 1 },
+  { id: 'kills1k', name: 'Thousand Cuts', desc: 'Kill 1,000 monsters in one run.', gold: 200, test: () => state.kills >= 1000 },
+  { id: 'ult5', name: 'Showstopper', desc: 'Fire 5 ultimates in one run.', gold: 200, test: () => state.ultsFired >= 5 },
+  { id: 'untouched', name: 'Untouchable', desc: 'Go 3 minutes without taking a hit.', gold: 250, test: () => state.time - state.lastHurtT >= 180 },
+  { id: 'act4', name: 'Deep Dive', desc: 'Reach Act IV.', gold: 300, test: () => state.act >= 4 },
+  { id: 'level30', name: 'Prodigy', desc: 'Reach level 30.', gold: 300, test: () => state.level >= 30 },
+  { id: 'roster', name: 'Full Roster', desc: 'Start a run with every hero.', gold: 300, test: () => HEROES.every(h => meta.played.includes(h.id)) },
+  { id: 'hyper', name: 'Hyperactive', desc: 'Clear an act on Hyper.', gold: 400, test: () => modOn('hyper') && state.bossCleared >= 1 },
+  { id: 'secrets', name: 'Treasure Hunter', desc: 'Find all five secrets.', gold: 500, test: () => secretsFound.length >= 5 },
+  { id: 'evolve3', name: 'Apex Mutant', desc: 'Evolve 3 powers in one run.', gold: 600, test: () => state.evolved >= 3 },
+  { id: 'biski', name: 'Cat Burglar', desc: 'Defeat the Devil as Biski.', gold: 800, test: () => state.won && player.heroId === 'biski' },
+  { id: 'win', name: 'Devil Slayer', desc: 'Defeat the Devil.', gold: 1000, test: () => state.won },
+];
+function checkChallenges() {
+  for (const c of CHALLENGES) {
+    if (meta.done.includes(c.id) || !c.test()) continue;
+    meta.done.push(c.id);
+    meta.bank += c.gold;
+    state.challengeGold = (state.challengeGold || 0) + c.gold;
+    saveMeta();
+    announce(c.name + '!', '#92FFFF', 2.4, 4, `CHALLENGE COMPLETE: +${c.gold} GOLD`);
+    jingle([784, 988, 1175, 1568], 0.07, 0.05);
+  }
+}
+// the run's gold goes into the bank once, however the run ends
+function bankRun() {
+  if (state.banked) return;
+  state.banked = true;
+  meta.bank += state.gold;
+  saveMeta();
+}
+// every hero brings one perk of their own
+const HERO_PERKS = {
+  visor:    { name: 'Sharpshooter', desc: '+25% damage to monsters more than a few steps away.' },
+  wildcat:  { name: 'Bloodlust', desc: 'Below half health: +30% damage and +15% speed.' },
+  skywitch: { name: 'Static Charge', desc: 'Every 12th kill calls down a free bolt of lightning.' },
+  ace:      { name: 'High Roller', desc: 'Treasure chests roll richer, and +15% gold.' },
+  mender:   { name: 'Field Medic', desc: 'Food heals twice as much, and every level-up heals 15 HP.' },
+  biski:    { name: "Cat's Luck", desc: 'Lands on her feet: one free revive every run.' },
+  neil:     { name: 'Holy Shield', desc: 'Every fifth hit he takes is blocked outright.' },
+  zoe:      { name: 'Snack Time', desc: 'Snacks turn up twice as often.' },
+  ana:      { name: 'Corrosive', desc: 'Monsters soaked in her acid take +25% damage from everything.' },
+  karate:   { name: 'Combo', desc: 'Quick kills build a combo: +1% damage per kill, up to +30%.' },
+};
+const perk = id => player.heroId === id;
+// the damage multiplier from the hero's perk, against one monster
+function perkDmg(e) {
+  if (perk('visor') && dist2(e.x, e.y, player.x, player.y) > 170 * 170) return 1.25;
+  if (perk('wildcat') && player.hp < player.maxHp / 2) return 1.3;
+  if (perk('ana') && e.corrodeUntil > state.time) return 1.25;
+  if (perk('karate')) return 1 + state.combo * 0.01;
+  return 1;
 }
 // Read each hero's real stats by running their mods on a scratch copy of the
 // base player — the select screen can never disagree with the game.
@@ -3316,6 +3459,7 @@ function summonActBoss() {
 let lastHitSnd = 0;
 function damageEnemy(e, dmg) {
   if (e.burrowed) return;   // the Maggot Queen underground
+  dmg *= perkDmg(e);
   const crit = Math.random() < player.critChance;
   if (crit) dmg *= 2.2;
   if (e.freezeT > 0) dmg *= 1.5;   // frozen foes break easily
@@ -3356,6 +3500,10 @@ function killEnemy(e) {
   enemies.splice(i, 1);
   state.kills++;
   gainUlt(e.boss ? 0.25 : e.elite ? 0.05 : 1 / ULT_KILLS);
+  if (perk('karate')) { state.combo = state.comboT > 0 ? Math.min(30, state.combo + 1) : 1; state.comboT = 1.5; }
+  if (perk('skywitch') && state.kills % 12 === 0) staticBolt();
+  if (e.treasure) goblinLoot(e);
+  if (state.goldRushT > 0 && !e.treasure && Math.random() < 0.25) pickups.push({ x: e.x + rand(-8, 8), y: e.y + rand(-8, 8), type: 'gold', v: randInt(3, 8) });
   if (e.freezeT > 0 && e.shatter) {   // Cryo Field: the frozen shatter into shards that cut their neighbours
     burstParticles(e.x, e.y - 10, '#DBFFFF', 10);
     for (const o of [...enemies]) if (dist2(o.x, o.y, e.x, e.y) < 60 * 60) damageEnemy(o, e.shatter);
@@ -3418,7 +3566,15 @@ function groundYOf(e) { return e.y + e.r * 0.9; }
 
 // ---------- player damage / xp ----------
 function hurtPlayer(dmg) {
-  if (player.hurtCd > 0 || state.berserkT > 0 || state.ultGuardT > 0) return false;
+  if (player.hurtCd > 0 || state.berserkT > 0 || state.ultGuardT > 0 || state.aegisT > 0) return false;
+  if (perk('neil') && ++state.hitN % 5 === 0) {   // Holy Shield: every fifth hit bounces off
+    player.hurtCd = 0.5;
+    popText(player.x, player.y - 44, 'BLOCKED!', '#FFDB49');
+    burstParticles(player.x, player.y - 16, '#FFDB49', 8);
+    sfx(1200, 0.12, 'triangle', 0.05, -400);
+    return false;
+  }
+  state.lastHurtT = state.time;
   const taken = Math.max(1, dmg - player.armor);
   player.hp -= taken;
   player.hurtCd = 0.5;
@@ -3445,8 +3601,127 @@ function secondWind() {
   jingle([523, 659, 784, 1047], 0.08, 0.07);
 }
 
+// gold through one door: the shop's Greed, Ace's perk, run modifiers and a gold rush all multiply it
+function addGold(v) {
+  const mod = MODS.reduce((k, m) => k * (modOn(m.id) ? m.gold : 1), 1);
+  v = Math.max(1, Math.round(v * player.goldMult * mod * (state.goldRushT > 0 ? 2 : 1)));
+  state.gold += v;
+  return v;
+}
+// Sky Witch's Static Charge: a free bolt from the sky onto the nearest monster, arcing to two more
+function staticBolt() {
+  const t = nearestEnemies(1)[0];
+  if (!t || dist2(t.x, t.y, player.x, player.y) > 420 * 420) return;
+  const dmg = 30 * player.dmgMult * (1 + state.level * 0.05);
+  effects.push({ type: 'chain', pts: [[t.x + rand(-20, 20), t.y - 220], [t.x, t.y - 10]], col: '#92DBFF', life: 0.25, maxLife: 0.25 });
+  damageEnemy(t, dmg);
+  chainFrom(t, 2, 150, dmg * 0.6, '#92DBFF');
+  sfx(1800, 0.12, 'sawtooth', 0.03, -1400);
+}
+
+// ---------- map events beyond the ring and the sweep ----------
+// one every 30s from 0:45, round this cycle: the ring and the sweep still come twice each
+const EVENT_CYCLE = ['ring', 'goblin', 'sweep', 'well', 'ring', 'rush', 'sweep', 'shrine', 'elites'];
+function fireEvent(n) {
+  const kind = EVENT_CYCLE[n % EVENT_CYCLE.length];
+  if (kind === 'ring') spawnRing();
+  else if (kind === 'sweep') spawnSweep();
+  else if (kind === 'goblin') spawnGoblin();
+  else if (kind === 'rush') startGoldRush();
+  else if (kind === 'well') placeWell();
+  else if (kind === 'shrine') placeShrine();
+  else if (kind === 'elites') { for (let i = 0; i < 3; i++) spawnElite(); announce('ELITE PACK!', C.gold, 2.2, 4, 'THREE AT ONCE'); }
+}
+// an open spot about d away, so a well or shrine never lands in a wall or a lake
+function openSpot(d) {
+  for (let k = 0; k < 16; k++) {
+    const a = rand(0, TAU), x = player.x + Math.cos(a) * d, y = player.y + Math.sin(a) * d;
+    if (!solidAt(x, y) && !groundAt(x, y)) return { x, y };
+  }
+  return { x: player.x, y: player.y };
+}
+// the treasure goblin: a fat sack of gold that runs from you, and gets away after a while
+function spawnGoblin() {
+  const at = openSpot(210);
+  const e = makeEnemy('goblin', at.x, at.y, { hpMul: 25, xpMul: 3 });   // tough enough to need a chase
+  e.treasure = 15; e.dmg = 0; e.move = 'flee'; e.speed = player.speed * 0.78;
+  enemies.push(e);
+  announce('TREASURE GOBLIN!', '#FFDB49', 2.2, 4, 'CATCH IT BEFORE IT ESCAPES');
+  sfx(1300, 0.3, 'square', 0.04, 600);
+}
+function goblinLoot(e) {
+  state.goblins++;
+  for (let k = 0; k < 12; k++) {
+    const a = rand(0, TAU), d = rand(10, 70);
+    pickups.push({ x: e.x + Math.cos(a) * d, y: e.y + Math.sin(a) * d, type: 'gold', v: randInt(8, 20) });
+  }
+  if (Math.random() < 0.5) pickups.push({ x: e.x, y: e.y, type: 'chest' });
+  burstParticles(e.x, e.y - 10, '#FFDB49', 24);
+  announce('GOBLIN CAUGHT!', '#FFDB49', 2, 5, 'IT DROPPED ITS SACK');
+  jingle([784, 988, 1175, 1568, 1976], 0.05, 0.05);
+}
+function startGoldRush() {
+  state.goldRushT = 20;
+  announce('GOLD RUSH!', '#FFDB49', 2.2, 4, 'DOUBLE GOLD FOR 20 SECONDS');
+  jingle([1047, 1319, 1568], 0.06, 0.05);
+}
+// a healing well: stand in it to heal; monsters can't step inside while it lasts
+function placeWell() {
+  const at = openSpot(150);
+  state.well = { x: at.x, y: at.y, r: 72, t: 16 };
+  announce('HEALING WELL!', '#49DBFF', 2.2, 4, 'A SAFE HAVEN, FOR NOW');
+  sfx(500, 0.5, 'sine', 0.05, 400);
+}
+// a cursed shrine: stand in it to call down a horde; outlast the curse and a chest appears
+function placeShrine() {
+  const at = openSpot(170);
+  state.shrine = { x: at.x, y: at.y, r: 34, t: 30, charge: 0 };
+  announce('A CURSED SHRINE...', '#B692FF', 2.4, 4, 'STAND IN IT IF YOU DARE');
+  sfx(90, 0.6, 'sawtooth', 0.05, 30);
+}
+const CURSE_TIME = 40;
+function updateMapEvents(dt) {
+  state.goldRushT = Math.max(0, state.goldRushT - dt);
+  state.rushT = Math.max(0, (state.rushT || 0) - dt);
+  state.aegisT = Math.max(0, (state.aegisT || 0) - dt);
+  if (state.comboT > 0 && (state.comboT -= dt) <= 0) state.combo = 0;
+  const w = state.well;
+  if (w) {
+    w.t -= dt;
+    if (dist2(w.x, w.y, player.x, player.y) < w.r * w.r) {
+      player.hp = Math.min(player.maxHp, player.hp + 8 * dt);
+      player.poisonT = 0;
+      if (Math.random() < 0.3) burstParticles(player.x + rand(-12, 12), player.y - rand(0, 30), '#92FFFF', 1);
+    }
+    for (const e of enemies) {   // the water's edge holds the monsters back
+      if (e.boss || e.sweep) continue;
+      const dx = e.x - w.x, dy = e.y - w.y, d = Math.hypot(dx, dy) || 1, min = w.r + e.r;
+      if (d < min) { e.x = w.x + dx / d * min; e.y = w.y + dy / d * min; }
+    }
+    if (w.t <= 0) state.well = null;
+  }
+  const s = state.shrine;
+  if (s) {
+    s.t -= dt;
+    if (dist2(s.x, s.y, player.x, player.y) < s.r * s.r) s.charge += dt; else s.charge = Math.max(0, s.charge - dt);
+    if (s.charge >= 1.5) {
+      state.shrine = null;
+      state.cursedT = CURSE_TIME;
+      state.flash = 0.5; state.shake = 10;
+      announce('THE SHRINE IS CURSED!', '#B692FF', 2.6, 5, `SURVIVE ${CURSE_TIME} SECONDS FOR A CHEST`);
+      sfx(60, 1, 'sawtooth', 0.08, -20);
+      for (let i = 0; i < 12; i++) spawnEnemy(pick(currentWave().types));
+    } else if (s.t <= 0) state.shrine = null;
+  }
+  if (state.cursedT > 0 && (state.cursedT -= dt) <= 0) {
+    pickups.push({ x: player.x + 30, y: player.y, type: 'chest' });
+    announce('THE CURSE LIFTS!', C.yellow, 2.2, 5, 'A CHEST FOR YOUR TROUBLE');
+    jingle([523, 659, 784, 1047], 0.08, 0.06);
+  }
+}
+
 function gainXp(v) {
-  state.xp += v * (1 + player.curse * 0.15);   // ...and more to learn from them
+  state.xp += v * (1 + player.curse * 0.15) * player.xpMult * (modOn('hurry') ? 1.5 : 1);   // ...and more to learn from them
   while (state.xp >= state.xpNeed) {
     state.xp -= state.xpNeed;
     state.level++;
@@ -3454,6 +3729,7 @@ function gainXp(v) {
     state.xpNeed = Math.floor(5 + state.level * 7 + state.level * state.level * 1.1);   // each level costs noticeably more than the last
     sndLevel();
     state.flash = Math.max(state.flash, 0.35);
+    if (perk('mender')) player.hp = Math.min(player.maxHp, player.hp + 15);   // Field Medic
     pushMenu({ type: 'levelup' });   // one choice per level, even on multi-level jumps
   }
 }
@@ -3499,7 +3775,9 @@ function openPause() {
   if (scene === 'play' && !menus.length) { pushMenu({ type: 'pause' }); sndMove(); }
 }
 
-function upgradeChoices() {
+const optKey = o => o.kind + ':' + o.id;
+// everything a level-up could offer right now (banished cards never come back this run)
+function upgradeOpts() {
   const opts = [];
   for (const w of player.weapons) {
     if (w.level < MAX_LEVEL) opts.push({ kind: 'weapon', id: w.id, rank: w.level, isNew: false });
@@ -3516,13 +3794,63 @@ function upgradeChoices() {
     if (rank >= passiveMax(id)) continue;
     opts.push({ kind: 'passive', id, rank, isNew });
   }
-  for (let i = opts.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [opts[i], opts[j]] = [opts[j], opts[i]];
+  return opts.filter(o => !state.banished.includes(optKey(o)));
+}
+// Weighted draw: what you already own comes up far more often than something new, the trait a power
+// needs to evolve more often still, and once a power hits rank 5 its missing partner is always offered.
+// `avoid` (the cards on the table, on a reroll) are only dealt again if nothing else is left.
+function upgradeChoices(avoid = [], n = player.cards) {
+  const opts = upgradeOpts();
+  const partners = new Set(player.weapons.filter(w => !w.evo && EVOLUTIONS[w.id] && w.level >= 3).map(w => EVOLUTIONS[w.id].with));
+  for (const o of opts) o.wt = o.kind === 'passive' && partners.has(o.id) && o.isNew ? 4 : !o.isNew ? (o.kind === 'weapon' ? 3 : 2) : 1;
+  const avoidK = new Set(avoid.map(optKey));
+  const fresh = opts.filter(o => !avoidK.has(optKey(o))), stale = opts.filter(o => avoidK.has(optKey(o)));
+  const picked = [];
+  const waiting = player.weapons.find(w => !w.evo && EVOLUTIONS[w.id] && w.level >= MAX_LEVEL && !player.passives[EVOLUTIONS[w.id].with]);
+  if (waiting) {
+    const o = fresh.find(o => o.kind === 'passive' && o.id === EVOLUTIONS[waiting.id].with);
+    if (o) { picked.push(o); fresh.splice(fresh.indexOf(o), 1); }
   }
-  const picked = opts.slice(0, 3);
+  for (const pool of [fresh, stale]) {
+    while (picked.length < n && pool.length) {
+      let r = Math.random() * pool.reduce((t, o) => t + o.wt, 0), j = 0;
+      while ((r -= pool[j].wt) > 0 && j < pool.length - 1) j++;
+      picked.push(pool.splice(j, 1)[0]);
+    }
+  }
+  for (let i = picked.length - 1; i > 0; i--) {   // the guaranteed card shouldn't always sit on top
+    const j = Math.floor(Math.random() * (i + 1));
+    [picked[i], picked[j]] = [picked[j], picked[i]];
+  }
   if (!picked.length) picked.push({ kind: 'heal', id: 'heal', rank: 0, isNew: false });
   return picked;
+}
+// the level-up tools: deal a fresh hand, walk away, or strike a card from the run for good
+function levelTool(m, tool) {
+  if (menuLock > 0 || m.type !== 'levelup') return;
+  const have = { reroll: state.rerolls, skip: state.skips, banish: state.banishes }[tool];
+  const o = m.choices[m.sel];
+  if (!have || (tool === 'banish' && (!o || o.kind === 'heal'))) { sfx(110, 0.2, 'square', 0.05, -30); return; }
+  if (tool === 'reroll') {
+    state.rerolls--;
+    m.choices = upgradeChoices(m.choices);
+    m.sel = Math.min(m.sel, m.choices.length - 1);
+    sfx(700, 0.15, 'square', 0.05, 500);
+  } else if (tool === 'skip') {
+    state.skips--;
+    sndMove();
+    closeMenu();
+  } else {
+    state.banishes--;
+    state.banished.push(optKey(o));
+    const rest = m.choices.filter(c => c !== o);
+    const more = upgradeChoices(m.choices, player.cards).filter(c => !rest.some(r => optKey(r) === optKey(c)) && optKey(c) !== optKey(o));
+    if (more.length) m.choices[m.sel] = more[0];
+    else { m.choices.splice(m.sel, 1); m.sel = Math.max(0, Math.min(m.sel, m.choices.length - 1)); }
+    if (!m.choices.length) m.choices.push({ kind: 'heal', id: 'heal', rank: 0, isNew: false });
+    burstParticles(player.x, player.y - 30, '#B692FF', 8);
+    sfx(150, 0.25, 'sawtooth', 0.05, -80);
+  }
 }
 const optDef = o => (o.kind === 'weapon' ? WEAPON_DEFS[o.id] : o.kind === 'passive' ? PASSIVE_DEFS[o.id] : HEAL_DEF);
 function applyChoice(o) {
@@ -3541,6 +3869,7 @@ function chestUpgrade() {
 function evolveWeapon(w, m) {
   const ev = EVOLUTIONS[w.id];
   w.evo = true;
+  state.evolved++;
   m.rewards.push({ icon: ev.key, name: 'EVOLVED: ' + ev.name, rank: 0, evo: true });
   announce(norm(ev.name) + '!', '#FFDB49', 2.5, 6, 'EVOLUTION');
   jingle([392, 523, 659, 784, 1047, 1319, 1568], 0.07, 0.07);
@@ -3549,10 +3878,9 @@ function evolveWeapon(w, m) {
 function rollChest(m) {
   sndChest();
   state.flash = 0.3;
-  const roll = Math.random() + player.luck * 0.08;   // Luck tips the odds towards the jackpot
+  const roll = Math.random() + player.luck * 0.08 + (perk('ace') ? 0.25 : 0);   // Luck (and Ace) tip the odds towards the jackpot
   const n = roll < 0.6 ? 1 : roll < 0.92 ? 3 : 5; // jackpot odds, VS-style
-  m.goldBonus = randInt(20, 60) * n;
-  state.gold += m.goldBonus;
+  m.goldBonus = addGold(randInt(20, 60) * n);
   m.rewards = [];
   // an evolution, if one is ready, always comes first
   const ready = player.weapons.find(canEvolve);
@@ -3565,8 +3893,7 @@ function rollChest(m) {
       const rank = up.kind === 'weapon' ? player.weapons.find(w => w.id === up.id).level : player.passives[up.id];
       m.rewards.push({ icon: up.id, name: def.name, rank });
     } else {
-      const extra = randInt(30, 80);
-      state.gold += extra;
+      const extra = addGold(randInt(30, 80));
       m.rewards.push({ icon: 'gold', name: `+${extra} gold`, rank: 0 });
     }
   }
@@ -3592,8 +3919,10 @@ function menuKey(k) {
     if (n) { m.sel = (m.sel + (up ? -1 : 1) + n) % n; sndMove(); }
     return;
   }
+  if (m.type === 'levelup' && LEVEL_TOOL_KEYS[k]) { levelTool(m, LEVEL_TOOL_KEYS[k]); return; }
   if (OK_KEYS.has(k)) menuConfirm(m);
 }
+const LEVEL_TOOL_KEYS = { r: 'reroll', x: 'skip', b: 'banish' };
 function menuConfirm(m) {
   if (menuLock > 0) return;
   if (m.type === 'levelup') { applyChoice(m.choices[m.sel]); sndOk(); closeMenu(); }
@@ -3603,7 +3932,7 @@ function menuConfirm(m) {
   } else if (m.type === 'pause') {
     if (m.sel === 0) { sndOk(); closeMenu(); }
     else if (m.sel === 1) { setMuted(!muted); sndOk(); }
-    else location.reload();
+    else { bankRun(); location.reload(); }   // quitting still banks the run's gold
   }
 }
 
@@ -3611,6 +3940,18 @@ function menuConfirm(m) {
 let selIndex = 0, titleSel = 0, bestSel = 0;
 let tally = null;
 function openBestiary() { scene = 'bestiary'; saveBestiary(); sndOk(); }
+let shopTab = 0, shopSel = 0, modMsg = null;
+function openShop() { scene = 'shop'; shopSel = 0; sndOk(); }
+function shopConfirm() {
+  if (shopTab === 0 && buyUpgrade(SHOP[shopSel])) sndOk();
+}
+function toggleMod(i) {
+  const m = MODS[i], on = !meta.mods.includes(m.id);
+  meta.mods = on ? [...meta.mods, m.id] : meta.mods.filter(x => x !== m.id);
+  saveMeta();
+  modMsg = { text: on ? m.name + ': ' + m.desc : m.name + ' OFF', until: uiTime + 3.5 };
+  sfx(on ? 880 : 440, 0.1, 'square', 0.05, on ? 300 : -100);
+}
 function closeBestiary() { scene = 'title'; sndMove(); }
 let bootError = '';
 function toSelect() {
@@ -3627,6 +3968,13 @@ function startGame(h) {
   player.speed = 160; // rebase before hero mods
   addWeapon(h.weapon);
   h.mods();
+  // the Academy's permanent upgrades, the hero's perk, the run modifiers, the level-up tools
+  state.rerolls = 1; state.skips = 1; state.banishes = 1;
+  for (const it of SHOP) if (upRank(it.id)) it.apply(upRank(it.id));
+  if (h.id === 'biski') player.revives += 1;               // Cat's Luck
+  if (h.id === 'ace') player.goldMult *= 1.15;             // High Roller
+  state.mods = MODS.filter(m => meta.mods.includes(m.id)).map(m => m.id);
+  if (!meta.played.includes(h.id)) { meta.played.push(h.id); saveMeta(); }
   scene = 'play';
   state.running = true;
   newMap(1);
@@ -3644,6 +3992,9 @@ function endGame(won) {
   stopMusic();
   if (won) sndClear(); else sndGameOver();
   state.unlocked = won && unlockHero('karate') ? 'KARATEH MASTA' : null;   // beating the game frees the karate master
+  checkChallenges();
+  banners.length = 0;
+  bankRun();
   tally = {
     t: 0, tickT: 0, done: false,
     lines: [
@@ -3651,20 +4002,23 @@ function endGame(won) {
       { label: 'KILLS', target: state.kills },
       { label: 'LEVEL', target: state.level },
       { label: 'GOLD', target: state.gold },
+      ...(state.challengeGold ? [{ label: 'CHALLENGES', target: state.challengeGold }] : []),
+      { label: 'ACADEMY BANK', target: meta.bank },
     ],
   };
 }
 function updateTally(dt) {
   tally.t += dt;
-  const end = 0.3 + tally.lines.length * 0.8;
+  const end = 0.3 + tally.lines.length * tallyStep();
   if (tally.t > 0.3 && tally.t < end) {
     tally.tickT -= dt;
     if (tally.tickT <= 0) { tally.tickT = 0.05; sndTick(); }
   }
   if (tally.t >= end && !tally.done) { tally.done = true; sndOk(); }
 }
+const tallyStep = () => Math.min(0.8, 3.2 / tally.lines.length);   // more lines count up quicker, so the tally never drags
 function tallyValue(i) {
-  const f = clamp((tally.t - 0.3 - i * 0.8) / 0.7, 0, 1);
+  const st = tallyStep(), f = clamp((tally.t - 0.3 - i * st) / (st - 0.1), 0, 1);
   return Math.floor(tally.lines[i].target * f);
 }
 
@@ -3686,13 +4040,14 @@ window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; }
 
 function uiKey(k) {
   if (scene === 'title') {
-    if (k === 'arrowup' || k === 'w') { titleSel = (titleSel + 3) % 4; sndMove(); }
-    else if (k === 'arrowdown' || k === 's') { titleSel = (titleSel + 1) % 4; sndMove(); }
+    if (k === 'arrowup' || k === 'w') { titleSel = (titleSel + 4) % 5; sndMove(); }
+    else if (k === 'arrowdown' || k === 's') { titleSel = (titleSel + 1) % 5; sndMove(); }
     else if (k === 'b') openBestiary();
     else if (OK_KEYS.has(k)) {
-      if (titleSel === 3) toggleGraphics();
-      else if (titleSel === 2) openBestiary();
-      else if (titleSel === 1) startIntro('title');
+      if (titleSel === 4) toggleGraphics();
+      else if (titleSel === 3) openBestiary();
+      else if (titleSel === 2) startIntro('title');
+      else if (titleSel === 1) openShop();
       else if (!introSeen()) startIntro('select');   // the first START tells the story
       else toSelect();
     }
@@ -3711,8 +4066,19 @@ function uiKey(k) {
     else if (k === 'escape' || k === 'backspace' || k === 'b' || OK_KEYS.has(k)) closeBestiary();
     return;
   }
+  if (scene === 'shop') {
+    const n = (shopTab ? CHALLENGES : SHOP).length;
+    if (k === 'arrowup' || k === 'w') { shopSel = (shopSel + n - 1) % n; sndMove(); }
+    else if (k === 'arrowdown' || k === 's') { shopSel = (shopSel + 1) % n; sndMove(); }
+    else if (k === 'arrowleft' || k === 'a' || k === 'arrowright' || k === 'd' || k === 'tab') { shopTab = 1 - shopTab; shopSel = 0; sndMove(); }
+    else if (k === 'escape' || k === 'backspace') { scene = 'title'; sndMove(); }
+    else if (OK_KEYS.has(k)) shopConfirm();
+    return;
+  }
   if (scene === 'select') {
     const n = HEROES.length;
+    const mi = MODS.findIndex(m => m.key === k);
+    if (mi >= 0) { toggleMod(mi); return; }
     if (k === 'arrowleft' || k === 'a') { selIndex = (selIndex + n - 1) % n; sndMove(); }
     else if (k === 'arrowright' || k === 'd') { selIndex = (selIndex + 1) % n; sndMove(); }
     // up/down stay in the same column and wrap within it (the last row may be short)
@@ -3758,8 +4124,16 @@ function onHit(id, down) {
   const [kind, arg] = id.split(':');
   const i = Number(arg);
   if (kind === 'any' || kind === 'start') { if (down) uiKey('enter'); return; }
-  if (kind === 'back') { if (down) closeBestiary(); return; }
+  if (kind === 'back') { if (down) { if (scene === 'shop') { scene = 'title'; sndMove(); } else closeBestiary(); } return; }
+  if (kind === 'shoptab') { if (down && i !== shopTab) { shopTab = i; shopSel = 0; sndMove(); } return; }
+  if (kind === 'shoprow') {
+    if (i === shopSel) { if (down) shopConfirm(); }
+    else { shopSel = i; sndMove(); }
+    return;
+  }
+  if (kind === 'mod') { if (down) toggleMod(i); return; }
   if (kind === 'ult') { if (down) fireUlt(); return; }
+  if (kind === 'lvl') { if (down && menus[0]) levelTool(menus[0], arg); return; }
   if (kind === 'title') {
     if (i === titleSel) { if (down) uiKey('enter'); }
     else { titleSel = i; sndMove(); if (down) uiKey('enter'); }   // a tap on an item means it
@@ -3866,7 +4240,7 @@ function update(dt) {
   const wave = currentWave();
   state.spawnTimer -= dt;
   if (state.spawnTimer <= 0 && state.portalT <= 0 && state.clearT <= 0) {
-    state.spawnTimer = wave.interval;
+    state.spawnTimer = wave.interval * (modOn('hyper') ? 0.8 : 1);
     const alive = enemies.length, quota = state.actBoss ? Math.round(wave.min * 0.3) : wave.min;
     if (state.actBoss) {   // the boss fight: a thin trickle only
       for (let i = 0; i < 2 && enemies.length < quota; i++) spawnEnemy(pickWeighted(wave.types));
@@ -3883,7 +4257,7 @@ function update(dt) {
   const eventDue = Math.floor((state.time - 45) / EVENT_PERIOD);
   if (eventDue >= state.eventsFired && state.time > 45 && state.portalT <= 0 && !state.actBoss && state.clearT <= 0) {
     state.eventsFired = eventDue + 1;
-    if (eventDue % 2 === 0) spawnRing(); else spawnSweep();
+    fireEvent(eventDue);
   }
   // one elite per minute from 1:30 — walking chest with a health bar
   const eliteDue = Math.floor((state.time - 90) / 60);
@@ -3894,7 +4268,7 @@ function update(dt) {
   // a snack turns up on the floor nearby every 75-100s (never more than 2 lying around)
   state.foodT -= dt;
   if (state.foodT <= 0) {
-    state.foodT = rand(75, 100);
+    state.foodT = rand(75, 100) * (perk('zoe') ? 0.5 : 1);
     if (pickups.filter(p => p.type === 'food').length < 2) {
       const a = rand(0, TAU), d = rand(110, 190);
       const p = { x: player.x + Math.cos(a) * d, y: player.y + Math.sin(a) * d, r: 10, type: 'food', food: rollFood() };
@@ -3952,6 +4326,9 @@ function update(dt) {
   let spd = player.speed * (player.fearT > 0 && state.berserkT <= 0 ? 0.55 : 1);   // banshee terror slows you
   if (ground) spd *= ground.slow;                                                  // wading through water, bog or lava
   if (state.catnadoT > 0) spd *= 1.6;
+  if (state.rushT > 0) spd *= 1.3;                                                 // Danger Rush pickup
+  if (perk('wildcat') && player.hp < player.maxHp / 2) spd *= 1.15;                // Bloodlust
+  if (modOn('hyper')) spd *= 1.1;
   player.x += mx * spd * dt;
   player.y += my * spd * dt;
   groundHazard(ground, dt);
@@ -3996,7 +4373,7 @@ function update(dt) {
     w.timer -= dt;
     if (w.echoT > 0 && (w.echoT -= dt) <= 0) novaPulse(w, 0.6);   // Soul Nova's second pulse
     if (w.timer <= 0) {
-      if (def.fire(w)) { w.timer = def.cd * player.cdMult * (w.evo && def.evoCd || 1) * (1 - (w.haste || 0)); player.attackAge = 0; }
+      if (def.fire(w)) { w.timer = def.cd * player.cdMult * (w.evo && def.evoCd || 1) * (1 - (w.haste || 0)) * (state.rushT > 0 ? 0.6 : 1); player.attackAge = 0; }
       else w.timer = 0.1; // no target yet — retry soon
     }
   }
@@ -4013,7 +4390,7 @@ function update(dt) {
     let dead = b.life <= 0;
     if (!dead) {
       for (const bz of state.brazList || []) {
-        if (dist2(bz.x, bz.y, b.x, b.y) < (14 + b.r) ** 2) { damageBrazier(bz, b.dmg); dead = true; break; }
+        if (dist2(bz.x, bz.y, b.x, b.y) < (14 + b.r) ** 2) { damageBrazier(bz, b.dmg); if (!bz.pot) { dead = true; break; } }   // shots fly on through pots
       }
     }
     if (!dead) {
@@ -4052,6 +4429,8 @@ function update(dt) {
 
   updateDecoy(dt);
   updateUlt(dt);
+  updateMapEvents(dt);
+  if ((state.chalT = (state.chalT || 0) - dt) <= 0) { state.chalT = 1; checkChallenges(); }
   // Plague Flask rot ticks on infected foes (in its own pass: a tick can kill)
   for (const e of [...enemies]) {
     if (!(e.plagueT > 0)) continue;
@@ -4072,10 +4451,19 @@ function update(dt) {
       e.sweep.life -= dt;
       if (e.sweep.life <= 0) { enemies[i] = enemies[enemies.length - 1]; enemies.pop(); continue; }
     } else {
-      let spd = e.speed * (e.chillT > 0 ? 0.5 : 1), px = dx / d, py = dy / d;
+      let spd = e.speed * (e.chillT > 0 ? 0.5 : 1) * (modOn('hyper') ? 1.25 : 1), px = dx / d, py = dy / d;
       if (e.chillT > 0) e.chillT -= dt;
       const dc = state.decoy;   // the Danger Room decoy draws everything nearby (bosses aren't fooled)
       if (dc && !e.boss) { const qx = dc.x - e.x, qy = dc.y - e.y, qd = Math.hypot(qx, qy) || 1; if (qd < 340) { px = qx / qd; py = qy / qd; } }
+      if (e.treasure) {   // the treasure goblin runs away, weaving, until it slips off with the loot
+        const sw = Math.sin(e.animT * 1.7) * 0.6, nx = -px + py * sw, ny = -py - px * sw, nl = Math.hypot(nx, ny) || 1;
+        px = nx / nl; py = ny / nl;
+        if ((e.treasure -= dt) <= 0) {
+          burstParticles(e.x, e.y - 10, '#FFDB49', 12);
+          announce('THE GOBLIN GOT AWAY!', C.lgrey, 1.8, 3);
+          enemies[i] = enemies[enemies.length - 1]; enemies.pop(); continue;
+        }
+      }
       if (e.move === 'hop') {
         spd *= Math.max(0.05, Math.sin(e.animT * 5)) * 1.7; // lunge... rest... lunge
       } else if (e.move === 'zigzag') {
@@ -4340,7 +4728,7 @@ function update(dt) {
           const k = 26 / Math.max(1, d);
           e.x += (e.x - player.x) * k; e.y += (e.y - player.y) * k;
         }
-      } else if (!(e.freezeT > 0)) {   // a frozen monster can't bite
+      } else if (!(e.freezeT > 0) && !e.treasure) {   // a frozen monster can't bite (and the goblin only runs)
         if (hurtPlayer(e.dmg) && player.thorns) damageEnemy(e, e.dmg * player.thorns * player.dmgMult);   // Thorns
         if (e.poison) poisonPlayer();
         if (e.shock && state.berserkT <= 0) {   // jellyfish and eels: a jolt that leaves you sluggish
@@ -4456,6 +4844,7 @@ function update(dt) {
     }
   }
 
+  for (const bz of state.brazList || []) if (bz.pot && dist2(bz.x, bz.y, player.x, player.y) < (player.r + bz.r) ** 2) breakPot(bz);
   // pickups
   for (let i = pickups.length - 1; i >= 0; i--) {
     const p = pickups[i];
@@ -4465,7 +4854,7 @@ function update(dt) {
     pickups.splice(i, 1);
     if (p.type === 'food') {
       const f = FOOD[p.food];
-      const gain = Math.min(player.maxHp - player.hp, Math.round(player.maxHp * f.heal));
+      const gain = Math.min(player.maxHp - player.hp, Math.round(player.maxHp * f.heal * (perk('mender') ? 2 : 1)));
       player.hp += gain;
       player.poisonT = 0;   // any food settles the poison
       popText(player.x, player.y - 44, `${f.name} +${gain}`, C.green);
@@ -4477,8 +4866,8 @@ function update(dt) {
         state.flash = Math.max(state.flash, 0.2);
       }
     } else if (p.type === 'gold') {
-      state.gold += p.v;
-      popText(player.x, player.y - 44, `+${p.v} GOLD`, C.yellow);
+      const v = addGold(p.v);
+      popText(player.x, player.y - 44, `+${v} GOLD`, C.yellow);
       sndCoin();
     } else if (p.type === 'vac') {
       for (const g of gems) g.vacuum = true;
@@ -4493,6 +4882,14 @@ function update(dt) {
       announce('SYSTEM PURGE!', C.white, 1.4, 4);
       for (const e of [...enemies]) if (!e.boss) killEnemy(e);
       ebullets.length = 0;
+    } else if (p.type === 'rush') {   // Danger Rush: 10s of speed and fast powers
+      state.rushT = 10;
+      announce('DANGER RUSH!', '#FF9249', 1.6, 4, 'POWERS RECHARGE FASTER');
+      sfx(500, 0.35, 'sawtooth', 0.05, 900);
+    } else if (p.type === 'aegis') {   // Aegis: 6s untouchable
+      state.aegisT = 6;
+      announce('AEGIS!', '#92FFFF', 1.6, 4, 'UNTOUCHABLE FOR 6 SECONDS');
+      sfx(1200, 0.4, 'triangle', 0.05, -300);
     } else if (p.type === 'chest') {
       pushMenu({ type: 'chest' });
     } else if (p.type === 'berserk') {
@@ -4512,6 +4909,7 @@ function update(dt) {
           const e = enemies[j];
           if (!e || (e.fly && fx.type !== 'holyfire') || dist2(e.x, e.y, fx.x, fx.y) >= (fx.radius + e.r * 0.5) ** 2) continue;
           if (fx.plague && !e.boss) { e.plagueT = 3 * durMul(); e.plagueDmg = fx.dmg * 0.6; }   // Plague Flask infects
+          if (fx.type === 'acidpool') e.corrodeUntil = state.time + 3;                          // Ana's Corrosive perk
           damageEnemy(e, fx.dmg);
         }
       }
@@ -4685,6 +5083,37 @@ function updateDecoy(dt) {
   state.decoy = null;
 }
 
+// the healing well, the cursed shrine, the Aegis bubble and the goblin's glint, drawn on the ground layer
+function drawMapEvents() {
+  const w = state.well;
+  if (w && !(w.t < 3 && blink(8))) {
+    const cx = toDX(w.x), cy = toDY(w.y), r = Math.round(w.r / PX);
+    ctx.save(); ctx.globalAlpha = 0.25; disc(cx, cy, r, '#49B6FF'); ctx.restore();
+    ring(cx, cy, r, '#92FFFF'); ring(cx, cy, r - 2, '#2492DB');
+    for (let k = 0; k < 12; k++) { const a = k * TAU / 12 + uiTime * 0.6; rect(Math.round(cx + Math.cos(a) * r), Math.round(cy + Math.sin(a) * r), 2, 2, C.white); }
+    disc(cx, cy, 7, '#6D6D6D'); disc(cx, cy, 5, '#2449B6'); ring(cx, cy, 7, '#DBDBDB');   // the well-head
+    rect(cx - 1 + (Math.floor(uiTime * 6) % 3) - 1, cy - 2, 1, 1, C.white);
+  }
+  const s = state.shrine;
+  if (s && !(s.t < 4 && blink(8))) {
+    const cx = toDX(s.x), cy = toDY(s.y), r = Math.round(s.r / PX), f = s.charge / 1.5;
+    ring(cx, cy, r, blink(2) ? '#B692FF' : '#6D24B6');
+    for (let k = 0; k < 5; k++) {   // a pentagram scratched in the floor
+      const a = -Math.PI / 2 + k * TAU / 5, b2 = -Math.PI / 2 + (k + 2) * TAU / 5;
+      const n = 10;
+      for (let j = 0; j <= n; j++) rect(Math.round(cx + (Math.cos(a) * (n - j) + Math.cos(b2) * j) / n * (r - 2)), Math.round(cy + (Math.sin(a) * (n - j) + Math.sin(b2) * j) / n * (r - 2)), 1, 1, '#9249DB');
+    }
+    rect(cx - 3, cy - 22, 6, 20, '#242424'); rect(cx - 3, cy - 22, 1, 20, '#494949'); rect(cx - 4, cy - 24, 8, 3, '#494949');   // the obelisk
+    rect(cx - 1, cy - 17, 2, 4, blink(3) ? '#FF2424' : '#B60000');
+    if (f > 0) { rect(cx - 10, cy - 30, 20, 3, C.black); rect(cx - 9, cy - 29, Math.round(18 * Math.min(1, f)), 1, '#B692FF'); }
+  }
+  if (state.aegisT > 0 && !(state.aegisT < 1.5 && blink(8))) {
+    const cx = toDX(player.x), cy = toDY(player.y) - 8;
+    ring(cx, cy, 15 + (Math.floor(uiTime * 8) % 2), '#92FFFF'); ring(cx, cy, 13, 'rgba(146,255,255,0.4)');
+  }
+  for (const e of enemies) if (e.treasure && blink(5)) rect(toDX(e.x) + ((e.animT * 37 | 0) % 11) - 5, toDY(e.y) - 22 - ((e.animT * 23 | 0) % 8), 1, 1, '#FFFF92');
+}
+
 // ---------- Diablo-style light radius ----------
 // The world is drawn, then a darkness layer goes on top with stepped holes punched out
 // around the hero, torches, fireballs and explosions (and a glint for every drop).
@@ -4741,7 +5170,7 @@ function sceneLights(emit) {
       if (cellAt(cx, cy) === CLEARING) emit((cx + 0.5) * MC, (cy + 0.5) * MC, 44, 'sun');
   }
   emit(player.x, player.y - 10, (state.berserkT > 0 ? 140 : 112) + flick * 2, state.berserkT > 0 ? 'berserk' : 'hero');
-  for (const bz of state.brazList || []) emit(bz.x, bz.y - 12, 42 + ((Math.floor(uiTime * 7 + bz.x) % 3) * 2), 'fire');
+  for (const bz of state.brazList || []) if (!bz.pot) emit(bz.x, bz.y - 12, 42 + ((Math.floor(uiTime * 7 + bz.x) % 3) * 2), 'fire');
   for (const b of ebullets) emit(b.x, b.y, b.style === 'laser' ? 12 : 22, LIGHT_COL[b.style] ? b.style : 'fireball');
   for (const fx of effects) if (fx.type === 'boom' || fx.type === 'bolt' || fx.type === 'nova') emit(fx.x, fx.y, Math.max(16, (fx.radius || 30) / PX), fx.type);
   for (const fx of effects) {
@@ -4752,6 +5181,9 @@ function sceneLights(emit) {
     else if (fx.type === 'cryo') emit(fx.x, fx.y, fx.radius / PX, 'bubble');
   }
   if (state.decoy) emit(state.decoy.x, state.decoy.y, 30, 'portal');
+  if (state.well) emit(state.well.x, state.well.y, state.well.r / PX + 10, 'bubble');
+  if (state.shrine) emit(state.shrine.x, state.shrine.y - 10, 40, 'portal');
+  for (const e of enemies) if (e.treasure) emit(e.x, e.y - 10, 30, 'gold');
   for (const b of bullets) if (b.kind === 'hammer' || b.kind === 'bubble') emit(b.x, b.y, 14, b.kind);
   if (state.ally) emit(state.ally.x, state.ally.y - 8, 34, 'ally');
   if (state.actBoss) emit(state.actBoss.x, state.actBoss.y - state.actBoss.r, state.actBoss.r * 2.4, 'boss');   // bosses are never lost in the dark
@@ -5244,7 +5676,7 @@ function frameData() {
   c.width = W; c.height = H;
   const g = c.getContext('2d');
   if (PS1 && ps1Canvas.style.visibility === 'visible') g.drawImage(ps1Canvas, 0, 0, W, H);
-  else if (litOn && scene !== 'title' && scene !== 'select' && scene !== 'bestiary') g.drawImage(glCanvas, 0, 0, W, H);
+  else if (litOn && scene !== 'title' && scene !== 'select' && scene !== 'bestiary' && scene !== 'shop') g.drawImage(glCanvas, 0, 0, W, H);
   g.drawImage(canvas, 0, 0, W, H);
   return g.getImageData(0, 0, W, H).data;
 }
@@ -5304,7 +5736,7 @@ function renderWorld() {
   drawFloor();
   drawSecretFlat();
   ctx.globalCompositeOperation = 'lighter';
-  for (const bz of state.brazList || []) drawBrazierLight(bz);
+  for (const bz of state.brazList || []) if (!bz.pot) drawBrazierLight(bz);
   ctx.globalCompositeOperation = 'source-over';
 
   // gems, with an occasional twinkle
@@ -5355,6 +5787,9 @@ function renderWorld() {
       drawShadowAt(p.x, p.y + 22, 8);
       ctx.drawImage(SPR.orb.base, fr * 20, 0, 20, 20, x - 10, y - 10 + bob, 20, 20);
       if (blink(5)) rect(x - 4 + (pulse & 1) * 7, y - 6 + bob, 1, 1, C.white);
+    } else if (p.type === 'rush' || p.type === 'aegis') {
+      ring(x, y + bob, blink(4) ? 8 : 9, p.type === 'rush' ? C.orange : C.cyan);
+      drawSkill(p.type === 'rush' ? 'boots' : 'plating', x - 8, y - 8 + bob, 16);
     } else if (p.type === 'chest') {
       ring(x, y, blink(3) ? 11 : 12, C.yellow);
       ctx.drawImage(CHEST, x - 7, y - 6);
@@ -5376,7 +5811,7 @@ function renderWorld() {
   const drawables = [];
   for (const o of state.obsList || []) drawables.push({ y: o.y + 4, draw() { drawObstacle(o); } });
   secretDrawables(drawables);
-  for (const bz of state.brazList || []) drawables.push({ y: bz.y + 8, draw() { drawBrazier(bz); } });
+  for (const bz of state.brazList || []) drawables.push({ y: bz.y + 8, draw() { if (bz.pot) drawPot(bz); else drawBrazier(bz); } });
   for (const e of enemies) {
     drawables.push({ y: groundYOf(e), draw() {
       const near = dist2(e.x, e.y, player.x, player.y) < (e.r + player.r + 26) ** 2;
@@ -5573,6 +6008,7 @@ function renderWorld() {
     for (const o of wp.orbPos) ctx.drawImage(ORB, toDX(o.x) - 3, toDY(o.y) - 3);
   }
 
+  drawMapEvents();
   // power effects, drawn as stepped pixel art
   for (const fx of effects) {
     const p = fx.life / fx.maxLife;
@@ -5793,22 +6229,41 @@ function renderHUD() {
     rect(x, ay + 9, bw + 2, 5, C.black);
     rect(x + 1, ay + 10, Math.round(bw * f), 3, '#FF6DB6');
   }
-  if (state.wildAxo) {   // an arrow at the screen edge points the way to a waiting axolotl
-    const wx = toDX(state.wildAxo.x), wy = toDY(state.wildAxo.y) - 8;
-    if (wx < 8 || wx > W - 8 || wy < 8 || wy > H - 8) {
-      const cx = W / 2, cy = H / 2, a = Math.atan2(wy - cy, wx - cx);
-      const k = Math.min((W / 2 - 14) / Math.abs(Math.cos(a) || 1e-6), (H / 2 - 14) / Math.abs(Math.sin(a) || 1e-6));
-      const ax = Math.round(cx + Math.cos(a) * k), ay2 = Math.round(cy + Math.sin(a) * k);
-      if (blink(4)) {
-        ctx.fillStyle = '#FF92DB';
-        ctx.beginPath();
-        ctx.moveTo(ax + Math.cos(a) * 6, ay2 + Math.sin(a) * 6);
-        ctx.lineTo(ax + Math.cos(a + 2.5) * 6, ay2 + Math.sin(a + 2.5) * 6);
-        ctx.lineTo(ax + Math.cos(a - 2.5) * 6, ay2 + Math.sin(a - 2.5) * 6);
-        ctx.fill();
-      }
-    }
+  // arrows at the screen edge point the way to a waiting axolotl, a well, a shrine or a fleeing goblin
+  const edgeArrow = (wxW, wyW, col) => {
+    const wx = toDX(wxW), wy = toDY(wyW) - 8;
+    if (!(wx < 8 || wx > W - 8 || wy < 8 || wy > H - 8)) return;
+    const cx = W / 2, cy = H / 2, a = Math.atan2(wy - cy, wx - cx);
+    const k = Math.min((W / 2 - 14) / Math.abs(Math.cos(a) || 1e-6), (H / 2 - 14) / Math.abs(Math.sin(a) || 1e-6));
+    const ax = Math.round(cx + Math.cos(a) * k), ay2 = Math.round(cy + Math.sin(a) * k);
+    if (!blink(4)) return;
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.moveTo(ax + Math.cos(a) * 6, ay2 + Math.sin(a) * 6);
+    ctx.lineTo(ax + Math.cos(a + 2.5) * 6, ay2 + Math.sin(a + 2.5) * 6);
+    ctx.lineTo(ax + Math.cos(a - 2.5) * 6, ay2 + Math.sin(a - 2.5) * 6);
+    ctx.fill();
+  };
+  if (state.wildAxo) edgeArrow(state.wildAxo.x, state.wildAxo.y, '#FF92DB');
+  if (state.well) edgeArrow(state.well.x, state.well.y, '#49DBFF');
+  if (state.shrine) edgeArrow(state.shrine.x, state.shrine.y, '#B692FF');
+  for (const e of enemies) if (e.treasure) edgeArrow(e.x, e.y, '#FFDB49');
+  // timed boons and curses, stacked under the stats
+  let sy = 62 + (state.berserkT > 0 ? 18 : 0) + (state.ally ? 18 : 0);
+  const status = [
+    [state.goldRushT > 0, 'GOLD RUSH', state.goldRushT, '#FFDB49'],
+    [state.cursedT > 0, 'CURSED', state.cursedT, '#B692FF'],
+    [state.rushT > 0, 'RUSH', state.rushT, C.orange],
+    [state.aegisT > 0, 'AEGIS', state.aegisT, C.cyan],
+  ];
+  for (const [on, label, t, col] of status) {
+    if (!on) continue;
+    drawText(label, x, sy, t < 3 && blink(4) ? C.white : col);
+    drawText(String(Math.ceil(t)), x + textW(label) + 6, sy, C.white);
+    sy += 10;
   }
+  if (perk('karate') && state.combo > 1) { drawText('COMBO X' + state.combo, x, sy, state.combo >= 30 ? C.yellow : '#FF6D6D'); sy += 10; }
+  if (state.mods.length) drawText(state.mods.map(m => m.toUpperCase()).join(' '), x, sy, C.grey);
 
   // live combo counter during a frenzy
   const comboN = state.killTimes.length;
@@ -5906,13 +6361,18 @@ function renderLevelUp(m) {
   const ww = menuWidth(300), x = Math.round((W - ww) / 2);
   const tx = x + 52, tw = ww - 60;
   const headH = 7 * (textW('LEVEL UP!', 2) <= ww - 12 ? 2 : 1);
-  const rows = m.choices.map(o => {
-    const lines = wrapText(optDef(o).desc, tw).slice(0, 3);
-    const hint = evoHint(o);
-    if (hint) lines.push(...wrapText(hint, tw).slice(0, 1));
-    return { o, lines, hint: !!hint, h: Math.max(40, 16 + lines.length * 9 + 4) };
-  });
-  const h = 8 + headH + 8 + rows.reduce((t, r) => t + r.h + 2, 0) + 4;
+  // a fourth card (or a short screen) trims the descriptions until the window fits
+  let rows, h;
+  for (let maxL = 3; maxL >= 1; maxL--) {
+    rows = m.choices.map(o => {
+      const hint = evoHint(o);
+      const lines = wrapText(optDef(o).desc, tw).slice(0, hint ? Math.max(1, maxL - (maxL > 2 ? 0 : 1)) : maxL);
+      if (hint) lines.push(...wrapText(hint, tw).slice(0, 1));
+      return { o, lines, hint: !!hint, h: Math.max(maxL > 1 ? 40 : 36, 16 + lines.length * 9 + 4) };
+    });
+    h = 8 + headH + 8 + rows.reduce((t, r) => t + r.h + 2, 0) + 4 + 16;
+    if (h <= H - 8) break;
+  }
   const y = Math.max(4, Math.round((H - h) / 2));
   drawWindow(x, y, ww, h);
   windowTitle('LEVEL UP!', x, y + 7, ww, GOLD_GRAD);
@@ -5938,6 +6398,15 @@ function renderLevelUp(m) {
     lines.forEach((ln, k) => drawText(ln, tx, ry + 15 + k * 9, hint && k === lines.length - 1 ? C.yellow : on ? C.white : C.lgrey));
     addHit(x + 3, ry, ww - 6, rh, 'row:' + i);
     ry += rh + 2;
+  });
+  // reroll / skip / banish: three buttons along the bottom, keyed R / X / B
+  const tools = [['reroll', 'R', 'REROLL', state.rerolls], ['skip', 'X', 'SKIP', state.skips], ['banish', 'B', 'BANISH', state.banishes]];
+  const bw = Math.floor((ww - 12) / 3);
+  tools.forEach(([id, key, label, n], i) => {
+    const bx = x + 6 + i * bw, by = ry + 1, txt = (touch.used || bw < 90 ? label : key + ' ' + label) + ' ' + n;
+    drawWindow(bx + 1, by, bw - 2, 13, { bands: n ? ['#244992', '#002449'] : ['#363636', '#242424'], border: n ? C.lgrey : C.grey });
+    drawText(txt, bx + bw / 2, by + 3, n ? C.white : C.grey, { align: 'center' });
+    addHit(bx, by - 1, bw, 15, 'lvl:' + id);
   });
 }
 function renderChest(m) {
@@ -6228,10 +6697,11 @@ function renderTitle() {
   drawText('THE DANGER ROOM HAS GONE ROGUE.', W / 2, ty, C.lgrey, { align: 'center' });
   drawText('SURVIVE FIVE ACTS. SLAY THE DEVIL.', W / 2, ty + 10, C.lgrey, { align: 'center' });
   // START GAME / BESTIARY, the classic title-screen pair, and the graphics switch
-  const my = Math.round(H * 0.53), items = ['START GAME', 'STORY', 'BESTIARY', 'GRAPHICS: ' + GFX_LABEL[GFX]];
+  const items = ['START GAME', 'ACADEMY', 'STORY', 'BESTIARY', 'GRAPHICS: ' + GFX_LABEL[GFX]];
+  const gap = H >= 250 ? 14 : 12, my = Math.min(Math.round(H * 0.53), H - 34 - items.length * gap);
   addHit(0, 0, W, H, 'any');
   items.forEach((label, i) => {
-    const y = my + i * 14, on = i === titleSel, w = textW(label);
+    const y = my + i * gap, on = i === titleSel, w = textW(label);
     drawText(label, W / 2, y, on ? C.yellow : C.lgrey, { align: 'center' });
     if (on && blink(3)) drawCursor(Math.round(W / 2 - w / 2) - 10, y);
     addHit(Math.round(W / 2 - w / 2) - 14, y - 4, w + 28, 14, 'title:' + i);
@@ -6261,7 +6731,8 @@ function selectLayout() {
   const pw = wide ? W - (8 + gw + 8) - 8 : W - 16;
   // the panel fits the longest description, so it never jumps between heroes
   const descLines = Math.max(...HEROES.map(h => wrapText(h.desc, pw - 12).length));
-  const ph = 117 + descLines * 9;
+  const perkLines = Math.max(...HEROES.map(h => wrapText(HERO_PERKS[h.id].desc, pw - 12).length));
+  const ph = 117 + descLines * 9 + 11 + perkLines * 9;
   const top = 8 + 7 * titleScale + 10, avail = H - top - 18;
   if (wide) {
     const y = top + Math.max(0, Math.floor((avail - Math.max(gh, ph)) / 2));
@@ -6326,12 +6797,27 @@ function renderSelect() {
   }
   const dy = Math.max(y0 + 74, sy + 2);
   drawText('POWER: ' + WEAPON_DEFS[h.weapon].name, x0, dy, C.green);
-  wrapText(h.desc, L.pw - 12).forEach((ln, i) => drawText(ln, x0, dy + 11 + i * 9, C.white));
+  const dl = wrapText(h.desc, L.pw - 12);
+  dl.forEach((ln, i) => drawText(ln, x0, dy + 11 + i * 9, C.white));
+  const pk = HERO_PERKS[h.id], py = dy + 11 + dl.length * 9 + 3;
+  drawText('PERK: ' + pk.name, x0, py, C.cyan);
+  wrapText(pk.desc, L.pw - 12).forEach((ln, i) => drawText(ln, x0, py + 10 + i * 9, C.lgrey));
   const bw = 52, bh = 15, bxs = L.px + L.pw - bw - 6, bys = L.py + L.ph - bh - 6;
   drawWindow(bxs, bys, bw, bh, { bands: ['#B62400', '#920000'], border: blink(2) ? C.yellow : C.white });
   drawText('START', bxs + bw / 2, bys + 4, C.white, { align: 'center' });
   addHit(bxs, bys, bw, bh, 'start');
-  drawText(W >= 340 ? 'ARROWS: CHOOSE   ENTER: START   M: SOUND' : 'TAP A HERO, THEN START',
+  // run modifiers, left of START: lit when on
+  let mx = x0;
+  MODS.forEach((m, i) => {
+    const on = meta.mods.includes(m.id), mw = textW(m.name) + 10;
+    drawWindow(mx, bys, mw, bh, { bands: on ? ['#B66D00', '#924900'] : ['#363636', '#242424'], border: on ? C.yellow : C.grey });
+    drawText(m.name, mx + mw / 2, bys + 4, on ? C.white : C.lgrey, { align: 'center' });
+    addHit(mx, bys, mw, bh, 'mod:' + i);
+    mx += mw + 4;
+  });
+  if (modMsg && uiTime < modMsg.until) {
+    wrapText(modMsg.text, W - 16).slice(0, 2).reverse().forEach((ln, i) => drawText(ln, W / 2, H - 12 - i * 9, C.yellow, { align: 'center' }));
+  } else drawText(W >= 340 ? 'ARROWS: CHOOSE   ENTER: START   H / U: MODIFIERS' : 'TAP A HERO, THEN START',
     W / 2, H - 12, C.grey, { align: 'center' });
   renderCornerIcons(false);
 }
@@ -6432,6 +6918,65 @@ function renderBestiary() {
   addHit(bbx - 2, fy - 2, bw + 4, bh + 4, 'back');
   if (W >= 300) drawText('ARROWS: BROWSE   ESC: BACK', 8, fy + 3, C.grey);
 }
+// ---------- the Academy: the shop and the challenge board ----------
+function renderShop() {
+  attractBackdrop(0.7);
+  const tsc = textW('THE ACADEMY', 2) <= W - 110 ? 2 : 1;
+  drawText('THE ACADEMY', 8, 8, C.white, { scale: tsc, outline: C.black, grad: GOLD_GRAD });
+  drawText('GOLD ' + meta.bank, W - 8, 8 + (tsc - 1) * 4, C.yellow, { align: 'right' });
+  const ty = 8 + 7 * tsc + 7;
+  let tx = 8;
+  ['UPGRADES', 'CHALLENGES'].forEach((t, i) => {
+    const on = i === shopTab, tw = textW(t) + 12;
+    drawWindow(tx, ty, tw, 13, { bands: on ? ['#B62400', '#920000'] : ['#363636', '#242424'], border: on ? C.yellow : C.grey });
+    drawText(t, tx + 6, ty + 3, on ? C.white : C.lgrey);
+    addHit(tx, ty - 2, tw, 17, 'shoptab:' + i);
+    tx += tw + 4;
+  });
+  if (shopTab === 1) drawText(`${meta.done.length}/${CHALLENGES.length} DONE`, W - 8, ty + 3, C.cyan, { align: 'right' });
+  const list = shopTab ? CHALLENGES : SHOP;
+  shopSel = Math.min(shopSel, list.length - 1);
+  const fh = 36, fy = H - fh - 20, ly = ty + 19, rowH = 16;
+  const vis = Math.max(3, Math.min(list.length, Math.floor((fy - 6 - ly) / rowH)));
+  const scroll = clamp(shopSel - Math.floor(vis / 2), 0, Math.max(0, list.length - vis));
+  drawWindow(8, ly - 3, W - 16, vis * rowH + 6);
+  for (let i = scroll; i < Math.min(list.length, scroll + vis); i++) {
+    const it = list[i], y = ly + (i - scroll) * rowH, on = i === shopSel;
+    if (on) rect(11, y, W - 22, rowH, C.selBar);
+    if (shopTab === 0) {
+      const r = upRank(it.id), maxed = r >= it.max, cost = shopCost(it);
+      drawSkill(it.icon, 14, y, 16);
+      drawText(it.name, 34, y + 5, on ? C.white : C.lgrey);
+      for (let k = 0; k < it.max; k++) rect(W - 92 + k * 5, y + 6, 4, 4, k < r ? C.yellow : C.pipOff);
+      drawText(maxed ? 'MAX' : String(cost), W - 16, y + 5, maxed ? C.green : meta.bank >= cost ? C.yellow : '#B64949', { align: 'right' });
+    } else {
+      const done = meta.done.includes(it.id);
+      rect(16, y + 4, 8, 8, done ? C.green : C.pipOff);
+      if (done) { rect(18, y + 8, 2, 2, C.white); rect(20, y + 9, 1, 1, C.white); rect(21, y + 6, 2, 3, C.white); }
+      drawText(it.name, 34, y + 5, done ? C.green : on ? C.white : C.lgrey);
+      drawText(done ? 'DONE' : it.gold + ' G', W - 16, y + 5, done ? C.green : C.yellow, { align: 'right' });
+    }
+    addHit(11, y, W - 22, rowH, 'shoprow:' + i);
+  }
+  if (scroll > 0 && blink(2)) drawText('-', W / 2, ly - 9, C.white, { align: 'center' });
+  if (scroll + vis < list.length && blink(2)) drawText('-', W / 2, ly + vis * rowH + 2, C.white, { align: 'center' });
+  // what the highlighted line does
+  const it = list[shopSel];
+  drawWindow(8, fy, W - 16, fh);
+  const lines = wrapText(it.desc, W - 28);
+  if (shopTab === 0) {
+    const r = upRank(it.id);
+    lines.length = Math.min(lines.length, 2);
+    lines.push(r >= it.max ? 'FULLY UPGRADED.' : meta.bank >= shopCost(it) ? (touch.used ? 'TAP AGAIN TO BUY.' : 'ENTER: BUY.') : 'NOT ENOUGH GOLD YET.');
+  } else if (!meta.done.includes(it.id)) lines.push('PAYS ' + it.gold + ' GOLD, ONCE.');
+  lines.slice(0, 3).forEach((ln, k) => drawText(ln, 14, fy + 5 + k * 9, k === lines.length - 1 && lines.length > 1 ? C.cyan : C.white));
+  // back button + hint
+  const bw = 44, bh = 13, bbx = W - bw - 8, by = H - 17;
+  drawWindow(bbx, by, bw, bh, { border: blink(2) ? C.yellow : C.white });
+  drawText('BACK', bbx + bw / 2, by + 3, C.white, { align: 'center' });
+  addHit(bbx - 2, by - 2, bw + 4, bh + 4, 'back');
+  if (W >= 300) drawText('ARROWS: CHOOSE   ENTER: BUY   ESC: BACK', 8, by + 3, C.grey);
+}
 function renderResults() {
   rect(0, 0, W, H, 'rgba(0,0,0,0.6)');
   const won = state.won, title = won ? 'STAGE CLEAR!' : 'GAME OVER';
@@ -6474,7 +7019,7 @@ function render() {
     g.globalAlpha = 1;
     g.globalCompositeOperation = 'source-over';
   }
-  const menuScene = scene === 'loading' || scene === 'error' || scene === 'title' || scene === 'select' || scene === 'bestiary' || scene === 'intro';
+  const menuScene = scene === 'loading' || scene === 'error' || scene === 'title' || scene === 'select' || scene === 'bestiary' || scene === 'shop' || scene === 'intro';
   // PS1: the act's world in 3D (Act I so far); lit HD: the world goes to its own canvas and through WebGL.
   // Either way #game becomes the clear HUD layer on top.
   const ps1 = PS1 && !menuScene && state.act === 1;
@@ -6488,6 +7033,7 @@ function render() {
   if (scene === 'intro') { renderIntro(); return; }
   if (scene === 'select') { renderSelect(); return; }
   if (scene === 'bestiary') { renderBestiary(); return; }
+  if (scene === 'shop') { renderShop(); return; }
   if (ps1) {
     renderPS1();
     renderFloatText(true);
