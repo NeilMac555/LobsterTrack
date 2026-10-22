@@ -66,6 +66,7 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy: bosses take 15% damage from ultimates, which had been deleting the Act I Butcher in one cast (c77234c)
 - Mutant Academy: Academy shop and gold bank, challenge board, weighted level-ups with reroll/skip/banish, breakable pots, 5 new map events, a perk per hero, Hyper/Hurry modifiers (fa7cc37)
 - Mutant Academy: 10 evolutions (rank-5 power + partner trait at a chest), 8 new powers, 7 new traits, an ultimate for each of the 10 heroes, 25 new CC-BY icons (bb842ab)
 - Mutant Academy: PS1 3D graphics mode, prototype — Act I's cathedral in
