@@ -18,7 +18,8 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
-const BASE = window.ASSET_BASE_3D || 'assets/3d/';   // the bundled build points this at embedded copies
+const BASE = window.ASSET_BASE_3D || 'assets/3d/';
+const EXT = window.ASSET_EXT_3D || '.glb';   // hosts that won't serve .glb get the same models as glTF JSON (.gltf.json)
 const CELL = MC / PX;          // dots per map cell
 const KIT = CELL / 4;          // dungeon pieces: one 4 m KayKit tile spans one cell
 const MAN = 14;                // characters: dots per metre
@@ -104,7 +105,7 @@ class Renderer3D {
 
   async load() {
     const loader = new GLTFLoader();
-    const get = f => loader.loadAsync(BASE + f);
+    const get = f => loader.loadAsync(BASE + f.replace(/\.glb$/, EXT));
     const models = [...new Set([...Object.values(HERO), ...Object.values(FOE)].map(s => s.m))];
     const [dungeon, weapons, anims, ...chars] = await Promise.all([get('dungeon.glb'), get('weapons.glb'), get('anim-medium.glb'), ...models.map(m => get(m + '.glb'))]);
     this.tpl = new Map(models.map((m, i) => [m, chars[i]]));
