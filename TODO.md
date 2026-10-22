@@ -5,6 +5,19 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 ## Now
 
+- Mutant Academy 3D overhaul, phase 2 onwards: Acts II-V in 3D (desert,
+  jungle with the KayKit Forest pack, ocean, hell: floors, walls, props),
+  models for the remaining monsters (Quaternius CC0 packs downloaded:
+  bat, slime, dragon, spider, frog, snake, wasp, rat, fish, shark; need
+  FBX -> glTF conversion; Bestiary imp/puglin are glTF), a Biski cat
+  model, 3D chests/gems/pickups, 3D effects for the powers (beams, novas,
+  pools), 3D title and select screens. Not yet measured on a real GPU or
+  phone: the test browser has no GPU (software rendering, ~1-4 fps), so
+  the gameplay tests run with ?gfx=hd and 3d-test with ?gfx=3d&q=fixed.
+- GitHub Pages: needs Settings -> Pages -> Source "GitHub Actions"; to
+  deploy from the feature branch, allow it under Settings -> Environments
+  -> github-pages (or merge to main). URL will be
+  https://neilmac555.github.io/LobsterTrack/
 - Mutant Academy PS1 3D: roll out to Acts II-V (lava/water as animated
   surfaces, bridges with height, tall trees); consider low-poly CC0 models
   (Kenney / Quaternius) for columns, coffins and statues; billboard
@@ -66,6 +79,7 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy: 3D graphics mode for Act I (three.js + KayKit CC0: dungeon, heroes, skeletons, Butcher; lantern shadows, bloom; HD fallback), GitHub Pages workflow (9494030)
 - Mutant Academy: bosses take 15% damage from ultimates, which had been deleting the Act I Butcher in one cast (c77234c)
 - Mutant Academy: Academy shop and gold bank, challenge board, weighted level-ups with reroll/skip/banish, breakable pots, 5 new map events, a perk per hero, Hyper/Hurry modifiers (fa7cc37)
 - Mutant Academy: 10 evolutions (rank-5 power + partner trait at a chest), 8 new powers, 7 new traits, an ultimate for each of the 10 heroes, 25 new CC-BY icons (bb842ab)
