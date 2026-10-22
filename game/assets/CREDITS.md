@@ -311,3 +311,16 @@ script, pitched down 5% and given a light 10-bit crunch and echo.
   by **Sevarihk**, **CC-BY 4.0**: https://opengameart.org/content/evil-dungeon-asset-pack
   — recoloured from purple to red, downscaled.
 - The hell theme "Gates of Hell" is an original FM composition.
+
+## 3D graphics mode (`assets/3d/`, `render3d.js`)
+
+- Heroes, skeletons, dungeon and weapons — **KayKit** by **Kay Lousberg**
+  (www.kaylousberg.com), **CC0**: "Character Pack: Adventurers" 2.0 (`knight`,
+  `barbarian`, `mage`, `ranger`, `rogue`, `rogue_hooded`), "Character Pack:
+  Skeletons" 1.1 (`skeleton_*`), "Dungeon Pack" 1.1 (`dungeon.glb`) and
+  "Character Animations" 1.1 (`anim-medium.glb`), from https://kaylousberg.itch.io.
+  Modifications: the dungeon pieces and weapons packed into one file each with
+  their textures shared; 22 animation clips merged into one mesh-free file; the
+  dungeon stone darkened in the renderer. Licence text: `assets/3d/LICENSE-KayKit.txt`.
+- Engine — **three.js** r160 (MIT, © three.js authors), vendored in `vendor/three/`
+  with its licence.

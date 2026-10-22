@@ -20,14 +20,14 @@
 //           walls as blocks and everything standing as a billboard sprite, with the PlayStation's
 //           low-res, dithered, wobbling look (see "PS1 renderer").
 const GFX_KEY = 'mutant-academy-gfx';
-const GFX_MODES = ['hd', 'ps1', 'retro'];
+const GFX_MODES = ['3d', 'hd', 'ps1', 'retro'];
 const GFX = (() => {
   const q = new URLSearchParams(location.search).get('gfx');   // ?gfx=hd|ps1|retro overrides the saved choice
   if (GFX_MODES.includes(q)) return q;
-  try { const m = localStorage.getItem(GFX_KEY); return GFX_MODES.includes(m) ? m : 'hd'; } catch (e) { return 'hd'; }
+  try { const m = localStorage.getItem(GFX_KEY); return GFX_MODES.includes(m) ? m : '3d'; } catch (e) { return '3d'; }
 })();
 const HD = GFX !== 'retro';
-const GFX_LABEL = { hd: 'HD', ps1: 'PS1 3D (ACT I)', retro: 'RETRO' };
+const GFX_LABEL = { '3d': '3D (ACT I)', hd: 'HD', ps1: 'PS1 3D (ACT I)', retro: 'RETRO' };
 // switching modes reloads: the sheets, palette and canvases are all chosen at boot
 function toggleGraphics() {
   const next = GFX_MODES[(GFX_MODES.indexOf(GFX) + 1) % GFX_MODES.length];
@@ -43,6 +43,14 @@ let glCanvas = null, gl = null, GLX = null;   // the lighting pipeline's canvas,
 const LIT = HD && initLighting();   // false without WebGL: HD then draws straight onto #game
 let ps1Canvas = null, g3 = null, P3 = null;   // the PS1 renderer's canvas, WebGL2 context and GL objects
 const PS1 = GFX === 'ps1' && LIT && initPS1();
+// 3D: render3d.js (Three.js) draws the world with real models, light and shadow. It loads in the background;
+// until it's ready (or if WebGL2 / the module is unavailable) the game draws in HD.
+let R3 = null;
+let r3dPass = false;                // true while the 2D pass paints the 3D view's ground overlay
+if (GFX === '3d' && LIT) {
+  import('./render3d.js').then(m => m.init3D()).then(r => { R3 = r; })
+    .catch(e => console.warn('3D renderer unavailable:', e && e.message));
+}
 const uiCtx = canvas.getContext('2d', { alpha: LIT });
 const worldCv = LIT ? document.createElement('canvas') : null;
 const worldCtx = LIT ? worldCv.getContext('2d', { alpha: false }) : uiCtx;
@@ -1592,7 +1600,7 @@ function drawFloor() {
   if (state.act === 4) { drawOceanFloor(); return; }
   if (state.act === 3) { drawJungleFloor(); return; }
   if (state.act === 2) { drawDesertFloor(); return; }
-  drawCryptTiles(0, 0, W, H, CT, camX, camY);
+  if (!r3dPass) drawCryptTiles(0, 0, W, H, CT, camX, camY);   // 3D: the floor is real tiles
   drawTerrain();
   // decals: blood splatter, puddles and the odd bone
   const img = SPR.crypt.base;
@@ -1962,6 +1970,7 @@ function drawTerrain() {
         }
         continue;
       }
+      if (r3dPass && t !== T_LA && t !== T_LB) continue;                                          // 3D: only liquids stay painted
       if (bbList && (t === T_WA || t === T_WB)) { rect(x, y, CT, CT, '#000000'); continue; }   // PS1: a block stands here
       let sx = v, sy;
       if (t === T_WA) sy = 0; else if (t === T_WB) sy = 1; else if (t === T_FA) sy = 2; else if (t === T_FB) sy = 3;
@@ -5507,6 +5516,27 @@ function renderPS1() {
   ps1Draw(v, bbs);
 }
 
+// 3D: flat things (blood, pools, rings, gems, pickups, flat effects) painted onto a transparent canvas for the
+// floor of the 3D view; standing things without a model come back as billboards. (gx, gy, gw, gh) is the patch
+// of floor in dots, painted at 2 pixels per dot.
+let ovCv = null, ovCtx = null;
+function ground3D(gx, gy, gw, gh) {
+  const k = 2;
+  if (!ovCv) { ovCv = document.createElement('canvas'); ovCtx = ovCv.getContext('2d'); hdDrawImage(ovCtx); }
+  if (ovCv.width !== gw * k || ovCv.height !== gh * k) { ovCv.width = gw * k; ovCv.height = gh * k; }
+  ovCtx.setTransform(k, 0, 0, k, 0, 0);
+  ovCtx.imageSmoothingEnabled = false;
+  ovCtx.clearRect(0, 0, gw, gh);
+  const w0 = W, h0 = H, c0 = ctx;
+  groundView = { x: gx, y: gy }; W = gw; H = gh; ctx = ovCtx; bbList = []; r3dPass = true;
+  try {
+    ovCtx.globalAlpha = 1; ovCtx.globalCompositeOperation = 'source-over';
+    renderWorld();
+  } finally { W = w0; H = h0; groundView = null; ctx = c0; r3dPass = false; }
+  const bbs = bbList; bbList = null;
+  return { canvas: ovCv, bbs };
+}
+
 function initPS1() {
   try {
     const cv = document.createElement('canvas');
@@ -5694,7 +5724,8 @@ function frameData() {
   const c = document.createElement('canvas');
   c.width = W; c.height = H;
   const g = c.getContext('2d');
-  if (PS1 && ps1Canvas.style.visibility === 'visible') g.drawImage(ps1Canvas, 0, 0, W, H);
+  if (R3 && R3.canvas.style.visibility === 'visible') g.drawImage(R3.canvas, 0, 0, W, H);
+  else if (PS1 && ps1Canvas.style.visibility === 'visible') g.drawImage(ps1Canvas, 0, 0, W, H);
   else if (litOn && scene !== 'title' && scene !== 'select' && scene !== 'bestiary' && scene !== 'shop') g.drawImage(glCanvas, 0, 0, W, H);
   g.drawImage(canvas, 0, 0, W, H);
   return g.getImageData(0, 0, W, H).data;
@@ -5754,9 +5785,11 @@ function renderWorld() {
 
   drawFloor();
   drawSecretFlat();
-  ctx.globalCompositeOperation = 'lighter';
-  for (const bz of state.brazList || []) if (!bz.pot) drawBrazierLight(bz);
-  ctx.globalCompositeOperation = 'source-over';
+  if (!r3dPass) {   // 3D lights the scene for real
+    ctx.globalCompositeOperation = 'lighter';
+    for (const bz of state.brazList || []) if (!bz.pot) drawBrazierLight(bz);
+    ctx.globalCompositeOperation = 'source-over';
+  }
 
   // gems, with an occasional twinkle
   const tw = Math.floor(uiTime * 8);
@@ -5819,19 +5852,21 @@ function renderWorld() {
   // corpses (death animations), flickering out like old hardware sprites
   for (const c of corpses) {
     if (c.animT > 0.85 && blink(15)) continue;
+    if (r3dPass && R3.modeledSprite(c.sprite)) continue;   // 3D: the model plays its own death
     drawSprite(c.sprite, 'death', animFrame(c.animT, 'death', c.sprite), c.x, c.groundY, c.flip, c.scale, c.variant);
   }
 
   // shadows first, so no shadow ever lands on a sprite
-  for (const e of enemies) drawShadowAt(e.x, groundYOf(e), e.r * 0.9);
-  drawShadowAt(player.x, player.y + 20, 13);
+  for (const e of enemies) if (!(r3dPass && R3.has(e))) drawShadowAt(e.x, groundYOf(e), e.r * 0.9);   // 3D models cast real shadows
+  if (!(r3dPass && R3.has(player))) drawShadowAt(player.x, player.y + 20, 13);
 
   // living entities + solid props, y-sorted (painter's algorithm)
   const drawables = [];
-  for (const o of state.obsList || []) drawables.push({ y: o.y + 4, draw() { drawObstacle(o); } });
+  for (const o of state.obsList || []) if (!(r3dPass && R3.has(o))) drawables.push({ y: o.y + 4, draw() { drawObstacle(o); } });
   secretDrawables(drawables);
-  for (const bz of state.brazList || []) drawables.push({ y: bz.y + 8, draw() { if (bz.pot) drawPot(bz); else drawBrazier(bz); } });
+  if (!r3dPass) for (const bz of state.brazList || []) drawables.push({ y: bz.y + 8, draw() { if (bz.pot) drawPot(bz); else drawBrazier(bz); } });
   for (const e of enemies) {
+    if (r3dPass && R3.has(e)) continue;
     drawables.push({ y: groundYOf(e), draw() {
       const near = dist2(e.x, e.y, player.x, player.y) < (e.r + player.r + 26) ** 2;
       let anim = near ? 'attack' : 'walk', frame;
@@ -5906,7 +5941,7 @@ function renderWorld() {
     drawSprite('biski', 'walk', Math.floor(k.animT * 12) % frameCount('biski', 'walk'), k.x, k.y + 12, k.flip, SCALE, 'white');
     ctx.globalAlpha = 1;
   } });
-  drawables.push({ y: player.y + 20, draw() {
+  if (!(r3dPass && R3.has(player))) drawables.push({ y: player.y + 20, draw() {
     if (hurtBlink) return;
     const anim = player.attackAge < 0.45 ? 'attack' : (player.moving ? 'walk' : 'idle');
     const n = frameCount(player.sprite, anim);
@@ -6186,14 +6221,15 @@ function renderWorld() {
     }
   }
   if (state.portalT > 0) drawPortal();
-  renderDarkness();
+  if (!r3dPass) renderDarkness();
 }
 // floating numbers & text: above the lighting, so damage always reads
 function renderFloatText(ps1) {
   for (const t of texts) {
     if (t.life < 0.15 && blink(20)) continue;
     let x = toDX(t.x), y = toDY(t.y);
-    if (ps1) [x, y] = ps1Project(t.x / PX, t.y / PX + 30, 30);   // lifted off the floor in the 3D view
+    if (ps1 === '3d') [x, y] = R3.project(t.x / PX, t.y / PX, 30);
+    else if (ps1) [x, y] = ps1Project(t.x / PX, t.y / PX + 30, 30);   // lifted off the floor in the 3D view
     if (t.kind === 'num') drawNum(t.str, x, y, t.color, t.crit ? 2 : 1);
     else drawText(t.str, x, y, t.color, { align: 'center' });
   }
@@ -7042,18 +7078,23 @@ function render() {
   // PS1: the act's world in 3D (Act I so far); lit HD: the world goes to its own canvas and through WebGL.
   // Either way #game becomes the clear HUD layer on top.
   const ps1 = PS1 && !menuScene && state.act === 1;
-  const lit = litOn && !menuScene && !ps1;
+  const r3 = !!R3 && !menuScene && R3.supports(state.act);   // 3D: Act I so far (the rest fall back to HD)
+  const lit = litOn && !menuScene && !ps1 && !r3;
   if (PS1) { ps1Canvas.style.visibility = ps1 ? 'visible' : 'hidden'; glCanvas.style.visibility = ps1 ? 'hidden' : 'visible'; }
+  if (R3) { R3.canvas.style.visibility = r3 ? 'visible' : 'hidden'; if (glCanvas) glCanvas.style.visibility = r3 ? 'hidden' : 'visible'; }
   ctx = lit ? worldCtx : uiCtx;
-  if (lit || ps1) uiCtx.clearRect(0, 0, W, H);
-  if (!ps1) rect(0, 0, W, H, C.black);
+  if (lit || ps1 || r3) uiCtx.clearRect(0, 0, W, H);
+  if (!ps1 && !r3) rect(0, 0, W, H, C.black);
   if (scene === 'loading' || scene === 'error') { renderBoot(); return; }
   if (scene === 'title') { renderTitle(); return; }
   if (scene === 'intro') { renderIntro(); return; }
   if (scene === 'select') { renderSelect(); return; }
   if (scene === 'bestiary') { renderBestiary(); return; }
   if (scene === 'shop') { renderShop(); return; }
-  if (ps1) {
+  if (r3) {
+    R3.frame();
+    renderFloatText('3d');
+  } else if (ps1) {
     renderPS1();
     renderFloatText(true);
   } else {
