@@ -1,38 +1,38 @@
 # Public Pro demo implementation
 
-The public `/pro/demo` route implements the twelve-card gallery in the [surface brief](brief.md), subject to the root [product context](../../PRODUCT.md). It extends SteamWatch's incumbent interface. No new design system, `DESIGN.md` or design sidecar was created.
+The public `/pro/demo` route implements the twelve-tool, single-card carousel in the [surface brief](brief.md), subject to the root [product context](../../PRODUCT.md). It preserves the user's pinned Form Lab card treatment and extends SteamWatch's incumbent interface. No new design system, `DESIGN.md` or design sidecar was created.
 
 ## Ownership and maintenance
 
-- `frontend/src/pages/ProDemoPage.tsx` owns the three horizontal rows, category anchors, card previews, controls, source disclosure and membership links. Its stylesheet owns only the demo presentation. Legacy `?tool=` URLs render the complete gallery; they do not select a tab.
+- `frontend/src/pages/ProDemoPage.tsx` owns the active card, previous/next arrows, native tool picker, card controls, source disclosure and membership link. Its stylesheet owns only the demo presentation. The `?tool=` query selects the current card; an absent or unrecognized value shows Form Lab. Navigation replaces the current history entry, preserves other query parameters and prevents scroll reset.
 - `frontend/src/model/proDemo.ts` supplies existing form summaries, rolling windows and historical model inputs. The model card calls the unchanged `runModel` in `valorModel.ts`. Form controls do not alter predictor inputs.
 - `frontend/src/data/proDemo.json` contains the existing Arsenal–Leeds sample; `frontend/src/data/proDemoCards.json` supplies the additional market, team and manager examples. Both are bundled locally, with no runtime subscriber-data fetch or entitlement change.
 - Route registration is in `App.tsx` and `routes.json`; static metadata/content are in `scripts/prerender-blog.mjs`. Keep client and prerender copy consistent. Discovery links appear on `/pro`, paywalls and the footer; the shared layout supplies demo-specific historical wording.
 
 Refresh samples only as a deliberate data change. Update the snapshot, provenance, [source manifest](source-manifest.json), dated card copy and validation expectations together. Preserve pre-kickoff cutoffs, chronology, unique matches, complete rolling windows and stated sample/settlement boundaries. If shared model code changes, recalculate and record the reconstruction.
 
-## Gallery and controls
+## Carousel and controls
 
-The short introduction and membership link lead to category shortcuts, then three independent horizontal rows. Each card contains a tool name, short benefit, actual data preview, PRO/FREE badge, sample boundary and link to the existing tool. Membership links open `/pro`; the demo does not start checkout. The price is **€19.99 per month, renewing automatically**.
+The short introduction and membership link lead to a labelled native tool picker and one centered card. Exactly one preview is mounted at a time. Each card contains a tool name, short benefit, actual data preview, PRO/FREE badge, sample boundary and link to the existing tool. The membership link opens `/pro`; the demo does not start checkout. The price is **€19.99 per month, renewing automatically**.
 
-| Row | Card | Access and current interaction |
+| Order | Card (`?tool=` value) | Access and current interaction |
 | --- | --- | --- |
-| Read the market | Steam moves | Pro; three teams ranked by settled qualifying move count, with W/D/L and P/L. |
-| Read the market | Drifter records | Pro; equivalent drift record, retaining negative returns. |
-| Read the market | Favourite–longshot bias | Pro full access; switch Manchester United/Arsenal to compare favourite/underdog returns, wins and bet counts. Arsenal's two-bet underdog sample has an explicit warning. |
-| Read the market | Odds movement | Free; switch Arsenal/Leeds to change the archived series and first/last recorded prices. |
-| Read the market | Closing lines | Free; Bayern Munich–Arsenal's last recorded Pinnacle 1X2 prices before 21 October 2026 kick-off. |
-| Build your view | Form Lab | Pro; last 5, 10 or 20 matches for both teams' W/D/L and average npxG difference. All venues are fixed in this card. |
-| Build your view | Rolling xG | Pro; switch Arsenal/Leeds. Fixed five-game window, 20 match points and latest for/against values. |
-| Build your view | Dixon–Coles model | Pro; No adjustment, Weakened or Severely weakened Arsenal scenarios recalculate fair 1X2 odds. Leeds and other model settings stay fixed. |
-| Go a little deeper | Team profit & loss | Free; Arsenal All games/Home/Away records, including P/L, bets, wins and ROI. |
-| Go a little deeper | Club ratings | Free; top three clubs, ratings and rank changes. |
-| Go a little deeper | Manager ratings | Pro; three public preview entries with club and accumulated impact. The full-tool link reloads the document. |
-| Go a little deeper | Goals coming soon? | Free; Mainz 05 goals/xG comparison and shortfall, without a promised rebound. |
+| 1 | Form Lab (`form`) | Pro; last 5, 10 or 20 matches for both teams' W/D/L and average npxG difference. All venues are fixed in this card. |
+| 2 | Steam moves (`steam`) | Pro; three teams ranked by settled qualifying move count, with W/D/L and P/L. |
+| 3 | Drifter records (`drifters`) | Pro; equivalent drift record, retaining negative returns. |
+| 4 | Favourite–longshot bias (`bias`) | Pro full access; switch Manchester United/Arsenal to compare favourite/underdog returns, wins and bet counts. Arsenal's two-bet underdog sample has an explicit warning. |
+| 5 | Rolling xG (`xg`) | Pro; switch Arsenal/Leeds. Fixed five-game window, 20 match points and latest for/against values. |
+| 6 | Dixon–Coles model (`model`) | Pro; No adjustment, Weakened or Severely weakened Arsenal scenarios recalculate fair 1X2 odds. Leeds and other model settings stay fixed. |
+| 7 | Manager ratings (`managers`) | Pro; three public preview entries with club and accumulated impact. The full-tool link reloads the document. |
+| 8 | Odds movement (`market`) | Free; switch Arsenal/Leeds to change the archived series and first/last recorded prices. |
+| 9 | Closing lines (`closing`) | Free; Bayern Munich–Arsenal's last recorded Pinnacle 1X2 prices before 21 October 2026 kick-off. |
+| 10 | Team profit & loss (`pnl`) | Free; Arsenal All games/Home/Away records, including P/L, bets, wins and ROI. |
+| 11 | Club ratings (`ratings`) | Free; top three clubs, ratings and rank changes. |
+| 12 | Goals coming soon? (`goals`) | Free; Mainz 05 goals/xG comparison and shortfall, without a promised rebound. |
 
-Defaults are Manchester United bias, Arsenal odds, 20-match form, Arsenal rolling xG, no model adjustment and all-game P/L. Selecting **No adjustment** restores the model baseline. The gallery has no separate Reset button, handicap selector, form venue control or rolling-window control.
+Defaults are 20-match form, Manchester United bias, Arsenal rolling xG, no model adjustment, Arsenal odds and all-game P/L. A card's local controls reset to these defaults when it is revisited because the previous preview is unmounted. Selecting **No adjustment** also restores the model baseline. The carousel has no separate Reset button, handicap selector, form venue control or rolling-window control.
 
-Rows support native touch/trackpad scrolling and labelled previous/next buttons that move one card and disable at row ends. Each track is a focusable, labelled region with scroll snapping and a polite announcement of its leading card. Category links jump to rows. There is no autoplay. One collapsed “About these samples & calculations” disclosure holds methodology below the final membership link.
+Labelled previous/next buttons move one card and disable at the first/last card; there is no wraparound or autoplay. The carousel and its focusable active slide have accessible labels, and a polite live region announces the current position and tool name. When the slide container itself is focused, Left/Right move one card and Home/End select the first/last card; keyboard events from nested controls remain with those controls. A single-finger horizontal swipe changes cards after a 50px threshold and must be more horizontal than vertical. Swipes beginning on a button, select or link are ignored; vertical panning and pinch zoom remain enabled. The picker jumps directly to any card. One collapsed “About these samples & calculations” disclosure holds methodology beneath the carousel.
 
 ## Data and calculation boundaries
 
@@ -50,11 +50,11 @@ With no absence adjustment, the recorded current-code fair home/draw/away odds a
 
 ## Incumbent comparison
 
-Compared the demo source/styles with `index.css`, `ProPage.tsx` and `ProPage.css`. The gallery retains navy/slate surfaces, cyan actions/focus, inherited Inter Tight, JetBrains Mono table/ranking values, tabular figures and restrained green/red results. Shared model logic and the shared match odds chart remain unchanged; the gallery uses its own compact SVG previews from bundled data.
+The demo source/styles retain the incumbent navy/slate surfaces, cyan actions/focus, inherited Inter Tight, JetBrains Mono table/ranking values, tabular figures and restrained green/red results. Shared model logic and the shared match odds chart remain unchanged; the carousel uses its own compact SVG previews from bundled data. This documentation pass checked `ProDemoPage.tsx`, `ProDemoPage.css` and the global `index.css` against the surface contract.
 
-The local container is at most 1216px wide. Rows use 16px gaps and fit three cards on wide desktop. At 1100px and below, fractional card widths reveal the next card; at 760px and below, cards occupy 88% of the track, capped at 370px. Mobile stacks the introduction and final membership area. Horizontal scrolling stays within each row. Card surfaces (`#192638`), borders (`#35465a`) and 14px corners are local implementation values, not global tokens.
+The local page container is at most 980px wide; the centered carousel is at most 664px. Desktop uses a card up to 520px wide, flanked by 48px circular arrows with 24px horizontal gaps. At 760px and below, the carousel is at most 520px wide, the card spans the available width, and arrows move underneath beside progress. The introduction stacks on mobile. Card surfaces (`#192638`), borders (`#35465a`), 14px corners and a 394px minimum height preserve the pinned treatment as local implementation values, not global tokens. Card content uses 26px horizontal insets on desktop and 20px on mobile.
 
-Introduction type uses a 32–41.6px clamp, overridden to 35px on mobile. Row headings are 23px/21px and card headings 21px/20px. Controls retain a 2px cyan focus outline, selected-state `aria-pressed` semantics and a native labelled scenario select. Reduced motion disables local transitions and makes arrow scrolling immediate. Existing global backdrop/palette differences are preserved without becoming new system rules.
+Introduction type uses `clamp(1.8rem, 3vw, 2.25rem)`, overridden to 30px on mobile. Card headings are 25px, 23px at 760px and below, and 21px at 360px and below. Benefit text is 14px; table labels and sample notes range from 10px to 13px. Controls retain a 2px cyan focus outline, selected-state `aria-pressed` semantics and native labelled selects. Card changes use a 220ms horizontal entrance from 12px; reduced motion disables local animation and transitions. Existing global backdrop/palette differences are preserved without becoming new system rules.
 
 ## Verification and evidence
 
@@ -66,8 +66,10 @@ node scripts/check-pro-demo.mjs
 npx eslint src/pages/ProDemoPage.tsx src/model/proDemo.ts src/App.tsx src/components/PaywallOverlay.tsx src/pages/ProPage.tsx
 ```
 
-Run `git diff --check` from the repository root. The data script checks chronology, unique pre-match rows, all 18 helper form-filter combinations, missing-xG handling, five-/ten-game helper windows, nine absence combinations, probability normalization and independent quarter-handicap settlement. These broader helper checks do not imply that every option is exposed in the gallery. It also checks movement totals/rates, bias returns, venue P/L reconciliation, goals shortfall, pre-kick-off closing data, three-manager public preview and public prerender output. Baseline prices do not certify predictive accuracy.
+Run `git diff --check` from the repository root. The data script checks chronology, unique pre-match rows, all 18 helper form-filter combinations, missing-xG handling, five-/ten-game helper windows, nine absence combinations, probability normalization and independent quarter-handicap settlement. These broader helper checks do not imply that every option is exposed in the carousel. It also checks movement totals/rates, bias returns, venue P/L reconciliation, goals shortfall, pre-kick-off closing data, three-manager public preview and public prerender output. Baseline prices do not certify predictive accuracy.
 
-Current local evidence in `.impeccable/review/` is `cards-desktop.png`, `cards-desktop-last.png`, `cards-mobile.png` and `cards-1272.png`, covering wide desktop, row ends, 390px mobile and the 1272px layout. `cards-finish-review.md` records **disposition: ship**, with no material fixes; `cards-detector.json` is empty. Review/handoff evidence covers row ends and card controls, including the small-sample warning, Leeds odds/xG states, negative away P/L and severe model scenario, with no mobile page overflow or wide-desktop preview overflow. Earlier four-tab captures are superseded.
+Current local evidence in `.impeccable/review/` is `slides-desktop.png`, `slides-mobile.png`, `slides-1272.png` and `slides-mobile-model.png`. `slides-checks.md` records passing build, snapshot/model, targeted ESLint and whitespace checks; sequential navigation through all twelve cards with exactly one mounted at each step; disabled endpoint arrows; Home navigation; picker selection; the severe model scenario (1.88 / 3.57 / 5.30); and the five-match form sample. The record reports no document overflow at 1440×900, 390×844 and actual 1280×720. Physical touchscreen swiping was not exercised by desktop automation; the touch implementation was inspected. `slides-detector.json` contains an empty array. Earlier gallery and tab captures and their review dispositions are superseded.
+
+The carousel finish review identified stale product/implementation documentation as its required fix. This pass reconciles those documents with the current brief, code and checks without changing the interface. It does not substitute a new visual review or claim a post-documentation ship disposition.
 
 This bounded documentation pass checked source and review records without repeating browser or build verification. Future UI changes should repeat affected interactions and responsive views.

@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import cards from '../data/proDemoCards.json';
 import { demo, demoInputs, demoParams, formSummary, rollingXG, selectForm } from '../model/proDemo';
@@ -26,42 +26,11 @@ function Feature({ id, title, benefit, pro = true, href, sample, children, reloa
   id: string; title: string; benefit: string; pro?: boolean; href: string; sample: string; children: ReactNode; reload?: boolean;
 }) {
   return <article className="demo-card" id={`demo-${id}`} aria-labelledby={`demo-title-${id}`}>
-    <header className="demo-card-heading"><div><h3 id={`demo-title-${id}`}>{title}</h3><span className={`demo-access ${pro ? 'demo-access-pro' : ''}`}>{pro ? 'PRO' : 'FREE'}</span></div><p>{benefit}</p></header>
+    <header className="demo-card-heading"><div><h2 id={`demo-title-${id}`}>{title}</h2><span className={`demo-access ${pro ? 'demo-access-pro' : ''}`}>{pro ? 'PRO' : 'FREE'}</span></div><p>{benefit}</p></header>
     <div className="demo-card-preview">{children}</div>
     <p className="demo-card-sample">{sample}</p>
     <Link className="demo-card-link" to={href} reloadDocument={reload}><span>Open {title}</span><Arrow /></Link>
   </article>;
-}
-
-function Shelf({ id, title, description, count, children }: { id: string; title: string; description: string; count: number; children: ReactNode }) {
-  const track = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState({ first: true, last: false, current: 1 });
-  useEffect(() => {
-    const node = track.current;
-    if (!node) return;
-    const update = () => {
-      const width = node.querySelector<HTMLElement>('.demo-card')?.offsetWidth ?? 1;
-      setPosition({ first: node.scrollLeft < 4, last: node.scrollLeft + node.clientWidth >= node.scrollWidth - 4, current: Math.min(count, Math.round(node.scrollLeft / (width + 16)) + 1) });
-    };
-    update();
-    node.addEventListener('scroll', update, { passive: true });
-    const observer = new ResizeObserver(update);
-    observer.observe(node);
-    return () => { node.removeEventListener('scroll', update); observer.disconnect(); };
-  }, [count]);
-  function move(direction: number) {
-    const node = track.current;
-    if (!node) return;
-    const width = node.querySelector<HTMLElement>('.demo-card')?.offsetWidth ?? node.clientWidth;
-    node.scrollBy({ left: direction * (width + 16), behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
-  }
-  return <section className="demo-shelf" id={id} aria-labelledby={`${id}-heading`}>
-    <header className="demo-shelf-heading"><div><h2 id={`${id}-heading`}>{title} <span>{count}</span></h2><p>{description}</p></div>
-      <div className="demo-shelf-navigation"><span className="demo-swipe-hint">Swipe to explore</span><button type="button" aria-label={`Previous ${title.toLowerCase()} card`} aria-controls={`${id}-track`} disabled={position.first} onClick={() => move(-1)}><Arrow back /></button><button type="button" aria-label={`Next ${title.toLowerCase()} card`} aria-controls={`${id}-track`} disabled={position.last} onClick={() => move(1)}><Arrow /></button></div>
-    </header>
-    <div className="demo-track" id={`${id}-track`} ref={track} role="region" aria-label={`${title}, ${count} cards. Swipe or use the arrow buttons to explore.`} tabIndex={0}>{children}</div>
-    <span className="demo-sr-only" aria-live="polite">{title}: card {position.current} of {count} at the start of the row.</span>
-  </section>;
 }
 
 /** Compact charts use the actual bundled series; the shared match chart is unchanged. */
@@ -178,15 +147,70 @@ function Goals() {
   </Feature>;
 }
 
+const slides = [
+  { id: 'form', title: 'Form Lab', preview: <Form /> },
+  { id: 'steam', title: 'Steam moves', preview: <Movement /> },
+  { id: 'drifters', title: 'Drifter records', preview: <Movement drift /> },
+  { id: 'bias', title: 'Favourite–longshot bias', preview: <Bias /> },
+  { id: 'xg', title: 'Rolling xG', preview: <XG /> },
+  { id: 'model', title: 'Dixon–Coles model', preview: <Model /> },
+  { id: 'managers', title: 'Manager ratings', preview: <Managers /> },
+  { id: 'market', title: 'Odds movement', preview: <Odds /> },
+  { id: 'closing', title: 'Closing lines', preview: <Closing /> },
+  { id: 'pnl', title: 'Team profit & loss', preview: <PnL /> },
+  { id: 'ratings', title: 'Club ratings', preview: <Ratings /> },
+  { id: 'goals', title: 'Goals coming soon?', preview: <Goals /> },
+];
+
 export default function ProDemoPage() {
+  const [params, setParams] = useSearchParams();
+  const index = Math.max(0, slides.findIndex(slide => slide.id === params.get('tool')));
+  const slide = slides[index];
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  function select(next: number) {
+    if (next < 0 || next >= slides.length || next === index) return;
+    setParams(previous => {
+      const updated = new URLSearchParams(previous);
+      updated.set('tool', slides[next].id);
+      return updated;
+    }, { replace: true, preventScrollReset: true });
+  }
   return <div className="pro-demo">
     <Helmet><title>Explore SteamWatch | Try Our Football Research Tools</title><meta name="description" content="Swipe through SteamWatch’s football research tools. Try steam records, drifters, favourite–longshot bias, Form Lab and the Dixon–Coles model. No sign-up needed." /><link rel="canonical" href="https://www.steamwatch.io/pro/demo" /></Helmet>
-    <header className="demo-intro"><div><h1>Find your next angle.</h1><p>12 tools to read the market and research a match. Try them here.</p></div><div className="demo-membership"><Link className="demo-pro-button" to="/pro">Explore Pro <Arrow /></Link><span>€19.99 / month · renews automatically</span></div></header>
-    <nav className="demo-quick-nav" aria-label="Demo categories"><a href="#market-tools">Market tools <span>5</span></a><a href="#match-tools">Match tools <span>3</span></a><a href="#team-tools">Team research <span>4</span></a><span className="demo-sample-notice">Real historical samples · no sign-up</span></nav>
-    <Shelf id="market-tools" title="Read the market" description="Follow the money. Check the record." count={5}><Movement /><Movement drift /><Bias /><Odds /><Closing /></Shelf>
-    <Shelf id="match-tools" title="Build your view" description="Form, performances and your own fair price." count={3}><Form /><XG /><Model /></Shelf>
-    <Shelf id="team-tools" title="Go a little deeper" description="Find the patterns behind a team or manager." count={4}><PnL /><Ratings /><Managers /><Goals /></Shelf>
-    <footer className="demo-bottom"><div><h2>Found your next research tool?</h2><p>Unlock the full Pro tools for €19.99 a month.</p></div><Link className="demo-pro-button" to="/pro">See what’s included <Arrow /></Link></footer>
+    <header className="demo-intro"><div><h1>Find your next angle.</h1><p>Click through 12 tools. Try the controls. Find what works for you.</p></div><div className="demo-membership"><Link className="demo-pro-button" to="/pro">Explore Pro <Arrow /></Link><span>€19.99 / month · renews automatically</span></div></header>
+    <section className="demo-carousel" aria-label="Explore SteamWatch tools" aria-roledescription="carousel">
+      <label className="demo-tool-picker"><span>Jump to a tool</span><select value={slide.id} onChange={event => select(slides.findIndex(item => item.id === event.target.value))}>{slides.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>
+      <div className="demo-slide-layout">
+        <button type="button" className="demo-slide-arrow demo-slide-prev" aria-label="Previous feature" aria-controls="demo-active-slide" disabled={index === 0} onClick={() => select(index - 1)}><Arrow back /></button>
+        <div id="demo-active-slide" className="demo-active-slide" tabIndex={0} role="group" aria-roledescription="slide" aria-label={`${index + 1} of ${slides.length}: ${slide.title}`}
+          onKeyDown={event => {
+            if (event.target !== event.currentTarget) return;
+            if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
+              event.preventDefault();
+              select(event.key === 'Home' ? 0 : event.key === 'End' ? slides.length - 1 : index + (event.key === 'ArrowRight' ? 1 : -1));
+            }
+          }}
+          onTouchStart={event => {
+            touchStart.current = null;
+            if (event.touches.length !== 1 || (event.target as HTMLElement).closest('button, select, a')) return;
+            touchStart.current = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+          }}
+          onTouchCancel={() => { touchStart.current = null; }}
+          onTouchEnd={event => {
+            const start = touchStart.current;
+            touchStart.current = null;
+            if (!start || !event.changedTouches.length) return;
+            const dx = event.changedTouches[0].clientX - start.x;
+            const dy = event.changedTouches[0].clientY - start.y;
+            if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.4) select(index + (dx < 0 ? 1 : -1));
+          }}>
+          <div className="demo-slide-content" key={slide.id}>{slide.preview}</div>
+        </div>
+        <button type="button" className="demo-slide-arrow demo-slide-next" aria-label="Next feature" aria-controls="demo-active-slide" disabled={index === slides.length - 1} onClick={() => select(index + 1)}><Arrow /></button>
+        <div className="demo-slide-progress"><span aria-live="polite" aria-atomic="true">{index + 1} of {slides.length} <span className="demo-sr-only">— {slide.title}</span></span><div className="demo-progress-marks" aria-hidden="true">{slides.map((item, i) => <span key={item.id} className={i === index ? 'is-current' : ''} />)}</div><span className="demo-navigation-hint">{index === slides.length - 1 ? 'You’ve seen all 12 tools' : 'Use the arrows or swipe'}</span></div>
+      </div>
+      <p className="demo-sample-notice">Real historical samples · no sign-up needed</p>
+    </section>
     <details className="demo-data-note"><summary>About these samples & calculations</summary><div>
       <p>These are fixed examples captured on 22 October 2026, not live prices. Each card’s sample differs. “Pro” identifies tools whose full access requires membership; some also offer free previews. Past returns do not establish a future betting edge.</p>
       <p>Steam and drifter tables show the three teams with the most settled qualifying moves. They include all tracked competitions, not only Telegram alerts. A qualifying move is at least 3 percentage points (pp) in raw implied probability, observed within two hours of kick-off. One move per match and side is retained: the largest observed move. P/L uses a 1-unit stake at that recorded price; draws lose. This descriptive record is not a strategy backtest.</p>
