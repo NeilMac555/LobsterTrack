@@ -2569,6 +2569,18 @@ const ULT_KILLS = 70;
 const ultK = () => player.dmgMult * (1 + state.level * 0.08);   // ultimates keep pace with the run
 const ultTargets = r => enemies.filter(e => dist2(e.x, e.y, player.x, player.y) < r * r);
 function ultSeq(n, gap, fn) { for (let i = 0; i < n; i++) state.ultQueue.push({ t: i * gap, fn: () => fn(i) }); }
+// Bosses shrug off most of an ultimate: it's for clearing the crowd, not for skipping the boss fight.
+// Ultimate damage is tagged at the source: the fire() call and its queued steps run with ultCtx set,
+// and the bullets and effects they spawn carry `ult`, which the bullet and effect loops pass back in.
+const ULT_BOSS_MUL = 0.15;
+let ultCtx = false;
+function asUlt(fn) {
+  const b0 = bullets.length, f0 = effects.length, prev = ultCtx;
+  ultCtx = true;
+  try { fn(); } finally { ultCtx = prev; }
+  for (let i = b0; i < bullets.length; i++) bullets[i].ult = true;
+  for (let i = f0; i < effects.length; i++) effects[i].ult = true;
+}
 function ultBurst(x, y, r, dmg, col) {
   effects.push({ type: 'boom', x, y, radius: r, life: 0.3, maxLife: 0.3 });
   for (const e of [...enemies]) if (dist2(e.x, e.y, x, y) < (r + e.r) ** 2) damageEnemy(e, dmg);
@@ -2645,14 +2657,14 @@ function fireUlt() {
   state.ultGuardT = Math.max(state.ultGuardT, 1.5);
   state.flash = 0.6; state.shake = Math.max(state.shake, 6);
   announce(u.name + '!', u.col, 1.6, 6);
-  u.fire();
+  asUlt(() => u.fire());
 }
 function updateUlt(dt) {
   state.ultGuardT = Math.max(0, state.ultGuardT - dt);
   state.catnadoT = Math.max(0, state.catnadoT - dt);
   for (let i = state.ultQueue.length - 1; i >= 0; i--) {
     const q = state.ultQueue[i];
-    if ((q.t -= dt) <= 0) { state.ultQueue.splice(i, 1); q.fn(); }
+    if ((q.t -= dt) <= 0) { state.ultQueue.splice(i, 1); asUlt(q.fn); }
   }
 }
 // Visor's sweep: the beam turns a full circle, cutting each foe once
@@ -3460,6 +3472,7 @@ let lastHitSnd = 0;
 function damageEnemy(e, dmg) {
   if (e.burrowed) return;   // the Maggot Queen underground
   dmg *= perkDmg(e);
+  if (ultCtx && e.boss) dmg *= ULT_BOSS_MUL;
   const crit = Math.random() < player.critChance;
   if (crit) dmg *= 2.2;
   if (e.freezeT > 0) dmg *= 1.5;   // frozen foes break easily
@@ -4381,6 +4394,7 @@ function update(dt) {
   // bullets
   for (let i = bullets.length - 1; i >= 0; i--) {
     const b = bullets[i];
+    ultCtx = !!b.ult;
     if (b.kind === 'hammer' || b.kind === 'sushi' || b.kind === 'acid' || b.kind === 'glaive') {
       if (updateSpecialBullet(b, dt)) { bullets[i] = bullets[bullets.length - 1]; bullets.pop(); }
       continue;
@@ -4426,6 +4440,7 @@ function update(dt) {
     }
     if (dead) { bullets[i] = bullets[bullets.length - 1]; bullets.pop(); }
   }
+  ultCtx = false;
 
   updateDecoy(dt);
   updateUlt(dt);
@@ -4724,7 +4739,9 @@ function update(dt) {
         e.ramT = (e.ramT || 0) - dt;
         if (e.ramT <= 0) {
           e.ramT = 0.2;
+          ultCtx = state.catnadoT > 0;   // Catnado is an ultimate too
           damageEnemy(e, state.catnadoT > 0 ? 40 * ultK() : 25 * player.dmgMult);
+          ultCtx = false;
           const k = 26 / Math.max(1, d);
           e.x += (e.x - player.x) * k; e.y += (e.y - player.y) * k;
         }
@@ -4900,6 +4917,7 @@ function update(dt) {
   // effects, floating text, banner
   for (let i = effects.length - 1; i >= 0; i--) {
     const fx = effects[i];
+    ultCtx = !!fx.ult;
     fx.life -= dt;
     if (fx.type === 'acidpool' || fx.type === 'flame' || fx.type === 'holyfire') {   // ground that burns whatever stands in it
       fx.tickT -= dt;
@@ -4931,6 +4949,7 @@ function update(dt) {
     }
     if (effects[i].life <= 0) effects.splice(i, 1);
   }
+  ultCtx = false;
   for (let i = texts.length - 1; i >= 0; i--) {
     const t = texts[i];
     t.life -= dt; t.y += t.vy * dt;
@@ -4982,7 +5001,7 @@ function updateSpecialBullet(b, dt) {
       if (e && dist2(e.x, e.y, b.x, b.y) < (b.aoe * 0.7 + e.r) ** 2) damageEnemy(e, b.dmg);
     }
     for (const bz of state.brazList || []) if (dist2(bz.x, bz.y, b.x, b.y) < (b.aoe + 14) ** 2) damageBrazier(bz, 12);
-    effects.push({ type: 'acidpool', x: b.x, y: b.y, radius: b.aoe, life: b.dur, maxLife: b.dur, dmg: b.tick, tickT: 0, plague: b.plague });
+    effects.push({ type: 'acidpool', x: b.x, y: b.y, radius: b.aoe, life: b.dur, maxLife: b.dur, dmg: b.tick, tickT: 0, plague: b.plague, ult: b.ult });
     sfx(900, 0.12, 'square', 0.03, -700); sfx(160, 0.3, 'sawtooth', 0.03, -80);   // smash + hiss
     return true;
   }
