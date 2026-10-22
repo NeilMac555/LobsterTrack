@@ -322,5 +322,23 @@ script, pitched down 5% and given a light 10-bit crunch and echo.
   Modifications: the dungeon pieces and weapons packed into one file each with
   their textures shared; 22 animation clips merged into one mesh-free file; the
   dungeon stone darkened in the renderer. Licence text: `assets/3d/LICENSE-KayKit.txt`.
+- Acts II-V scenery (`nature.glb`), all **CC0**:
+  - **Kenney** (www.kenney.nl): "Nature Kit" 2.1 (cliff blocks for the rock walls,
+    palms, cacti, statues, rocks, mushrooms, logs, clay pots), "Pirate Kit" (palms,
+    sand rocks, the shipwreck, barrels, chests, a cannon), "Graveyard Kit" 5.0
+    (crypts, gravestones, fire baskets, altars, obelisks, urns). Licence text:
+    `assets/3d/LICENSE-Kenney.txt`.
+  - **KayKit** by Kay Lousberg: "Forest Nature Pack" (jungle trees, bushes, rocks,
+    grass) and "Halloween Bits" (dead trees, skull posts, bones, a coffin).
+  Modifications: packed into one file; recoloured per act in the renderer
+  (sandstone, mossy and jade stone, obsidian, coral).
+- Monsters (`creatures/`), all **CC0**:
+  - **Quaternius** (quaternius.com): "LowPoly Animated Monsters" (bat, dragon,
+    slime), "Easy Animated Enemy Pack" (spider, frog, snake, wasp), "LowPoly
+    Animated Fish" (fish, shark), "Dinosaur Animated Pack" (velociraptor), "Farm
+    Animals Animated" (horse). Converted from FBX to glTF (FBX2glTF), keyframes
+    resampled. Licence text: `assets/3d/LICENSE-Quaternius.txt`.
+  - **Kenney** "Graveyard Kit" characters (ghost, zombie, vampire, keeper, skeleton).
+  Recoloured per monster in the renderer.
 - Engine — **three.js** r160 (MIT, © three.js authors), vendored in `vendor/three/`
   with its licence.

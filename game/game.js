@@ -16,6 +16,8 @@
 //           2x pixel art (assets/hd) in full colour. With WebGL the world is drawn on its own
 //           canvas and lit there (coloured light map + bloom, see "lighting"); the HUD stays on
 //           #game, an unlit transparent layer on top.
+//   3D    — the default: render3d.js (three.js) draws every act as a lit, shadowed 3D scene with
+//           animated models, HD underneath for the menus, the HUD and anything without a model.
 //   PS1   — HD, plus (in Act I so far) a 3D world: the floor as a textured plane under a tilted camera,
 //           walls as blocks and everything standing as a billboard sprite, with the PlayStation's
 //           low-res, dithered, wobbling look (see "PS1 renderer").
@@ -27,7 +29,7 @@ const GFX = (() => {
   try { const m = localStorage.getItem(GFX_KEY); return GFX_MODES.includes(m) ? m : '3d'; } catch (e) { return '3d'; }
 })();
 const HD = GFX !== 'retro';
-const GFX_LABEL = { '3d': '3D (ACT I)', hd: 'HD', ps1: 'PS1 3D (ACT I)', retro: 'RETRO' };
+const GFX_LABEL = { '3d': '3D', hd: 'HD', ps1: 'PS1 3D (ACT I)', retro: 'RETRO' };
 // switching modes reloads: the sheets, palette and canvases are all chosen at boot
 function toggleGraphics() {
   const next = GFX_MODES[(GFX_MODES.indexOf(GFX) + 1) % GFX_MODES.length];
@@ -1970,7 +1972,7 @@ function drawTerrain() {
         }
         continue;
       }
-      if (r3dPass && t !== T_LA && t !== T_LB) continue;                                          // 3D: only liquids stay painted
+      if (r3dPass && (t === T_WA || t === T_WB || (state.act === 1 && t !== T_LA && t !== T_LB))) continue;   // 3D: walls are solid; Act I's floor is tiles
       if (bbList && (t === T_WA || t === T_WB)) { rect(x, y, CT, CT, '#000000'); continue; }   // PS1: a block stands here
       let sx = v, sy;
       if (t === T_WA) sy = 0; else if (t === T_WB) sy = 1; else if (t === T_FA) sy = 2; else if (t === T_FB) sy = 3;
@@ -7078,7 +7080,7 @@ function render() {
   // PS1: the act's world in 3D (Act I so far); lit HD: the world goes to its own canvas and through WebGL.
   // Either way #game becomes the clear HUD layer on top.
   const ps1 = PS1 && !menuScene && state.act === 1;
-  const r3 = !!R3 && !menuScene && R3.supports(state.act);   // 3D: Act I so far (the rest fall back to HD)
+  const r3 = !!R3 && !menuScene && R3.supports(state.act);   // 3D: every act once its models have loaded (HD until then)
   const lit = litOn && !menuScene && !ps1 && !r3;
   if (PS1) { ps1Canvas.style.visibility = ps1 ? 'visible' : 'hidden'; glCanvas.style.visibility = ps1 ? 'hidden' : 'visible'; }
   if (R3) { R3.canvas.style.visibility = r3 ? 'visible' : 'hidden'; if (glCanvas) glCanvas.style.visibility = r3 ? 'hidden' : 'visible'; }

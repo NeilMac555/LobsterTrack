@@ -1,14 +1,17 @@
 // ---------- 3D renderer (Three.js) ----------
 // The 3D graphics mode. The game itself doesn't change: every frame this reads the game's state (the hero,
 // the monsters, the map, the props) and draws the act as a lit, shadowed 3D scene:
-//   - KayKit floor tiles and walls, built from the act's map grid around the hero (walls between the camera
-//     and the hero drop to half height, so nothing hides you);
-//   - animated KayKit heroes, skeletons and the Butcher, with weapons in their hands;
-//   - KayKit props for the map's obstacles, braziers and pots;
-//   - the 2D renderer's flat layer (blood, pools, rings, gems, pickups, flat effects) painted onto a texture
-//     that lies on the floor; anything standing that has no model yet comes back as a billboard of its sprite;
-//   - a lantern spotlight over the hero (with shadows), the scene's fires and blasts as point lights, fog and bloom.
-// Models: KayKit by Kay Lousberg (CC0). Engine: three.js (MIT).
+//   - Act I: KayKit floor tiles and walls built from the map grid (walls between the camera and the hero drop
+//     to half height, so nothing hides you). Acts II-V: the 2D floor art lies on the ground and the walls rise
+//     as rock (sandstone, jungle cliff, reef, obsidian);
+//   - animated heroes and monsters (KayKit adventurers and skeletons; Quaternius and Kenney creatures), with
+//     weapons in hand where they have hands;
+//   - each act's obstacles, statues, braziers and pots as 3D props, plus a little scattered dressing;
+//   - the 2D renderer's flat layer (blood, pools, rings, gems, pickups, flat effects, and outside Act I the floor
+//     itself) painted onto a texture on the ground; anything standing that has no model yet is a billboard;
+//   - per-act light: a lantern over the hero in the crypt, sun on the dunes, canopy shade, deep-sea blue, hellfire;
+//     the scene's fires and blasts as point lights, fog and bloom.
+// Models: KayKit by Kay Lousberg, Quaternius, Kenney (all CC0). Engine: three.js (MIT).
 // It runs alongside game.js, a classic script, and reads that script's top-level bindings by name.
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -25,7 +28,7 @@ const KIT = CELL / 4;          // dungeon pieces: one 4 m KayKit tile spans one 
 const MAN = 14;                // characters: dots per metre
 const WALL_H = 4 * KIT;        // a full wall, in dots
 const MAX_ACTORS = 100;        // the nearest monsters get a model; any more stand as billboards
-const SHADOW_R = 230;          // only models this close to the hero cast shadows (each caster is drawn again for the lantern)
+const SHADOW_R = 230;          // only models this close to the hero cast shadows (each caster is drawn again for the light)
 // Adaptive quality: if frames are slow, step down (sharpness, then shadows, then bloom); still too slow, hand the
 // world back to the HD renderer. ?q=fixed keeps full quality (tests).
 const ADAPT = new URLSearchParams(location.search).get('q') !== 'fixed';
@@ -44,7 +47,11 @@ const HERO = {
   ana: { m: 'rogue_hooded', hide: ['RogueHooded_Mask'], atk: 'Throw' },
   karate: { m: 'rogue_hooded', atk: 'Throw' },
 };
-// Monsters with a model so far, by kind (bosses by key). `skel`: plays the skeletons' own walk, idle and death.
+// Monsters with a model, by kind (bosses by key).
+//   m: a KayKit Rig_Medium character (shared animations; `skel` plays the skeletons' own walk, idle and death)
+//   g: a creature file in creatures/ with its own animations (Quaternius, Kenney), h: its height in dots,
+//   hover: dots off the ground (on top of the game's own flying height), tint: a colour multiplied in, paint: one set,
+//   glow: a constant ember of its own
 const FOE = {
   skeleton: { m: 'skeleton_minion', r: 'Skeleton_Blade', skel: true },
   knight: { m: 'skeleton_warrior', r: 'Skeleton_Axe', l: 'Skeleton_Shield_Small_A', skel: true },
@@ -55,6 +62,31 @@ const FOE = {
   orc: { m: 'barbarian', r: 'axe_2handed', tint: 0x86c070, atk: 'Melee_2H_Attack_Chop' },
   brute: { m: 'barbarian', r: 'axe_2handed', s: 1.3, tint: 0xa8a070, atk: 'Melee_2H_Attack_Chop' },
   butcher: { m: 'barbarian', r: 'axe_2handed', tint: 0xffa090, hide: ['Barbarian_BearHat'], atk: 'Melee_2H_Attack_Chop' },
+  golem: { g: 'k-skeleton', h: 26, tint: 0x8a96a8 },
+  goblin: { g: 'k-keeper', h: 20, tint: 0x90c070 },
+  bat: { g: 'bat', h: 14, hover: 10 },
+  devilkin: { g: 'bat', h: 18, hover: 12, tint: 0xff6a50 },
+  imp: { g: 'dragon', h: 20, hover: 6, tint: 0xff7a5a },
+  hellbeast: { g: 'dragon', h: 44, hover: 4, tint: 0xb03a20 },
+  devil: { g: 'dragon', h: 118, hover: 8, paint: 0xb8241a, glow: 0x3a0800 },
+  blueslime: { g: 'slime', h: 14, tint: 0x7ab0ff }, redslime: { g: 'slime', h: 14, tint: 0xff7060 }, voltslime: { g: 'slime', h: 15, tint: 0xfff070 },
+  scarab: { g: 'spider', h: 14, paint: 0xb8862e },   // the spider is near-black: repainted rather than tinted
+  crab: { g: 'spider', h: 16, paint: 0xd0502c },
+  fly: { g: 'wasp', h: 12, hover: 10, tint: 0xa0c070 },
+  mosquito: { g: 'wasp', h: 8, hover: 12, tint: 0x7a6a5a },
+  snake: { g: 'snake', h: 10 },
+  eel: { g: 'snake', h: 10, hover: 4, tint: 0x70b0ff },
+  maggot: { g: 'snake', h: 10, tint: 0xf4e4b8 },
+  maggotqueen: { g: 'snake_angry', h: 64, paint: 0xe6d6a4 },
+  frog: { g: 'frog', h: 14 },
+  lizard: { g: 'raptor', h: 20, tint: 0x90c868 },
+  wolf: { g: 'raptor', h: 24, tint: 0x7a4040 },
+  piranha: { g: 'fish1', h: 7, hover: 8, tint: 0xff9080 },
+  shark: { g: 'shark', h: 18, hover: 8 },
+  ghoul: { g: 'k-zombie', h: 28, tint: 0xffa070 },
+  cultist: { g: 'k-vampire', h: 28, tint: 0xff7070 },
+  banshee: { g: 'k-ghost', h: 28, hover: 4 },
+  nightmare: { g: 'horse', h: 34, tint: 0x3a2a2a },
 };
 // Act I's obstacles (by kind) and map props (by prop code) as dungeon pieces
 const OBS_PIECES = ['column', 'pillar_decorated', 'rubble_large', 'table_long_broken', 'barrel_large', 'crates_stacked', 'chest_gold', 'pillar'];
@@ -64,12 +96,58 @@ const POT_PIECES = ['barrel_small', 'keg', 'box_small', 'bottle_A_green'];
 const FLOOR_PIECES = [['floor_tile_large', 70], ['floor_tile_large_rocks', 14], ['floor_dirt_large', 10], ['floor_tile_big_grate', 3]];
 const WALL_PIECES = [['wall', 78], ['wall_cracked', 16], ['wall_broken', 6]];
 
+// Acts II-V. A piece is [name, height in dots, tint]; a tint is a colour multiplied into every material, or
+// { materialName: colour } to repaint named materials (Kenney's cliff blocks: 'grass' on top, 'dirt' down the sides).
+// (Kenney's statues are dark grey: they're repainted, { set }, rather than multiplied)
+const SAND = { set: 0xd8c39a }, JADE = { set: 0x4f9f8c }, OBSID = { set: 0x5a3c36 }, MOSS = { set: 0x86a286 };
+const ACT = {
+  2: {   // the Burning Sands: sandstone ridges, palms and statues under a hard sun
+    wall: ['cliff_block_rock', { grass: 0xe2c286, dirt: 0xc89a62 }], wallH: [1.1, 1.7],
+    obs: [['palm-detailed-bend', 74], ['tree_palmTall', 70], ['palm-detailed-straight', 76], ['statue_column', 40, SAND], ['rocks-sand-a', 22]],
+    map: [['statue_column', 38, SAND], ['statue_columnDamaged', 30, SAND], ['statue_column', 38, SAND], ['statue_block', 26, SAND], ['statue_ring', 30, SAND],
+      ['rocks-sand-b', 16], ['statue_obelisk', 44, SAND], ['altar-stone', 18, SAND], ['statue_head', 30, SAND], ['statue_head', 30, SAND], ['statue_column', 38, SAND],
+      ['statue_columnDamaged', 30, SAND], ['stone_largeA', 18, SAND], ['rocks-sand-c', 14], ['urn-round', 16, SAND], ['stone_largeB', 18, SAND]],
+    pots: [['pot_large', 16], ['pot_small', 12]], scatter: [['rocks-sand-c', 7, 26], ['cactus_short', 18, 60], ['cactus_tall', 28, 90]],
+    light: { amb: [0xfff0dc, 0.9], hemi: [0xfff3cf, 0xb48654, 0.7], sun: [0xfff1d2, 2.5], lamp: 0, fog: 0xe7cf98, fogK: [1.3, 2.4], exposure: 0.85, glow: 0x111111, day: 1 },
+  },
+  3: {   // the Strangling Jungle: green cliffs, giant trees, ferns, mushrooms
+    wall: ['cliff_block_rock', { grass: 0x4f8f3a, dirt: 0x6a5238 }], wallH: [1.0, 1.6],
+    obs: [['Tree_1_A_Color1', 120], ['Tree_2_A_Color1', 116], ['Tree_3_A_Color1', 112], ['Tree_4_A_Color1', 120], ['tree_fat', 96], ['plant_bushLarge', 30]],
+    map: [['Tree_1_A_Color1', 100], ['Tree_3_A_Color1', 96], ['Tree_2_A_Color1', 100], ['Rock_1_A_Color1', 18], ['statue_head', 30, MOSS], ['statue_ring', 28, MOSS],
+      ['mushroom_redGroup', 14], ['statue_head', 30, MOSS], ['statue_head', 30, 0xc08050], ['statue_block', 26, MOSS], ['statue_column', 38, MOSS],
+      ['statue_columnDamaged', 30, MOSS], ['log_large', 12], ['log_large', 12], ['stump_old', 14], ['Bush_2_A_Color1', 22]],
+    pots: [['pot_large', 16], ['pot_small', 12]], scatter: [['Grass_1_A_Color1', 10, 7], ['Bush_1_A_Color1', 16, 24], ['mushroom_tanGroup', 9, 40], ['mushroom_redTall', 12, 70]],
+    light: { amb: [0x3e5a38, 0.7], hemi: [0xb6e09a, 0x1c2a12, 0.55], sun: [0xe2ffbc, 1.5], lamp: 1.8, fog: 0x0c1c0c, fogK: [1.0, 1.9], exposure: 1.1, glow: 0x222222 },
+  },
+  4: {   // the Drowned Depths: reef walls, jade idols, coral, seaweed, a wreck
+    wall: ['cliff_block_stone', 0x6a9aa8], wallH: [1.0, 1.5],
+    obs: [['statue_obelisk', 52, JADE], ['statue_column', 46, JADE], ['rock_tallA', 40, 0x7a8f9a], ['cannon', 16, 0x9ab0c0], ['Bush_4_A_Color1', 28, 0xd070c0], ['grass_large', 40, 0x2a6a4a]],
+    map: [['statue_head', 30, JADE], ['statue_head', 30, JADE], ['rock_largeA', 20, 0x8aa0b0], ['statue_head', 30, JADE], ['statue_column', 38, JADE], ['statue_columnDamaged', 30, JADE],
+      ['urn-round', 16, JADE], ['urn-round', 16, JADE], ['statue_head', 30, JADE], ['statue_head', 30, JADE], ['statue_ring', 30, 0x8ad0ff], ['statue_column', 38, JADE],
+      ['statue_block', 26, JADE], ['urn-round', 16, JADE], ['ship-wreck', 46, 0x7a8a96], ['stone_largeA', 18, 0x8aa0b0]],
+    pots: [['barrel', 14], ['chest', 12], ['bottle-large', 12]], scatter: [['grass_large', 20, 18, 0x2f7a52], ['Bush_4_A_Color1', 12, 34, 0xff7a6a], ['Bush_1_A_Color1', 12, 50, 0xc06ad0], ['rocks-b', 8, 60, 0x8aa0b0]],
+    light: { amb: [0x2a5a8c, 0.55], hemi: [0x6ab8f0, 0x061a26, 0.5], sun: [0x8fd8ff, 0.8], lamp: 2.4, lampCol: 0xa8f0ff, fog: 0x05223c, fogK: [0.8, 1.6], exposure: 0.85, glow: 0x111418 },
+  },
+  5: {   // the Gates of Hell: obsidian, fire altars, gates, bones
+    wall: ['cliff_block_stone', 0x4a2a28], wallH: [1.1, 1.8],
+    obs: [['fire-basket', 26, 0x6a4a40], ['crypt-small', 48, OBSID], ['pillar-obelisk', 46, OBSID], ['altar-stone', 22, OBSID], ['fire-basket', 26, 0x6a4a40], ['crypt-small', 48, OBSID]],
+    map: [['statue_head', 30, OBSID], ['statue_head', 30, OBSID], ['statue_head', 30, OBSID], ['fire-basket', 26], ['pillar-obelisk', 44, OBSID], ['crypt-small', 44, OBSID],
+      ['tree_dead_medium', 40], ['gravestone-round', 18, OBSID], ['fire-basket', 26], ['fire-basket', 26], ['fire-basket', 26], ['crypt-small', 44, OBSID],
+      ['altar-stone', 18, OBSID], ['debris', 8], ['debris', 8], ['column-large', 46, OBSID]],
+    pots: [['urn-round', 14, 0x8a5a4a], ['coffin', 12, 0x8a5a4a]], scatter: [['bone_A', 4, 20], ['skull', 5, 44], ['ribcage', 9, 70], ['tree_dead_large', 60, 160], ['post_skull', 26, 120]],
+    light: { amb: [0x7a2614, 1.15], hemi: [0xff7a4a, 0x2a0606, 0.6], sun: [0xff7038, 1.0], lamp: 3.4, lampCol: 0xffb878, fog: 0x220602, fogK: [1.0, 1.9], exposure: 1.3, glow: 0x553322 },
+  },
+};
+const ACT1_LIGHT = { amb: [0x3a3458, 0.32], hemi: [0x6a5f98, 0x120a0a, 0.18], sun: [0, 0], lamp: 3.4, lampCol: 0xffdcb0, fog: 0x000000, fogK: [0.95, 1.75], exposure: 1.15, glow: 0x333333 };
+
 const pickW = (list, h) => { const t = list.reduce((s, [, w]) => s + w, 0); let r = h % t; for (const [k, w] of list) { if ((r -= w) < 0) return k; } return list[0][0]; };
 const hashC = (x, y) => hash2(x * 31 + 7, y * 17 + 11);
+const CREATURES = [...new Set(Object.values(FOE).filter(s => s.g).map(s => s.g))];
 
 export async function init3D() {
   const R = new Renderer3D();
   await R.load();
+  R.loadOutdoors();   // Acts II-V and the creatures, in the background: until they arrive those acts draw in HD
   return R;
 }
 
@@ -96,18 +174,20 @@ class Renderer3D {
     this.dying = [];              // actors playing their death after the monster is gone
     this.pools = new Map();       // spec key -> free Actors
     this.want = new Set();        // entities with a model this frame
-    this.obsSet = new Set();      // obstacles and map props, all drawn as dungeon pieces
+    this.obsSet = new Set();      // obstacles and map props, all drawn as 3D pieces
     this.lastT = uiTime;
     this.mapKey = '';
+    this.act = 0;
+    this.outdoors = false;        // Acts II-V's pieces and the creatures, once loaded
     this.quality = 0; this.off = false; this.slow = { t: 0, n: 0, sum: 0, last: 0 };
-    this.modeledSprites = new Set(Object.keys(FOE).filter(k => ENEMY_TYPES[k]).map(k => ENEMY_TYPES[k].sprite));
+    this.modeledSprites = new Set();
+    this.loader = new GLTFLoader();
   }
+  get(f) { return this.loader.loadAsync(BASE + f.replace(/\.glb$/, EXT)); }
 
   async load() {
-    const loader = new GLTFLoader();
-    const get = f => loader.loadAsync(BASE + f.replace(/\.glb$/, EXT));
-    const models = [...new Set([...Object.values(HERO), ...Object.values(FOE)].map(s => s.m))];
-    const [dungeon, weapons, anims, ...chars] = await Promise.all([get('dungeon.glb'), get('weapons.glb'), get('anim-medium.glb'), ...models.map(m => get(m + '.glb'))]);
+    const models = [...new Set([...Object.values(HERO), ...Object.values(FOE)].filter(s => s.m).map(s => s.m))];
+    const [dungeon, weapons, anims, ...chars] = await Promise.all([this.get('dungeon.glb'), this.get('weapons.glb'), this.get('anim-medium.glb'), ...models.map(m => this.get(m + '.glb'))]);
     this.tpl = new Map(models.map((m, i) => [m, chars[i]]));
     this.clips = new Map(anims.animations.map(a => [a.name, a]));
     this.pieces = new Map();
@@ -115,30 +195,52 @@ class Renderer3D {
     dungeon.scene.traverse(o => { if (o.isMesh && !o.material._crypt) { o.material.color.multiply(new THREE.Color(0x8c8a9a)); o.material._crypt = true; } });
     this.weapons = new Map();
     for (const n of weapons.scene.children) this.weapons.set(n.name, n);
+    this.creatures = new Map();
+    this.markModeled();
     this.build();
   }
+  async loadOutdoors() {
+    try {
+      const [nature, ...cr] = await Promise.all([this.get('nature.glb'), ...CREATURES.map(c => this.get('creatures/' + c + '.glb'))]);
+      for (const g of [nature, ...cr]) unmetal(g.scene);
+      for (const n of nature.scene.children) this.pieces.set(n.name, n);
+      CREATURES.forEach((c, i) => this.creatures.set(c, prepCreature(cr[i])));
+      this.outdoors = true;
+      this.markModeled();
+    } catch (e) { console.warn('3D: outdoor acts unavailable:', e && e.message); }
+  }
+  // the 2D pass leaves out the death sprites of anything that dies as a model
+  markModeled() {
+    this.modeledSprites = new Set(Object.keys(FOE).filter(k => ENEMY_TYPES[k] && this.specReady(FOE[k])).map(k => ENEMY_TYPES[k].sprite));
+  }
+  specReady(spec) { return spec.m ? this.tpl.has(spec.m) : this.creatures.has(spec.g); }
 
   build() {
     const S = this.scene;
-    // light: a dim fill, a lantern over the hero (the one shadow-caster), and a pool of point lights for fires and blasts
-    S.add(new THREE.AmbientLight(0x3a3458, 0.32));
-    S.add(new THREE.HemisphereLight(0x6a5f98, 0x120a0a, 0.18));
+    // light: a fill, a lantern over the hero (shadows indoors), a sun (shadows outdoors), point lights for fires and blasts
+    this.amb = new THREE.AmbientLight(0xffffff, 0.3);
+    this.hemi = new THREE.HemisphereLight(0xffffff, 0x000000, 0.2);
+    S.add(this.amb, this.hemi);
     const lamp = this.lamp = new THREE.SpotLight(0xffe2b8, 3.4, 560, 0.62, 0.85, 0);
     lamp.castShadow = true;
     lamp.shadow.mapSize.set(2048, 2048);
     lamp.shadow.camera.near = 20; lamp.shadow.camera.far = 700;
     lamp.shadow.bias = -0.0004; lamp.shadow.normalBias = 0.6;
     S.add(lamp, lamp.target);
+    const sun = this.sun = new THREE.DirectionalLight(0xffffff, 0);
+    sun.shadow.mapSize.set(2048, 2048);
+    Object.assign(sun.shadow.camera, { left: -420, right: 420, top: 420, bottom: -420, near: 10, far: 1600 });
+    sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.8;
+    S.add(sun, sun.target);
     this.points = [];
     for (let i = 0; i < 10; i++) { const p = new THREE.PointLight(0xffffff, 0, 100, 0); S.add(p); this.points.push(p); }
-    // instanced floor, walls, caps and props
+    // instanced floor, walls, caps and props (Act I's are made now; the other acts' on first use)
     this.kits = new Map();
-    const kit = (name, max) => { const k = new Kit(this.pieces.get(name), max); this.kits.set(name, k); S.add(k.group); return k; };
-    for (const [n] of FLOOR_PIECES) kit(n, 1600).receive();
-    for (const [n] of WALL_PIECES) kit(n, 1600).cast().receive();
-    kit('wall_half', 400).cast().receive();
-    kit('torch_mounted', 200);
-    for (const n of new Set([...OBS_PIECES, ...MAP_PIECES, ...POT_PIECES, 'torch_lit'])) if (!this.kits.has(n)) kit(n, 200).cast().receive();
+    for (const [n] of FLOOR_PIECES) this.kit(n, null, 1600).receive();
+    for (const [n] of WALL_PIECES) this.kit(n, null, 1600).cast().receive();
+    this.kit('wall_half', null, 400).cast().receive();
+    this.kit('torch_mounted', null, 200);
+    for (const n of new Set([...OBS_PIECES, ...MAP_PIECES, ...POT_PIECES, 'torch_lit'])) this.kit(n, null, 200).cast().receive();
     const capGeo = new THREE.PlaneGeometry(CELL, CELL).rotateX(-Math.PI / 2);
     this.caps = new THREE.InstancedMesh(capGeo, new THREE.MeshLambertMaterial({ color: 0x2b2735 }), 2000);
     this.caps.frustumCulled = false;
@@ -169,7 +271,20 @@ class Renderer3D {
     this.composer.addPass(new OutputPass());
   }
 
-  supports(act) { return act === 1 && !this.off; }
+  // one instanced kit per (piece, tint), made on first use; the tint gets its own copies of the materials
+  kit(name, tint, max = 400) {
+    const key = name + '|' + JSON.stringify(tint ?? null);
+    let k = this.kits.get(key);
+    if (k) return k;
+    const src = this.pieces.get(name);
+    if (!src) return null;
+    k = new Kit(tint == null ? src : tintClone(src, tint), max);
+    this.kits.set(key, k);
+    this.scene.add(k.group);
+    return k;
+  }
+
+  supports(act) { return !this.off && (act === 1 || (this.outdoors && !!ACT[act])); }
   // average real frame time over ~2.5 s of play; over 40 ms, drop a quality step
   adapt() {
     const now = performance.now(), s = this.slow, dt = s.last ? now - s.last : 0;
@@ -182,7 +297,7 @@ class Renderer3D {
     if (avg < 40) return;
     this.quality++;
     if (this.quality === 1) { this.gl.setPixelRatio(1); this.composer.setPixelRatio(1); this.size = ''; this.pr = 1; }
-    else if (this.quality === 2) { this.gl.shadowMap.enabled = false; this.lamp.castShadow = false; }
+    else if (this.quality === 2) { this.gl.shadowMap.enabled = false; this.lamp.castShadow = false; this.sun.castShadow = false; }
     else if (this.quality === 3) this.bloom.enabled = false;
     else { this.off = true; console.warn('3D: too slow here, switching to HD'); }
   }
@@ -208,9 +323,31 @@ class Renderer3D {
     this.camera.updateProjectionMatrix();
   }
 
+  // a new act: its light, fog and sky; its pieces come and go with buildMap / placeProps
+  enterAct(act) {
+    this.act = act;
+    this.mapKey = '';
+    const L = act === 1 ? ACT1_LIGHT : ACT[act].light;
+    this.L = L;
+    this.amb.color.setHex(L.amb[0]); this.amb.intensity = L.amb[1];
+    this.hemi.color.setHex(L.hemi[0]); this.hemi.groundColor.setHex(L.hemi[1]); this.hemi.intensity = L.hemi[2];
+    this.sun.color.setHex(L.sun[0]); this.sun.intensity = L.sun[1];
+    this.lamp.intensity = L.lamp;
+    const shadows = this.quality < 2;
+    this.sun.castShadow = shadows && L.sun[1] > 0 && !L.lamp;   // one shadow-casting light at a time
+    this.lamp.castShadow = shadows && L.lamp > 0;
+    this.scene.fog.color.setHex(L.fog);
+    this.scene.background.setHex(L.fog);
+    this.gl.toneMappingExposure = L.exposure;
+    this.overlay.material.emissive.setHex(L.glow);
+    for (const k of this.kits.values()) { k.begin(); k.end(); }
+    this.caps.count = 0;
+  }
+
   frame() {
     this.adapt();
     this.fit();
+    if (state.act !== this.act) this.enterAct(state.act);
     const dt = Math.min(0.1, Math.max(0, uiTime - this.lastT));
     this.lastT = uiTime;
     const px = player.x / PX, pz = player.y / PX;
@@ -221,7 +358,7 @@ class Renderer3D {
     this.camera.position.set(px + sx, D * Math.sin(CAM.pitch), pz + D * Math.cos(CAM.pitch) + sz);
     this.camera.lookAt(px + sx, CAM.aim, pz + sz - 6);
     this.camera.updateMatrixWorld();
-    this.scene.fog.near = D * 0.95; this.scene.fog.far = D * 1.75;
+    this.scene.fog.near = D * this.L.fogK[0]; this.scene.fog.far = D * this.L.fogK[1];
     // which monsters get a model: the nearest ones with a model to show
     this.pickActors();
     // the patch of floor in view, painted by the 2D renderer
@@ -231,10 +368,10 @@ class Renderer3D {
     this.ovTex.needsUpdate = true;
     this.overlay.position.set(fp.x + fp.w / 2, 0.7, fp.y + fp.h / 2);
     this.overlay.scale.set(fp.w, 1, fp.h);
-    this.buildMap(fp);
+    if (this.act === 1) this.buildCrypt(fp); else this.buildOutdoors(fp);
     this.placeProps();
     this.syncActors(dt);
-    this.bills.draw(g.bbs, this.camera, px, pz);
+    this.bills.draw(g.bbs, this.camera, px, pz, this.L.day || 0);
     this.placeOrbs();
     this.light(px, pz);
     this.composer.render();
@@ -256,26 +393,31 @@ class Renderer3D {
     const w = Math.min(x1 - x0, 1400), h = Math.min(z1 - z0, 1000);
     return { x: Math.round((x0 + x1 - w) / 2), y: Math.round((z0 + z1 - h) / 2), w, h };
   }
-
-  // floor tiles, walls (half height between the camera and the hero), wall tops and wall torches
-  buildMap(fp) {
-    const cx0 = Math.floor(fp.x / CELL) - 1, cz0 = Math.floor(fp.y / CELL) - 1;
-    const cx1 = Math.ceil((fp.x + fp.w) / CELL) + 1, cz1 = Math.ceil((fp.y + fp.h) / CELL) + 1;
+  cellRange(fp) {
     const pcx = Math.floor(player.x / MC), pcz = Math.floor(player.y / MC);
-    const key = [cx0, cz0, cx1, cz1, pcx, pcz, mapSeed, state.act].join();
-    if (key === this.mapKey) return;
+    const r = { cx0: Math.floor(fp.x / CELL) - 1, cz0: Math.floor(fp.y / CELL) - 1, cx1: Math.ceil((fp.x + fp.w) / CELL) + 1, cz1: Math.ceil((fp.y + fp.h) / CELL) + 1, pcx, pcz };
+    const key = [r.cx0, r.cz0, r.cx1, r.cz1, pcx, pcz, mapSeed, state.act].join();
+    if (key === this.mapKey) return null;
     this.mapKey = key;
+    return r;
+  }
+  // between the camera and the hero (a few cells south of you): walls and ridges are cut down
+  cut(x, z, r) { return z > r.pcz && z <= r.pcz + 4 && Math.abs(x - r.pcx) <= 4; }
+
+  // Act I: floor tiles, walls, wall tops and wall torches
+  buildCrypt(fp) {
+    const r = this.cellRange(fp);
+    if (!r) return;
     for (const k of this.kits.values()) k.begin();
     const m = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), s = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
     const wallLook = (x, z) => { const t = cellType(cellAt(x, z)); return t === T_WA || t === T_WB; };
     let caps = 0;
     this.torches = [];
-    for (let z = cz0; z <= cz1; z++) for (let x = cx0; x <= cx1; x++) {
+    for (let z = r.cz0; z <= r.cz1; z++) for (let x = r.cx0; x <= r.cx1; x++) {
       const t = cellType(cellAt(x, z)), h = hashC(x, z);
       const ccx = (x + 0.5) * CELL, ccz = (z + 0.5) * CELL;
       if (t === T_WA || t === T_WB) {
-        // between the camera and the hero (a few cells south of you): cut down to half height
-        const cut = z > pcz && z <= pcz + 4 && Math.abs(x - pcx) <= 4;
+        const cut = this.cut(x, z, r);
         const wh = cut ? WALL_H / 2 : WALL_H;
         m.compose(p.set(ccx, wh, ccz), q.identity(), s.set(1, 1, 1));
         this.caps.setMatrixAt(caps++, m);
@@ -285,10 +427,10 @@ class Renderer3D {
           q.setFromAxisAngle(up, Math.atan2(dx, dz));
           m.compose(p.set(ccx + dx * off, 0, ccz + dz * off), q, s.set(KIT, KIT, KIT));
           const hh = hashC(x * 3 + dx, z * 3 + dz);
-          this.kits.get(cut ? 'wall_half' : pickW(WALL_PIECES, hh)).add(m);
+          this.kit(cut ? 'wall_half' : pickW(WALL_PIECES, hh)).add(m);
           if (!cut && hh % 9 === 0) {   // a torch on the wall now and then
             m.compose(p.set(ccx + dx * (CELL / 2), WALL_H * 0.55, ccz + dz * (CELL / 2)), q, s.set(KIT, KIT, KIT));
-            this.kits.get('torch_mounted').add(m);
+            this.kit('torch_mounted').add(m);
             this.torches.push([ccx + dx * (CELL / 2 + 6), ccz + dz * (CELL / 2 + 6)]);
           }
         }
@@ -297,37 +439,70 @@ class Renderer3D {
       if (t === T_LA || t === T_LB) continue;   // liquid: painted on the flat layer
       q.setFromAxisAngle(up, ((h >>> 3) & 3) * Math.PI / 2);
       m.compose(p.set(ccx, 0, ccz), q, s.set(KIT, KIT, KIT));
-      this.kits.get(pickW(FLOOR_PIECES, h)).add(m);
+      this.kit(pickW(FLOOR_PIECES, h)).add(m);
     }
     this.caps.count = caps;
     this.caps.instanceMatrix.needsUpdate = true;
-    for (const k of this.kits.values()) if (k.static) k.end();
+    this.endStatic();
   }
+
+  // Acts II-V: rock blocks for the walls (each a little taller or shorter), and scattered dressing on open ground
+  buildOutdoors(fp) {
+    const r = this.cellRange(fp);
+    if (!r) return;
+    const A = ACT[this.act];
+    for (const k of this.kits.values()) k.begin();
+    this.torches = [];
+    const wk = this.kit(A.wall[0], A.wall[1], 2400).cast().receive();
+    for (let z = r.cz0; z <= r.cz1; z++) for (let x = r.cx0; x <= r.cx1; x++) {
+      const c = cellAt(x, z), t = cellType(c), h = hashC(x, z);
+      const ccx = (x + 0.5) * CELL, ccz = (z + 0.5) * CELL;
+      if (t === T_WA || t === T_WB) {
+        const k = A.wallH[0] + ((h >>> 5) % 100) / 100 * (A.wallH[1] - A.wallH[0]);
+        wk.place(ccx, ccz, 0, CELL / wk.size.x, (this.cut(x, z, r) ? 0.45 : k) * CELL / wk.size.y, CELL / wk.size.z);
+        continue;
+      }
+      if (t !== T_FLOOR && t !== T_FA && t !== T_FB) continue;   // liquids and bridges: painted
+      if (c >> 8) continue;                                       // a map prop stands here
+      for (const [name, ht, every, tint] of A.scatter) {           // every Nth cell (by hash) gets one
+        if ((h >>> 7) % every) continue;
+        const sk = this.kit(name, tint ?? null, 1200);
+        if (!sk) break;
+        const ox = ((h >>> 11) % 17 - 8) * CELL / 24, oz = ((h >>> 15) % 17 - 8) * CELL / 24;
+        sk.place(ccx + ox, ccz + oz, (h % 360) * Math.PI / 180, ht / sk.size.y);
+        break;
+      }
+    }
+    this.endStatic();
+  }
+  endStatic() { for (const k of this.kits.values()) if (!k.dynamic) k.end(); }
 
   // obstacles, map props, braziers and pots: rebuilt every frame (pots break, braziers go out)
   placeProps() {
-    const dyn = new Set([...OBS_PIECES, ...MAP_PIECES, ...POT_PIECES, 'torch_lit']);
-    for (const n of dyn) this.kits.get(n).begin();
-    const m = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), s = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
+    const dyn = [];
+    const use = (name, tint) => { const k = this.kit(name, tint ?? null, 300); if (k && !k.dynamic) { k.dynamic = true; k.cast().receive(); } if (k && !dyn.includes(k)) { dyn.push(k); } return k; };
+    for (const k of this.kits.values()) if (k.dynamic) k.begin();
+    const A = ACT[this.act];
     for (const o of state.obsList || []) {
-      const h = hash2(Math.round(o.x), Math.round(o.y));
-      const name = o.mapProp ? MAP_PIECES[o.mapProp % MAP_PIECES.length] : OBS_PIECES[o.kind % OBS_PIECES.length];
-      q.setFromAxisAngle(up, (h % 4) * Math.PI / 2);
-      m.compose(p.set(o.x / PX, 0, o.y / PX), q, s.set(KIT, KIT, KIT));
-      this.kits.get(name).add(m);
+      const h = hash2(Math.round(o.x), Math.round(o.y)), yaw = (h % 4) * Math.PI / 2;
+      if (!A) { const k = use(o.mapProp ? MAP_PIECES[o.mapProp % MAP_PIECES.length] : OBS_PIECES[o.kind % OBS_PIECES.length]); k && k.place(o.x / PX, o.y / PX, yaw, KIT, KIT, KIT, true); continue; }
+      const [name, ht, tint] = o.mapProp ? A.map[(o.mapProp - 1) % A.map.length] : A.obs[o.kind % A.obs.length];
+      const k = use(name, tint);
+      if (k) k.place(o.x / PX, o.y / PX, (h % 360) * Math.PI / 180, ht / k.size.y);
     }
     for (const bz of state.brazList || []) {
       const h = hash2(Math.round(bz.x), Math.round(bz.y));
       if (bz.pot) {
-        q.setFromAxisAngle(up, (h % 8) * Math.PI / 4);
-        m.compose(p.set(bz.x / PX, 0, bz.y / PX), q, s.set(KIT * 0.8, KIT * 0.8, KIT * 0.8));
-        this.kits.get(POT_PIECES[h % POT_PIECES.length]).add(m);
+        if (!A) { const k = use(POT_PIECES[h % POT_PIECES.length]); k && k.place(bz.x / PX, bz.y / PX, (h % 8) * Math.PI / 4, KIT * 0.8, KIT * 0.8, KIT * 0.8, true); continue; }
+        const [name, ht, tint] = A.pots[h % A.pots.length];
+        const k = use(name, tint);
+        if (k) k.place(bz.x / PX, bz.y / PX, (h % 8) * Math.PI / 4, ht / k.size.y);
       } else {
-        m.compose(p.set(bz.x / PX, 0, bz.y / PX), q.identity(), s.set(KIT * 1.3, KIT * 1.3, KIT * 1.3));
-        this.kits.get('torch_lit').add(m);
+        const k = use('torch_lit');
+        if (k) k.place(bz.x / PX, bz.y / PX, 0, KIT * 1.3, KIT * 1.3, KIT * 1.3, true);
       }
     }
-    for (const n of dyn) this.kits.get(n).end();
+    for (const k of this.kits.values()) if (k.dynamic) k.end();
   }
 
   placeOrbs() {
@@ -362,7 +537,7 @@ class Renderer3D {
     this.want.clear();
     if (HERO[player.heroId]) this.want.add(player);
     const cand = [];
-    for (const e of enemies) if (FOE[e.boss ? e.key : e.kind] && !e.burrowed) cand.push(e);
+    for (const e of enemies) { const sp = FOE[e.boss ? e.key : e.kind]; if (sp && !e.burrowed && this.specReady(sp)) cand.push(e); }
     if (cand.length > MAX_ACTORS) {
       for (const e of cand) e._d = dist2(e.x, e.y, player.x, player.y);
       cand.sort((a, b) => a._d - b._d).length = MAX_ACTORS;
@@ -388,7 +563,7 @@ class Renderer3D {
     for (const [ent, a] of this.actors) {
       if (this.want.has(ent)) continue;
       this.actors.delete(ent);
-      if (ent !== player && !alive.has(ent) && !ent.sweep) { a.die(); this.dying.push(a); }   // killed: play the death out
+      if (ent !== player && !alive.has(ent) && !ent.sweep && !ent.treasure) { a.die(); this.dying.push(a); }   // killed: play the death out
       else this.release(a);
     }
     for (const ent of this.want) {
@@ -407,14 +582,18 @@ class Renderer3D {
     }
   }
 
-  // lantern over the hero; the brightest nearby fires, blasts and glows as point lights
+  // the act's key light (a lantern over the hero, or the sun), and the brightest nearby fires, blasts and glows
   light(px, pz) {
-    const L = this.lamp;
+    const L = this.lamp, Lc = this.L;
     L.position.set(px + 30, 260, pz + 90);
     L.target.position.set(px, 0, pz);
     L.target.updateMatrixWorld();
-    const berserk = state.berserkT > 0;
-    L.color.setHex(berserk ? 0xff7060 : state.act === 1 ? 0xffdcb0 : 0xffffff);
+    L.color.setHex(state.berserkT > 0 ? 0xff7060 : Lc.lampCol || 0xffffff);
+    if (this.sun.intensity > 0) {   // a high sun from the upper left; its shadow box follows the hero
+      this.sun.position.set(px - 260, 620, pz - 160);
+      this.sun.target.position.set(px, 0, pz);
+      this.sun.target.updateMatrixWorld();
+    }
     const cand = [];
     sceneLights((wx, wy, r, k) => {
       const x = wx / PX, z = wy / PX, d = Math.hypot(x - px, z - pz);
@@ -423,9 +602,10 @@ class Renderer3D {
     });
     for (const [x, z] of this.torches || []) { const d = Math.hypot(x - px, z - pz); if (d < 520) cand.push({ x, z, r: 70, k: 'fire', score: 0.5 / (60 + d) }); }
     cand.sort((a, b) => b.score - a.score);
+    const day = this.act === 2;
     this.points.forEach((p, i) => {
       const c = cand[i];
-      if (!c) { p.intensity = 0; return; }
+      if (!c || (day && c.k === 'fire')) { p.intensity = 0; return; }   // no torchlight needed under the desert sun
       const col = LIGHT_COL[c.k] || [1, 0.9, 0.7], fl = c.k === 'fire' ? 0.85 + Math.sin(uiTime * 13 + c.x) * 0.15 : 1;
       p.color.setRGB(Math.min(1, col[0]), Math.min(1, col[1]), Math.min(1, col[2]));
       p.position.set(c.x, c.k === 'fire' ? 22 : 14, c.z);
@@ -435,41 +615,98 @@ class Renderer3D {
   }
 }
 
-// instanced copies of one packed KayKit piece (every mesh inside it, at its offset)
+// Kenney's and the converted models' materials leave metalness unset, which glTF reads as fully metallic:
+// with nothing to reflect they'd render near-black. They're plain painted surfaces.
+function unmetal(root) {
+  root.traverse(o => { if (!o.isMesh) return; for (const m of Array.isArray(o.material) ? o.material : [o.material]) if (m.metalness === 1 && !m.metalnessMap) m.metalness = 0; });
+}
+
+// a piece with its own copies of the materials, recoloured: a number multiplies every colour in, { set } repaints
+// them all, any other object repaints the materials it names (and multiplies its '*' into the rest)
+function tintClone(src, tint) {
+  const node = src.clone();
+  node.traverse(o => {
+    if (!o.isMesh) return;
+    const mats = Array.isArray(o.material) ? o.material : [o.material];
+    const out = mats.map(m => {
+      const c = m.clone();
+      if (typeof tint === 'number') c.color.multiply(new THREE.Color(tint));
+      else if (tint.set !== undefined) c.color.setHex(tint.set);
+      else if (tint[m.name] !== undefined) c.color.setHex(tint[m.name]);
+      else if (tint['*'] !== undefined) c.color.multiply(new THREE.Color(tint['*']));
+      return c;
+    });
+    o.material = Array.isArray(o.material) ? out : out[0];
+  });
+  node.parent = src.parent;   // same place in the file, so the offsets match the original
+  return node;
+}
+
+// instanced copies of one packed piece (every mesh inside it, at its offset); size: its bounding box in its own units
 class Kit {
   constructor(node, max) {
     this.group = new THREE.Group();
     this.parts = [];
     this.n = 0;
-    this.static = true;
+    this.max = max;
+    (node.parent || node).updateMatrixWorld(true);
     node.updateMatrixWorld(true);
     const inv = new THREE.Matrix4().copy(node.matrixWorld).invert();
+    const box = new THREE.Box3();
     node.traverse(o => {
       if (!o.isMesh) return;
+      const local = new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld);
+      if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+      box.union(o.geometry.boundingBox.clone().applyMatrix4(local));
       const im = new THREE.InstancedMesh(o.geometry, o.material, max);
       im.count = 0;
       im.frustumCulled = false;
       this.group.add(im);
-      this.parts.push({ im, local: new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld) });
+      this.parts.push({ im, local });
     });
+    this.size = box.getSize(new THREE.Vector3());
+    if (!this.size.y) this.size.set(1, 1, 1);
+    this.minY = box.min.y;
     this.tmp = new THREE.Matrix4();
+    this.m = new THREE.Matrix4(); this.q = new THREE.Quaternion(); this.p = new THREE.Vector3(); this.s = new THREE.Vector3();
   }
   cast() { for (const p of this.parts) p.im.castShadow = true; return this; }
   receive() { for (const p of this.parts) p.im.receiveShadow = true; return this; }
   begin() { this.n = 0; }
   add(m) {
-    if (this.n >= this.parts[0].im.instanceMatrix.count) return;
+    if (this.n >= this.max) return;
     for (const p of this.parts) p.im.setMatrixAt(this.n, this.tmp.multiplyMatrices(m, p.local));
     this.n++;
   }
+  // stand one on the ground at (x, z), turned by yaw, scaled (uniformly, or per axis); `raw` keeps the
+  // piece's own origin instead of sitting its lowest point on the floor
+  place(x, z, yaw, sx, sy = sx, sz = sx, raw = false) {
+    this.q.setFromAxisAngle(UP, yaw);
+    this.m.compose(this.p.set(x, raw ? 0 : -this.minY * sy, z), this.q, this.s.set(sx, sy, sz));
+    this.add(this.m);
+  }
   end() { for (const p of this.parts) { p.im.count = this.n; p.im.instanceMatrix.needsUpdate = true; } }
 }
+const UP = new THREE.Vector3(0, 1, 0);
 
-// a character: a skinned KayKit model, weapons in hand, its own animation mixer and materials (for flashes and tints)
+// a creature file: its height (to size it), and its clips found by name (each pack names them its own way)
+function prepCreature(gltf) {
+  gltf.scene.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(gltf.scene, true);   // precise: through the skin (converted FBX rigs carry the scale in their bones)
+  const find = (...res) => { for (const re of res) { const c = gltf.animations.find(a => re.test(a.name)); if (c) return c; } return null; };
+  const idle = find(/idle$/i, /\|idle/i, /^idle$/i, /flying$/i, /swim$/i);
+  const move = find(/walk$/i, /^walk$/i, /_run$/i, /flying$/i, /swim$/i, /sprint/i) || idle;
+  return { gltf, h: box.max.y - box.min.y || 1, minY: box.min.y,
+    clips: { idle: idle || move, move, attack: find(/attack$/i, /attack-melee-right/i, /attack/i) || move, death: find(/death$/i, /^die$/i, /death/i, /die/i) } };
+}
+
+// a character: a skinned model, weapons in hand, its own animation mixer and materials (for flashes and tints)
 class Actor {
   constructor(R, spec, key) {
     this.R = R; this.spec = spec; this.key = key;
-    this.root = SkeletonUtils.clone(R.tpl.get(spec.m).scene);
+    this.cr = spec.g ? R.creatures.get(spec.g) : null;
+    this.glow = spec.glow !== undefined ? new THREE.Color(spec.glow) : null;
+    this.root = SkeletonUtils.clone((this.cr ? this.cr.gltf : R.tpl.get(spec.m)).scene);
     this.mats = [];
     const tint = spec.tint !== undefined ? new THREE.Color(spec.tint) : null;
     this.casters = [];
@@ -479,9 +716,15 @@ class Actor {
       this.casters.push(o);
       o.frustumCulled = false;
       if (spec.hide && spec.hide.includes(o.name)) { o.visible = false; return; }
-      o.material = o.material.clone();
-      if (tint) o.material.color.multiply(tint);
-      this.mats.push(o.material);
+      const mats = (Array.isArray(o.material) ? o.material : [o.material]).map(m => {
+        const c = m.clone();
+        if (spec.paint !== undefined) c.color.setHex(spec.paint);
+        else if (tint) c.color.multiply(tint);
+        if (!c.emissive) c.emissive = new THREE.Color(0);
+        this.mats.push(c);
+        return c;
+      });
+      o.material = Array.isArray(o.material) ? mats : mats[0];
     });
     for (const [slot, w] of [['handslot.r', spec.r], ['handslot.l', spec.l]]) {
       const bone = w && this.root.getObjectByName(slot), src = w && R.weapons.get(w);
@@ -502,9 +745,10 @@ class Actor {
     this.lx = null; this.lz = null; this.yaw = 0; this.flashK = -1;
     this.holder.position.y = 0;
   }
+  // a KayKit clip by name, or (creatures) one of idle / move / attack / death
   play(name, once = false, speed = 1, fade = 0.18) {
     if (this.clip === name) { if (this.cur) this.cur.timeScale = speed; return; }
-    const clip = this.R.clips.get(name);
+    const clip = this.cr ? this.cr.clips[name] : this.R.clips.get(name);
     if (!clip) return;
     const a = this.mixer.clipAction(clip);
     a.reset();
@@ -521,7 +765,8 @@ class Actor {
     let vx = 0, vz = 0;
     if (this.lx !== null) { vx = x - this.lx; vz = z - this.lz; }
     this.lx = x; this.lz = z;
-    this.holder.position.set(x, e.fly ? e.fly / PX + Math.sin(e.animT * 9) * 1.5 : 0, z);
+    const lift = (e.fly ? e.fly / PX + Math.sin(e.animT * 9) * 1.5 : 0) + (this.spec.hover ? this.spec.hover + Math.sin(e.animT * 4) * 1.2 : 0);
+    this.holder.position.set(x, lift, z);
     return Math.hypot(vx, vz) > 0.05 && !snap ? Math.atan2(vx, vz) : null;
   }
   turnTo(yaw, dt, rate = 14) {
@@ -529,12 +774,12 @@ class Actor {
     while (d > Math.PI) d -= Math.PI * 2;
     while (d < -Math.PI) d += Math.PI * 2;
     this.yaw += d * Math.min(1, dt * rate);
-    this.root.rotation.y = this.yaw;
+    this.root.rotation.y = this.yaw + (this.spec.rot || 0);
   }
   setFlash(k, col) {
     if (k === this.flashK && !col) return;
     this.flashK = k;
-    for (const m of this.mats) { m.emissive.copy(col || WHITE).multiplyScalar(k); }
+    for (const m of this.mats) { m.emissive.copy(col || WHITE).multiplyScalar(k); if (this.glow) m.emissive.add(this.glow); }
   }
   updateHero(dt) {
     const sc = MAN * (this.spec.s || 1);
@@ -550,19 +795,26 @@ class Actor {
     this.mixer.update(dt);
   }
   updateFoe(e, dt) {
-    const base = e.boss ? e.r / 12 : (e.elite ? 1.9 : 1) * clamp(e.scale / SCALE, 0.8, 1.6);
-    this.root.scale.setScalar(MAN * base * (this.spec.s || 1));
+    const base = e.boss ? (this.cr ? 1 : e.r / 12) : (e.elite ? 1.9 : 1) * clamp(e.scale / SCALE, 0.8, 1.6);
+    if (this.cr) this.root.scale.setScalar(this.spec.h / this.cr.h * base);
+    else this.root.scale.setScalar(MAN * base * (this.spec.s || 1));
     const yaw = this.place(e);
     const cast = e.boss || dist2(e.x, e.y, player.x, player.y) < (SHADOW_R * PX) ** 2;
     if (cast !== this.cast) { this.cast = cast; for (const o of this.casters) o.castShadow = cast; }
     const d = Math.hypot(player.x - e.x, player.y - e.y);
     const near = d < e.r + player.r + 26;
     this.turnTo(near || yaw === null ? Math.atan2(player.x - e.x, player.y - e.y) : yaw, dt, 8);
-    const skel = this.spec.skel;
-    if (e.wind > 0 || e.casting > 0) this.play(this.spec.atk || 'Melee_2H_Attack_Chop', false, 1.4, 0.1);
-    else if (near) this.play(this.spec.atk || 'Melee_1H_Attack_Chop', false, 1.2);
-    else if (yaw !== null) this.play(skel ? 'Skeletons_Walking' : e.boss && e.chargeT > 2.8 ? 'Running_A' : 'Walking_A', false, skel ? 1.3 : 1.1);
-    else this.play(skel ? 'Skeletons_Idle' : 'Idle_A');
+    if (this.cr) {   // creatures: idle / move / attack from their own clips
+      if (e.wind > 0 || e.casting > 0 || near) this.play('attack', false, 1.2, 0.12);
+      else if (yaw !== null || e.fly || this.spec.hover) this.play('move', false, 1.2);
+      else this.play('idle');
+    } else {
+      const skel = this.spec.skel;
+      if (e.wind > 0 || e.casting > 0) this.play(this.spec.atk || 'Melee_2H_Attack_Chop', false, 1.4, 0.1);
+      else if (near) this.play(this.spec.atk || 'Melee_1H_Attack_Chop', false, 1.2);
+      else if (yaw !== null) this.play(skel ? 'Skeletons_Walking' : e.boss && e.chargeT > 2.8 ? 'Running_A' : 'Walking_A', false, skel ? 1.3 : 1.1);
+      else this.play(skel ? 'Skeletons_Idle' : 'Idle_A');
+    }
     if (e.flash > 0) this.setFlash(e.boss ? 0.18 : 0.4, WHITE);   // gentle: under constant fire it would strobe (and bloom)
     else if (e.freezeT > 0) this.setFlash(0.5, ICE);
     else if (e.elite) this.setFlash(0.12 + Math.sin(uiTime * 6) * 0.05, ELITE);
@@ -571,7 +823,8 @@ class Actor {
   }
   die() {
     this.setFlash(0);
-    this.play(this.spec.skel ? 'Skeletons_Death' : 'Death_A', true, 1.3, 0.08);
+    if (this.cr) this.play('death', true, 1.2, 0.08);
+    else this.play(this.spec.skel ? 'Skeletons_Death' : 'Death_A', true, 1.3, 0.08);
   }
 }
 const WHITE = new THREE.Color(1, 1, 1), ICE = new THREE.Color(0.5, 0.85, 1), ELITE = new THREE.Color(1, 0.55, 0.1);
@@ -599,13 +852,13 @@ class Billboards {
     const mk = (n, k) => { const a = new THREE.InstancedBufferAttribute(new Float32Array(max * k), k); a.setUsage(THREE.DynamicDrawUsage); geo.setAttribute(n, a); return a; };
     g = { tex, geo, pos: mk('iPos', 3), size: mk('iSize', 3), uv: mk('iUV', 4), flip: mk('iFlip', 1), n: 0, max };
     const mat = new THREE.ShaderMaterial({
-      uniforms: { uTex: { value: tex }, uRight: { value: new THREE.Vector3() }, uUp: { value: new THREE.Vector3() }, uHero: { value: new THREE.Vector2() } },
+      uniforms: { uTex: { value: tex }, uRight: { value: new THREE.Vector3() }, uUp: { value: new THREE.Vector3() }, uHero: { value: new THREE.Vector2() }, uDay: { value: 0 } },
       vertexShader: `attribute vec3 iPos; attribute vec3 iSize; attribute vec4 iUV; attribute float iFlip;
-uniform vec3 uRight, uUp; uniform vec2 uHero; varying vec2 vUv; varying float vLit;
+uniform vec3 uRight, uUp; uniform vec2 uHero; uniform float uDay; varying vec2 vUv; varying float vLit;
 void main() {
   vec3 w = iPos + uRight * (position.x * iSize.x) + uUp * (position.y * iSize.y - iSize.z);
   vUv = vec2(mix(iUV.x, iUV.z, iFlip > 0.5 ? 0.5 - position.x : position.x + 0.5), mix(iUV.w, iUV.y, position.y));
-  vLit = 1.0 - smoothstep(70.0, 210.0, distance(iPos.xz, uHero)) * 0.85;
+  vLit = mix(1.0 - smoothstep(70.0, 210.0, distance(iPos.xz, uHero)) * 0.85, 1.0, uDay);   // by day, no lantern falloff
   gl_Position = projectionMatrix * viewMatrix * vec4(w, 1.0);
 }`,
       fragmentShader: `uniform sampler2D uTex; varying vec2 vUv; varying float vLit;
@@ -621,7 +874,7 @@ void main() { vec4 t = texture2D(uTex, vUv); if (t.a < 0.5) discard; gl_FragColo
     this.groups.set(img, g);
     return g;
   }
-  draw(list, cam, px, pz) {
+  draw(list, cam, px, pz, day) {
     for (const g of this.groups.values()) g.n = 0;
     const right = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 0).normalize();
     const up = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 1).normalize();
@@ -642,6 +895,7 @@ void main() { vec4 t = texture2D(uTex, vUv); if (t.a < 0.5) discard; gl_FragColo
       g.mat.uniforms.uRight.value.copy(right);
       g.mat.uniforms.uUp.value.copy(up);
       g.mat.uniforms.uHero.value.set(px, pz);
+      g.mat.uniforms.uDay.value = day;
     }
   }
 }
