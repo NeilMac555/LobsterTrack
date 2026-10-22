@@ -1,0 +1,28 @@
+{
+  "snapshot": "frontend/src/data/proDemo.json",
+  "fixture": "Arsenal vs Leeds United",
+  "kickoff": "2026-10-10T11:30:00Z",
+  "assembled": "2026-10-22",
+  "source_files": [
+    {
+      "workspace_path": "work/pro-demo-match.json",
+      "sha256": "d6bb00e90b5ccd0a6421d8b02e9e4de8bc560ae5086a67dfc16333ac6b27dff3"
+    },
+    {
+      "workspace_path": "work/pdf-review/arsenal-leeds-formlab.json",
+      "sha256": "2a84cffce3b7c91d4cc0deee30af63cffc6f5a6bd7dc4852204e70d637e34e22"
+    },
+    {
+      "workspace_path": "work/pdf-review/arsenal-leeds-league.json",
+      "sha256": "616c1a4102e381bc8ed6fa6bd59391e14fde4ef1320938d595060ed762b05602"
+    },
+    {
+      "workspace_path": "work/pdf-review/arsenal-leeds-previous-league.json",
+      "sha256": "5601db3f37a46039119d8fcd74ca18da20950fe4dd8c6281a8daaefe1c6e2a8e"
+    },
+    {
+      "workspace_path": "work/pdf-review/arsenal-leeds-baselines.json",
+      "sha256": "fd5c80a874c7aa0c8c03a31023ae593d25c5ffc089120e9004206945a297eb28"
+    }
+  ]
+}

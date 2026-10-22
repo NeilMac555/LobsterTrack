@@ -17,7 +17,8 @@
     "tools/club-ratings",
     "about",
     "blog",
-    "pro"
+    "pro",
+    "pro/demo"
   ],
   "dynamic": [
     "match/*",

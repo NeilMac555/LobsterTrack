@@ -39,7 +39,7 @@ export default function PaywallOverlay({ title, description }: PaywallOverlayPro
           </p>
 
           <Link to="/pro" className="block rounded-lg bg-cyan-400 px-6 py-3 font-bold text-slate-950 hover:bg-cyan-300">Explore Pro — €19.99 / month →</Link>
-          <p className="mt-3 text-xs text-slate-400">See everything included in your membership</p>
+          <Link to="/pro/demo" className="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-cyan-300 underline underline-offset-4 hover:text-white">Try the free interactive demo</Link>
         </div>
       </div>
     </>

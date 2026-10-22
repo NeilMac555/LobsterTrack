@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from './contexts/AuthContext';
@@ -29,6 +30,7 @@ import TeamPLPage from './pages/TeamPLPage';
 // PowerRankingsPage is temporarily hidden (see the redirected route below).
 import InPlayJumpsPage from './pages/InPlayJumpsPage';
 import LongshotBiasPage from './pages/LongshotBiasPage';
+const ProDemoPage = lazy(() => import('./pages/ProDemoPage'));
 // ForecastPage is temporarily hidden (see the redirected route below).
 
 function App() {
@@ -42,6 +44,7 @@ function App() {
             <Route path="/" element={<Layout />}>
               <Route index element={<HomePage />} />
               <Route path="pro" element={<ProPage />} />
+              <Route path="pro/demo" element={<Suspense fallback={<p role="status" className="py-16 text-center text-slate-300">Loading the Pro demo…</p>}><ProDemoPage /></Suspense>} />
               <Route path="match/:matchId" element={<MatchDetailPage />} />
               <Route path="steam-results" element={<SteamResultsPage />} />
               <Route path="dropping-odds" element={<DroppingOddsPage />} />

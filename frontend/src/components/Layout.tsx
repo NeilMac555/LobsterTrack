@@ -94,6 +94,7 @@ export default function Layout() {
   }, [location]);
 
   const isToolsPage = location.pathname.startsWith('/tools');
+  const isProDemoPage = location.pathname === '/pro/demo';
   const isSteamResultsPage = location.pathname === '/steam-results';
   const isDriftersPage = location.pathname === '/drifters';
   const isClosingLinesPage = location.pathname === '/closing-lines' || location.pathname === '/cl-closing-lines';
@@ -247,13 +248,13 @@ export default function Layout() {
 
             {/* Right side: Time toggle + Live pill + Account / Sign In / Upgrade */}
             <div className="hidden lg:flex items-center gap-2 flex-shrink-0">
-              <span className="hidden xl:inline-flex items-center gap-1.5 px-2 py-1 rounded-full border border-slate-700/60 text-[10px] font-mono uppercase tracking-[0.12em] text-slate-400 whitespace-nowrap">
+              {!isProDemoPage && <span className="hidden xl:inline-flex items-center gap-1.5 px-2 py-1 rounded-full border border-slate-700/60 text-[10px] font-mono uppercase tracking-[0.12em] text-slate-400 whitespace-nowrap">
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
                 </span>
                 Live · Pinnacle
-              </span>
+              </span>}
 
               {/* Explain membership benefits before checkout. */}
               {!isSubscribed && (
@@ -337,7 +338,7 @@ export default function Layout() {
         </div>
 
         {/* League sub-bar — hidden on mobile (in the mobile menu). */}
-        <div className="hidden md:block border-t border-slate-700/30 bg-slate-900/60">
+        {!isProDemoPage && <div className="hidden md:block border-t border-slate-700/30 bg-slate-900/60">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-1.5 flex items-center gap-3">
             <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold flex-shrink-0">Leagues</span>
             <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar">
@@ -397,12 +398,13 @@ export default function Layout() {
               </button>
             </div>
           </div>
-        </div>
+        </div>}
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="lg:hidden border-t border-slate-700/50 bg-slate-800/95 backdrop-blur-md">
             <div className="px-4 py-4 space-y-4">
+              {!isProDemoPage && <>
               {/* Time display toggle — same control as desktop, styled
                   for the mobile menu's stacked-section layout. */}
               <div>
@@ -443,6 +445,7 @@ export default function Layout() {
                 </div>
               </div>
 
+              </>}
               {/* Account section — placed first so existing Pro users can
                   sign in immediately and don't bounce off the paywall.
                   Mirrors the desktop right-nav UX: signed-in shows email
@@ -661,9 +664,9 @@ export default function Layout() {
       <footer className="bg-slate-800/50 border-t border-slate-700/50 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-4">
           <AmIUpCTA placement="footer" />
-          <div className="text-center my-4"><Link to="/pro" className="text-sm text-cyan-300 hover:text-white">SteamWatch Pro membership →</Link></div>
+          <div className="my-4 flex flex-wrap justify-center gap-x-6 gap-y-2"><Link to="/pro" className="inline-flex min-h-11 items-center text-sm text-cyan-300 hover:text-white">SteamWatch Pro membership →</Link><Link to="/pro/demo" className="inline-flex min-h-11 items-center text-sm text-cyan-300 hover:text-white">Try the Pro demo →</Link></div>
           <p className="text-center text-slate-500 text-xs sm:text-sm font-medium">
-            Pinnacle odds via The Odds API • Updates every 15 minutes
+            {isProDemoPage ? 'Historical demo · Decimal odds · No live prices' : 'Pinnacle odds via The Odds API • Updates every 15 minutes'}
           </p>
         </div>
       </footer>

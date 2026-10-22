@@ -11,6 +11,7 @@ export default function ProSessionIntro() {
   const location = useLocation();
   const [visible, setVisible] = useState(false);
   const excluded = location.pathname === '/pro'
+    || location.pathname.startsWith('/pro/')
     || location.pathname.startsWith('/auth/')
     || location.pathname.startsWith('/admin/')
     || new URLSearchParams(location.search).has('checkout');
