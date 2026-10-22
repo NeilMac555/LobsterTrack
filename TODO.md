@@ -5,15 +5,14 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 ## Now
 
-- Mutant Academy 3D overhaul, phase 2 onwards: Acts II-V in 3D (desert,
-  jungle with the KayKit Forest pack, ocean, hell: floors, walls, props),
-  models for the remaining monsters (Quaternius CC0 packs downloaded:
-  bat, slime, dragon, spider, frog, snake, wasp, rat, fish, shark; need
-  FBX -> glTF conversion; Bestiary imp/puglin are glTF), a Biski cat
-  model, 3D chests/gems/pickups, 3D effects for the powers (beams, novas,
-  pools), 3D title and select screens. Not yet measured on a real GPU or
-  phone: the test browser has no GPU (software rendering, ~1-4 fps), so
-  the gameplay tests run with ?gfx=hd and 3d-test with ?gfx=3d&q=fixed.
+- Mutant Academy 3D, next: models for the monsters still drawn as sprites
+  (feral cat, burger, lizard doctor, man-eater, demon monkey, vine treant,
+  jellyfish, ink squid, fire skull, sentinel mech) and for the Elder Treant,
+  the Kraken and Biski; 3D chests, gems and pickups; 3D effects for the
+  powers (beams, novas, pools); 3D bridges and liquids; 3D title and select
+  screens. Not yet measured on a real GPU or phone: the test browser has no
+  GPU (software rendering, ~1-4 fps), so the gameplay tests run with
+  ?gfx=hd and 3d-test with ?gfx=3d&q=fixed.
 - GitHub Pages: needs Settings -> Pages -> Source "GitHub Actions"; to
   deploy from the feature branch, allow it under Settings -> Environments
   -> github-pages (or merge to main). URL will be
@@ -79,6 +78,7 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy: Acts II-V in 3D (rock walls, act props and light) and 3D models for most monsters plus the Maggot Queen and the Devil (b8ec7ed)
 - Mutant Academy: 3D graphics mode for Act I (three.js + KayKit CC0: dungeon, heroes, skeletons, Butcher; lantern shadows, bloom; HD fallback), GitHub Pages workflow (9494030)
 - Mutant Academy: bosses take 15% damage from ultimates, which had been deleting the Act I Butcher in one cast (c77234c)
 - Mutant Academy: Academy shop and gold bank, challenge board, weighted level-ups with reroll/skip/banish, breakable pots, 5 new map events, a perk per hero, Hyper/Hurry modifiers (fa7cc37)
