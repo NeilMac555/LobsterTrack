@@ -25,4 +25,4 @@ The application serves desktop and mobile browsers. Core controls must remain ke
 
 ## Current surface contract
 
-The public Pro demo is an ordinary extension of the incumbent site. Its scope, direction and frozen-data contract are recorded in [the Pro demo brief](docs/pro-demo/brief.md). The brief describes the specific four-tool journey and must not be treated as a redesign of the rest of SteamWatch.
+The public Pro demo is an ordinary extension of the incumbent site. Its scope, direction and frozen-data contract are recorded in [the Pro demo brief](docs/pro-demo/brief.md). The user prefers a broad gallery of concise, swipeable tool cards to a text-heavy, single-match walkthrough. This direction applies to the demo, not the rest of SteamWatch.

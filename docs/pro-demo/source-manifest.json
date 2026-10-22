@@ -24,5 +24,53 @@
       "workspace_path": "work/pdf-review/arsenal-leeds-baselines.json",
       "sha256": "fd5c80a874c7aa0c8c03a31023ae593d25c5ffc089120e9004206945a297eb28"
     }
+  ],
+  "card_snapshot": "frontend/src/data/proDemoCards.json",
+  "card_sources": [
+    {
+      "url": "https://www.steamwatch.io/api/steam-results?limit=6",
+      "captured": "2026-10-22",
+      "sha256": "53e7c389d6b6a37732ce0d13894e5abe12f2f7acf0fa24dfa31b91dbc48a3d2b"
+    },
+    {
+      "url": "https://www.steamwatch.io/api/drifter-results?limit=6",
+      "captured": "2026-10-22",
+      "sha256": "70669316b08340da0d247752bab82d2da653aecb28ada15c2f37a27ac30c0842"
+    },
+    {
+      "url": "https://www.steamwatch.io/api/fav-dog-results/team?team=Arsenal&league=soccer_epl&seasons=2526",
+      "captured": "2026-10-22",
+      "sha256": "20e25ca9a8a4e52deefb9a292c70431394793f152a97e07605937a6553c5cc12"
+    },
+    {
+      "url": "https://www.steamwatch.io/api/fav-dog-results/team?team=Manchester%20United&league=soccer_epl&seasons=2526",
+      "captured": "2026-10-22",
+      "sha256": "24dc985929e041147fcfb897961b85b761c963c1bee78cb01f4fd38e4ce2be0f"
+    },
+    {
+      "url": "https://www.steamwatch.io/api/team-pnl?league=soccer_epl&seasons=2526,2627&stake=1&date_from=2026-02-12",
+      "captured": "2026-10-22",
+      "sha256": "7d7042c449957c57673fb2f3e2b3327c4cadb7f94daaa8e446801b39db621e33"
+    },
+    {
+      "url": "https://www.steamwatch.io/api/club-ratings",
+      "captured": "2026-10-22",
+      "sha256": "a887073e6a5d2625a422db29158a495fba77751bae077f0b2e3ac9f5094354c2"
+    },
+    {
+      "url": "https://www.steamwatch.io/api/closing-lines?team=Arsenal&limit=5",
+      "captured": "2026-10-22",
+      "sha256": "6b76f878207aca2a5f59b85be66b13da41a761d30e34d3f701ed3ba6dba50ce3"
+    },
+    {
+      "url": "https://www.steamwatch.io/api/xg-goals/table?months=12",
+      "captured": "2026-10-22",
+      "sha256": "a677e386b86a2f08055b67d5bcd3c681fe0dda717bbb3236020a049145905aff"
+    },
+    {
+      "url": "https://www.steamwatch.io/api/manager-ratings",
+      "captured": "2026-10-22",
+      "sha256": "3c1fa97e6aa37909a4f6e7ff650398d521e5d3ae61386c29a78665dec1b64784"
+    }
   ]
 }

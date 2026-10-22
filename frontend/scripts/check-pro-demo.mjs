@@ -75,6 +75,19 @@ for (const line of [-1.75, -1.25, -.75]) {
 const routes = JSON.parse(readFileSync(resolve(root, 'src/routes.json')));
 assert.ok(routes.public.includes('pro/demo'));
 const html = readFileSync(resolve(root, 'dist/pro/demo/index.html'), 'utf8');
-assert.ok(html.includes('https://www.steamwatch.io/pro/demo') && html.includes('Four ways to read it.'));
+assert.ok(html.includes('https://www.steamwatch.io/pro/demo') && html.includes('Find your next angle.'));
+const cards = JSON.parse(readFileSync(resolve(root, 'src/data/proDemoCards.json')));
+for (const report of [cards.steam, cards.drift]) for (const row of report.rows) {
+  assert.equal(row.wins + row.draws + row.losses, row.total_moves, 'Movement record sums');
+  assert.ok(Math.abs(row.win_rate - row.wins / row.total_moves * 100) < .051, 'Movement win rate');
+}
+for (const team of cards.bias) for (const row of [team.as_favourite, team.as_underdog]) {
+  assert.equal(row.wins + row.draws + row.losses, row.matches);
+  assert.ok(Math.abs(row.back_roi_pct - row.back_pl / row.matches * 100) < .06, 'Bias ROI uses stated stakes');
+}
+near(cards.pnl.back.home.pl + cards.pnl.back.away.pl, cards.pnl.back.overall.pl, 'Venue P/L reconciles');
+near(cards.goals.row.goals - cards.goals.row.xg, cards.goals.row.gap, 'Goals shortfall reconciles');
+assert.ok(Date.parse(cards.closing.captured_at) < Date.parse(cards.closing.kickoff_time));
+assert.equal(cards.managers.rows.length, 3, 'Only public manager preview included');
 console.log('PASS: frozen data chronology, 18 form filters, missing-data handling, rolling windows, 9 model scenarios, handicap settlements and public prerender.');
 console.log(JSON.stringify({ baseline: { home: 1 / baseline.probHome, draw: 1 / baseline.probDraw, away: 1 / baseline.probAway }, form20: ['home', 'away'].map(side => ({ team: demo.match[side], ...formSummary(selectForm(side, 20, 'all')) })) }, null, 2));

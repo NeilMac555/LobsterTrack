@@ -39,7 +39,7 @@ export default function ProPage() {
           <p className="mt-6 max-w-lg text-lg leading-relaxed text-slate-300">The market tells you what moved. Pro gives you the tools to investigate why.</p>
           <p className="mt-4 max-w-lg leading-relaxed text-slate-400">Bring team form, expected goals, historical results and model pricing into your football research. One membership. More context for every decision.</p>
           <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-4"><Link to="/pro/demo" className="inline-flex min-h-12 items-center rounded-lg border border-cyan-400/50 px-5 py-3 text-sm font-bold text-cyan-300 hover:bg-cyan-400/10 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-300">Try the interactive demo →</Link><a href="#included" className="inline-flex min-h-11 items-center text-sm font-semibold text-white underline decoration-slate-600 underline-offset-8 hover:text-cyan-300">Explore what’s included ↓</a></div>
-          <p className="mt-3 text-xs text-slate-400">One historical match. Four tools. No sign-up needed.</p>
+          <p className="mt-3 text-xs text-slate-400">12 research tools. Real historical samples. No sign-up needed.</p>
         </div>
         <div className="pro-price rounded-2xl border border-cyan-400/30 bg-slate-800/80 p-6 sm:p-8 shadow-xl">
           <div className="flex items-center justify-between gap-3"><span className="text-lg font-bold text-white">Your research, upgraded.</span><span className="rounded-md bg-cyan-400/10 px-2 py-1 text-xs font-bold text-cyan-300">PRO</span></div>

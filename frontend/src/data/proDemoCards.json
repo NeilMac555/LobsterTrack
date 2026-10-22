@@ -1,0 +1,286 @@
+{
+  "capturedAt": "2026-10-22",
+  "steam": {
+    "generatedAt": "2026-10-22T16:38:22.894369Z",
+    "season": "2026/27",
+    "rows": [
+      {
+        "team_name": "Paris FC",
+        "sport_key": "soccer_france_ligue_one",
+        "total_moves": 6,
+        "wins": 3,
+        "draws": 2,
+        "losses": 1,
+        "win_rate": 50,
+        "avg_move_size": 6.7,
+        "profit_loss": 1.82
+      },
+      {
+        "team_name": "Barcelona",
+        "sport_key": "soccer_uefa_champs_league",
+        "total_moves": 6,
+        "wins": 6,
+        "draws": 0,
+        "losses": 0,
+        "win_rate": 100,
+        "avg_move_size": 9,
+        "profit_loss": 1.07
+      },
+      {
+        "team_name": "Atlético Madrid",
+        "sport_key": "soccer_uefa_champs_league",
+        "total_moves": 6,
+        "wins": 4,
+        "draws": 1,
+        "losses": 1,
+        "win_rate": 66.7,
+        "avg_move_size": 7.1,
+        "profit_loss": 0.83
+      }
+    ]
+  },
+  "drift": {
+    "generatedAt": "2026-10-22T16:38:23.288835Z",
+    "season": "2026/27",
+    "rows": [
+      {
+        "team_name": "Napoli",
+        "sport_key": "soccer_uefa_champs_league",
+        "total_moves": 10,
+        "wins": 4,
+        "draws": 1,
+        "losses": 5,
+        "win_rate": 40,
+        "avg_move_size": 7.8,
+        "profit_loss": -2.52
+      },
+      {
+        "team_name": "Elche CF",
+        "sport_key": "soccer_spain_la_liga",
+        "total_moves": 9,
+        "wins": 1,
+        "draws": 4,
+        "losses": 4,
+        "win_rate": 11.1,
+        "avg_move_size": 6.1,
+        "profit_loss": -4.09
+      },
+      {
+        "team_name": "Lyon",
+        "sport_key": "soccer_france_ligue_one",
+        "total_moves": 8,
+        "wins": 5,
+        "draws": 2,
+        "losses": 1,
+        "win_rate": 62.5,
+        "avg_move_size": 9.3,
+        "profit_loss": 4.77
+      }
+    ]
+  },
+  "bias": [
+    {
+      "team": "Manchester United",
+      "data_through": "2026-05-24",
+      "seasons": [
+        "2526"
+      ],
+      "as_favourite": {
+        "matches": 28,
+        "wins": 13,
+        "draws": 11,
+        "losses": 4,
+        "win_rate": 46.4,
+        "median_odds": 1.85,
+        "back_pl": -4.28,
+        "back_roi_pct": -15.3,
+        "fade_pl": 2.85,
+        "fade_roi_pct": 10.2
+      },
+      "as_underdog": {
+        "matches": 10,
+        "wins": 7,
+        "draws": 0,
+        "losses": 3,
+        "win_rate": 70,
+        "median_odds": 3.66,
+        "back_pl": 17.63,
+        "back_roi_pct": 176.3,
+        "fade_pl": -6.15,
+        "fade_roi_pct": -61.5
+      }
+    },
+    {
+      "team": "Arsenal",
+      "data_through": "2026-05-24",
+      "seasons": [
+        "2526"
+      ],
+      "as_favourite": {
+        "matches": 36,
+        "wins": 26,
+        "draws": 7,
+        "losses": 3,
+        "win_rate": 72.2,
+        "median_odds": 1.48,
+        "back_pl": 2.51,
+        "back_roi_pct": 7,
+        "fade_pl": -10.58,
+        "fade_roi_pct": -29.4
+      },
+      "as_underdog": {
+        "matches": 2,
+        "wins": 0,
+        "draws": 0,
+        "losses": 2,
+        "win_rate": 0,
+        "median_odds": 3.78,
+        "back_pl": -2,
+        "back_roi_pct": -100,
+        "fade_pl": 0.67,
+        "fade_roi_pct": 33.7
+      }
+    }
+  ],
+  "pnl": {
+    "since": "2026-02-12",
+    "through": "2026-10-22",
+    "team": "Arsenal",
+    "season": "all",
+    "back": {
+      "home": {
+        "matches": 9,
+        "wins": 8,
+        "staked": 9,
+        "pl": 2.33,
+        "roi": 25.89
+      },
+      "away": {
+        "matches": 10,
+        "wins": 6,
+        "staked": 10,
+        "pl": -0.25,
+        "roi": -2.5
+      },
+      "overall": {
+        "matches": 19,
+        "wins": 14,
+        "staked": 19,
+        "pl": 2.08,
+        "roi": 10.95
+      }
+    },
+    "fade": {
+      "home": {
+        "matches": 9,
+        "wins": 1,
+        "staked": 9,
+        "pl": -6.19,
+        "roi": -68.76
+      },
+      "away": {
+        "matches": 10,
+        "wins": 4,
+        "staked": 10,
+        "pl": 0.11,
+        "roi": 1.1
+      },
+      "overall": {
+        "matches": 19,
+        "wins": 5,
+        "staked": 19,
+        "pl": -6.08,
+        "roi": -31.99
+      }
+    }
+  },
+  "closing": {
+    "id": 4476,
+    "match_id": "2ebbccdeea2dab59717d5c3d802c3fed",
+    "league": "soccer_uefa_champs_league",
+    "home_team": "Bayern Munich",
+    "away_team": "Arsenal",
+    "kickoff_time": "2026-10-21T19:00:00",
+    "market_type": "1x2",
+    "close_home": 2.4,
+    "close_draw": 3.81,
+    "close_away": 2.84,
+    "close_line": null,
+    "close_home_price": null,
+    "close_away_price": null,
+    "close_over_price": null,
+    "close_under_price": null,
+    "captured_at": "2026-10-21T18:58:48.951547",
+    "minutes_before_kickoff": 1
+  },
+  "ratings": {
+    "publishedAt": "2026-10-19T12:00:00.010479Z",
+    "rows": [
+      {
+        "name": "FC Barcelona",
+        "rank": 1,
+        "score": 2057.1726398019678,
+        "rank_change": 1
+      },
+      {
+        "name": "Arsenal",
+        "rank": 2,
+        "score": 2052.661195564889,
+        "rank_change": -1
+      },
+      {
+        "name": "FC Bayern München",
+        "rank": 3,
+        "score": 2044.8843757542554,
+        "rank_change": 0
+      }
+    ]
+  },
+  "managers": {
+    "asOf": "2026-10-19 08:02:25",
+    "rankingStart": "2016-07-01",
+    "rows": [
+      {
+        "name": "Unai Emery",
+        "rank": 1,
+        "club": "Aston Villa",
+        "impact": 347.4,
+        "matches": 468
+      },
+      {
+        "name": "Antonio Conte",
+        "rank": 2,
+        "club": "Napoli",
+        "impact": 324.4,
+        "matches": 322
+      },
+      {
+        "name": "Andoni Iraola",
+        "rank": 3,
+        "club": "Liverpool",
+        "impact": 301.4,
+        "matches": 215
+      }
+    ]
+  },
+  "goals": {
+    "since": "2025-10-22",
+    "through": "2026-10-18",
+    "refreshedAt": "2026-10-19T03:30:12.456052",
+    "row": {
+      "league": "soccer_germany_bundesliga",
+      "league_name": "Bundesliga",
+      "team": "Mainz 05",
+      "matches": 33,
+      "goals": 50,
+      "xg": 68.3,
+      "gap": -18.3,
+      "gap_per_match": -0.55,
+      "conceded": 49,
+      "xga": 58.3,
+      "def_gap": -9.3,
+      "def_gap_per_match": -0.28,
+      "last_match": "2026-10-17"
+    }
+  }
+}

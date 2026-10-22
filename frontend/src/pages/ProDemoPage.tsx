@@ -1,164 +1,199 @@
-import { useMemo, useState } from 'react';
-import type { KeyboardEvent } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import OddsChart from '../components/OddsChart';
+import cards from '../data/proDemoCards.json';
 import { demo, demoInputs, demoParams, formSummary, rollingXG, selectForm } from '../model/proDemo';
-import type { Sample, Side, Venue } from '../model/proDemo';
+import type { Sample, Side } from '../model/proDemo';
 import { runModel } from '../model/valorModel';
 import './ProDemoPage.css';
 
-const tools = [
-  { id: 'market', name: 'Odds movement', detail: 'Follow the price' },
-  { id: 'form', name: 'Form Lab', detail: 'Look beyond the score' },
-  { id: 'xg', name: 'Rolling xG', detail: 'Find the underlying trend' },
-  { id: 'model', name: 'Match predictor', detail: 'Build your own price' },
-] as const;
-type Tool = (typeof tools)[number]['id'];
-const isTool = (value: string | null): value is Tool => tools.some(tool => tool.id === value);
-const date = (value: string) => new Date(value).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
-const shortDate = (value: string) => new Date(value).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
-const quoteTime = (value: string) => new Date(value).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
-const num = (value: number | null) => value === null ? '—' : value.toFixed(2);
-const signed = (value: number) => `${value > 0 ? '+' : ''}${value.toFixed(2)}`;
-const pct = (value: number) => `${(value * 100).toFixed(1)}%`;
-const sides: Side[] = ['home', 'away'];
+const num = (n: number) => n.toFixed(2);
+const signed = (n: number) => `${n > 0 ? '+' : ''}${num(n)}`;
+const tone = (n: number) => n < 0 ? 'demo-negative' : n > 0 ? 'demo-positive' : '';
+
+function Arrow({ back = false }: { back?: boolean }) {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true" style={back ? { transform: 'rotate(180deg)' } : undefined}><path d="M5 12h14m-6-6 6 6-6 6" /></svg>;
+}
 
 function Choices<T extends string | number>({ label, value, options, onChange }: {
   label: string; value: T; options: { value: T; label: string }[]; onChange: (value: T) => void;
 }) {
-  return <fieldset className="demo-choices"><legend>{label}</legend><div>
-    {options.map(option => <button type="button" key={option.value} aria-pressed={value === option.value} onClick={() => onChange(option.value)}>{option.label}</button>)}
-  </div></fieldset>;
+  return <div className="demo-switch" role="group" aria-label={label}>{options.map(option => <button type="button" key={option.value} aria-pressed={value === option.value} onClick={() => onChange(option.value)}>{option.label}</button>)}</div>;
 }
 
-function MarketDemo() {
-  const [window, setWindow] = useState<'all' | '168' | '48'>('all');
-  const points = useMemo(() => window === 'all' ? demo.odds : demo.odds.filter(point =>
-    Date.parse(point.timestamp) >= Date.parse(demo.match.kickoff) - Number(window) * 3600000), [window]);
-  const first = points[0];
-  const last = points[points.length - 1];
-  const move = 100 / last.home_odds - 100 / first.home_odds;
-  return <>
-    <div className="demo-panel-heading"><div><h2>See how the price changed.</h2><p>Switch outcomes or view the move as implied probability.</p></div>
-      <Choices label="Pre-match window" value={window} onChange={setWindow} options={[{ value: 'all', label: 'All recorded' }, { value: '168', label: 'Last 7 days' }, { value: '48', label: 'Last 48h' }]} />
-    </div>
-    <div className="demo-market-grid">
-      <div className="demo-odds-chart"><OddsChart data={points} homeTeam={demo.match.home} awayTeam={demo.match.away} /></div>
-      <aside className="demo-reading">
-        <h3>{move < 0 ? 'Arsenal drifted.' : move > 0 ? 'Arsenal shortened.' : 'Arsenal finished unchanged.'}</h3>
-        <div className="demo-price-change"><span>{num(first.home_odds)}</span><span aria-hidden="true">→</span><strong>{num(last.home_odds)}</strong></div>
-        <p>First to last recorded home price in this window. Raw implied probability {move < 0 ? 'fell' : 'changed'} by <strong>{Math.abs(move).toFixed(2)} percentage points</strong>.</p>
-        <dl className="demo-quote-dates"><div><dt>First quote</dt><dd>{quoteTime(first.timestamp)} UTC</dd></div><div><dt>Last quote</dt><dd>{quoteTime(last.timestamp)} UTC</dd></div></dl>
-        <p className="demo-note">A move tells you how the price changed. Form and team news help you investigate it.</p>
-      </aside>
-    </div>
-    <div className="demo-table-scroll" role="region" aria-label="Recorded match odds" tabIndex={0}><table className="demo-table demo-market-table"><caption>Decimal odds in the selected window</caption><thead><tr><th scope="col">Outcome</th><th scope="col">First recorded</th><th scope="col">Last recorded</th><th scope="col">Implied move</th></tr></thead><tbody>
-      {([['Arsenal', 'home_odds'], ['Draw', 'draw_odds'], ['Leeds United', 'away_odds']] as const).map(([label, key]) => <tr key={key}><th scope="row">{label}</th><td>{num(first[key])}</td><td>{num(last[key])}</td><td>{signed(100 / last[key] - 100 / first[key])}pp</td></tr>)}
-    </tbody></table></div>
-    <p className="demo-source">SteamWatch’s archived pre-match quotes. Last quote: Pinnacle. Implied probability = 1 / odds; bookmaker margin is included. Chart times follow your device timezone. No live prices.</p>
-  </>;
+function Feature({ id, title, benefit, pro = true, href, sample, children, reload = false }: {
+  id: string; title: string; benefit: string; pro?: boolean; href: string; sample: string; children: ReactNode; reload?: boolean;
+}) {
+  return <article className="demo-card" id={`demo-${id}`} aria-labelledby={`demo-title-${id}`}>
+    <header className="demo-card-heading"><div><h3 id={`demo-title-${id}`}>{title}</h3><span className={`demo-access ${pro ? 'demo-access-pro' : ''}`}>{pro ? 'PRO' : 'FREE'}</span></div><p>{benefit}</p></header>
+    <div className="demo-card-preview">{children}</div>
+    <p className="demo-card-sample">{sample}</p>
+    <Link className="demo-card-link" to={href} reloadDocument={reload}><span>Open {title}</span><Arrow /></Link>
+  </article>;
 }
 
-function FormDemo() {
+function Shelf({ id, title, description, count, children }: { id: string; title: string; description: string; count: number; children: ReactNode }) {
+  const track = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState({ first: true, last: false, current: 1 });
+  useEffect(() => {
+    const node = track.current;
+    if (!node) return;
+    const update = () => {
+      const width = node.querySelector<HTMLElement>('.demo-card')?.offsetWidth ?? 1;
+      setPosition({ first: node.scrollLeft < 4, last: node.scrollLeft + node.clientWidth >= node.scrollWidth - 4, current: Math.min(count, Math.round(node.scrollLeft / (width + 16)) + 1) });
+    };
+    update();
+    node.addEventListener('scroll', update, { passive: true });
+    const observer = new ResizeObserver(update);
+    observer.observe(node);
+    return () => { node.removeEventListener('scroll', update); observer.disconnect(); };
+  }, [count]);
+  function move(direction: number) {
+    const node = track.current;
+    if (!node) return;
+    const width = node.querySelector<HTMLElement>('.demo-card')?.offsetWidth ?? node.clientWidth;
+    node.scrollBy({ left: direction * (width + 16), behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+  }
+  return <section className="demo-shelf" id={id} aria-labelledby={`${id}-heading`}>
+    <header className="demo-shelf-heading"><div><h2 id={`${id}-heading`}>{title} <span>{count}</span></h2><p>{description}</p></div>
+      <div className="demo-shelf-navigation"><span className="demo-swipe-hint">Swipe to explore</span><button type="button" aria-label={`Previous ${title.toLowerCase()} card`} aria-controls={`${id}-track`} disabled={position.first} onClick={() => move(-1)}><Arrow back /></button><button type="button" aria-label={`Next ${title.toLowerCase()} card`} aria-controls={`${id}-track`} disabled={position.last} onClick={() => move(1)}><Arrow /></button></div>
+    </header>
+    <div className="demo-track" id={`${id}-track`} ref={track} role="region" aria-label={`${title}, ${count} cards. Swipe or use the arrow buttons to explore.`} tabIndex={0}>{children}</div>
+    <span className="demo-sr-only" aria-live="polite">{title}: card {position.current} of {count} at the start of the row.</span>
+  </section>;
+}
+
+/** Compact charts use the actual bundled series; the shared match chart is unchanged. */
+function MiniChart({ series, label, from, to }: { series: { values: number[]; color: string; dashed?: boolean }[]; label: string; from: string; to: string }) {
+  const values = series.flatMap(line => line.values);
+  const min = Math.min(...values);
+  const range = Math.max(...values) - min || 1;
+  return <div className="demo-mini-chart"><svg viewBox="0 0 310 108" role="img" aria-label={label} preserveAspectRatio="none">
+    {[15, 55, 95].map(y => <line key={y} x1="1" x2="309" y1={y} y2={y} stroke="#334155" strokeWidth=".6" />)}
+    {series.map((line, index) => <polyline key={index} points={line.values.map((value, i) => `${2 + i / Math.max(1, line.values.length - 1) * 306},${96 - (value - min) / range * 82}`).join(' ')} fill="none" stroke={line.color} strokeWidth="2.5" strokeDasharray={line.dashed ? '5 4' : undefined} vectorEffect="non-scaling-stroke" />)}
+  </svg><div className="demo-chart-dates"><span>{from}</span><span>{to}</span></div></div>;
+}
+
+function Movement({ drift = false }: { drift?: boolean }) {
+  const source = drift ? cards.drift : cards.steam;
+  return <Feature id={drift ? 'drifters' : 'steam'} title={drift ? 'Drifter records' : 'Steam moves'} benefit={drift ? 'What happened after the price went out?' : 'Which teams does the market keep backing?'} href={drift ? '/drifters' : '/steam-results'} sample="2026/27 sample · 3pp+ moves · final 2h before KO">
+    <div className="demo-preview-label">Most {drift ? 'drifted' : 'steamed'} teams <span>1u stakes</span></div>
+    <table className="demo-mini-table"><caption className="demo-sr-only">Top three teams by settled move count, all competitions, captured 22 October 2026</caption><thead><tr><th>Team</th><th>Moves</th><th>P/L</th></tr></thead><tbody>{source.rows.map(row => <tr key={row.team_name}><th scope="row">{row.team_name}<small>{row.wins}W · {row.draws}D · {row.losses}L</small></th><td>{row.total_moves}</td><td className={tone(row.profit_loss)}>{signed(row.profit_loss)}u</td></tr>)}</tbody></table>
+  </Feature>;
+}
+
+function Bias() {
+  const [index, setIndex] = useState(0);
+  const team = cards.bias[index];
+  return <Feature id="bias" title="Favourite–longshot bias" benefit="Same club. Two very different betting records." href="/longshot-bias" sample="Premier League 2025/26 · 1u per bet">
+    <Choices label="Bias sample team" value={index} onChange={setIndex} options={[{ value: 0, label: 'Man United' }, { value: 1, label: 'Arsenal' }]} />
+    <div className="demo-bias-comparison" aria-live="polite">{([['As favourite', team.as_favourite], ['As underdog', team.as_underdog]] as const).map(([label, row]) => <div key={label}><span>{label}</span><strong className={tone(row.back_pl)}>{signed(row.back_pl)}<small>u</small></strong><span>{row.wins} wins / {row.matches} bets</span><div className="demo-win-bar" aria-hidden="true"><span style={{ width: `${row.win_rate}%` }} /></div></div>)}</div>
+    <p className="demo-preview-footnote">{team.as_underdog.matches < 5 ? 'Only 2 underdog bets: a very small sample.' : 'Compare the record behind each price band.'}</p>
+  </Feature>;
+}
+
+function Odds() {
+  const [side, setSide] = useState<'home_odds' | 'away_odds'>('home_odds');
+  const first = demo.odds[0][side], last = demo.odds.at(-1)![side];
+  return <Feature id="market" title="Odds movement" benefit="See the move, from first quote to kick-off." pro={false} href="/" sample="Arsenal–Leeds · recorded quotes · Sep–Oct 2026">
+    <Choices label="Odds outcome" value={side} onChange={setSide} options={[{ value: 'home_odds', label: 'Arsenal' }, { value: 'away_odds', label: 'Leeds' }]} />
+    <div className="demo-quote-pair"><span>{num(first)}</span><Arrow /><strong>{num(last)}</strong><small>Decimal odds</small></div>
+    <MiniChart series={[{ values: demo.odds.map(row => row[side]), color: '#67e8f9' }]} label={`Recorded odds: ${num(first)} to ${num(last)}`} from="13 Sep" to="10 Oct · pre-KO" />
+  </Feature>;
+}
+
+function Closing() {
+  const row = cards.closing;
+  return <Feature id="closing" title="Closing lines" benefit="Keep the final market price in view." pro={false} href="/closing-lines" sample="Pinnacle · 21 Oct 2026 · recorded 1 min before KO">
+    <div className="demo-match-label">Bayern Munich <span>vs</span> Arsenal</div>
+    <div className="demo-price-trio">{[['Bayern', row.close_home], ['Draw', row.close_draw], ['Arsenal', row.close_away]].map(([label, value]) => <div key={label}><span>{label}</span><strong>{num(Number(value))}</strong></div>)}</div>
+    <div className="demo-closing-stamp"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 6v6l4 2" /></svg><span>Last recorded 1X2 prices</span></div>
+  </Feature>;
+}
+
+function Form() {
   const [sample, setSample] = useState<Sample>(20);
-  const [venue, setVenue] = useState<Venue>('all');
-  const rows = sides.map(side => ({ side, games: selectForm(side, sample, venue), summary: formSummary(selectForm(side, sample, venue)) }));
-  return <>
-    <div className="demo-panel-heading"><div><h2>Give the scoreline some context.</h2><p>Start with 20 games, then narrow the sample by venue.</p></div><Link className="demo-text-link" to="/tools/form-lab">Explore the full Form Lab →</Link></div>
-    <div className="demo-controls">
-      <Choices label="Last matching games" value={sample} onChange={setSample} options={[5, 10, 20].map(value => ({ value: value as Sample, label: String(value) }))} />
-      <Choices label="Venue for both teams" value={venue} onChange={setVenue} options={[{ value: 'all', label: 'All venues' }, { value: 'home', label: 'Home' }, { value: 'away', label: 'Away' }]} />
-    </div>
-    <div className="demo-table-scroll" role="region" aria-label="Team form comparison" tabIndex={0}><table className="demo-table demo-form-table"><caption>Premier League form before 10 October 2026 · averages per game</caption><thead><tr><th scope="col">Team</th><th scope="col">Played</th><th scope="col">W–D–L</th><th scope="col">Goals for</th><th scope="col">Goals against</th><th scope="col">npxG for</th><th scope="col">npxG against</th><th scope="col">npxG difference</th></tr></thead><tbody>
-      {rows.map(({ side, summary: s }) => <tr key={side}><th scope="row">{demo.match[side]}</th><td>{s.played}</td><td>{s.wins}–{s.draws}–{s.losses}</td><td>{num(s.goalsFor)}</td><td>{num(s.goalsAgainst)}</td><td>{num(s.xgFor)}</td><td>{num(s.xgAgainst)}</td><td className="demo-emphasis">{s.xgFor !== null && s.xgAgainst !== null ? signed(s.xgFor - s.xgAgainst) : '—'}</td></tr>)}
-    </tbody></table></div>
-    <div className="demo-form-notes">{rows.map(({ side, games, summary }) => <div key={side}><h3>{demo.match[side]}</h3><p>{games.length ? `${date(games[0].date)} – ${date(games[games.length - 1].date)}` : 'No matches in this sample'}</p><div className="demo-form-strip" aria-label={`${demo.match[side]} results, oldest to newest`}>{games.map(game => <span key={game.id} className={`demo-result-${game.gf > game.ga ? 'w' : game.gf === game.ga ? 'd' : 'l'}`} title={`${date(game.date)} · ${game.venue} vs ${game.opponent} · ${game.gf}–${game.ga}`}>{game.gf > game.ga ? 'W' : game.gf === game.ga ? 'D' : 'L'}</span>)}</div><p className="demo-note">Oldest → newest · npxG coverage: {summary.xgCoverage}/{summary.played}</p></div>)}</div>
-    <details className="demo-details"><summary>See the matches in this sample</summary>{rows.map(({ side, games }) => <div className="demo-table-scroll" key={side} role="region" aria-label={`${demo.match[side]} sample matches`} tabIndex={0}><table className="demo-table"><caption>{demo.match[side]} · team score first</caption><thead><tr><th scope="col">Date</th><th scope="col">Opponent</th><th scope="col">Venue</th><th scope="col">Score</th><th scope="col">npxG for</th><th scope="col">npxG against</th></tr></thead><tbody>{[...games].reverse().map(game => <tr key={game.id}><td>{date(game.date)}</td><th scope="row">{game.opponent}</th><td>{game.venue}</td><td>{game.gf}–{game.ga}</td><td>{num(game.npxgf)}</td><td>{num(game.npxga)}</td></tr>)}</tbody></table></div>)}</details>
-    <p className="demo-source">Source: Sportmonks, as used by Form Lab. npxG means non-penalty expected goals. Venue is filtered before selecting the last {sample} matches across 2025/26 and 2026/27. Missing xG is excluded from xG averages, never treated as zero.</p>
-  </>;
+  return <Feature id="form" title="Form Lab" benefit="Look beyond the score. Start with the sample." href="/tools/form-lab" sample="Premier League · before Arsenal–Leeds, 10 Oct 2026">
+    <div className="demo-preview-label">Last matches<Choices label="Form sample size" value={sample} onChange={setSample} options={[5, 10, 20].map(value => ({ value: value as Sample, label: String(value) }))} /></div>
+    <table className="demo-mini-table"><thead><tr><th>Team</th><th>W–D–L</th><th>npxG diff.</th></tr></thead><tbody>{(['home', 'away'] as Side[]).map(side => {
+      const stats = formSummary(selectForm(side, sample, 'all'));
+      const diff = (stats.xgFor ?? 0) - (stats.xgAgainst ?? 0);
+      return <tr key={side}><th scope="row">{side === 'home' ? 'Arsenal' : 'Leeds'}</th><td>{stats.wins}–{stats.draws}–{stats.losses}</td><td className={tone(diff)}>{signed(diff)}</td></tr>;
+    })}</tbody></table>
+    <p className="demo-preview-footnote">All venues · non-penalty xG difference per game</p>
+  </Feature>;
 }
 
-function XGDemo() {
+function XG() {
   const [side, setSide] = useState<Side>('home');
-  const [window, setWindow] = useState<5 | 10>(5);
-  const rows = rollingXG(side, window);
-  const last = rows[rows.length - 1];
-  return <>
-    <div className="demo-panel-heading"><div><h2>Follow the performances underneath.</h2><p>Compare chance creation with chances allowed, over time.</p></div><Link className="demo-text-link" to="/tools/rolling-xg">Explore rolling xG →</Link></div>
-    <div className="demo-controls"><Choices label="Team" value={side} onChange={setSide} options={sides.map(value => ({ value, label: demo.match[value] }))} /><Choices label="Rolling average" value={window} onChange={setWindow} options={[{ value: 5, label: '5 games' }, { value: 10, label: '10 games' }]} /></div>
-    <div className="demo-xg-heading"><h3>{demo.match[side]} <span>Last 20 match points</span></h3><div className="demo-xg-legend"><span className="demo-line-for">npxG for</span><span className="demo-line-against">npxG against</span></div></div>
-    <div className="demo-xg-chart" role="img" aria-label={`${demo.match[side]} ${window}-game rolling non-penalty xG. Latest: ${num(last.for)} for, ${num(last.against)} against. Match values available below.`}><ResponsiveContainer width="100%" height="100%"><LineChart data={rows} margin={{ left: -20, top: 16, right: 12, bottom: 6 }} accessibilityLayer>
-      <CartesianGrid stroke="#334155" vertical={false} strokeDasharray="3 5" /><XAxis dataKey="date" tickFormatter={shortDate} tick={{ fill: '#aabbd0', fontSize: 12 }} minTickGap={40} axisLine={false} tickLine={false} /><YAxis tick={{ fill: '#aabbd0', fontSize: 12 }} tickFormatter={value => Number(value).toFixed(1)} axisLine={false} tickLine={false} domain={[0, 'auto']} />
-      <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid #475569', borderRadius: 8, color: '#e2e8f0' }} labelFormatter={value => date(String(value))} formatter={value => num(Number(value))} />
-      <Line dataKey="for" name="npxG for" stroke="#67e8f9" strokeWidth={2.5} dot={false} isAnimationActive={false} /><Line dataKey="against" name="npxG against" stroke="#fbbf24" strokeWidth={2} strokeDasharray="6 4" dot={false} isAnimationActive={false} />
-    </LineChart></ResponsiveContainer></div>
-    <p className="demo-insight">Across the latest {window} matches, {demo.match[side]} averaged <strong>{num(last.for)} npxG for</strong> and <strong>{num(last.against)} against</strong> — a difference of <strong>{signed(last.for - last.against)}</strong> per game.</p>
-    <details className="demo-details"><summary>See the chart values</summary><div className="demo-table-scroll" role="region" aria-label="Rolling xG values" tabIndex={0}><table className="demo-table"><caption>{window}-game rolling averages · team score first</caption><thead><tr><th scope="col">Date</th><th scope="col">Opponent</th><th scope="col">Score</th><th scope="col">npxG for</th><th scope="col">npxG against</th></tr></thead><tbody>{[...rows].reverse().map(row => <tr key={row.id}><td>{date(row.date)}</td><th scope="row">{row.opponent}</th><td>{row.gf}–{row.ga}</td><td>{num(row.for)}</td><td>{num(row.against)}</td></tr>)}</tbody></table></div></details>
-    <p className="demo-source">Source: Understat, as used by SteamWatch’s rolling xG tool. Each point includes that game and the preceding {window - 1}; earlier matches provide a full window at the start of the chart. Providers model xG differently, so these figures can differ from Form Lab.</p>
-  </>;
+  const rows = rollingXG(side, 5), last = rows.at(-1)!;
+  return <Feature id="xg" title="Rolling xG" benefit="Are performances improving before results do?" href="/tools/rolling-xg" sample="5-game rolling npxG · 20 points · to Sep 2026">
+    <Choices label="Rolling xG team" value={side} onChange={setSide} options={[{ value: 'home', label: 'Arsenal' }, { value: 'away', label: 'Leeds' }]} />
+    <MiniChart series={[{ values: rows.map(row => row.for), color: '#67e8f9' }, { values: rows.map(row => row.against), color: '#fbbf24', dashed: true }]} label={`${demo.match[side]} 5-game rolling npxG, latest ${num(last.for)} for and ${num(last.against)} against`} from="Last 20 match points" to="Latest" />
+    <div className="demo-xg-key"><span>For <strong>{num(last.for)}</strong></span><span>Against <strong>{num(last.against)}</strong></span></div>
+  </Feature>;
 }
 
-function ModelDemo() {
-  const [homeAbsence, setHomeAbsence] = useState(1);
-  const [awayAbsence, setAwayAbsence] = useState(1);
-  const [line, setLine] = useState(-1.5);
-  const baseline = useMemo(() => runModel({ home: demoInputs('home'), away: demoInputs('away') }, demoParams), []);
-  const model = useMemo(() => runModel({ home: demoInputs('home', homeAbsence), away: demoInputs('away', awayAbsence) }, demoParams), [homeAbsence, awayAbsence]);
-  const changed = homeAbsence !== 1 || awayAbsence !== 1;
-  const total = model.totalsRows.find(row => row.line === 2.5)!;
-  const ah = model.ahRows.find(row => row.line === line)!;
-  const last = demo.odds[demo.odds.length - 1];
-  const probabilities = [model.probHome, model.probDraw, model.probAway];
-  const baselineProbabilities = [baseline.probHome, baseline.probDraw, baseline.probAway];
-  const labels = [demo.match.home, 'Draw', demo.match.away];
-  return <>
-    <div className="demo-panel-heading"><div><h2>Turn your view into a price.</h2><p>A 20-game baseline, using the same model as the full predictor.</p></div><button type="button" className="demo-reset" onClick={() => { setHomeAbsence(1); setAwayAbsence(1); setLine(-1.5); }} disabled={!changed && line === -1.5}>Reset demo</button></div>
-    <div className="demo-model-grid"><div className="demo-model-inputs"><h3>Try a team-news scenario</h3><p>Change either team’s availability and watch the fair prices respond.</p>
-      {sides.map(side => <label className="demo-field" key={side}><span>{demo.match[side]} absences</span><select value={side === 'home' ? homeAbsence : awayAbsence} onChange={event => (side === 'home' ? setHomeAbsence : setAwayAbsence)(Number(event.target.value))}><option value={1}>No adjustment</option><option value={3}>Weakened</option><option value={5}>Severely weakened</option></select></label>)}
-      <p className="demo-note">These are your assumptions, not reported team news. The model reduces a weakened team’s scoring rate by 6% and increases its opponent’s by 6%; severe uses 12%.</p>
-      <dl className="demo-input-summary">{sides.map(side => { const input = demoInputs(side); return <div key={side}><dt>{demo.match[side]} · 20 games</dt><dd>{num(input.xgFor)} xG for <span>/</span> {num(input.xgAgainst)} against</dd></div>; })}</dl>
-    </div><div className="demo-model-results">
-      <div className="demo-results-heading"><h3>Fair 1X2 prices</h3><span>{changed ? 'Your scenario' : 'Baseline'}</span></div>
-      <div className="demo-fair-prices" aria-live="polite" aria-atomic="true">{labels.map((label, index) => <div key={label}><h4>{label}</h4><strong>{num(1 / probabilities[index])}</strong><span>{pct(probabilities[index])}</span>{changed && <small>Baseline {num(1 / baselineProbabilities[index])}</small>}</div>)}</div>
-      <div className="demo-goals"><span>Model expected goals</span><strong>{num(model.lambdaHome)} <span>–</span> {num(model.lambdaAway)}</strong></div>
-      <div className="demo-table-scroll" role="region" aria-label="Additional model markets" tabIndex={0}><table className="demo-table"><caption>More markets · fair decimal odds</caption><tbody><tr><th scope="row">Total goals 2.5</th><td>Over <strong>{num(total.overOdds)}</strong></td><td>Under <strong>{num(total.underOdds)}</strong></td></tr><tr><th scope="row">Both teams to score</th><td>Yes <strong>{num(model.bttsYesOdds)}</strong></td><td>No <strong>{num(model.bttsNoOdds)}</strong></td></tr><tr><th scope="row"><label className="demo-ah-label">Arsenal handicap<select aria-label="Arsenal Asian handicap" value={line} onChange={event => setLine(Number(event.target.value))}>{[-2, -1.75, -1.5, -1.25, -1, -0.75, -0.5].map(value => <option value={value} key={value}>{value.toFixed(2)}</option>)}</select></label></th><td>Arsenal <strong>{num(ah.homeOdds)}</strong></td><td>Leeds +{(-line).toFixed(2)} <strong>{num(ah.awayOdds)}</strong></td></tr></tbody></table></div>
-      <p className="demo-note">Fair odds exclude bookmaker margin. Handicap prices account for half wins, half losses and pushes where applicable.</p>
-    </div></div>
-    <div className="demo-market-comparison"><div><h3>Compare with the recorded market</h3><p>Pinnacle’s last recorded 1X2 quote · {quoteTime(last.timestamp)} UTC</p></div><p className="demo-compare-odds">Arsenal <strong>{num(last.home_odds)}</strong><span>Draw <strong>{num(last.draw_odds)}</strong></span>Leeds <strong>{num(last.away_odds)}</strong></p></div>
-    <p className="demo-source">This is a reconstruction using today’s model and historical inputs, not a saved pre-match forecast or a proven betting edge. An apparent difference from the market is a starting point for further research.</p>
-    <details className="demo-details"><summary>Inputs, assumptions and calculation log</summary><p>Both teams use their last 20 Premier League games before this fixture, all venues, ending 19 September (Arsenal) and 20 September (Leeds). Understat total xG, goals conceded and the last six games feed the existing predictor. Half of penalty xG is retained, using total xG minus npxG; penalty counts are not assumed.</p><p>The archived league baseline was computed on 3 October 2026 from 430 matches across two seasons. It uses a weighted scoring rate of {num(demo.league.avgGoalsPerTeam * 2)} goals per match and home/away ratio {num(demo.league.homeAwayRatio)}. Recent form weight: 25%; Dixon–Coles rho: −0.03; draw multiplier: 1.08. Shot-quality and set-piece adjustments are skipped because those inputs are not supplied.</p><p>Form Lab filters do not change these model inputs. Absence scenarios are the only strength inputs you change in this demo.</p><ol className="demo-calculation-log">{model.calcLog.map((entry, index) => <li key={index}>{entry}</li>)}</ol></details>
-  </>;
+function Model() {
+  const [absence, setAbsence] = useState(1);
+  const model = useMemo(() => runModel({ home: demoInputs('home', absence), away: demoInputs('away') }, demoParams), [absence]);
+  return <Feature id="model" title="Dixon–Coles model" benefit="Change the team news. See the fair odds move." href="/tools/match-predictor" sample="Arsenal–Leeds · reconstructed from 20-game inputs">
+    <label className="demo-scenario">Arsenal absence scenario<select value={absence} onChange={event => setAbsence(Number(event.target.value))}><option value={1}>No adjustment</option><option value={3}>Weakened</option><option value={5}>Severely weakened</option></select></label>
+    <div className="demo-price-trio" aria-live="polite" aria-atomic="true">{[['Arsenal', model.probHome], ['Draw', model.probDraw], ['Leeds', model.probAway]].map(([label, p]) => <div key={label}><span>{label}</span><strong>{num(1 / Number(p))}</strong></div>)}</div>
+    <p className="demo-preview-footnote">Fair 1X2 odds · your scenario, not reported news</p>
+  </Feature>;
+}
+
+function PnL() {
+  const [venue, setVenue] = useState<'overall' | 'home' | 'away'>('overall');
+  const row = cards.pnl.back[venue];
+  return <Feature id="pnl" title="Team profit & loss" benefit="What would backing your team have returned?" pro={false} href="/team-pnl" sample="Arsenal · 1u stakes · available data from 12 Feb 2026">
+    <Choices label="Arsenal P/L venue" value={venue} onChange={setVenue} options={[{ value: 'overall', label: 'All games' }, { value: 'home', label: 'Home' }, { value: 'away', label: 'Away' }]} />
+    <div className="demo-pnl-result" aria-live="polite"><strong className={tone(row.pl)}>{signed(row.pl)}<small>u</small></strong><span>Backing Arsenal</span></div>
+    <div className="demo-split-stats"><span><strong>{row.matches}</strong> bets</span><span><strong>{row.wins}</strong> wins</span><span><strong className={tone(row.roi)}>{row.roi > 0 ? '+' : ''}{row.roi.toFixed(1)}%</strong> ROI</span></div>
+  </Feature>;
+}
+
+function Ratings() {
+  return <Feature id="ratings" title="Club ratings" benefit="See who’s climbing the European rankings." pro={false} href="/tools/club-ratings" sample="Weekly rating snapshot · 19 Oct 2026">
+    <div className="demo-preview-label">European top three<span>Rating</span></div>
+    <ol className="demo-rank-list">{cards.ratings.rows.map(row => <li key={row.name}><span className="demo-rank">{row.rank}</span><strong>{row.name}</strong><span className="demo-rating-value">{Math.round(row.score)}<small aria-label={`${row.rank_change > 0 ? 'Up' : row.rank_change < 0 ? 'Down' : 'Unchanged'} ${Math.abs(row.rank_change)} places`} className={tone(row.rank_change)}>{row.rank_change > 0 ? '↑' : row.rank_change < 0 ? '↓' : '—'} {row.rank_change ? Math.abs(row.rank_change) : ''}</small></span></li>)}</ol>
+  </Feature>;
+}
+
+function Managers() {
+  return <Feature id="managers" title="Manager ratings" benefit="Compare a manager’s record across clubs." href="/tools/manager-ratings" reload sample="Career impact rankings · snapshot 19 Oct 2026">
+    <div className="demo-preview-label">Top three managers<span>Impact</span></div>
+    <ol className="demo-rank-list">{cards.managers.rows.map(row => <li key={row.name}><span className="demo-rank">{row.rank}</span><strong>{row.name}<small>{row.club}</small></strong><span className="demo-rating-value demo-positive">+{row.impact.toFixed(1)}</span></li>)}</ol>
+  </Feature>;
+}
+
+function Goals() {
+  const row = cards.goals.row;
+  return <Feature id="goals" title="Goals coming soon?" benefit="Find teams scoring less than their xG." pro={false} href="/goals-coming-soon" sample="Mainz 05 · 33 matches · 12-month sample to Oct 2026">
+    <div className="demo-preview-label">Mainz 05<span>Goals vs xG</span></div>
+    <div className="demo-goal-bars"><div><span>Goals</span><div style={{ width: `${row.goals / row.xg * 100}%` }}>{row.goals}</div></div><div><span>Expected goals</span><div style={{ width: '100%' }}>{row.xg}</div></div></div>
+    <p className="demo-goal-gap"><strong>{Math.abs(row.gap).toFixed(1)}</strong> below xG <span>A research lead, not a promise of goals.</span></p>
+  </Feature>;
 }
 
 export default function ProDemoPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const requested = searchParams.get('tool');
-  const active: Tool = isTool(requested) ? requested : 'market';
-  const activeIndex = tools.findIndex(tool => tool.id === active);
-  function selectTool(tool: Tool) { setSearchParams({ tool }, { replace: true, preventScrollReset: true }); }
-  function onTabKey(event: KeyboardEvent<HTMLButtonElement>, index: number) {
-    if (event.ctrlKey || event.metaKey || event.altKey) return;
-    const keys = ['ArrowRight', 'ArrowLeft', 'Home', 'End'];
-    if (!keys.includes(event.key)) return;
-    event.preventDefault();
-    const next = event.key === 'Home' ? 0 : event.key === 'End' ? tools.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + tools.length) % tools.length;
-    selectTool(tools[next].id);
-    document.getElementById(`demo-tab-${tools[next].id}`)?.focus();
-  }
   return <div className="pro-demo">
-    <Helmet><title>Try SteamWatch Pro | Interactive Football Research Demo</title><meta name="description" content="Try SteamWatch’s odds charts, Form Lab, rolling xG and Dixon–Coles match predictor on a historical Arsenal–Leeds match. No sign-up required." /><link rel="canonical" href="https://www.steamwatch.io/pro/demo" /><meta property="og:title" content="Try the SteamWatch Pro demo" /><meta property="og:description" content="One match. Odds movement, Form Lab, rolling xG and model prices. Try the tools without signing up." /><meta property="og:url" content="https://www.steamwatch.io/pro/demo" /></Helmet>
-    <header className="demo-intro"><div><h1>A match. Four ways to read it.</h1><p>Try SteamWatch Pro on a real match. Follow the market, test the form and build your own price. No sign-up needed.</p></div><Link className="demo-text-link" to="/pro">What’s included in Pro →</Link></header>
-    <section className="demo-workbench" aria-label="Interactive Pro demo">
-      <div className="demo-fixture"><div><div className="demo-fixture-meta"><span>Historical demo</span><span>Premier League · 10 October 2026</span></div><h2>Arsenal <span>vs</span> Leeds United</h2></div><p>One sample match.<br /><strong>Real tools to explore.</strong></p></div>
-      <div className="demo-tabs" role="tablist" aria-label="Research tools">{tools.map((tool, index) => <button key={tool.id} type="button" role="tab" id={`demo-tab-${tool.id}`} aria-controls={`demo-panel-${tool.id}`} aria-selected={active === tool.id} tabIndex={active === tool.id ? 0 : -1} onClick={() => selectTool(tool.id)} onKeyDown={event => onTabKey(event, index)}><span>{tool.name}</span><small>{tool.detail}</small></button>)}</div>
-      <section className="demo-panel" role="tabpanel" id={`demo-panel-${active}`} aria-labelledby={`demo-tab-${active}`} tabIndex={0}>
-        {active === 'market' && <MarketDemo />}{active === 'form' && <FormDemo />}{active === 'xg' && <XGDemo />}{active === 'model' && <ModelDemo />}
-        {activeIndex < tools.length - 1 && <div className="demo-next"><span>{active === 'market' ? 'Put the market move alongside the teams’ form.' : active === 'form' ? 'See whether those performances are improving.' : 'Use those inputs to build a baseline price.'}</span><button type="button" onClick={() => { selectTool(tools[activeIndex + 1].id); document.getElementById(`demo-tab-${tools[activeIndex + 1].id}`)?.focus(); }}>Try {tools[activeIndex + 1].name} →</button></div>}
-      </section>
-    </section>
-    <section className="demo-membership"><div><h2>Take this process to your next match.</h2><p>Pro opens the full tools: choose your teams, explore deeper form filters, track xG and build model prices.</p><p className="demo-note">Plus steam and drifter rankings, team P/L and favourite–longshot analysis.</p></div><div><Link className="demo-primary-link" to="/pro">Explore SteamWatch Pro →</Link><p>€19.99 / month · Renews automatically</p></div></section>
-    <details className="demo-details demo-provenance"><summary>About this historical demo and its data</summary><p>Arsenal–Leeds, 10 October 2026, 11:30 UTC. This frozen sample uses only matches and quotes from before kickoff. Match samples end on 20 September; the gap reflects the fixture calendar. It does not refresh into a live tip.</p><p><a href={demo.provenance.oddsUrl}>Archived odds</a> were retrieved on 22 October 2026. The chart preserves each price change and the quotes immediately before it, plus the first and last of {demo.provenance.oddsOriginalCount.toLocaleString()} stored quotes. The public archive identifies Pinnacle for the last quote; it does not identify a bookmaker for every earlier point. First recorded is not necessarily the bookmaker’s opening price, and last recorded is not necessarily the exact closing line.</p><p>Form Lab uses cached <a href="https://www.sportmonks.com/football-api/">Sportmonks</a> results and non-penalty xG from 2025/26 and 2026/27. Rolling xG and the model use <a href="https://understat.com/league/EPL/2026">Understat</a> from the same two seasons. Different providers’ xG estimates should not be treated as interchangeable. Model calculations are performed now on historical inputs, with an archived league baseline; they are not an original pre-match forecast.</p><p>This is a focused demonstration of four tools. The full versions offer wider team selection, filters and settings. Research tools provide context, not a promise of profit.</p></details>
+    <Helmet><title>Explore SteamWatch | Try Our Football Research Tools</title><meta name="description" content="Swipe through SteamWatch’s football research tools. Try steam records, drifters, favourite–longshot bias, Form Lab and the Dixon–Coles model. No sign-up needed." /><link rel="canonical" href="https://www.steamwatch.io/pro/demo" /></Helmet>
+    <header className="demo-intro"><div><h1>Find your next angle.</h1><p>12 tools to read the market and research a match. Try them here.</p></div><div className="demo-membership"><Link className="demo-pro-button" to="/pro">Explore Pro <Arrow /></Link><span>€19.99 / month · renews automatically</span></div></header>
+    <nav className="demo-quick-nav" aria-label="Demo categories"><a href="#market-tools">Market tools <span>5</span></a><a href="#match-tools">Match tools <span>3</span></a><a href="#team-tools">Team research <span>4</span></a><span className="demo-sample-notice">Real historical samples · no sign-up</span></nav>
+    <Shelf id="market-tools" title="Read the market" description="Follow the money. Check the record." count={5}><Movement /><Movement drift /><Bias /><Odds /><Closing /></Shelf>
+    <Shelf id="match-tools" title="Build your view" description="Form, performances and your own fair price." count={3}><Form /><XG /><Model /></Shelf>
+    <Shelf id="team-tools" title="Go a little deeper" description="Find the patterns behind a team or manager." count={4}><PnL /><Ratings /><Managers /><Goals /></Shelf>
+    <footer className="demo-bottom"><div><h2>Found your next research tool?</h2><p>Unlock the full Pro tools for €19.99 a month.</p></div><Link className="demo-pro-button" to="/pro">See what’s included <Arrow /></Link></footer>
+    <details className="demo-data-note"><summary>About these samples & calculations</summary><div>
+      <p>These are fixed examples captured on 22 October 2026, not live prices. Each card’s sample differs. “Pro” identifies tools whose full access requires membership; some also offer free previews. Past returns do not establish a future betting edge.</p>
+      <p>Steam and drifter tables show the three teams with the most settled qualifying moves. They include all tracked competitions, not only Telegram alerts. A qualifying move is at least 3 percentage points (pp) in raw implied probability, observed within two hours of kick-off. One move per match and side is retained: the largest observed move. P/L uses a 1-unit stake at that recorded price; draws lose. This descriptive record is not a strategy backtest.</p>
+      <p>Favourite–longshot examples use the 2025/26 Premier League and backing returns at the tool’s recorded market prices. Team P/L uses Arsenal’s available records from 12 February 2026, at 1 unit per bet. Open the full tools for price coverage, filters and settlement details. A unit is an equal stake, independent of currency.</p>
+      <p>Form Lab uses Sportmonks non-penalty xG (npxG). Rolling xG and predictor inputs use Understat. Providers may differ. Arsenal–Leeds examples use matches before 10 October 2026; model inputs are the last 20 games at all venues. The current predictor reconstructs fair prices from historical inputs; these are not saved pre-match forecasts.</p>
+      <p>Model absence scenarios reduce Arsenal’s scoring rate by 6% (weakened) or 12% (severe), while increasing Leeds’ by the same percentage. They are hypothetical, not team news. Other parameters and the archived league baseline are fixed. Form Lab controls do not alter model inputs. Fair odds exclude bookmaker margin.</p>
+      <p>The odds chart uses archived quotes; only the last quote’s bookmaker is identified as Pinnacle. Closing lines are Pinnacle’s last recorded pre-kick-off quote, not a guarantee of the exact market close. Club and manager ratings are dated snapshots. Manager impact is the tool’s accumulated rating measure, not a causal estimate. Goals coming soon compares recorded goals with xG over the stated sample; an xG shortfall does not guarantee a rebound.</p>
+    </div></details>
   </div>;
 }

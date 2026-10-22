@@ -303,7 +303,7 @@ const PAGES = [
 <p>€19.99 per month. Monthly subscription, renewing automatically. Secure checkout with Stripe.</p>
 <h2>Spot the move. Build your view.</h2>
 <p>The market tells you what moved. Pro gives you the tools to investigate why. Bring team form, expected goals, historical results and model pricing into your football research.</p>
-<p><a href="/pro/demo">Try the free interactive Pro demo</a>: explore one historical match with four research tools, no sign-up needed.</p>
+<p><a href="/pro/demo">Try the free interactive Pro demo</a>: explore 12 research tools with real historical samples, no sign-up needed.</p>
 <h2>Inside your membership</h2>
 <ul>${PRO.inclusions.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>
 ${PRO.benefits.map((b) => `<section><h2><a href="${b.href}">${esc(b.name)}</a></h2><h3>${esc(b.title)}</h3><p>${esc(b.text)}</p></section>`).join('\n')}
@@ -314,12 +314,14 @@ ${PRO.faqs.map(([q, a]) => `<h3>${esc(q)}</h3><p>${esc(a)}</p>`).join('\n')}`,
   },
   {
     path: 'pro/demo',
-    title: 'Try SteamWatch Pro | Interactive Football Research Demo',
-    description: 'Try SteamWatch’s odds charts, Form Lab, rolling xG and Dixon–Coles match predictor on a historical Arsenal–Leeds match. No sign-up required.',
-    noscriptHtml: `<h1>A match. Four ways to read it.</h1>
-<p>Try SteamWatch Pro on Arsenal versus Leeds United, played on 10 October 2026. This is a historical demonstration, with archived data and no sign-up required.</p>
-<h2>Explore four research tools</h2><ul><li>Odds movement: follow recorded pre-match prices and implied probabilities.</li><li>Form Lab: compare the last 5, 10 or 20 games and filter by venue.</li><li>Rolling xG: view non-penalty expected goals for and against.</li><li>Match predictor: adjust absence scenarios to recalculate Dixon–Coles fair prices.</li></ul>
-<p>The demo uses SteamWatch’s archived odds, Sportmonks Form Lab data and Understat rolling xG and model inputs. Model prices are reconstructed using historical inputs, not original pre-match forecasts or a proven betting edge. Enable JavaScript to use the interactive tools.</p>
+    title: 'Explore SteamWatch | Try Our Football Research Tools',
+    description: 'Swipe through SteamWatch’s football research tools. Try steam records, drifters, favourite–longshot bias, Form Lab and the Dixon–Coles model. No sign-up needed.',
+    noscriptHtml: `<h1>Find your next angle.</h1>
+<p>12 tools to read the market and research a match. Explore real historical samples, with no sign-up required.</p>
+<h2>Read the market</h2><ul><li>Steam moves</li><li>Drifter records</li><li>Favourite–longshot bias</li><li>Odds movement</li><li>Closing lines</li></ul>
+<h2>Build your view</h2><ul><li>Form Lab</li><li>Rolling xG</li><li>Dixon–Coles model</li></ul>
+<h2>Go a little deeper</h2><ul><li>Team profit and loss</li><li>Club ratings</li><li>Manager ratings</li><li>Goals coming soon</li></ul>
+<p>Fixed historical samples captured on 22 October 2026, not live prices. Pro and free tools are labelled separately. Model prices are reconstructed using historical inputs, not original pre-match forecasts or a proven betting edge. Enable JavaScript to swipe through cards and try the sample controls.</p>
 <p><a href="/pro">Explore SteamWatch Pro</a>. €19.99 per month, renewing automatically.</p>`,
   },
   {

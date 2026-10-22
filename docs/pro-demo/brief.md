@@ -1,20 +1,22 @@
-# Public Pro demo
-
-## Product
-SteamWatch helps casual and semi-professional football bettors research prices. This public route lets a visitor use a coherent sample before choosing a €19.99 monthly subscription. The approved scope is one historical match, market movement, Form Lab, rolling xG and the existing Dixon–Coles predictor. No login, checkout or automatic promotional interruption is required to use the sample.
+# Public Pro demo: swipeable tool gallery
 
 ## Direction contract
-THESIS: Follow one match from its recorded market to an independently adjustable model price. The tools themselves demonstrate the membership.
+Mode: Persuade. Code-led extension of SteamWatch's existing navy/slate/cyan identity.
 
-OWN-WORLD: Extend the existing SteamWatch navy/slate panels, cyan links, Inter Tight headings and tabular mono figures. Do not redesign the shared match charts or introduce promotional artwork.
+The user rejected the four-tool, single-match walkthrough as ugly and text-heavy. Their pinned replacement is lots of easy-to-understand cards that visitors swipe through, including steam moves, favourite–longshot bias for each team, and drifter records. This brief supersedes the previous four-tab composition; real data and the existing predictor remain authoritative.
 
-FIRST VIEWPORT: A brief invitation, an explicitly historical Arsenal–Leeds fixture and four research tabs lead directly into a usable odds chart. Desktop has a compact explanation beside the chart; mobile stacks it below.
+THESIS: Show the tool doing one useful thing, with one short benefit and a route to the full tool.
+FIRST VIEWPORT: Short invitation, membership link, category shortcuts, then steam, drifter and favourite–underdog records. No giant fixture banner or dense methodology above the tools.
+STRUCTURE: Three horizontal rows; five market cards, three match cards, four team/manager research cards. Three cards visible on wide desktop, partial next card on smaller screens. Native horizontal touch/trackpad scrolling, labelled arrow buttons and keyboard access. No autoplay.
+SIGNATURE INTERACTION: Small controls inside the cards change the actual sample: favourite/underdog team, form sample size, xG team, odds outcome, home/away P/L, or hypothetical absence scenario. Model scenarios call the unchanged shared predictor.
+MOTION: Native scrolling and brief hover feedback; reduced motion uses immediate arrow scrolling.
+IDENTITY: Established Inter Tight, slate panels, cyan links; real compact tables and charts with restrained red/green outcomes. Avoid ornamental imagery and paragraphs inside every card.
 
-SIGNATURE INTERACTION: Changing a team's absence scenario immediately recalculates fair prices using the deployed predictor core. The original baseline stays available for comparison and reset.
-
-MOTION: Controls and price emphasis respond briefly to input; no entrance animations or autoplay. Respect reduced motion.
-
-RESPONSIVE: Tabs become a two-by-two selector, charts retain readable heights, tables scroll inside their own labelled region, and the model inputs stack above results. All actions are keyboard accessible.
+## Coverage and access
+Twelve cards: Steam moves (Pro), Drifter records (Pro), Favourite–longshot bias (Pro full access), Odds movement (free), Closing lines (free), Form Lab (Pro), Rolling xG (Pro), Dixon–Coles model (Pro), Team P/L (free), Club ratings (free), Manager ratings (Pro), Goals coming soon (free). Existing tool preview rules remain unchanged. Membership €19.99/month, automatic renewal. No checkout initiated.
 
 ## Data contract
-Use the frozen, auditable snapshot in `frontend/src/data/proDemo.json`. Never fetch subscriber-only data or grant entitlements. Sources and samples must be visible. Historical reconstruction is not an archived prediction or a backtest. The demo must not suggest a guaranteed profit or invent an explanation for a market move.
+Frozen public examples in proDemo.json and proDemoCards.json, captured 22 October 2026. No runtime subscriber-data fetches, no entitlement changes. Every card carries sample boundaries; one collapsed source/methodology section holds detail. Returns retain losses and sample counts. Steam and drifter examples are the top three by move count, not selected by profit. Largest qualifying move per match/side in final 2h, at least 3pp; not the Telegram ledger or an executable strategy backtest. Historical reconstructed model outputs are not archived forecasts.
+
+## Scope boundary
+Only the public demo and its discovery/metadata/docs change. Shared match charts, model calculations, live feeds, prices, membership entitlements and other research pages are unchanged. Old ?tool= links still render the complete gallery; category anchors provide navigation in the new structure.
