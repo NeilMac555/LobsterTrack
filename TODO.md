@@ -78,6 +78,7 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy: BACK button (and Esc) on the hero select screen, which had no way back to the title (3f03b07)
 - Mutant Academy: Acts II-V in 3D (rock walls, act props and light) and 3D models for most monsters plus the Maggot Queen and the Devil (b8ec7ed)
 - Mutant Academy: 3D graphics mode for Act I (three.js + KayKit CC0: dungeon, heroes, skeletons, Butcher; lantern shadows, bloom; HD fallback), GitHub Pages workflow (9494030)
 - Mutant Academy: bosses take 15% damage from ultimates, which had been deleting the Act I Butcher in one cast (c77234c)
