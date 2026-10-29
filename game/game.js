@@ -4103,7 +4103,8 @@ function uiKey(k) {
     const n = HEROES.length;
     const mi = MODS.findIndex(m => m.key === k);
     if (mi >= 0) { toggleMod(mi); return; }
-    if (k === 'arrowleft' || k === 'a') { selIndex = (selIndex + n - 1) % n; sndMove(); }
+    if (k === 'escape' || k === 'backspace') { scene = 'title'; sndMove(); }
+    else if (k === 'arrowleft' || k === 'a') { selIndex = (selIndex + n - 1) % n; sndMove(); }
     else if (k === 'arrowright' || k === 'd') { selIndex = (selIndex + 1) % n; sndMove(); }
     // up/down stay in the same column and wrap within it (the last row may be short)
     else if (k === 'arrowup' || k === 'w') {
@@ -4148,7 +4149,7 @@ function onHit(id, down) {
   const [kind, arg] = id.split(':');
   const i = Number(arg);
   if (kind === 'any' || kind === 'start') { if (down) uiKey('enter'); return; }
-  if (kind === 'back') { if (down) { if (scene === 'shop') { scene = 'title'; sndMove(); } else closeBestiary(); } return; }
+  if (kind === 'back') { if (down) { if (scene === 'shop' || scene === 'select') { scene = 'title'; sndMove(); } else closeBestiary(); } return; }
   if (kind === 'shoptab') { if (down && i !== shopTab) { shopTab = i; shopSel = 0; sndMove(); } return; }
   if (kind === 'shoprow') {
     if (i === shopSel) { if (down) shopConfirm(); }
@@ -6815,6 +6816,11 @@ function renderSelect() {
     if (heroLocked(h)) drawText('?', bx + L.cell - 8, by + 4, C.lgrey);
     addHit(bx, by, L.cell, L.cell, 'hero:' + i);
   });
+  // back to the title, bottom left
+  const bkw = 44, bkh = 13, bky = H - 17;
+  drawWindow(8, bky, bkw, bkh, { border: C.grey });
+  drawText('BACK', 8 + bkw / 2, bky + 3, C.white, { align: 'center' });
+  addHit(6, bky - 2, bkw + 4, bkh + 4, 'back');
 
   // detail panel for the highlighted hero
   const h = HEROES[selIndex], st = HERO_STATS[selIndex];
@@ -6837,7 +6843,7 @@ function renderSelect() {
     const bw = 52, bh = 15, bxs = L.px + L.pw - bw - 6, bys = L.py + L.ph - bh - 6;
     drawWindow(bxs, bys, bw, bh, { bands: ['#494949', '#242424'], border: C.grey });
     drawText('LOCKED', bxs + bw / 2, bys + 4, C.lgrey, { align: 'center' });
-    drawText(W >= 340 ? 'ARROWS: CHOOSE   ENTER: START   M: SOUND' : 'TAP A HERO, THEN START', W / 2, H - 12, C.grey, { align: 'center' });
+    selectHint('ARROWS: CHOOSE   ENTER: START   M: SOUND');
     renderCornerIcons(false);
     return;
   }
@@ -6873,10 +6879,15 @@ function renderSelect() {
     mx += mw + 4;
   });
   if (modMsg && uiTime < modMsg.until) {
-    wrapText(modMsg.text, W - 16).slice(0, 2).reverse().forEach((ln, i) => drawText(ln, W / 2, H - 12 - i * 9, C.yellow, { align: 'center' }));
-  } else drawText(W >= 340 ? 'ARROWS: CHOOSE   ENTER: START   H / U: MODIFIERS' : 'TAP A HERO, THEN START',
-    W / 2, H - 12, C.grey, { align: 'center' });
+    wrapText(modMsg.text, W - 128).slice(0, 2).reverse().forEach((ln, i) => drawText(ln, W / 2, H - 12 - i * 9, C.yellow, { align: 'center' }));
+  } else selectHint('ARROWS: CHOOSE   ENTER: START   H / U: MODIFIERS');
   renderCornerIcons(false);
+}
+// the bottom hint, clear of the BACK button on the left
+function selectHint(full) {
+  const room = W - 2 * 60;
+  const t = [full, 'ARROWS: CHOOSE   ENTER: START', 'TAP A HERO, THEN START'].find(x => textW(x) <= room) || '';
+  drawText(t, W / 2, H - 12, C.grey, { align: 'center' });
 }
 // ---------- bestiary screen ----------
 function bestLayout() {
