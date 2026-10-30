@@ -51,6 +51,53 @@ export interface LeagueSummary {
   upcoming_matches: number;
 }
 
+export type MarketDirection = 'drift' | 'steam' | 'both' | 'quiet' | 'unavailable';
+
+export interface TeamMarketMatch {
+  match_id: string;
+  kickoff: string;
+  opponent: string;
+  venue: 'home' | 'away';
+  home_score: number;
+  away_score: number;
+  result: 'W' | 'D' | 'L';
+  direction: MarketDirection;
+  opening_odds: number | null;
+  closing_odds: number | null;
+  close_move_pp: number | null;
+  largest_drift_pp: number | null;
+  largest_steam_pp: number | null;
+}
+
+export interface TeamMarketHistory {
+  team: string;
+  completed_matches: number;
+  tracked_matches: number;
+  unavailable_matches: number;
+  drifts: number;
+  steams: number;
+  both: number;
+  quiet: number;
+  records: Record<Exclude<MarketDirection, 'unavailable'>, { wins: number; draws: number; losses: number }>;
+  recent: TeamMarketMatch[];
+  history: TeamMarketMatch[];
+}
+
+export interface TeamMarketContextData {
+  match_id: string;
+  league: string;
+  league_name: string;
+  season: string;
+  as_of: string;
+  generated_at: string;
+  historical: boolean;
+  bookmaker: 'pinnacle';
+  threshold_pp: number;
+  window_minutes: number;
+  max_close_age_minutes: number;
+  teams: TeamMarketHistory[];
+}
+
 export interface Stats {
   total_matches: number;
   upcoming_matches: number;

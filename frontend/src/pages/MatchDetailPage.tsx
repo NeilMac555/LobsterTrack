@@ -15,6 +15,7 @@ import Sparkline from '../components/Sparkline';
 import { countryFlagImgUrl } from '../utils/countryFlags';
 import Bet105Button from '../components/Bet105Button';
 import XgGapNote from '../components/XgGapNote';
+import TeamMarketContext from '../components/TeamMarketContext';
 import { parseUtc, formatKickoff } from '../utils/time';
 import { useTimePreference } from '../contexts/TimePreferenceContext';
 import { useOddsFormat } from '../contexts/OddsFormatContext';
@@ -367,6 +368,8 @@ export default function MatchDetailPage() {
           />
         </div>
       </div>
+
+      <TeamMarketContext matchId={match.id} />
 
       <div className="my-4 flex justify-center">
         <Bet105Button variant="full" location="match-detail" pinnacleSourced={!isBetfairSourced} />

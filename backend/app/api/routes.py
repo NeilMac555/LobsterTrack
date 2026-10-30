@@ -1454,6 +1454,16 @@ async def get_telegram_results(
     )
 
 
+@router.get("/matches/{match_id}/market-context")
+def get_match_market_context(match_id: str, db: Session = Depends(get_db)):
+    """Seasonal team market history as known before the selected match."""
+    from app.services.team_market_context import team_market_context
+    match = db.query(Match).filter(Match.id == match_id).first()
+    if not match:
+        raise HTTPException(status_code=404, detail="Match not found")
+    return team_market_context(db, match)
+
+
 @router.get("/steam-results", response_model=SteamResultsResponse)
 async def get_steam_results(
     db: Session = Depends(get_db),

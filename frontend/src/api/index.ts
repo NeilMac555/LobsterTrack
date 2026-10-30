@@ -48,6 +48,10 @@ export async function getMatchDetail(matchId: string): Promise<MatchDetail> {
   return fetchJson<MatchDetail>(`${API_BASE}/matches/${matchId}`);
 }
 
+export async function getTeamMarketContext(matchId: string, signal?: AbortSignal): Promise<import('../types').TeamMarketContextData> {
+  return fetchJson<import('../types').TeamMarketContextData>(`${API_BASE}/matches/${encodeURIComponent(matchId)}/market-context`, { signal });
+}
+
 export async function getStats(): Promise<Stats> {
   return fetchJson<Stats>(`${API_BASE}/stats`);
 }
