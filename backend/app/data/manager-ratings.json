@@ -4158,7 +4158,9 @@
           "team_id": 15,
           "club": "Aston Villa"
         }
-      ]
+      ],
+      "rank_movement": 0,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 455384,
@@ -6581,7 +6583,9 @@
           "team_id": 597,
           "club": "Napoli"
         }
-      ]
+      ],
+      "rank_movement": 0,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 19960388,
@@ -8189,7 +8193,9 @@
           "team_id": 8,
           "club": "Liverpool"
         }
-      ]
+      ],
+      "rank_movement": 0,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 307,
@@ -10456,7 +10462,9 @@
           "team_id": 19,
           "club": "Arsenal"
         }
-      ]
+      ],
+      "rank_movement": 0,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 456038,
@@ -13775,7 +13783,9 @@
           "team_id": 37,
           "club": "Roma"
         }
-      ]
+      ],
+      "rank_movement": 0,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 1467953,
@@ -15830,7 +15840,9 @@
           "team_id": 3477,
           "club": "Villarreal"
         }
-      ]
+      ],
+      "rank_movement": 0,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 455424,
@@ -17727,7 +17739,9 @@
           "team_id": 605,
           "club": "Benfica"
         }
-      ]
+      ],
+      "rank_movement": 0,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 523897,
@@ -19764,7 +19778,9 @@
           "team_id": 625,
           "club": "Juventus"
         }
-      ]
+      ],
+      "rank_movement": 0,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 455991,
@@ -21635,7 +21651,9 @@
           "team_id": 1,
           "club": "West Ham United"
         }
-      ]
+      ],
+      "rank_movement": 1,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 896608,
@@ -23476,7 +23494,9 @@
           "team_id": 598,
           "club": "Rennes"
         }
-      ]
+      ],
+      "rank_movement": 3,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 529482,
@@ -24380,7 +24400,9 @@
           "team_id": 3,
           "club": "Sunderland"
         }
-      ]
+      ],
+      "rank_movement": 1,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 37352367,
@@ -25820,7 +25842,9 @@
           "team_id": 83,
           "club": "FC Barcelona"
         }
-      ]
+      ],
+      "rank_movement": -3,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 510,
@@ -26488,7 +26512,9 @@
           "team_id": 268,
           "club": "Como"
         }
-      ]
+      ],
+      "rank_movement": 4,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 523898,
@@ -29062,7 +29088,9 @@
           "team_id": 485,
           "club": "Real Betis"
         }
-      ]
+      ],
+      "rank_movement": 1,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 20693423,
@@ -30094,7 +30122,9 @@
           "team_id": 277,
           "club": "RB Leipzig"
         }
-      ]
+      ],
+      "rank_movement": -1,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 511,
@@ -31287,7 +31317,9 @@
           "team_id": 18,
           "club": "Chelsea"
         }
-      ]
+      ],
+      "rank_movement": -5,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 128261,
@@ -33385,7 +33417,9 @@
           "team_id": 554,
           "club": "Beşiktaş"
         }
-      ]
+      ],
+      "rank_movement": -1,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 455361,
@@ -36830,7 +36864,9 @@
           "team_id": 9,
           "club": "Manchester City"
         }
-      ]
+      ],
+      "rank_movement": 1,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 51518,
@@ -38923,7 +38959,9 @@
           "team_id": 63,
           "club": "Nottingham Forest"
         }
-      ]
+      ],
+      "rank_movement": -1,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 524537,
@@ -41289,7 +41327,9 @@
           "team_id": 68,
           "club": "Borussia Dortmund"
         }
-      ]
+      ],
+      "rank_movement": 7,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 37732840,
@@ -41999,7 +42039,9 @@
           "team_id": 51,
           "club": "Crystal Palace"
         }
-      ]
+      ],
+      "rank_movement": -1,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 456423,
@@ -43871,7 +43913,9 @@
           "team_id": 459,
           "club": "Osasuna"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 24427744,
@@ -45230,7 +45274,9 @@
           "team_id": 6,
           "club": "Tottenham Hotspur"
         }
-      ]
+      ],
+      "rank_movement": 1,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 455461,
@@ -47571,7 +47617,9 @@
           "team_id": 63,
           "club": "Nottingham Forest"
         }
-      ]
+      ],
+      "rank_movement": 2,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 455978,
@@ -49691,7 +49739,9 @@
           "team_id": 366,
           "club": "Eintracht Frankfurt"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 38217,
@@ -51253,7 +51303,9 @@
           "team_id": 3319,
           "club": "VfB Stuttgart"
         }
-      ]
+      ],
+      "rank_movement": -4,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 523911,
@@ -53769,7 +53821,9 @@
           "team_id": 20,
           "club": "Newcastle United"
         }
-      ]
+      ],
+      "rank_movement": 2,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 455945,
@@ -56061,7 +56115,9 @@
           "team_id": 79,
           "club": "Olympique Lyonnais"
         }
-      ]
+      ],
+      "rank_movement": -3,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 896798,
@@ -56932,7 +56988,9 @@
           "team_id": 214,
           "club": "Valencia"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 37700640,
@@ -57822,7 +57880,9 @@
           "team_id": 3321,
           "club": "Bayer 04 Leverkusen"
         }
-      ]
+      ],
+      "rank_movement": 0,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 29710,
@@ -59903,7 +59963,9 @@
           "team_id": 52,
           "club": "AFC Bournemouth"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 97031,
@@ -60615,7 +60677,9 @@
           "team_id": 9257,
           "club": "Lorient"
         }
-      ]
+      ],
+      "rank_movement": 2,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 74546,
@@ -60942,7 +61006,9 @@
           "team_id": 22,
           "club": "Hull City"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 364995,
@@ -62805,7 +62871,9 @@
           "team_id": 267,
           "club": "Venezia"
         }
-      ]
+      ],
+      "rank_movement": -3,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 523953,
@@ -65504,7 +65572,9 @@
           "team_id": 44,
           "club": "Olympique Marseille"
         }
-      ]
+      ],
+      "rank_movement": -2,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 455355,
@@ -67961,7 +68031,9 @@
           "team_id": 13,
           "club": "Everton"
         }
-      ]
+      ],
+      "rank_movement": -1,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 128295,
@@ -69193,7 +69265,9 @@
           "team_id": 8513,
           "club": "Bologna"
         }
-      ]
+      ],
+      "rank_movement": 17,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 523959,
@@ -70682,7 +70756,9 @@
           "team_id": 591,
           "club": "Paris Saint Germain"
         }
-      ]
+      ],
+      "rank_movement": 9,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 524009,
@@ -73104,7 +73180,9 @@
           "team_id": 106,
           "club": "Getafe"
         }
-      ]
+      ],
+      "rank_movement": -7,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 45305,
@@ -74395,7 +74473,9 @@
           "team_id": 594,
           "club": "Real Sociedad"
         }
-      ]
+      ],
+      "rank_movement": 10,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 185780,
@@ -75271,7 +75351,9 @@
           "team_id": 3477,
           "club": "Villarreal"
         }
-      ]
+      ],
+      "rank_movement": 7,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 618,
@@ -75932,7 +76014,9 @@
           "team_id": 4508,
           "club": "Paris"
         }
-      ]
+      ],
+      "rank_movement": -2,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 236,
@@ -77043,7 +77127,9 @@
           "team_id": 503,
           "club": "FC Bayern München"
         }
-      ]
+      ],
+      "rank_movement": 2,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 37679,
@@ -77709,7 +77795,9 @@
           "team_id": 78,
           "club": "Brighton & Hove Albion"
         }
-      ]
+      ],
+      "rank_movement": -6,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 30957,
@@ -78417,7 +78505,9 @@
           "team_id": 3543,
           "club": "SC Freiburg"
         }
-      ]
+      ],
+      "rank_movement": -8,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 455821,
@@ -79803,7 +79893,9 @@
           "team_id": 2975,
           "club": "Deportivo Alavés"
         }
-      ]
+      ],
+      "rank_movement": -4,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 455712,
@@ -81339,7 +81431,9 @@
           "team_id": 794,
           "club": "FSV Mainz 05"
         }
-      ]
+      ],
+      "rank_movement": -8,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 23180,
@@ -82487,7 +82581,9 @@
           "team_id": 8,
           "club": "Liverpool"
         }
-      ]
+      ],
+      "rank_movement": 3,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 107439,
@@ -83194,7 +83290,9 @@
           "team_id": 9,
           "club": "Manchester City"
         }
-      ]
+      ],
+      "rank_movement": -3,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 130041,
@@ -83573,7 +83671,9 @@
           "team_id": 585,
           "club": "Cagliari"
         }
-      ]
+      ],
+      "rank_movement": -7,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 417317,
@@ -84521,7 +84621,9 @@
           "team_id": 13258,
           "club": "Athletic Club"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 379788,
@@ -85390,7 +85492,9 @@
           "team_id": 36,
           "club": "Celta de Vigo"
         }
-      ]
+      ],
+      "rank_movement": 4,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 16111977,
@@ -86242,7 +86346,9 @@
           "team_id": 676,
           "club": "Sevilla"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 158158,
@@ -87029,7 +87135,9 @@
           "team_id": 113,
           "club": "AC Milan"
         }
-      ]
+      ],
+      "rank_movement": -10,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 127965,
@@ -88552,7 +88660,9 @@
           "team_id": 43,
           "club": "Lazio"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 455375,
@@ -91221,7 +91331,9 @@
           "team_id": 3468,
           "club": "Real Madrid"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 37739806,
@@ -91549,7 +91661,9 @@
           "team_id": 2708,
           "club": "Hamburger SV"
         }
-      ]
+      ],
+      "rank_movement": -8,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 127925,
@@ -92135,7 +92249,9 @@
           "team_id": 2930,
           "club": "Inter"
         }
-      ]
+      ],
+      "rank_movement": 4,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 460535,
@@ -93127,7 +93243,9 @@
           "team_id": 71,
           "club": "Leeds United"
         }
-      ]
+      ],
+      "rank_movement": -1,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 9938631,
@@ -93643,7 +93761,9 @@
           "team_id": 63,
           "club": "Nottingham Forest"
         }
-      ]
+      ],
+      "rank_movement": -1,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 1552945,
@@ -93985,7 +94105,9 @@
           "team_id": 398,
           "club": "Parma"
         }
-      ]
+      ],
+      "rank_movement": 0,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 645,
@@ -94275,7 +94397,9 @@
           "team_id": 14,
           "club": "Manchester United"
         }
-      ]
+      ],
+      "rank_movement": -9,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 127889,
@@ -96661,7 +96785,9 @@
           "team_id": 6,
           "club": "Tottenham Hotspur"
         }
-      ]
+      ],
+      "rank_movement": 4,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 10293491,
@@ -96979,7 +97105,9 @@
           "team_id": 1099,
           "club": "Elche"
         }
-      ]
+      ],
+      "rank_movement": -1,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 1470,
@@ -97104,7 +97232,9 @@
           "team_id": 6789,
           "club": "Monaco"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 127483,
@@ -97630,7 +97760,9 @@
           "team_id": 102,
           "club": "Genoa"
         }
-      ]
+      ],
+      "rank_movement": 11,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 5961878,
@@ -98454,7 +98586,9 @@
           "team_id": 3682,
           "club": "Auxerre"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 455815,
@@ -99117,7 +99251,9 @@
           "team_id": 450,
           "club": "Nice"
         }
-      ]
+      ],
+      "rank_movement": 10,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 1452203,
@@ -99941,7 +100077,9 @@
           "team_id": 2726,
           "club": "TSG Hoffenheim"
         }
-      ]
+      ],
+      "rank_movement": 16,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 186018,
@@ -101528,7 +101666,9 @@
           "team_id": 629,
           "club": "Ajax"
         }
-      ]
+      ],
+      "rank_movement": 6,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 127980,
@@ -103727,7 +103867,9 @@
           "team_id": 1628,
           "club": "Monza"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 26328630,
@@ -103903,7 +104045,9 @@
           "team_id": 67,
           "club": "Schalke 04"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 35676,
@@ -103993,7 +104137,9 @@
           "team_id": 2642,
           "club": "Paderborn"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 456360,
@@ -104794,7 +104940,9 @@
           "team_id": 214,
           "club": "Valencia"
         }
-      ]
+      ],
+      "rank_movement": -2,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 173,
@@ -105210,7 +105358,9 @@
           "team_id": 44,
           "club": "Olympique Marseille"
         }
-      ]
+      ],
+      "rank_movement": -2,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 255,
@@ -105573,7 +105723,9 @@
           "team_id": 236,
           "club": "Brentford"
         }
-      ]
+      ],
+      "rank_movement": -7,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 127771,
@@ -106178,7 +106330,9 @@
           "team_id": 398,
           "club": "Parma"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 37293365,
@@ -106573,7 +106727,9 @@
           "team_id": 3457,
           "club": "Levante"
         }
-      ]
+      ],
+      "rank_movement": 1,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 186111,
@@ -106684,7 +106840,9 @@
           "team_id": 429,
           "club": "Deportivo A Coruña"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 345859,
@@ -106774,7 +106932,9 @@
           "team_id": 3588,
           "club": "Elversberg"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 153,
@@ -107576,7 +107736,9 @@
           "team_id": 27,
           "club": "Burnley"
         }
-      ]
+      ],
+      "rank_movement": -1,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 1398,
@@ -107787,7 +107949,9 @@
           "team_id": 277,
           "club": "RB Leipzig"
         }
-      ]
+      ],
+      "rank_movement": -1,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 243,
@@ -108544,7 +108708,9 @@
           "team_id": 1055,
           "club": "Le Havre"
         }
-      ]
+      ],
+      "rank_movement": -8,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 3701,
@@ -109020,7 +109186,9 @@
           "team_id": 2673,
           "club": "Crvena Zvezda"
         }
-      ]
+      ],
+      "rank_movement": -2,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 456247,
@@ -110831,7 +110999,9 @@
           "team_id": 3682,
           "club": "Auxerre"
         }
-      ]
+      ],
+      "rank_movement": -1,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 30314,
@@ -111070,7 +111240,9 @@
           "team_id": 20,
           "club": "Newcastle United"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 37614914,
@@ -111218,7 +111390,9 @@
           "team_id": 1099,
           "club": "Elche"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 128076,
@@ -111322,7 +111496,9 @@
           "team_id": 613,
           "club": "Torino"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 452946,
@@ -114830,7 +115006,9 @@
           "team_id": 7980,
           "club": "Atlético de Madrid"
         }
-      ]
+      ],
+      "rank_movement": 0,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 30987,
@@ -115109,7 +115287,9 @@
           "team_id": 683,
           "club": "Borussia Mönchengladbach"
         }
-      ]
+      ],
+      "rank_movement": -3,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 470943,
@@ -117541,7 +117721,9 @@
           "team_id": 13258,
           "club": "Athletic Club"
         }
-      ]
+      ],
+      "rank_movement": -1,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 270,
@@ -118451,7 +118633,9 @@
           "team_id": 116,
           "club": "Ipswich Town"
         }
-      ]
+      ],
+      "rank_movement": 2,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 33212,
@@ -118639,7 +118823,9 @@
           "team_id": 82,
           "club": "Werder Bremen"
         }
-      ]
+      ],
+      "rank_movement": 15,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 35571,
@@ -119421,7 +119607,9 @@
           "team_id": 683,
           "club": "Borussia Mönchengladbach"
         }
-      ]
+      ],
+      "rank_movement": 19,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 1553203,
@@ -119667,7 +119855,9 @@
           "team_id": 4070,
           "club": "Frosinone"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 9950240,
@@ -119778,7 +119968,9 @@
           "team_id": 9818,
           "club": "Racing Santander"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 94341,
@@ -119875,7 +120067,9 @@
           "team_id": 7047,
           "club": "Troyes"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 455745,
@@ -120070,7 +120264,9 @@
           "team_id": 93,
           "club": "Real Oviedo"
         }
-      ]
+      ],
+      "rank_movement": -1,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 527103,
@@ -120743,7 +120939,9 @@
           "team_id": 528,
           "club": "Espanyol"
         }
-      ]
+      ],
+      "rank_movement": -13,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 21803155,
@@ -120840,7 +121038,9 @@
           "team_id": 7758,
           "club": "Le Mans"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 468615,
@@ -120930,7 +121130,9 @@
           "team_id": 1079,
           "club": "FC Union Berlin"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 16845924,
@@ -121050,7 +121252,9 @@
           "team_id": 289,
           "club": "Toulouse"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 458506,
@@ -121466,7 +121670,9 @@
           "team_id": 3321,
           "club": "Bayer 04 Leverkusen"
         }
-      ]
+      ],
+      "rank_movement": -1,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 95553,
@@ -121551,7 +121757,9 @@
           "team_id": 271,
           "club": "Lens"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 33587721,
@@ -121662,7 +121870,9 @@
           "team_id": 126,
           "club": "Málaga"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 97499,
@@ -121761,7 +121971,9 @@
           "team_id": 266,
           "club": "Brest"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 896619,
@@ -121991,7 +122203,9 @@
           "team_id": 3320,
           "club": "FC Köln"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 727,
@@ -122095,7 +122309,9 @@
           "team_id": 2714,
           "club": "Sassuolo"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 455926,
@@ -124836,7 +125052,9 @@
           "team_id": 708,
           "club": "Atalanta"
         }
-      ]
+      ],
+      "rank_movement": -18,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 523973,
@@ -125756,7 +125974,9 @@
           "team_id": 90,
           "club": "FC Augsburg"
         }
-      ]
+      ],
+      "rank_movement": 0,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 37524603,
@@ -126030,7 +126250,9 @@
           "team_id": 776,
           "club": "Angers SCO"
         }
-      ]
+      ],
+      "rank_movement": 3,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 37646014,
@@ -126148,7 +126370,9 @@
           "team_id": 690,
           "club": "LOSC Lille"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 527267,
@@ -126282,7 +126506,9 @@
           "team_id": 377,
           "club": "Rayo Vallecano"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 458978,
@@ -127100,7 +127326,9 @@
           "team_id": 2831,
           "club": "FC Heidenheim"
         }
-      ]
+      ],
+      "rank_movement": 3,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 896549,
@@ -127873,7 +128101,9 @@
           "team_id": 346,
           "club": "Udinese"
         }
-      ]
+      ],
+      "rank_movement": 0,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 29676,
@@ -129173,7 +129403,9 @@
           "team_id": 1079,
           "club": "FC Union Berlin"
         }
-      ]
+      ],
+      "rank_movement": 2,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 37909808,
@@ -129270,7 +129502,9 @@
           "team_id": 686,
           "club": "Strasbourg"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 94575,
@@ -129762,7 +129996,9 @@
           "team_id": 109,
           "club": "Fiorentina"
         }
-      ]
+      ],
+      "rank_movement": 1,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 37553756,
@@ -130304,7 +130540,9 @@
           "team_id": 649,
           "club": "PAOK"
         }
-      ]
+      ],
+      "rank_movement": 1,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 1195,
@@ -130697,7 +130935,9 @@
           "team_id": 6789,
           "club": "Monaco"
         }
-      ]
+      ],
+      "rank_movement": 1,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 515,
@@ -130999,7 +131239,9 @@
           "team_id": 11,
           "club": "Fulham"
         }
-      ]
+      ],
+      "rank_movement": 1,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 37610194,
@@ -131650,7 +131892,9 @@
           "team_id": 109,
           "club": "Fiorentina"
         }
-      ]
+      ],
+      "rank_movement": 1,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 562,
@@ -132162,7 +132406,9 @@
           "team_id": 29,
           "club": "Wolverhampton Wanderers"
         }
-      ]
+      ],
+      "rank_movement": 1,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 455957,
@@ -134581,7 +134827,9 @@
           "team_id": 597,
           "club": "Napoli"
         }
-      ]
+      ],
+      "rank_movement": 1,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 458783,
@@ -136752,7 +137000,9 @@
           "team_id": 7790,
           "club": "Lecce"
         }
-      ]
+      ],
+      "rank_movement": 1,
+      "rank_movement_status": "ranked"
     },
     {
       "id": 95,
@@ -137730,7 +137980,9 @@
           "team_id": 117,
           "club": "Coventry City"
         }
-      ]
+      ],
+      "rank_movement": null,
+      "rank_movement_status": "unavailable"
     },
     {
       "id": 455474,
@@ -139212,7 +139464,10 @@
           "team_id": 450,
           "club": "Nice"
         }
-      ]
+      ],
+      "rank_movement": 1,
+      "rank_movement_status": "ranked"
     }
-  ]
+  ],
+  "movement_as_of": "2026-10-19 08:02:25"
 }

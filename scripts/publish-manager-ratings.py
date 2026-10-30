@@ -2,9 +2,11 @@
 import argparse
 import json
 from pathlib import Path
+from manager_rank_movement import add_movement
 
 parser = argparse.ArgumentParser()
 parser.add_argument('snapshot', type=Path, help='Directory containing manager-elo.html and manager-elo-data.json')
+parser.add_argument('--previous', type=Path, help='Explicit earlier published snapshot for initial movement backfill')
 args = parser.parse_args()
 root = Path(__file__).resolve().parents[1]
 destination = root / 'frontend/public/tools/manager-ratings'
@@ -12,6 +14,11 @@ destination.mkdir(parents=True, exist_ok=True)
 source = (args.snapshot / 'manager-elo.html').read_text(encoding='utf-8')
 payload = (args.snapshot / 'manager-elo-data.json').read_text(encoding='utf-8')
 data = json.loads(payload)
+private = root / 'backend/app/data/manager-ratings.json'
+previous_path = args.previous or private
+previous = json.loads(previous_path.read_text(encoding='utf-8')) if previous_path.exists() else None
+add_movement(data, previous)
+payload = json.dumps(data, ensure_ascii=False, indent=2)
 assert data['rows'] and 'id="community-preview-script"' in source
 source = source.replace('<title>Manager Elo · Elevation</title>', '''<title>Manager Ratings | SteamWatch</title>
 <meta name="description" content="Compare football managers by covered club Elo gained and lost since July 2016. Explore recent impact, impact per 38 matches and manager trajectories.">
@@ -36,26 +43,23 @@ source = source.replace("const palette=['#ce4b32','#252525','#956ab1','#3f7d75']
 source = source.replace('stroke="#e8e5e0"', 'stroke="#334155"').replace('fill="#77716c"', 'fill="#94a3b8"').replace('background:#faf9f7;border-radius:20px','background:#0f172a;border-radius:6px')
 source = source.replace('<title>Manager Ratings | SteamWatch</title>', '<title>Manager Ratings | SteamWatch</title><link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">')
 theme = (root / 'scripts/manager-ratings-theme.css').read_text(encoding='utf-8')
+theme += '\n.rank-move{display:inline-flex;align-items:center;gap:3px;margin-left:10px;font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}.rank-move svg{width:14px;height:14px}.rank-move.up{color:#34d399}.rank-move.down{color:#f87171}.rank-move.flat,.rank-move.new{color:#94a3b8}#movement-note{font-size:12px;color:#94a3b8;margin:12px 0}'
+source = source.replace('<b>${esc(r.name)}</b></td>', '<b>${esc(r.name)}</b>${movementBadge(r)}</td>')
+source = source.replace('<p id="shown"', '<p id="movement-note"></p><p id="shown"', 1)
+assert 'id="movement-note"' in source and '${movementBadge(r)}' in source
 source = source.replace('</html>', '<style id="steamwatch-theme">'+theme+'</style></html>')
 # Keep the complete snapshot outside the frontend/static directory.
 private = root / 'backend/app/data/manager-ratings.json'
 private.parent.mkdir(parents=True, exist_ok=True)
 private.write_text(payload, encoding='utf-8')
-keys = ('as_of', 'ranking_start', 'recent_start', 'eligible_managers', 'current_managers',
-        'managers', 'imported_completed_fixtures', 'used_fixtures', 'coverage', 'skipped')
-preview = {k: data[k] for k in keys if k in data}
-preview.update(rows=sorted((r for r in data['rows'] if r['eligible']), key=lambda r: r['rank'])[:3],
-               appointment_overrides=[], fixture_coach_corrections=[], access='preview')
-assert len(preview['rows']) == 3
+preview = {**data, 'access': 'public'}
 scripts = re.findall(r'<script[^>]*>(.*?)</script>', source, flags=re.S)
 source = re.sub(r'<script[^>]*>.*?</script>', '', source, flags=re.S)
 scripts[0], count = re.subn(r'const data=.*?;\s*\n', lambda _: 'const data=await loadManagerRatings('+json.dumps(preview).replace('<', '\\u003c')+');\nsetupManagerAccess(data);\n', scripts[0], count=1, flags=re.S)
 assert count == 1
-access_html = (root / 'scripts/manager-ratings-access.html').read_text(encoding='utf-8')
-source = source.replace('<div id="detail"', access_html+'<div id="detail"', 1)
-assert 'id="manager-paywall"' in source
-source = source.replace('<section id="date-window">', '<div id="manager-access-label">Checking access…</div><p id="manager-access-status" role="status"></p><section id="date-window">', 1)
+source = source.replace('<section id="date-window">', '<div id="manager-access-label">Free access · All manager ratings</div><p id="manager-access-status" role="status"></p><section id="date-window">', 1)
 access_js = (root / 'scripts/manager-ratings-access.js').read_text(encoding='utf-8')
+access_js += '\n' + (root / 'scripts/manager-ratings-movement.js').read_text(encoding='utf-8')
 source += '<script>\n'+access_js+'\n(async()=>{\n'+'\n'.join(scripts)+'\n})().catch(()=>{document.getElementById("manager-access-status").textContent="Unable to load the rankings. Please reload.";});\n</script>'
 (destination / 'index.html').write_text(source, encoding='utf-8')
 (destination / 'manager-elo-data.json').write_text(json.dumps(preview), encoding='utf-8')

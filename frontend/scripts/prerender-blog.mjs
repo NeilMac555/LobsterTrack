@@ -1004,66 +1004,9 @@ for (const p of [...PAGES, ...POSTS.map((x) => ({ path: `blog/${x.slug}`, title:
 }
 console.log(`Pre-rendered ${PAGES.length + 1} static page(s).`);
 
-// ---------------------------------------------------------------------------
-// Manager Ratings — a static-only page (no React route). The interactive Elo
-// dashboard lives in public/tools/manager-ratings/index.html (built by
-// scripts/publish-manager-ratings.py) and Vite copies it into dist. Here we
-// keep that page and inject per-route head tags, WebApplication JSON-LD and a
-// prerendered copy block into it. Never replace the file.
-// ---------------------------------------------------------------------------
-{
-  const dir = resolve(DIST, 'tools', 'manager-ratings');
-  const page = resolve(dir, 'index.html');
-  const d = JSON.parse(readFileSync(resolve(dir, 'manager-elo-data.json'), 'utf-8'));
-  let html = readFileSync(page, 'utf-8');
-  if (!html.includes('id="manager-paywall"')) throw new Error('manager-ratings: dashboard HTML missing from dist');
-  const asOf = String(d.as_of).slice(0, 10);
-  const rows = (d.rows || []).filter((r) => r.eligible).sort((a, b) => a.rank - b.rank);
-  const monthYear = (iso) => new Date(String(iso).slice(0, 10)).toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' });
-  // Sportmonks marks who holds an active appointment (is_current); a spell's
-  // `end` is the date of its last covered match. Anyone without an active
-  // appointment is shown with the month of that last match: "(to May 2026)".
-  const clubCell = (r) => r.is_current ? esc(r.club) : `${esc(r.club)} (to ${monthYear(r.spells?.[r.spells.length - 1]?.end)})`;
-  const tr = rows.map((r) => `<tr><td>${r.rank}</td><td>${esc(r.name)}</td><td>${clubCell(r)}</td><td>${Number(r.impact).toFixed(1)}</td><td>${Number(r.per38).toFixed(1)}</td><td>${r.matches}</td></tr>`).join('');
-  const title = 'Manager Ratings: Club Elo Impact by Manager | SteamWatch';
-  const description = `Managers in the top five leagues ranked by the Elo their clubs gained or lost while they were in charge, since July 2016. Updated ${asOf}.`;
-  const head = headTags({
-    title, description, url: `${DOMAIN}/tools/manager-ratings`,
-    jsonLd: {
-      '@context': 'https://schema.org', '@type': 'WebApplication', name: 'SteamWatch Manager Ratings', url: `${DOMAIN}/tools/manager-ratings`,
-      applicationCategory: 'SportsApplication', operatingSystem: 'Web',
-      description: 'Ranks managers in the top five European leagues by the club Elo rating points their teams gained or lost under them, from July 2016, with a per-38-match view and a 12-month recent-form view.',
-      dateModified: asOf,
-      offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
-      creator: { '@type': 'Person', name: 'Neil Mac', url: `${DOMAIN}/about` },
-    },
-  });
-  // Strip the head tags the publish script wrote, then add ours. Keep the fonts link.
-  html = html
-    .replace(/<title>Manager Ratings \| SteamWatch<\/title>/, '')
-    .replace(/<meta name="description"[^>]*>\n?/, '')
-    .replace(/<link rel="canonical"[^>]*>\n?/, '')
-    .replace(/<meta property="og:[a-z_:]+"[^>]*>\n?/g, '')
-    .replace(/<meta name="twitter:card"[^>]*>\n?/, '');
-  if (!html.includes('<meta charset="utf-8">')) throw new Error('manager-ratings: no charset meta to anchor on');
-  html = html.replace('<meta charset="utf-8">', `<meta charset="utf-8">
-${head}
-`);
-  const copy = `<section id="about-manager-ratings" class="sw-copy" aria-labelledby="sw-copy-h">
-<h2 id="sw-copy-h">About these ratings</h2>
-<p>Every club in the covered competitions carries an Elo rating that starts at 1,500 when the club is first observed. After each match the rating rises if the result beat what the two ratings and a 60-point home advantage implied, and falls if it fell short; a draw can move it either way. A manager's impact is the Elo the club gained or lost in the matches played while that manager was in charge. It follows the manager between clubs. The ranking window runs from 1 July 2016, with 2013 to 2016 used to warm the ratings up. Match and appointment data come from the Sportmonks API.</p>
-<p>Per 38 rescales total impact to a 38-match season so long and short spells can be compared. Last 12 months shows the same calculation over the past year only. The main ranking requires at least 20 completed matches in the previous 12 months, so a manager out of work for a year drops out of it while keeping their long-term total. ${d.eligible_managers} of ${d.managers} tracked managers currently qualify. Appointment dates come from Sportmonks with a small number of dated, sourced corrections listed on this page.</p>
-<p>The table was last computed on ${asOf}. The top three by total impact are free; the full ranking, every comparison and the underlying data require SteamWatch Pro.</p>
-<table><caption>Top of the table, ${asOf}</caption><thead><tr><th>Rank</th><th>Manager</th><th>Club / last covered</th><th>Impact (Elo)</th><th>Per 38</th><th>Matches</th></tr></thead><tbody>${tr}</tbody></table>
-<p>Related pages: <a href="/tools/club-ratings">Club Ratings</a>, <a href="/team-pnl">Team P/L</a> and <a href="/longshot-bias">Longshot Bias</a>.</p>
-</section>
-<style>.sw-copy{max-width:860px;margin:32px auto 0;padding:24px 0 8px;border-top:1px solid #334155;color:#cbd5e1;font-size:15px;line-height:1.7}.sw-copy h2{font-size:18px;margin:0 0 12px;color:#f1f5f9}.sw-copy p{margin:0 0 12px}.sw-copy a{color:#22d3ee}.sw-copy table{border-collapse:collapse;margin:8px 0 16px;font-size:14px}.sw-copy caption{text-align:left;color:#94a3b8;font-size:13px;margin-bottom:6px}.sw-copy th,.sw-copy td{padding:4px 12px 4px 0;text-align:left;border-bottom:1px solid #1e293b}</style>
-`;
-  if (!html.includes('<footer>')) throw new Error('manager-ratings: no <footer>');
-  html = html.replace('<footer>', copy + '<footer>');
-  writeFileSync(page, html, 'utf-8');
-  console.log('  ✓ /tools/manager-ratings (dashboard + injected head/copy)');
-}
+// Public manager rankings, crawlable table, methodology and structured data.
+const { renderManagerRatings } = await import('./prerender-manager-ratings.mjs');
+renderManagerRatings({ dist: DIST, domain: DOMAIN, headTags, esc });
 
 // ---------------------------------------------------------------------------
 // Homepage — the last write, because it overwrites the template file

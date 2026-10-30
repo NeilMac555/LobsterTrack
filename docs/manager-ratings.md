@@ -7,7 +7,7 @@ Vite copies it into the production build. FastAPI's existing static-page handler
 serves its `index.html` before the SPA fallback. Both desktop and mobile Tools
 links use React Router's `reloadDocument` to reach the static page. It preserves
 SteamWatch's dark slate/cyan design, sortable rankings, date filters, comparisons,
-methodology and downloadable derived data. The full snapshot lives in backend/app/data/manager-ratings.json; the frontend contains only a fixed three-manager preview.
+methodology and downloadable derived data. The full snapshot lives in backend/app/data/manager-ratings.json; the frontend contains the full public dataset.
 
 Initial snapshot: 19 September 2026; 132 manager records, 96 eligible for the
 main ranking. Snapshot timestamps are preserved, not advanced by deployment.
@@ -35,23 +35,27 @@ sorting and date filters after deployment. Vite preview requires the trailing
 slash `/tools/manager-ratings/`; the production FastAPI handler supports the
 canonical path without a slash.
 
-## Access
+## Access and discovery
 
-The top three eligible managers by full-history overall impact are free. Filters
-and comparisons in the preview operate on those same three, preventing visitors
-from enumerating the full table through alternate sorts or date windows.
-GET /api/manager-ratings uses the existing Bearer authentication and subscription:
-active subscribers with an unexpired period (or no stored period end) receive
-full data; everyone else receives only the preview. Responses are private/no-store.
-A cancellation scheduled for period end retains access until then. No new billing
-plan is created. Sign-in and checkout use the existing SteamWatch flows, returning
-to the manager page. Public downloads contain only the preview; Pro downloads
-are generated from the authorized API response. Static paths are constrained to
-the frontend directory so private snapshot files cannot be traversed to.
+All manager rankings, comparisons, date filters and derived JSON downloads are
+public as requested on 30 October 2026. No account or Pro subscription is required.
+The API and static download contain the same full dataset. Other SteamWatch Pro
+features retain their existing access rules.
 
-Run `python backend/tests/test_manager_ratings.py` with backend dependencies
-installed before publication. Do not replace the secure packager with a raw copy
-of source HTML/JSON, including during weekly refreshes.
+The packager adds overall rank changes compared with the last published snapshot.
+Same-snapshot rebuilds retain the original comparison, and future weekly refreshes
+advance it automatically. Green/red SVG arrows include places moved and accessible
+labels; newly eligible managers show New. Sorting and date filters do not change
+the overall comparison basis. Initial comparison: 19 October to 30 October.
+
+The frontend build renders every eligible table row into HTML, plus visible source,
+coverage, methodology, limitations, update date and FAQs. Matching WebApplication,
+Dataset, FAQPage and BreadcrumbList structured data describe the public content.
+Canonical and sharing tags use the existing site conventions. Sitemap inclusion
+and existing crawler access are retained; these do not guarantee search placement
+or AI citations. No model-targeted manipulation or hidden content is added.
+
+Validate with both manager test files, the production frontend build and `node frontend/scripts/check-manager-ratings.mjs`.
 
 ## Community
 
