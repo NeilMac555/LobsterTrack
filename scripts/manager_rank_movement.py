@@ -1,7 +1,18 @@
 """Compare published overall ranks, retaining the baseline on same-snapshot rebuilds."""
 def add_movement(data, previous):
+    if previous and previous['as_of'] > data['as_of']:
+        raise ValueError('Cannot publish a snapshot older than its movement baseline')
+    if previous and previous.get('model_version') != data.get('model_version'):
+        data['movement_as_of'] = None
+        data['movement_reset_reason'] = 'Scoring model changed; movement restarts from this publication.'
+        for row in data['rows']:
+            row['rank_movement'] = None
+            row['rank_movement_status'] = 'unavailable'
+        return
     if previous and previous['as_of'] == data['as_of']:
         data['movement_as_of'] = previous.get('movement_as_of')
+        if previous.get('movement_reset_reason'):
+            data['movement_reset_reason'] = previous['movement_reset_reason']
         old = {r['id']: r for r in previous['rows']}
         for row in data['rows']:
             row['rank_movement'] = old.get(row['id'], {}).get('rank_movement')

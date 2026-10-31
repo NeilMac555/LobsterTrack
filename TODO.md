@@ -20,6 +20,8 @@ decisions that shape the build, with the recommendation at the time:
 
 ## Now
 
+- Manager Ratings: corrected historical assignments and approved half-strength trophy model ready for production; public access, date filters and match-only diagnostics validated. Weekly workflow preserves the model and holds unreviewed new titles.
+
 - Manager Ratings: initial public snapshot prepared at /tools/manager-ratings;
   retains sorting, date filters, comparisons and the light dashboard design.
   Follow-up: automatic data refresh and shared verified-account voting with

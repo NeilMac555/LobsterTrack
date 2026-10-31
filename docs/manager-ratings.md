@@ -76,3 +76,29 @@ Rollback: revert the Manager Ratings release commit; this removes the page,
 navigation entry and sitemap entry. Existing backend data is unaffected.
 
 Theme: `scripts/manager-ratings-theme.css` is embedded by the snapshot packager. Fonts, navigation branding, panels, numeric typography and chart colours follow SteamWatch.
+
+## Approved model — 31 October 2026
+
+The default ranking is corrected match Elo impact plus half-strength trophy
+bonuses (`elo-plus-half-trophies-v1`). `score` is the composite; `impact`, `per38`,
+`recent` and trajectories remain match-only. The selected date window also filters
+`trophies` by award date. Separate table columns expose both components. All
+eligible rows rank before the insufficient-evidence cohort. Model changes reset
+movement once; subsequent same-model weekly snapshots restore normal comparisons.
+
+The 75-title ledger covers 2016/17–2025/26. Formula and limitations are disclosed
+on the page: 0.5 × base × clamp(1 − precompetition Elo gap / 200, 0.25, 2).
+This is an uncalibrated strength proxy, not title odds. 198 sourced correction
+entries repair 190 deduplicated historical assignments (eight were already correct
+in overlapping cache files). Sources and original identities are preserved.
+
+Versioned model/ledger copies live in scripts/manager-model; the runnable
+Sportsmonks workflow remains in the separate local workspace. Weekly staging
+copies its authoritative builder and ledgers. Newly completed seasons absent
+from the reviewed trophy ledger stop publication for review instead of silently
+omitting a trophy. Extend the ledger from verified standings/finals and audited
+head-coach attribution, calculate strengths strictly before competition start,
+then rerun validation. Never substitute experimental full-strength bonuses.
+
+This adoption preserves the 30 October data timestamp; deployment date does not
+claim a new collection. Initial combined leaders: Conte, Emery, Guardiola.
