@@ -11,7 +11,6 @@ import {
 } from 'recharts';
 import { getFavDogTeam, getFavDogTeams } from '../api';
 import type { FavDogTeamData, FavDogTeamBlock, FavDogTeamListItem } from '../types';
-import PaywallOverlay from './PaywallOverlay';
 
 const MONO_STACK = '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace';
 const AXIS_TICK = { fill: '#94a3b8', fontSize: 10, fontFamily: MONO_STACK };
@@ -27,9 +26,8 @@ const TEAM_LEAGUES = [
   { key: 'soccer_germany_bundesliga', label: 'BUN', name: 'Bundesliga' },
   { key: 'soccer_france_ligue_one', label: 'L1', name: 'Ligue 1' },
 ];
-const FREE_LEAGUE = 'soccer_epl';      // same free rule as the overview
-const FREE_SEASON = '2526';            // default landing (fuller sample)
-const FREE_SEASONS = ['2526', '2627'];  // last season + the live one, per Neil 2026-09-02
+const DEFAULT_LEAGUE = 'soccer_epl';
+const DEFAULT_SEASON = '2627';
 const LATEST_SEASON = '2627';
 const SEASON_LABELS: Record<string, string> = {
   '2122': '21/22', '2223': '22/23', '2324': '23/24', '2425': '24/25', '2526': '25/26', '2627': '26/27',
@@ -73,25 +71,23 @@ function StatCard({ title, block, side }: { title: string; block: FavDogTeamBloc
 }
 
 export default function LongshotTeamsView({
-  isSubscribed,
   initialTeam,
   initialLeague,
   onTeamChange,
   onLeagueChange,
 }: {
-  isSubscribed: boolean;
   initialTeam: string | null;
   initialLeague: string | null;
   onTeamChange: (team: string | null) => void;
   onLeagueChange: (league: string) => void;
 }) {
   const [league, setLeagueState] = useState<string>(
-    TEAM_LEAGUES.some((l) => l.key === initialLeague) ? (initialLeague as string) : FREE_LEAGUE,
+    TEAM_LEAGUES.some((l) => l.key === initialLeague) ? (initialLeague as string) : DEFAULT_LEAGUE,
   );
   const leagueName = TEAM_LEAGUES.find((l) => l.key === league)?.name ?? '';
   const [teams, setTeams] = useState<FavDogTeamListItem[]>([]);
   const [team, setTeam] = useState<string | null>(initialTeam);
-  const [season, setSeason] = useState<string | null>(FREE_SEASON);
+  const [season, setSeason] = useState<string | null>(DEFAULT_SEASON);
   const [venue, setVenue] = useState<'home' | 'away' | null>(null);
   const [side, setSide] = useState<Side>('back');
   const [data, setData] = useState<FavDogTeamData | null>(null);
@@ -99,8 +95,14 @@ export default function LongshotTeamsView({
   const [error, setError] = useState('');
 
   useEffect(() => {
-    getFavDogTeams(league)
+    let active = true;
+    let running = false;
+    const refresh = () => {
+      if (document.hidden || running) return;
+      running = true;
+      getFavDogTeams(league)
       .then((r) => {
+        if (!active) return;
         setTeams(r.teams);
         // No club chosen (fresh load, or league just switched): show the
         // league's best blind-back club rather than an empty panel.
@@ -109,21 +111,36 @@ export default function LongshotTeamsView({
           setTeam((current) => current ?? r.default_team ?? null);
         }
       })
-      .catch(() => setTeams([]));
+      .catch(() => { /* Keep the last successful list on a transient refresh failure. */ })
+      .finally(() => { running = false; });
+    };
+    refresh();
+    const timer = window.setInterval(refresh, 60_000);
+    document.addEventListener('visibilitychange', refresh);
+    return () => { active = false; window.clearInterval(timer); document.removeEventListener('visibilitychange', refresh); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [league]);
 
-  const locked = !isSubscribed && !(league === FREE_LEAGUE && season !== null && FREE_SEASONS.includes(season));
 
   useEffect(() => {
-    if (!team || locked) return;
+    if (!team) return;
+    let active = true;
+    let running = false;
     setLoading(true);
     setError('');
-    getFavDogTeam({ team, league, seasons: season ?? undefined, venue: venue ?? undefined })
-      .then(setData)
-      .catch(() => setError('Failed to load team data'))
-      .finally(() => setLoading(false));
-  }, [team, league, season, venue, locked]);
+    const refresh = () => {
+      if (document.hidden || running) return;
+      running = true;
+      getFavDogTeam({ team, league, seasons: season ?? undefined, venue: venue ?? undefined })
+        .then(result => { if (active) { setData(result); setError(''); } })
+        .catch(() => { if (active) setError('Failed to load team data'); })
+        .finally(() => { running = false; if (active) setLoading(false); });
+    };
+    refresh();
+    const timer = window.setInterval(refresh, 60_000);
+    document.addEventListener('visibilitychange', refresh);
+    return () => { active = false; window.clearInterval(timer); document.removeEventListener('visibilitychange', refresh); };
+  }, [team, league, season, venue]);
 
   const pickLeague = (key: string) => {
     if (key === league) return;
@@ -180,7 +197,6 @@ export default function LongshotTeamsView({
         ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
         : 'bg-slate-900/60 text-slate-400 border-slate-700/60 hover:text-white hover:bg-slate-800/60'
     }`;
-  const lock = (isFree: boolean) => (!isSubscribed && !isFree ? ' 🔒' : '');
 
   return (
     <div>
@@ -201,7 +217,7 @@ export default function LongshotTeamsView({
         </select>
       </div>
       <p className="text-[11px] text-slate-500 mb-4">
-        Current {leagueName} clubs that were also in the division last season. Pinnacle closing prices from 2021/22, updated every Monday.
+        Current {leagueName} clubs that were also in the division last season. Recorded closing prices from 2021/22. Confirmed results refresh automatically.
       </p>
 
       {/* Filters */}
@@ -210,16 +226,16 @@ export default function LongshotTeamsView({
           <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold w-14">League</span>
           {TEAM_LEAGUES.map((l) => (
             <button key={l.key} className={chipClass(league === l.key)} onClick={() => pickLeague(l.key)}>
-              {l.label}{lock(l.key === FREE_LEAGUE)}
+              {l.label}
             </button>
           ))}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold w-14">Season</span>
-          <button className={chipClass(season === null)} onClick={() => setSeason(null)}>All time{lock(false)}</button>
+          <button className={chipClass(season === null)} onClick={() => setSeason(null)}>All time</button>
           {Object.entries(SEASON_LABELS).filter(([c]) => c <= LATEST_SEASON).map(([code, label]) => (
             <button key={code} className={chipClass(season === code)} onClick={() => setSeason(code)}>
-              {label}{lock(league === FREE_LEAGUE && FREE_SEASONS.includes(code))}
+              {label}
             </button>
           ))}
         </div>
@@ -251,27 +267,19 @@ export default function LongshotTeamsView({
         </div>
       </div>
 
-      {locked && (
-        <div className="mb-6">
-          <PaywallOverlay
-            title="Unlock every league and season"
-            description="Premier League 25/26 and 26/27 are free per team — SteamWatch Pro opens La Liga, Serie A, the Bundesliga and Ligue 1, every season back to 2021/22 and the all-time view, for every club."
-          />
-        </div>
-      )}
 
-      {!locked && !team && (
+      {!team && (
         <div className="rounded-xl border border-slate-700/50 bg-slate-800/50 p-8 text-center text-slate-500 text-sm">
           Pick a team to see how backing or fading them has paid, split by whether they were the favourite or the underdog.
         </div>
       )}
 
-      {!locked && team && loading && (
+      {team && loading && (
         <div className="p-8 text-center text-slate-500 text-sm">Loading {team}…</div>
       )}
-      {!locked && error && <div className="p-8 text-center text-red-400 text-sm">{error}</div>}
+      {error && <div className="p-8 text-center text-red-400 text-sm">{error}</div>}
 
-      {!locked && team && !loading && !error && data && (
+      {team && !loading && !error && data && (
         <>
           <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight mb-3">{data.team}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4 sm:mb-6">

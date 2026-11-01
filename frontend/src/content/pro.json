@@ -1,6 +1,6 @@
 {
   "title": "SteamWatch Pro: Football Research Tools | €19.99/month",
-  "description": "Compare SteamWatch Pro features: Form Lab, rolling xG, Dixon–Coles pricing, Steam Results, Drifters and Longshot Bias. €19.99 per month.",
+  "description": "Compare SteamWatch Pro features: Form Lab, rolling xG, Dixon–Coles pricing, Steam Results and Drifters. €19.99 per month.",
   "benefits": [
     {
       "n": "01",
@@ -61,18 +61,6 @@
         "Team rankings",
         "Historical results"
       ]
-    },
-    {
-      "n": "06",
-      "name": "Longshot Bias",
-      "title": "Test the story against the numbers.",
-      "text": "Explore favourites, underdogs and draws across all five available leagues and seasons back to 2021/22, including all-time views and home / away splits.",
-      "href": "/longshot-bias",
-      "tags": [
-        "Odds bands",
-        "Five leagues",
-        "Season comparisons"
-      ]
     }
   ],
   "inclusions": [
@@ -80,7 +68,7 @@
     "Full Steam Results team rankings",
     "Rolling xG across available teams",
     "Match Predictor model results",
-    "Drifter rankings & full Longshot Bias access"
+    "Full Drifter rankings"
   ],
   "faqs": [
     [

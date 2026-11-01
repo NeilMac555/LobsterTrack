@@ -15,8 +15,6 @@ import {
 import { getFavDogResults } from '../api';
 import type { FavDogData, FavDogBand } from '../types';
 import { LEAGUE_CONFIG } from '../types';
-import { useAuth } from '../contexts/AuthContext';
-import PaywallOverlay from '../components/PaywallOverlay';
 
 const MONO_STACK = '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace';
 // Series palette: the site's two-series pairing (Rolling xG uses the same
@@ -47,13 +45,9 @@ const SEASON_LABELS: Record<string, string> = {
   '2627': '26/27',
 };
 
-// Freemium teaser (Neil, 2026-08-23): Premier League 25/26 is free for
-// everyone; any other league/season selection shows the Pro paywall in
-// place of the data. Venue subfilters of the free view stay free — it's
-// still the same EPL 25/26 dataset either way.
-const FREE_LEAGUE = 'soccer_epl';
-const FREE_SEASON = '2526';            // default landing (fuller sample)
-const FREE_SEASONS = ['2526', '2627'];  // last season + the live one, per Neil 2026-09-02
+// Public league and season filters; open on the current season.
+const DEFAULT_LEAGUE = 'soccer_epl';
+const DEFAULT_SEASON = '2627';
 
 function yieldClass(v: number): string {
   if (v > 0) return 'text-emerald-400';
@@ -116,16 +110,12 @@ function BandTable({ title, accent, bands, all }: {
 }
 
 export default function LongshotBiasPage() {
-  const { isSubscribed } = useAuth();
   const [data, setData] = useState<FavDogData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Everyone opens on the free sample view (EPL 25/26) — Pro users
-  // included, per Neil 2026-08-23; Pro just means every other chip
-  // works from there. No auto-widening on subscription resolve.
-  const [league, setLeague] = useState<string | null>(FREE_LEAGUE);
-  const [season, setSeason] = useState<string | null>(FREE_SEASON);
+  const [league, setLeague] = useState<string | null>(DEFAULT_LEAGUE);
+  const [season, setSeason] = useState<string | null>(DEFAULT_SEASON);
   const [venue, setVenue] = useState<string | null>(null);
 
   // Overview (bands) vs Teams (per-club, FavOrDog 'Players' style).
@@ -154,8 +144,6 @@ export default function LongshotBiasPage() {
     setSearchParams(next, { replace: true });
   };
 
-  const isFreeView = league === FREE_LEAGUE && season !== null && FREE_SEASONS.includes(season);
-  const locked = !isSubscribed && !isFreeView;
   const cumulativeLatest = data?.cumulative[data.cumulative.length - 1];
   // One x tick per season boundary (the API emits the first bet of each
   // season as a point), labelled 21/22 ... instead of meaningless bet numbers.
@@ -172,21 +160,34 @@ export default function LongshotBiasPage() {
   })();
 
   useEffect(() => {
-    if (locked) return; // keep the last (free-view) data behind the paywall panel
-    setLoading(true);
-    getFavDogResults({
-      league: league ?? undefined,
-      seasons: season ?? undefined,
-      venue: venue ?? undefined,
-    })
-      .then(setData)
-      .catch(() => setError('Failed to load longshot bias data'))
-      .finally(() => setLoading(false));
-  }, [league, season, venue, locked]);
+    let active = true;
+    let running = false;
+    const refresh = () => {
+      if (document.hidden || running) return;
+      running = true;
+      getFavDogResults({ league: league ?? undefined, seasons: season ?? undefined, venue: venue ?? undefined })
+        .then(result => { if (active) { setData(result); setError(''); } })
+        .catch(() => { if (active) setError('Failed to load longshot bias data'); })
+        .finally(() => { running = false; if (active) setLoading(false); });
+    };
+    refresh();
+    const timer = window.setInterval(refresh, 60_000);
+    document.addEventListener('visibilitychange', refresh);
+    return () => { active = false; window.clearInterval(timer); document.removeEventListener('visibilitychange', refresh); };
+  }, [league, season, venue]);
 
-  const pickLeague = setLeague;
-  const pickSeason = setSeason;
-  const pickVenue = setVenue;
+  const pickLeague = (value: string | null) => {
+    if (value === league) return;
+    setLoading(true); setError(''); setLeague(value);
+  };
+  const pickSeason = (value: string | null) => {
+    if (value === season) return;
+    setLoading(true); setError(''); setSeason(value);
+  };
+  const pickVenue = (value: string | null) => {
+    if (value === venue) return;
+    setLoading(true); setError(''); setVenue(value);
+  };
 
   const chipClass = (active: boolean) =>
     `px-3 py-1.5 rounded-md font-mono text-[11px] font-semibold uppercase tracking-[0.1em] transition-colors border ${
@@ -195,8 +196,6 @@ export default function LongshotBiasPage() {
         : 'bg-slate-900/60 text-slate-400 border-slate-700/60 hover:text-white hover:bg-slate-800/60'
     }`;
 
-  // Lock glyph on options outside the free view, for non-subscribers.
-  const lock = (isFree: boolean) => (!isSubscribed && !isFree ? ' 🔒' : '');
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -218,18 +217,6 @@ export default function LongshotBiasPage() {
         </div>
       </div>
 
-      {/* Free-preview banner for non-subscribers */}
-      {!isSubscribed && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2">
-          <span className="px-1.5 py-0.5 rounded font-mono text-[10px] font-bold uppercase tracking-[0.12em] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-            Free preview
-          </span>
-          <span className="text-xs sm:text-sm text-slate-300">
-            Premier League 25/26 and the live 26/27 season are free to explore. Every other league
-            and season — plus all-time views — is a Pro feature.
-          </span>
-        </div>
-      )}
 
       {/* View tabs */}
       <div className="mb-4 inline-flex rounded-lg border border-slate-700/60 overflow-hidden">
@@ -248,31 +235,30 @@ export default function LongshotBiasPage() {
       </div>
 
       {view === 'teams' && (
-        <LongshotTeamsView isSubscribed={isSubscribed} initialTeam={urlTeam} initialLeague={urlLeague} onTeamChange={setUrlTeam} onLeagueChange={setUrlLeague} />
+        <LongshotTeamsView initialTeam={urlTeam} initialLeague={urlLeague} onTeamChange={setUrlTeam} onLeagueChange={setUrlLeague} />
       )}
 
       {view === 'overview' && <>
-      {/* Filters — always visible; locked selections flip the content
-          area into the paywall below. */}
+      {/* Public filters */}
       <div className="mb-4 sm:mb-6 rounded-xl border border-slate-700/60 bg-slate-800/80 p-3 sm:p-4 space-y-3">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold w-14">League</span>
-          <button className={chipClass(league === null)} onClick={() => pickLeague(null)}>All{lock(false)}</button>
+          <button className={chipClass(league === null)} onClick={() => pickLeague(null)}>All</button>
           {HISTORY_LEAGUES.map((lg) => (
             <button key={lg} className={chipClass(league === lg)} onClick={() => pickLeague(lg)}>
-              {LEAGUE_CONFIG[lg]?.shortName ?? lg}{lock(lg === FREE_LEAGUE)}
+              {LEAGUE_CONFIG[lg]?.shortName ?? lg}
             </button>
           ))}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold w-14">Season</span>
-          <button className={chipClass(season === null)} onClick={() => pickSeason(null)}>All{lock(false)}</button>
+          <button className={chipClass(season === null)} onClick={() => pickSeason(null)}>All</button>
           {/* Every season, always. Building this from the current response's
               seasons hid 21/22-24/25 whenever a single-season view was loaded
               (which is every landing, since the page opens on EPL 25/26). */}
           {Object.entries(SEASON_LABELS).map(([code, label]) => (
             <button key={code} className={chipClass(season === code)} onClick={() => pickSeason(code)}>
-              {label}{lock(FREE_SEASONS.includes(code))}
+              {label}
             </button>
           ))}
         </div>
@@ -284,21 +270,13 @@ export default function LongshotBiasPage() {
         </div>
       </div>
 
-      {locked && (
-        <div className="mb-6 sm:mb-8">
-          <PaywallOverlay
-            title="Unlock every league and season"
-            description="Premier League 25/26 and 26/27 are free — SteamWatch Pro opens all five leagues, every season back to 2021/22, all-time views and the venue splits across the lot."
-          />
-        </div>
-      )}
 
-      {!locked && loading && (
+      {loading && (
         <div className="p-8 text-center text-slate-500 text-sm">Crunching closing lines…</div>
       )}
-      {!locked && error && <div className="p-8 text-center text-red-400 text-sm">{error}</div>}
+      {error && <div className="p-8 text-center text-red-400 text-sm">{error}</div>}
 
-      {!locked && !loading && !error && data && (
+      {!loading && !error && data && (
         <>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
             <div className="space-y-4 sm:space-y-6">

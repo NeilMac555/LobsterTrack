@@ -55,7 +55,7 @@ function Movement({ drift = false }: { drift?: boolean }) {
 function Bias() {
   const [index, setIndex] = useState(0);
   const team = cards.bias[index];
-  return <Feature id="bias" title="Favourite–longshot bias" benefit="Same club. Two very different betting records." href="/longshot-bias" sample="Premier League 2025/26 · 1u per bet">
+  return <Feature id="bias" pro={false} title="Favourite–longshot bias" benefit="Same club. Two very different betting records." href="/longshot-bias" sample="Premier League 2025/26 · 1u per bet">
     <Choices label="Bias sample team" value={index} onChange={setIndex} options={[{ value: 0, label: 'Man United' }, { value: 1, label: 'Arsenal' }]} />
     <div className="demo-bias-comparison" aria-live="polite">{([['As favourite', team.as_favourite], ['As underdog', team.as_underdog]] as const).map(([label, row]) => <div key={label}><span>{label}</span><strong className={tone(row.back_pl)}>{signed(row.back_pl)}<small>u</small></strong><span>{row.wins} wins / {row.matches} bets</span><div className="demo-win-bar" aria-hidden="true"><span style={{ width: `${row.win_rate}%` }} /></div></div>)}</div>
     <p className="demo-preview-footnote">{team.as_underdog.matches < 5 ? 'Only 2 underdog bets: a very small sample.' : 'Compare the record behind each price band.'}</p>

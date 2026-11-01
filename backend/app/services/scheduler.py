@@ -58,6 +58,8 @@ class OddsScheduler:
         self._fdata_last_run_at: datetime | None = None
         self._fdata_last_summary: dict | None = None
         self._fdata_last_error: str | None = None
+        self._bias_last_run_at: datetime | None = None
+        self._bias_last_summary: dict | None = None
 
     def _record_error(self, where: str, message: str):
         """Keep the last 10 errors so the admin health page can display them."""
@@ -329,6 +331,16 @@ class OddsScheduler:
         except Exception as e:
             logger.error("Results update failed", error=str(e))
 
+    async def bias_results_job(self):
+        from app.services.bias_results_refresh import refresh_bias_results
+        self._bias_last_run_at = datetime.utcnow()
+        try:
+            self._bias_last_summary = await refresh_bias_results()
+            logger.info("Bias results refresh complete", summary=self._bias_last_summary)
+        except Exception as exc:
+            self._bias_last_summary = {"errors": [type(exc).__name__]}
+            self._record_error("bias_results", type(exc).__name__)
+
     async def xg_refresh_job(self):
         """
         Weekly refresh of rolling-xG data scraped from Understat.
@@ -407,14 +419,13 @@ class OddsScheduler:
 
     async def football_data_refresh_job(self):
         """
-        Weekly refresh of historical_matches (current season only) from
+        Daily refresh of historical_matches (current season only) from
         football-data.co.uk for every supported league. Older seasons are
         static so we skip them; only the in-progress season changes.
 
         Each league fetched independently so a single bad CSV doesn't
         kill the others. Failures are logged but never raised — worst
-        case the Team P/L tab shows last week's numbers until the next
-        Monday run.
+        case the last successful data stays available until the next daily run.
         """
         from app.services.football_data_importer import (
             LEAGUE_FILE_CODES,
@@ -424,7 +435,7 @@ class OddsScheduler:
         self._fdata_last_run_at = datetime.utcnow()
         self._fdata_last_error = None
         try:
-            logger.info("Starting weekly football-data.co.uk refresh")
+            logger.info("Starting daily football-data.co.uk refresh")
             results: dict[str, dict] = {}
             for league_key in LEAGUE_FILE_CODES.keys():
                 try:
@@ -563,6 +574,12 @@ class OddsScheduler:
 
         # Results update job (runs every hour)
         self.scheduler.add_job(
+            self.bias_results_job, trigger=IntervalTrigger(minutes=15),
+            id="bias_results_refresh", name="Refresh confirmed bias results",
+            replace_existing=True, max_instances=1, coalesce=True,
+            next_run_time=datetime.now(timezone.utc) + timedelta(seconds=60),
+        )
+        self.scheduler.add_job(
             self.results_job,
             trigger=IntervalTrigger(hours=1),
             id="results_update",
@@ -623,17 +640,12 @@ class OddsScheduler:
             coalesce=True,
         )
 
-        # Weekly Team P/L refresh — Monday 09:00 UTC (10am London summer,
-        # 9am winter). football-data.co.uk publishes weekend results plus
-        # Pinnacle closes overnight Sunday→Monday, so by 09:00 UTC the
-        # file is reliably updated. Mon-night fixtures (Italy / France)
-        # land in the following week's pull. Refreshes the current
-        # season ('2627') only — older seasons are static.
+        # Daily CSV reconciliation complements the 15-minute confirmed-score sync.
         self.scheduler.add_job(
             self.football_data_refresh_job,
-            trigger=CronTrigger(day_of_week="mon", hour=9, minute=0),
+            trigger=CronTrigger(hour=9, minute=0, timezone="UTC"),
             id="football_data_refresh_weekly",
-            name="Weekly football-data.co.uk refresh (Team P/L)",
+            name="Daily football-data.co.uk refresh (Team P/L)",
             replace_existing=True,
             max_instances=1,
             coalesce=True,
@@ -837,7 +849,12 @@ class OddsScheduler:
                 "seconds_since_last_run": seconds_ago(self._fdata_last_run_at),
                 "last_error": self._fdata_last_error,
                 "summary": self._fdata_last_summary,
-                "schedule": "Mondays 09:00 UTC",
+                "schedule": "Daily 09:00 UTC",
+            },
+            "bias_results_refresh": {
+                "last_run_at": iso(self._bias_last_run_at),
+                "summary": self._bias_last_summary,
+                "schedule": "Every 15 minutes; confirmed results only",
             },
             # Polymarket season-outright fetch — hourly, feeds the
             # Forecast Engine's league-level market comparison

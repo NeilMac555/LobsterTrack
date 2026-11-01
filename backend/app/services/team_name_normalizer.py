@@ -173,6 +173,9 @@ _BUNDESLIGA_MAP: dict[str, str] = {
 
     # Recent visitors
     "Bochum":         "VfL Bochum",
+    "Bielefeld":      "Arminia Bielefeld",
+    "Greuther Furth": "Greuther Fürth",
+    "Holstein Kiel":  "Holstein Kiel",
     "Darmstadt":      "SV Darmstadt 98",
     "Hertha":         "Hertha Berlin",
 
@@ -218,6 +221,7 @@ _LIGUE_1_MAP: dict[str, str] = {
 
     # Recent visitors
     "Bordeaux":     "Bordeaux",
+    "Ajaccio":      "Ajaccio",
     "Clermont":     "Clermont Foot",
     "Montpellier":  "Montpellier",
     "Reims":        "Reims",

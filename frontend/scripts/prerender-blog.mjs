@@ -598,7 +598,7 @@ ${PRO.faqs.map(([q, a]) => `<h3>${esc(q)}</h3><p>${esc(a)}</p>`).join('\n')}`,
         '@type': 'Dataset',
         name: 'SteamWatch Longshot Bias: blind favourite, underdog and draw returns at Pinnacle closing prices',
         description:
-          'Flat-stake yield from backing every favourite, underdog and draw at Pinnacle closing 1X2 prices across the Premier League, La Liga, Bundesliga, Serie A and Ligue 1, in data-driven odds bands, filterable by league, season, venue and club. From 2021/22, updated weekly.',
+          'Flat-stake yield from backing every favourite, underdog and draw at Pinnacle closing 1X2 prices across the Premier League, La Liga, Bundesliga, Serie A and Ligue 1, in data-driven odds bands, filterable by league, season, venue and club. From 2021/22, updated automatically.',
         url: `${DOMAIN}/longshot-bias`,
         temporalCoverage: '2021-08/..',
         spatialCoverage: 'England, Spain, Germany, Italy, France',
@@ -618,7 +618,7 @@ ${PRO.faqs.map(([q, a]) => `<h3>${esc(q)}</h3><p>${esc(a)}</p>`).join('\n')}`,
       },
     ],
     noscriptHtml: `<h1>Longshot Bias | SteamWatch</h1>
-<p>What blindly backing every favourite, underdog or draw at Pinnacle closing prices would have returned. 8,867 matches across the Premier League, La Liga, Bundesliga, Serie A and Ligue 1, 2021/22 to August 2026, flat 1 unit stakes, updated weekly.</p>
+<p>What blindly backing every favourite, underdog or draw at Pinnacle closing prices would have returned. 8,867 matches across the Premier League, La Liga, Bundesliga, Serie A and Ligue 1, 2021/22 to August 2026, flat 1 unit stakes, updated automatically.</p>
 <h2>Headline numbers (all five leagues)</h2>
 <ul>
   <li>Every favourite: +0.2% yield. Super Fav (1.06 to 1.70) -1.2%, Mid Fav (1.70 to 2.19) -1.8%, Slight Fav (2.19 to 3.09) +3.7%.</li>
@@ -636,7 +636,7 @@ ${PRO.faqs.map(([q, a]) => `<h3>${esc(q)}</h3><p>${esc(a)}</p>`).join('\n')}`,
 </ul>
 <h2>Per team</h2>
 <p>Every club in the Premier League, La Liga, Serie A, Bundesliga and Ligue 1 can be pulled up on its own: record, win rate, median close and flat-stake ROI backing or fading them, split by matches where they were the favourite and matches where they were the underdog, with a match-by-match cumulative chart. Example: Aston Villa, all time, +25.9% backing overall.</p>
-<p>Odds bands are terciles of the filtered data (equal match counts per band). The favourite is whichever side closed shorter. Backing the favourite or the underdog loses on a draw. Prices are football-data.co.uk's Pinnacle closes to January 2026 and SteamWatch's own Pinnacle closing-line capture from February 2026, with the Betfair Exchange close standing in for the roughly 200 matches between the two. Premier League 25/26 and the live 26/27 season are free to explore; every league and season is available with SteamWatch Pro.</p>
+<p>Odds bands are terciles of the filtered data (equal match counts per band). The favourite is whichever side closed shorter. Backing the favourite or the underdog loses on a draw. Prices are football-data.co.uk's Pinnacle closes to January 2026 and SteamWatch's own Pinnacle closing-line capture from February 2026, with the Betfair Exchange close standing in for the roughly 200 matches between the two. Every league, season and team view is free to explore. Confirmed results refresh automatically.</p>
 <p><a href="https://www.steamwatch.io/blog/favourite-longshot-bias-in-football-betting">Read the full breakdown</a> · <a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
   },
 ];
@@ -1030,7 +1030,7 @@ writePage('', renderPage({
         mainEntity: [
           { '@type': 'Question', name: 'What is SteamWatch?', acceptedAnswer: { '@type': 'Answer', text: 'SteamWatch tracks the biggest odds moves in football betting markets and shows what happened next. It records Pinnacle odds roughly every 15 minutes across Europe\'s major leagues, highlights significant pre-kickoff price moves, and keeps a historical record of how those moves performed.' } },
           { '@type': 'Question', name: 'What is a steam move in football betting?', acceptedAnswer: { '@type': 'Answer', text: 'A steam move is a sudden, significant shift in a betting line. On SteamWatch it means an implied-probability move of 3 or more percentage points on an outcome before kickoff. SteamWatch reports the move and its outcome; it does not claim to know why the market moved.' } },
-          { '@type': 'Question', name: 'Is SteamWatch free?', acceptedAnswer: { '@type': 'Answer', text: 'The core is free: real-time steam alerts via Telegram, live odds and biggest movers, the closing line archive, team profit/loss records, and bet and hedge calculators. SteamWatch Pro adds the Dixon-Coles match predictor, rolling xG tables, the historical steam results directory, drifters, and the full Longshot Bias explorer.' } },
+          { '@type': 'Question', name: 'Is SteamWatch free?', acceptedAnswer: { '@type': 'Answer', text: 'The core is free: real-time steam alerts via Telegram, live odds and biggest movers, the closing line archive, team profit/loss records, the full Longshot Bias explorer, and bet and hedge calculators. SteamWatch Pro adds the Dixon-Coles match predictor, rolling xG tables, the historical steam results directory and full Drifter rankings.' } },
           { '@type': 'Question', name: 'Which leagues does SteamWatch track?', acceptedAnswer: { '@type': 'Answer', text: 'Premier League, EFL Championship, La Liga, Bundesliga, Serie A, Ligue 1, and the UEFA Champions League, Europa League, Conference League and Nations League, using Pinnacle odds updated roughly every 15 minutes.' } },
         ],
       },
