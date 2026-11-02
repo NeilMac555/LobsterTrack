@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Header, UploadFile
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, text
 from datetime import date, datetime, timedelta
-from typing import Optional
+from typing import Literal, Optional
 
 from app.models import get_db, Match, OddsSnapshot, SteamMove, EmailSubscriber, TotalsSnapshot, SpreadsSnapshot, ClosingLine, SyndicateAlert, XGData, HistoricalMatch, LeagueConstants, PowerRating, PowerRatingHistory, SquadMarketValue
 from app.config import get_settings
@@ -3218,6 +3218,8 @@ async def get_fetcher_health(
         raise HTTPException(status_code=401, detail="Invalid password")
 
     health = odds_scheduler.get_health()
+    from app.services.rolling_xg import refresh_health
+    health["xg_refresh"] = refresh_health(db)
 
     # Enrich per-league info with the actual latest OddsSnapshot timestamp
     # from the database. This tells us whether fetches are landing real data.
@@ -3324,18 +3326,20 @@ async def admin_test_email(
 
 
 @router.post("/admin/refresh-xg")
-async def admin_refresh_xg(password: str = Query(..., description="Admin password")):
-    """
-    Manually trigger the weekly Understat xG refresh (useful on demand —
-    the scheduled run happens every Monday 03:00 UTC).
-    """
-    from app.services.xg_refresher import xg_refresher
+async def admin_refresh_xg(password: str = Query(..., description="Admin password"), db: Session = Depends(get_db)):
+    """Refresh the Sportmonks season snapshots that power domestic rolling xG."""
+    from app.services.form_lab import refresh_form_lab
+    from app.services.rolling_xg import DOMESTIC, refresh_health
 
     if password != ADMIN_PASSWORD:
         raise HTTPException(status_code=403, detail="Invalid admin password")
 
-    summary = await xg_refresher.refresh()
-    return summary
+    result = await refresh_form_lab()
+    health = refresh_health(db)
+    failed = [key for key in DOMESTIC if key in result and isinstance(result[key], dict)]
+    if result.get("error") or failed or health["last_error"]:
+        raise HTTPException(503, detail=result.get("error") or health["last_error"] or "Refresh failed for " + ", ".join(failed))
+    return health["summary"]
 
 
 @router.post("/admin/refresh-league-constants")
@@ -4526,6 +4530,20 @@ async def get_scheduler_status(
 # Rolling xG Data
 # ============================================================
 
+@router.get("/rolling-xg/teams", response_model=XGTeamsResponse)
+def get_rolling_xg_teams(league: str, db: Session = Depends(get_db)):
+    from app.services.rolling_xg import snapshot, season_name
+    saved = snapshot(db, league, season_name())
+    return {"teams": sorted(set(saved.data["teams"].values())) if saved else []}
+
+
+@router.get("/rolling-xg")
+def get_rolling_xg(league: str, team: str, db: Session = Depends(get_db)):
+    from app.services.rolling_xg import team_series, season_name
+    return team_series(db, league, team, season_name())
+
+
+# Historical CSV/Understat API, also used by existing archive clients.
 def _latest_xg_season(db: Session, league: str) -> Optional[str]:
     """
     Most recent season present for a league (e.g. '2526'). Season codes
@@ -4955,13 +4973,13 @@ def create_forecast(
 
 
 @router.get("/european-xg")
-async def get_european_xg(league: str = Query(...), db: Session = Depends(get_db)):
+async def get_european_xg(league: str = Query(...), metric: Literal['xG', 'npxG'] = 'npxG', db: Session = Depends(get_db)):
     from app.models import EuropeanXG
     from app.services.european_xg import LEAGUES, season_name
     if league not in LEAGUES:
         raise HTTPException(status_code=400, detail="Unsupported European competition")
     row = db.get(EuropeanXG, league + ':' + season_name())
-    return {'source': 'Sportmonks', 'metric': 'npxG', 'season': season_name(),
+    return {'source': 'Sportmonks', 'metric': metric, 'season': season_name(),
         'scope': 'Main competition only; qualifiers excluded',
         'updated_at': row.refreshed_at.isoformat() + 'Z' if row else None,
         'fixtures': row.fixtures if row else []}

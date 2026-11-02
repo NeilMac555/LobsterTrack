@@ -16,8 +16,8 @@ def season_name(now=None):
     year = now.year if now.month >= 7 else now.year - 1
     return f'{year}/{year+1}'
 
-def metric(fixture, team_id):
-    rows = [r for r in fixture.get('xgfixture', []) if r.get('type_id') == 7943 and r.get('participant_id') == team_id]
+def metric(fixture, team_id, type_id=7943):
+    rows = [r for r in fixture.get('xgfixture', []) if r.get('type_id') == type_id and r.get('participant_id') == team_id]
     if len(rows) != 1:
         return None
     value = (rows[0].get('data') or {}).get('value')
@@ -43,8 +43,13 @@ def normalize(fixtures, league_id, season_id):
         h, a = sides['home'], sides['away']
         hx = metric(f, h['id']) if state == 'FT' else None
         ax = metric(f, a['id']) if state == 'FT' else None
+        home_xg = metric(f, h['id'], 5304) if state == 'FT' else None
+        away_xg = metric(f, a['id'], 5304) if state == 'FT' else None
         output[f['id']] = dict(id=f['id'], date=f['starting_at'], stage=stage,
             home=h['name'], away=a['name'], home_npxg=hx, away_npxg=ax,
+            home_xg=home_xg, away_xg=away_xg,
+            total_xg_missing_reason='Extra-time match: 90-minute xG unavailable' if state != 'FT' else
+                ('Total xG not supplied' if home_xg is None or away_xg is None else None),
             missing_reason='Extra-time match: 90-minute xG unavailable' if state != 'FT' else
                 ('Non-penalty xG not supplied' if hx is None or ax is None else None))
     return sorted(output.values(), key=lambda f: (f['date'], f['id']))
@@ -80,10 +85,15 @@ async def refresh_european_xg(token=None):
                     existing = db.get(EuropeanXG, identity)
                     if existing and not {f['id'] for f in existing.fixtures}.issubset({f['id'] for f in fixtures}):
                         raise ValueError('Incomplete response: previous fixtures retained')
+                    by_id = {f['id']: f for f in fixtures}
+                    if existing and any(f.get(side) is not None and by_id[f['id']].get(side) is None
+                                        for f in existing.fixtures for side in ('home_xg', 'away_xg')):
+                        raise ValueError('Previously published total xG is missing')
                     db.merge(EuropeanXG(key=identity, league=key, season=season_name(),
                         refreshed_at=datetime.utcnow(), fixtures=fixtures))
                     db.commit()
-                summary[key] = {'completed': len(fixtures), 'with_npxg': sum(f['missing_reason'] is None for f in fixtures)}
+                summary[key] = {'completed': len(fixtures), 'with_npxg': sum(f['missing_reason'] is None for f in fixtures),
+                                'with_total_xg': sum(f['total_xg_missing_reason'] is None for f in fixtures)}
             except Exception:
                 # Never log credential-bearing request objects. Preserve the last snapshot on failure.
                 summary[key] = {'error': 'Refresh failed; previous snapshot retained'}

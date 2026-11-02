@@ -66,7 +66,7 @@ interface FetcherHealth {
     seconds_since_last_run: number | null;
     last_error: string | null;
     summary: {
-      total_rows_inserted?: number;
+      total_fixtures?: number;
       leagues?: Record<string, { rows: number; teams: number; note?: string }>;
       errors?: string[];
     } | null;
@@ -169,7 +169,7 @@ export default function AdminEmailsPage() {
       } else {
         const body = await res.json();
         setXgRefreshMsg(
-          `Refreshed ${body.total_rows_inserted ?? 0} rows across ` +
+          `Refreshed ${body.total_fixtures ?? 0} fixtures across ` +
           `${Object.keys(body.leagues ?? {}).length} leagues`
         );
         // Re-fetch health so the new last_run_at shows immediately
@@ -571,7 +571,7 @@ export default function AdminEmailsPage() {
             </div>
           </div>
 
-          {/* xG Refresh panel — weekly Understat scrape health + manual trigger */}
+          {/* xG Refresh panel — daily Sportmonks snapshot health + manual trigger */}
           {health.xg_refresh && (
             <div className="bg-slate-800/80 rounded-xl border border-slate-700/50 overflow-hidden mb-6">
               <div className="px-4 py-3 border-b border-slate-700/50 flex items-center justify-between gap-3 flex-wrap">
@@ -606,7 +606,7 @@ export default function AdminEmailsPage() {
                   <div className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">Last Run</div>
                   <div className={`text-base font-mono font-bold mt-1 ${
                     health.xg_refresh.last_run_at
-                      ? (health.xg_refresh.seconds_since_last_run ?? 0) < 8 * 24 * 3600
+                      ? (health.xg_refresh.seconds_since_last_run ?? 0) < 36 * 3600
                         ? 'text-emerald-400'
                         : 'text-amber-400'
                       : 'text-slate-500'
@@ -617,9 +617,9 @@ export default function AdminEmailsPage() {
                   </div>
                 </div>
                 <div>
-                  <div className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">Rows Inserted</div>
+                  <div className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">Fixtures with total xG</div>
                   <div className="text-base font-mono font-bold mt-1 text-white tabular-nums">
-                    {health.xg_refresh.summary?.total_rows_inserted?.toLocaleString() ?? '—'}
+                    {health.xg_refresh.summary?.total_fixtures?.toLocaleString() ?? '—'}
                   </div>
                 </div>
                 <div>
@@ -636,7 +636,7 @@ export default function AdminEmailsPage() {
                   {Object.entries(health.xg_refresh.summary.leagues).map(([k, v]) => (
                     <div key={k} className="bg-slate-900/40 border border-slate-700/40 rounded px-2 py-1.5">
                       <div className="text-slate-500 uppercase tracking-wider text-[9px]">{k.replace('soccer_', '')}</div>
-                      <div className="text-white tabular-nums mt-0.5">{v.rows} rows · {v.teams} teams</div>
+                      <div className="text-white tabular-nums mt-0.5">{v.rows} fixtures · {v.teams} teams</div>
                     </div>
                   ))}
                 </div>

@@ -609,7 +609,7 @@ class OddsScheduler:
             self.xg_refresh_job,
             trigger=CronTrigger(day_of_week="mon", hour=3, minute=0),
             id="xg_refresh_weekly",
-            name="Weekly xG refresh from Understat",
+            name="Weekly Understat archive refresh for forecasts",
             replace_existing=True,
             max_instances=1,
             coalesce=True,
@@ -836,7 +836,7 @@ class OddsScheduler:
                 "schedule": "Every 10 minutes",
             },
             # Weekly xG refresh status — last run, how long ago, result summary
-            "xg_refresh": {
+            "archive_xg_refresh": {
                 "last_run_at": iso(xg_refresher.last_run_at),
                 "seconds_since_last_run": seconds_ago(xg_refresher.last_run_at),
                 "last_error": xg_refresher.last_error,

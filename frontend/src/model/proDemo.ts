@@ -57,9 +57,10 @@ export const demoParams: ModelParams = {
 };
 
 export function rollingXG(side: Side, window: 5 | 10) {
-  const history = demo.xg[side];
-  return history.map((row, index) => {
-    const sample = history.slice(Math.max(0, index + 1 - window), index + 1);
-    return { ...row, for: mean(sample, 'npxgf'), against: mean(sample, 'npxga'), sampleSize: sample.length };
+  const history = demo.rollingTotalXg[side];
+  return history.slice(window - 1).map((row, index) => {
+    const sample = history.slice(index, index + window);
+    return { ...row, for: sample.reduce((sum, game) => sum + game.xgf, 0) / window,
+      against: sample.reduce((sum, game) => sum + game.xga, 0) / window };
   }).slice(-20);
 }

@@ -177,7 +177,7 @@ export async function getClosingLinesGrouped(params?: {
 }
 
 export async function getXGTeams(league: string): Promise<{ teams: string[] }> {
-  return fetchJson<{ teams: string[] }>(`${API_BASE}/xg-data/teams?league=${encodeURIComponent(league)}`);
+  return fetchJson<{ teams: string[] }>(`${API_BASE}/rolling-xg/teams?league=${encodeURIComponent(league)}`);
 }
 
 export async function getJusticeTable(months: 6 | 12 = 12): Promise<JusticeResponse> {
@@ -198,7 +198,7 @@ export async function getXgUndershooting(months: 6 | 12 = 12, limit = 10): Promi
 
 export async function getXGData(league: string, team: string): Promise<XGDataResponse> {
   const params = new URLSearchParams({ league, team });
-  return fetchJson<XGDataResponse>(`${API_BASE}/xg-data?${params}`);
+  return fetchJson<XGDataResponse>(`${API_BASE}/rolling-xg?${params}`);
 }
 
 export async function getInPlayJumps(params?: {

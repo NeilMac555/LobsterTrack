@@ -174,14 +174,14 @@ export default function GoalsComingSoonPage() {
       <H3>Do teams that underperform xG catch up?</H3>
       <P>Usually, over a long enough run: goals track xG closely across a season. When the catch-up happens is not predictable. Across the five leagues last season, a club's goals-minus-xG gap in its first five matches had almost no relationship with its gap over the remaining 33.</P>
       <H3>Does the gap include penalties?</H3>
-      <P>Yes. xG here is total xG including penalty xG, so it compares like with like against goals scored. Non-penalty figures per club are on the <Link to="/tools/rolling-xg" className={a}>Rolling xG</Link> page.</P>
+      <P>Yes. xG here is total xG including penalty xG, so it compares like with like against goals scored. Five- and ten-game total xG trends are on the <Link to="/tools/rolling-xg" className={a}>Rolling xG</Link> page.</P>
       <H3>How often is this page updated?</H3>
       <P>Every Monday at 03:30 UTC from Understat, covering the current and previous season, so the 12-month window is always complete.</P>
 
       <H2>More on SteamWatch</H2>
       <ul className="list-disc pl-5 text-slate-300 text-sm space-y-1">
         <li><Link to="/justice-table" className={a}>The Justice Table: every league table rebuilt on expected points</Link></li>
-        <li><Link to="/tools/rolling-xg" className={a}>Rolling xG: each club's last 5 and 10 matches, non-penalty</Link></li>
+        <li><Link to="/tools/rolling-xg" className={a}>Rolling xG: each club's last 5 and 10 matches, including penalties</Link></li>
         <li><Link to="/team-pnl" className={a}>Team P/L: what backing each club at closing prices returned</Link></li>
         <li><Link to="/tools/match-predictor" className={a}>Match Predictor: fair odds from xG form</Link></li>
         <li><Link to="/dropping-odds" className={a}>Dropping Odds: where the market is moving today</Link></li>

@@ -514,7 +514,7 @@ ${PRO.faqs.map(([q, a]) => `<h3>${esc(q)}</h3><p>${esc(a)}</p>`).join('\n')}`,
     path: 'tools/rolling-xg',
     title: 'Rolling xG Tables by Team | SteamWatch',
     description:
-      'Rolling 5 and 10 match non-penalty xG for and against for every top-five-league club, with last season joined on so windows start full.',
+      'Rolling 5 and 10 match total xG for and against for every top-five-league club, with last season joined on so windows start full.',
     ogType: 'website',
     jsonLd: {
       '@context': 'https://schema.org',
@@ -528,11 +528,11 @@ ${PRO.faqs.map(([q, a]) => `<h3>${esc(q)}</h3><p>${esc(a)}</p>`).join('\n')}`,
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
     },
     noscriptHtml: `<h1>Rolling xG</h1>
-<p class="pr-lead">This page charts each club's non-penalty expected goals for and against as a rolling average over its last five or ten league matches, so a change in underlying performance is visible before it shows up in results. A trend line is fitted to each series, and the latest rolling figures are shown as a summary.</p>
+<p class="pr-lead">This page charts each club's total expected goals, including penalties, for and against as a rolling average over its last five or ten league matches, so a change in underlying performance is visible before it shows up in results. A trend line is fitted to each series, and the latest rolling figures are shown as a summary.</p>
 <h2>Where the data comes from</h2>
-<p>Match-level non-penalty xG is imported from Understat for the Premier League, La Liga, Bundesliga, Serie A and Ligue 1. The import runs every Monday at 03:00 UTC, once the weekend's matches are settled. Each row is one team in one match, with the non-penalty xG it created and the non-penalty xG it conceded. Penalties are excluded because they carry a fixed xG value that says nothing about open-play performance.</p>
+<p>Sportmonks supplies total xG for and against in the Premier League, La Liga, Bundesliga, Serie A and Ligue 1. The data refreshes daily at 06:45 UTC. Only completed league matches enter the chart. If either team's xG is missing, windows containing that match are left blank.</p>
 <h2>How the numbers are calculated</h2>
-<p>The rolling figure at any match is the plain average of the previous five or ten matches' non-penalty xG for, and separately against. To keep the window full at the start of a season, the full previous season is joined on to the front of each club's series and marked on the chart, so a five-game window on matchday two includes the last three games of the season before. Promoted clubs have no top-flight history and start from their first match. The trend line is a least-squares fit over the plotted window.</p>
+<p>The rolling figure at any match is the plain average of the previous five or ten matches' total xG for, and separately against. To keep the window full at the start of a season, the full previous season is joined on to the front of each club's series and marked on the chart, so a five-game window on matchday two includes the last three games of the season before. Promoted clubs have no top-flight history and start from their first match. The trend line is a least-squares fit over the plotted window.</p>
 <h2>Current coverage</h2>
 <p>{{HEADLINE}} Rolling xG is a form view and feeds no odds calculation on this site. The closing prices the market set for the same matches are in the <a href="/closing-lines">closing-line archive</a>. Which clubs are scoring above or below their chances is on <a href="/goals-coming-soon">Goals Coming Soon</a>.</p>`,
   },
@@ -761,9 +761,9 @@ const HEADLINE = {};
   HEADLINE['tools/match-predictor'] = epl
     ? `For the Premier League the current constants are ${epl.avg_goals_per_team.toFixed(2)} goals per team per match and a home advantage ratio of ${epl.home_away_ratio.toFixed(2)}, from ${fmtN(Math.round(epl.sample_matches))} matches (computed ${String(epl.computed_at).slice(0, 10)}).`
     : 'Each league has its own scoring rate and home advantage.';
-  const teams = await fetchJson('/api/xg-data/teams?league=soccer_epl');
+  const teams = await fetchJson('/api/rolling-xg/teams?league=soccer_epl');
   const first = teams?.teams?.[0];
-  const xg = first ? await fetchJson(`/api/xg-data?league=soccer_epl&team=${encodeURIComponent(first)}`) : null;
+  const xg = first ? await fetchJson(`/api/rolling-xg?league=soccer_epl&team=${encodeURIComponent(first)}`) : null;
   const lastPt = xg?.data?.length ? xg.data[xg.data.length - 1] : null;
   HEADLINE['tools/rolling-xg'] = teams?.teams?.length
     ? `${teams.teams.length} Premier League clubs have data this season${lastPt ? `, with matches through ${String(lastPt.match_date).slice(0, 10)} on record` : ''} as of ${today}.`

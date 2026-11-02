@@ -132,7 +132,7 @@ def faq(rows_below: list[dict], rows_above: list[dict], data: dict) -> list[tupl
          "almost no relationship with its gap over the remaining 33."),
         ("Does the gap include penalties?",
          "Yes. xG here is total xG including penalty xG, so it compares like with like against goals scored. "
-         "Non-penalty figures per club are on the Rolling xG page."),
+         "Five- and ten-game total xG trends are on the Rolling xG page."),
         ("How often is this page updated?",
          "Every Monday at 03:30 UTC from Understat, covering the current and previous season, so the 12-month window "
          "is always complete."),
@@ -220,7 +220,7 @@ def _render(db: Session) -> str:
         + f"<h2 id=\"faq\">Questions</h2>{faq_html}"
         "<h2>More on SteamWatch</h2>"
         "<ul><li><a href=\"/justice-table\">The Justice Table: every league table rebuilt on expected points</a></li>"
-        "<li><a href=\"/tools/rolling-xg\">Rolling xG: each club's last 5 and 10 matches, non-penalty</a></li>"
+        "<li><a href=\"/tools/rolling-xg\">Rolling xG: each club's last 5 and 10 matches, including penalties</a></li>"
         "<li><a href=\"/team-pnl\">Team P/L: what backing each club at closing prices returned</a></li>"
         "<li><a href=\"/tools/match-predictor\">Match Predictor: fair odds from xG form</a></li>"
         "<li><a href=\"/dropping-odds\">Dropping Odds: where the market is moving today</a></li></ul>"

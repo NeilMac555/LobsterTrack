@@ -15,7 +15,8 @@ import {
   ReferenceLine,
 } from 'recharts';
 import { getXGTeams, getXGData } from '../api';
-import type { XGDataPoint } from '../types';
+import type { XGDataPoint, XGDataResponse } from '../types';
+import { computeChartData } from '../utils/rollingXg';
 import { LEAGUE_CONFIG } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import PaywallOverlay from '../components/PaywallOverlay';
@@ -24,23 +25,14 @@ type RollingWindow = 5 | 10;
 
 const FREE_TEAMS: Record<string, string> = {
   soccer_epl: 'Arsenal',
-  soccer_spain_la_liga: 'Barcelona',
-  soccer_germany_bundesliga: 'Bayern Munich',
+  soccer_spain_la_liga: 'FC Barcelona',
+  soccer_germany_bundesliga: 'FC Bayern München',
   soccer_italy_serie_a: 'Juventus',
   soccer_france_ligue_one: 'Paris Saint Germain',
 };
 
-// xG is club-only (Understat doesn't cover UEFA comps or internationals),
-// so we drop those keys on top of the global `hidden` flag.
-const XG_LEAGUES = Object.entries(LEAGUE_CONFIG).filter(
-  ([key, cfg]) =>
-    !cfg.hidden &&
-    key !== 'soccer_uefa_champs_league' &&
-    key !== 'soccer_uefa_europa_league' &&
-    key !== 'soccer_uefa_europa_conference_league' &&
-    key !== 'soccer_uefa_nations_league' &&
-    key !== 'soccer_fifa_world_cup'
-);
+const XG_LEAGUES = Object.entries(LEAGUE_CONFIG).filter(([key, cfg]) => !cfg.hidden && key in FREE_TEAMS);
+const EMPTY_DATA: XGDataPoint[] = [];
 
 // Terminal typography matching the rest of the charts on the site
 const MONO_STACK = '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace';
@@ -52,77 +44,6 @@ const AXIS_TICK = {
 };
 const COLOR_FOR = '#22d3ee';   // cyan-400
 const COLOR_AGAINST = '#f87171'; // red-400
-
-// Simple linear regression: returns [slope, intercept]
-function linearRegression(ys: number[]): [number, number] {
-  const n = ys.length;
-  if (n < 2) return [0, ys[0] ?? 0];
-  let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
-  for (let i = 0; i < n; i++) {
-    sumX += i;
-    sumY += ys[i];
-    sumXY += i * ys[i];
-    sumX2 += i * i;
-  }
-  const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
-  const intercept = (sumY - slope * sumX) / n;
-  return [slope, intercept];
-}
-
-interface ChartDataPoint {
-  matchNumber: number;
-  /** Category x-axis key — unique across the season boundary: last-season
-   *  games render as "L34", current-season games as plain "5". */
-  label: string;
-  season: string;
-  rollingFor: number | null;
-  rollingAgainst: number | null;
-  trendFor: number | null;
-  trendAgainst: number | null;
-}
-
-function computeChartData(raw: XGDataPoint[], windowSize: RollingWindow): ChartDataPoint[] {
-  if (raw.length < windowSize) return [];
-
-  // The series may span two seasons (the API prepends last season's
-  // final 10 matches so windows stay full from matchday 1). The
-  // CURRENT season is whatever the final point belongs to.
-  const currentSeason = raw[raw.length - 1].season;
-
-  const rollingFor: number[] = [];
-  const rollingAgainst: number[] = [];
-  const points: ChartDataPoint[] = [];
-
-  for (let i = windowSize - 1; i < raw.length; i++) {
-    let sumFor = 0, sumAgainst = 0;
-    for (let j = i - windowSize + 1; j <= i; j++) {
-      sumFor += raw[j].npxg_for;
-      sumAgainst += raw[j].npxg_against;
-    }
-    rollingFor.push(sumFor / windowSize);
-    rollingAgainst.push(sumAgainst / windowSize);
-    const isPrevSeason = raw[i].season !== currentSeason;
-    points.push({
-      matchNumber: raw[i].match_number,
-      label: isPrevSeason ? `L${raw[i].match_number}` : String(raw[i].match_number),
-      season: raw[i].season,
-      rollingFor: Math.round((sumFor / windowSize) * 100) / 100,
-      rollingAgainst: Math.round((sumAgainst / windowSize) * 100) / 100,
-      trendFor: null,
-      trendAgainst: null,
-    });
-  }
-
-  // Compute trend lines via linear regression
-  const [slopeF, intF] = linearRegression(rollingFor);
-  const [slopeA, intA] = linearRegression(rollingAgainst);
-  for (let i = 0; i < points.length; i++) {
-    points[i].trendFor = Math.round((intF + slopeF * i) * 100) / 100;
-    points[i].trendAgainst = Math.round((intA + slopeA * i) * 100) / 100;
-  }
-
-  return points;
-}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function CustomTooltip({ active, payload, label }: any) {
@@ -177,7 +98,9 @@ function DomesticRollingXGPage() {
   const [team, setTeam] = useState('');
   const [windowSize, setWindowSize] = useState<RollingWindow>(10);
   const [teams, setTeams] = useState<string[]>([]);
-  const [rawData, setRawData] = useState<XGDataPoint[]>([]);
+  const [response, setResponse] = useState<XGDataResponse | null>(null);
+  const current = response?.league === league && response.team_name === team ? response : null;
+  const rawData = current?.data ?? EMPTY_DATA;
   const [loading, setLoading] = useState(false);
   const [teamsLoading, setTeamsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -199,49 +122,47 @@ function DomesticRollingXGPage() {
     setTeam(newTeam);
   };
 
-  // Fetch teams when league changes
   useEffect(() => {
+    let active = true;
     setTeamsLoading(true);
     setTeam('');
-    setRawData([]);
+    setResponse(null);
+    setError(null);
     getXGTeams(league)
       .then((res) => {
+        if (!active) return;
         setTeams(res.teams);
-        if (res.teams.length > 0) {
-          const freeTeam = FREE_TEAMS[league];
-          if (!isSubscribed && freeTeam && res.teams.includes(freeTeam)) {
-            setTeam(freeTeam);
-          } else {
-            setTeam(res.teams[0]);
-          }
-        }
+        const preview = FREE_TEAMS[league];
+        setTeam(isSubscribed ? (res.teams[0] ?? '') : (res.teams.includes(preview) ? preview : ''));
       })
-      .catch(() => setTeams([]))
-      .finally(() => setTeamsLoading(false));
+      .catch(() => { if (active) { setTeams([]); setError('Could not load Sportmonks teams'); } })
+      .finally(() => { if (active) setTeamsLoading(false); });
+    return () => { active = false; };
   }, [league, isSubscribed]);
 
-  // Fetch xG data when team changes
   useEffect(() => {
     if (!team) return;
+    let active = true;
     setLoading(true);
     setError(null);
     getXGData(league, team)
-      .then((res) => setRawData(res.data))
-      .catch(() => setError('Failed to load xG data'))
-      .finally(() => setLoading(false));
+      .then((result) => { if (active) setResponse(result); })
+      .catch(() => { if (active) setError('Failed to load xG data'); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, [league, team]);
 
-  const chartData = useMemo(() => computeChartData(rawData, windowSize), [rawData, windowSize]);
+  const chartData = useMemo(() => computeChartData(rawData, windowSize, current?.season ?? ''), [rawData, windowSize, current?.season]);
 
   // Where the current season starts within the (possibly two-season)
   // series — null when the chart is single-season. Drives the dashed
   // boundary marker.
   const seasonBoundaryLabel = useMemo(() => {
     if (!chartData.length) return null;
-    const cur = chartData[chartData.length - 1].season;
+    const cur = current?.season;
     if (chartData[0].season === cur) return null;
     return chartData.find((p) => p.season === cur)?.label ?? null;
-  }, [chartData]);
+  }, [chartData, current?.season]);
 
   const stats = useMemo(() => {
     if (chartData.length === 0) return null;
@@ -251,15 +172,15 @@ function DomesticRollingXGPage() {
     // last). GAMES counts THIS SEASON only; the full plotted series
     // includes last season's carryover and would read misleadingly
     // large (Neil flagged "39 games" on matchday 1, 2026-08-23).
-    const currentSeason = rawData.length ? rawData[rawData.length - 1].season : null;
+    const currentSeason = current?.season;
     const gamesThisSeason = rawData.filter((p) => p.season === currentSeason).length;
     return {
-      avgFor: last.rollingFor ?? 0,
-      avgAgainst: last.rollingAgainst ?? 0,
-      diff: (last.rollingFor ?? 0) - (last.rollingAgainst ?? 0),
+      avgFor: last.rollingFor,
+      avgAgainst: last.rollingAgainst,
+      diff: last.rollingFor === null || last.rollingAgainst === null ? null : last.rollingFor - last.rollingAgainst,
       gamesPlayed: gamesThisSeason,
     };
-  }, [chartData, rawData]);
+  }, [chartData, rawData, current?.season]);
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6 space-y-4 sm:space-y-6">
@@ -275,7 +196,7 @@ function DomesticRollingXGPage() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Rolling xG</h1>
           <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em]">
-            Non-penalty Expected Goals &middot; Team Form Tracker
+            Sportmonks &middot; Total expected goals · penalties included
           </p>
           <p className="text-xs text-slate-400 mt-1">
             Which clubs are scoring above or below their chances? See <Link to="/goals-coming-soon" className="text-cyan-400 hover:underline">Goals Coming Soon</Link>.
@@ -359,16 +280,24 @@ function DomesticRollingXGPage() {
         />
       )}
 
+      {current?.updated_at && (
+        <p className="text-xs text-slate-400">
+          Sportmonks · Last refreshed {new Date(current.updated_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })} UTC · Updates daily at 06:45 UTC.
+          {Date.now() - Date.parse(current.updated_at) > 36 * 3600_000 && ' The last successful refresh is over 36 hours old.'}
+          {rawData.some(p => p.xg_for === null || p.xg_against === null) && ' A match is missing xG. Windows containing it are blank.'}
+        </p>
+      )}
+
       {/* Stat Cards — terminal style */}
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
-          <StatCard label="Avg xG For" value={stats.avgFor.toFixed(2)} color="text-cyan-400" borderColor="border-cyan-500/30" />
-          <StatCard label="Avg xGA" value={stats.avgAgainst.toFixed(2)} color="text-red-400" borderColor="border-red-500/30" />
+          <StatCard label="Avg xG For" value={stats.avgFor?.toFixed(2) ?? '—'} color="text-cyan-400" borderColor="border-cyan-500/30" />
+          <StatCard label="Avg xG Against" value={stats.avgAgainst?.toFixed(2) ?? '—'} color="text-red-400" borderColor="border-red-500/30" />
           <StatCard
             label="xG Diff"
-            value={`${stats.diff > 0 ? '+' : ''}${stats.diff.toFixed(2)}`}
-            color={stats.diff > 0 ? 'text-emerald-400' : stats.diff < 0 ? 'text-red-400' : 'text-slate-400'}
-            borderColor={stats.diff > 0 ? 'border-emerald-500/30' : stats.diff < 0 ? 'border-red-500/30' : 'border-slate-700/60'}
+            value={stats.diff === null ? '—' : `${stats.diff > 0 ? '+' : ''}${stats.diff.toFixed(2)}`}
+            color={stats.diff !== null && stats.diff > 0 ? 'text-emerald-400' : stats.diff !== null && stats.diff < 0 ? 'text-red-400' : 'text-slate-400'}
+            borderColor={stats.diff !== null && stats.diff > 0 ? 'border-emerald-500/30' : stats.diff !== null && stats.diff < 0 ? 'border-red-500/30' : 'border-slate-700/60'}
           />
           <StatCard label="Games This Season" value={String(stats.gamesPlayed)} color="text-white" borderColor="border-slate-700/60" />
         </div>
@@ -561,7 +490,7 @@ export default function RollingXGPage() {
   const [competition, setCompetition] = useState('domestic');
   return <div>
     <nav aria-label="xG competition" className="max-w-5xl mx-auto px-4 pt-5 flex flex-wrap gap-2">
-      {[['domestic', 'Domestic � Understat'], ['soccer_uefa_champs_league', 'Champions League'], ['soccer_uefa_europa_league', 'Europa League'], ['soccer_uefa_europa_conference_league', 'Conference League']].map(([key, name]) =>
+      {[['domestic', 'Domestic | Sportmonks'], ['soccer_uefa_champs_league', 'Champions League'], ['soccer_uefa_europa_league', 'Europa League'], ['soccer_uefa_europa_conference_league', 'Conference League']].map(([key, name]) =>
         <button key={key} onClick={() => setCompetition(key)} className={`px-4 py-2 rounded-lg text-sm ${competition === key ? 'bg-cyan-900 text-cyan-300' : 'bg-slate-800 text-slate-400'}`}>{name}</button>)}
     </nav>
     {competition === 'domestic' ? <DomesticRollingXGPage/> : <EuropeanRollingXG league={competition}/>}

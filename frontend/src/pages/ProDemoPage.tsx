@@ -97,9 +97,9 @@ function Form() {
 function XG() {
   const [side, setSide] = useState<Side>('home');
   const rows = rollingXG(side, 5), last = rows.at(-1)!;
-  return <Feature id="xg" title="Rolling xG" benefit="Are performances improving before results do?" href="/tools/rolling-xg" sample="5-game rolling npxG · 20 points · to Sep 2026">
+  return <Feature id="xg" title="Rolling xG" benefit="Are performances improving before results do?" href="/tools/rolling-xg" sample="Sportmonks total xG · 5-game average · 20 points · to Sep 2026">
     <Choices label="Rolling xG team" value={side} onChange={setSide} options={[{ value: 'home', label: 'Arsenal' }, { value: 'away', label: 'Leeds' }]} />
-    <MiniChart series={[{ values: rows.map(row => row.for), color: '#67e8f9' }, { values: rows.map(row => row.against), color: '#fbbf24', dashed: true }]} label={`${demo.match[side]} 5-game rolling npxG, latest ${num(last.for)} for and ${num(last.against)} against`} from="Last 20 match points" to="Latest" />
+    <MiniChart series={[{ values: rows.map(row => row.for), color: '#67e8f9' }, { values: rows.map(row => row.against), color: '#fbbf24', dashed: true }]} label={`${demo.match[side]} 5-game rolling total xG, latest ${num(last.for)} for and ${num(last.against)} against`} from="Last 20 match points" to="Latest" />
     <div className="demo-xg-key"><span>For <strong>{num(last.for)}</strong></span><span>Against <strong>{num(last.against)}</strong></span></div>
   </Feature>;
 }
@@ -215,7 +215,7 @@ export default function ProDemoPage() {
       <p>These are fixed examples captured on 22 October 2026, not live prices. Each card’s sample differs. “Pro” identifies tools whose full access requires membership; some also offer free previews. Past returns do not establish a future betting edge.</p>
       <p>Steam and drifter tables show the three teams with the most settled qualifying moves. They include all tracked competitions, not only Telegram alerts. A qualifying move is at least 3 percentage points (pp) in raw implied probability, observed within two hours of kick-off. One move per match and side is retained: the largest observed move. P/L uses a 1-unit stake at that recorded price; draws lose. This descriptive record is not a strategy backtest.</p>
       <p>Favourite–longshot examples use the 2025/26 Premier League and backing returns at the tool’s recorded market prices. Team P/L uses Arsenal’s available records from 12 February 2026, at 1 unit per bet. Open the full tools for price coverage, filters and settlement details. A unit is an equal stake, independent of currency.</p>
-      <p>Form Lab uses Sportmonks non-penalty xG (npxG). Rolling xG and predictor inputs use Understat. Providers may differ. Arsenal–Leeds examples use matches before 10 October 2026; model inputs are the last 20 games at all venues. The current predictor reconstructs fair prices from historical inputs; these are not saved pre-match forecasts.</p>
+      <p>The live Rolling xG page uses Sportmonks total xG, including penalties. Form Lab uses Sportmonks non-penalty xG. The predictor example in this demo uses historical Understat inputs. Arsenal–Leeds examples use matches before 10 October 2026; model inputs are the last 20 games at all venues. The current predictor reconstructs fair prices from historical inputs; these are not saved pre-match forecasts.</p>
       <p>Model absence scenarios reduce Arsenal’s scoring rate by 6% (weakened) or 12% (severe), while increasing Leeds’ by the same percentage. They are hypothetical, not team news. Other parameters and the archived league baseline are fixed. Form Lab controls do not alter model inputs. Fair odds exclude bookmaker margin.</p>
       <p>The odds chart uses archived quotes; only the last quote’s bookmaker is identified as Pinnacle. Closing lines are Pinnacle’s last recorded pre-kick-off quote, not a guarantee of the exact market close. Club and manager ratings are dated snapshots. Manager impact is the tool’s accumulated rating measure, not a causal estimate. Goals coming soon compares recorded goals with xG over the stated sample; an xG shortfall does not guarantee a rebound.</p>
     </div></details>

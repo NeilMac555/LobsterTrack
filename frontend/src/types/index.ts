@@ -356,8 +356,8 @@ export interface XGDataPoint {
   league: string;
   season: string;
   match_number: number;
-  npxg_for: number;
-  npxg_against: number;
+  xg_for: number | null;
+  xg_against: number | null;
   match_date: string;
 }
 
@@ -455,6 +455,9 @@ export interface XgUndershootingResponse {
 export interface XGDataResponse {
   team_name: string;
   league: string;
+  source: string;
+  season: string;
+  updated_at: string | null;
   data: XGDataPoint[];
 }
 

@@ -1,4 +1,5 @@
 """Form Lab: independently collected Sportmonks fixtures, transparent denominators."""
+import asyncio
 import math
 from datetime import datetime
 import httpx
@@ -61,9 +62,20 @@ def normalize(f, key, sid, season):
     return dict(id=f['id'],season=season,date=f['starting_at'],home_id=hp['id'],away_id=ap['id'],home=hp['name'],away=ap['name'],
         hg=h,ag=a,hh=ht_h,ah=ht_a,first=first_goal(f,h,a),
         hx=stat(f,'xgfixture',7943,hp['id']) if state=='FT' else None,ax=stat(f,'xgfixture',7943,ap['id']) if state=='FT' else None,
+        home_xg=stat(f,'xgfixture',5304,hp['id']) if state=='FT' else None,
+        away_xg=stat(f,'xgfixture',5304,ap['id']) if state=='FT' else None,
         hc=stat(f,'statistics',34,hp['id']) if state=='FT' else None,ac=stat(f,'statistics',34,ap['id']) if state=='FT' else None)
 
+_refresh_lock = asyncio.Lock()
+
+
 async def refresh_form_lab(backfill=False):
+    # The on-demand rolling xG refresh and daily job publish to the same cache.
+    async with _refresh_lock:
+        return await _refresh_form_lab(backfill)
+
+
+async def _refresh_form_lab(backfill):
     token=get_settings().sportmonks_api_token
     if not token:return {'error':'Sportmonks not configured'}
     year=int(season_name()[:4]); names=[f'{y}/{y+1}' for y in range(year-2,year+1)]
@@ -82,7 +94,12 @@ async def refresh_form_lab(backfill=False):
                     name=season['name'];identity=key+':'+name
                     with SessionLocal() as db:
                         existing=db.get(FormLabSeason,identity)
-                        if existing and name!=season_name() and not backfill:continue
+                        if existing and name != season_name() and not backfill:
+                            # Hydrate the preceding domestic season once for rolling windows.
+                            needs_totals = (key not in EUROPE and name == names[-2] and
+                                any('home_xg' not in f for f in existing.data['fixtures']))
+                            if not needs_totals:
+                                continue
                     data=(await request(f"football/seasons/{season['id']}",include='fixtures.participants;fixtures.scores;fixtures.events;fixtures.state;fixtures.statistics;fixtures.xGFixture;fixtures.stage'))['data']
                     if 'fixtures' not in data:raise ValueError('Fixtures absent')
                     rows={}
@@ -107,6 +124,9 @@ async def refresh_form_lab(backfill=False):
                     with SessionLocal() as db:
                         old=db.get(FormLabSeason,identity)
                         if old and not {f['id'] for f in old.data['fixtures']}.issubset(rows):raise ValueError('Fixture list shrank')
+                        if old and any(f.get(side) is not None and rows[f['id']].get(side) is None
+                                       for f in old.data['fixtures'] for side in ('hx', 'ax', 'home_xg', 'away_xg')):
+                            raise ValueError('Previously published expected goals are missing')
                         db.merge(FormLabSeason(key=identity,league=key,season=name,updated_at=datetime.utcnow(),data={'fixtures':sorted(rows.values(),key=lambda f:(f['date'],f['id'])),'teams':teams,'standings':standings,'upcoming':upcoming}))
                         db.commit()
                     summary[identity]=len(rows)
