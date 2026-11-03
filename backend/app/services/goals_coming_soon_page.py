@@ -8,7 +8,7 @@ the shared prerender shell (dist/_shell.html) like /dropping-odds and the
 match pages, so crawlers see every table without running JS.
 GoalsComingSoonPage.tsx mounts over it and adds the 6-month toggle.
 
-Data: services/xg_goals.table (Understat, refreshed Mondays 03:30 UTC).
+Data: services/xg_goals.table (Sportmonks, refreshed daily at 06:45 UTC).
 Spec: docs/goals-coming-soon.md.
 """
 from __future__ import annotations
@@ -31,7 +31,7 @@ TOP_N = 10
 LEAGUE_N = 5
 
 TITLE = "Teams Underperforming xG: Goals Coming Soon | SteamWatch"
-DESCRIPTION = "Teams underperforming their xG, and those running hot: goals against expected goals across Europe's top five leagues, last 12 months, updated weekly."
+DESCRIPTION = "Compare goals scored with Sportmonks total xG across Europe's top five leagues over the last six or twelve months. Updated daily."
 assert len(TITLE) < 60 and len(DESCRIPTION) < 155
 
 ANCHOR = {
@@ -97,18 +97,12 @@ def method_html() -> str:
     """Kept in step with GoalsComingSoonPage.tsx."""
     return (
         "<h2 id=\"method\">How it is measured</h2>"
-        "<p>Match-level goals and xG come from Understat for the Premier League, La Liga, Bundesliga, Serie A and Ligue 1, "
-        "refreshed every Monday. The window is a rolling 12 months of league matches, or 6 months on the toggle, so it "
-        "spans the end of last season and the start of this one. A club needs at least 8 matches in the window, and a "
-        "place in the division this season, to appear. xG here is total xG, including penalties, so it lines up with "
-        "goals scored. Gap is goals minus xG; Def gap is goals conceded minus xGA, so a negative Def gap means a defence "
-        "conceding less than the chances it allows.</p>"
+        "<p>Sportmonks supplies the final scores and total xG, including penalties, for the Premier League, La Liga, Bundesliga, "
+        "Serie A and Ligue 1. A club must be in its division this season and have at least eight league matches in the selected "
+        "window with total xG for both teams. Gap is goals scored minus xG. Def gap is goals conceded minus xG against.</p>"
         "<h2 id=\"meaning\">What the gap means</h2>"
-        "<p>Over a season, goals track xG closely, and a club well below its xG usually catches up in the end. When that "
-        "happens is not something the numbers can say. Last season across the five leagues, a club's gap in its first "
-        "five matches told you almost nothing about its gap in the remaining 33. Read the tables as a list of attacks "
-        "creating more than they score, and of attacks scoring more than they create, and check the price before "
-        "assuming the market has not noticed.</p>"
+        "<p>A team with 18 goals from 21 xG has scored three fewer goals than the chances suggest. Compare the per-match "
+        "gap as well as the total when two clubs have played different numbers of games.</p>"
     )
 
 
@@ -127,15 +121,13 @@ def faq(rows_below: list[dict], rows_above: list[dict], data: dict) -> list[tupl
          f"As of matches to {asof}, the clubs furthest above their xG over the last 12 months are {hot3}. "
          "Goals usually fall back towards chances created, so these are the regression candidates in the other direction."),
         ("Do teams that underperform xG catch up?",
-         "Usually, over a long enough run: goals track xG closely across a season. When the catch-up happens is not "
-         "predictable. Across the five leagues last season, a club's goals-minus-xG gap in its first five matches had "
-         "almost no relationship with its gap over the remaining 33."),
+         "A team can keep scoring below its xG. The gap describes finishing over the selected matches and gives no "
+         "timetable for when the next goal will come."),
         ("Does the gap include penalties?",
          "Yes. xG here is total xG including penalty xG, so it compares like with like against goals scored. "
          "Five- and ten-game total xG trends are on the Rolling xG page."),
         ("How often is this page updated?",
-         "Every Monday at 03:30 UTC from Understat, covering the current and previous season, so the 12-month window "
-         "is always complete."),
+         "The Sportmonks refresh runs daily at 06:45 UTC. Completed league matches count once total xG is available for both teams."),
     ]
 
 
@@ -154,8 +146,8 @@ def _render(db: Session) -> str:
             "@type": "Dataset",
             "name": "SteamWatch Goals Coming Soon: goals against expected goals for every club in Europe's top five leagues",
             "description": ("Goals scored and conceded against expected goals (xG and xGA) for every club in the Premier League, "
-                            "La Liga, Bundesliga, Serie A and Ligue 1 over a rolling 12-month window, from Understat match data, "
-                            "refreshed weekly. Identifies teams underperforming and overperforming their xG."),
+                            "La Liga, Bundesliga, Serie A and Ligue 1 over a rolling 12-month window, from Sportmonks match data, "
+                            "refreshed daily. Identifies teams underperforming and overperforming their xG."),
             "url": url,
             "isAccessibleForFree": True,
             "dateModified": data.get("latest_match") or now.date().isoformat(),
@@ -207,7 +199,7 @@ def _render(db: Session) -> str:
         "above theirs. Gap is goals scored minus xG over the last 12 months: the more negative, the more chances have gone "
         f"unrewarded. {_esc(_sentence_top3(below, True))}</p>"
         f"<p class=\"pr-meta\">Matches from {_d(data['since'])} to {_d(data.get('latest_match'))} · {data['clubs_in_window']} clubs with "
-        f"{data['min_matches']}+ matches · Understat data · updated {_d(updated)}</p>"
+        f"{data['min_matches']}+ matches · {_esc(data['source'])} data · updated {_d(updated)}</p>"
         "<nav class=\"pr-meta\" aria-label=\"Sections\">Jump to: <a href=\"#underperforming\">Below xG</a> · <a href=\"#overperforming\">Above xG</a> · "
         + " · ".join(f"<a href=\"#{ANCHOR[lg]}\">{_esc(LEAGUE_LABEL[lg])}</a>" for lg in LEAGUE_ORDER) + " · <a href=\"#faq\">Questions</a></nav>"
         "<h2 id=\"underperforming\">Teams underperforming xG: furthest below, all five leagues</h2>"

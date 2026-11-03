@@ -12,7 +12,7 @@ xg_goals_router = APIRouter(prefix="/xg-goals", tags=["xg-goals"])
 def get_table(db: Session = Depends(get_db), months: int = Query(12, description="Rolling window: 12 or 6 months")):
     """Every club in the top five leagues with 8+ matches in the window:
     goals, xG, attack gap, conceded, xGA, defence gap. Sorted by attack
-    gap, most negative first. Understat data, refreshed Mondays."""
+    gap, most negative first. Daily Sportmonks total xG, including penalties."""
     return table(db, months=months)
 
 

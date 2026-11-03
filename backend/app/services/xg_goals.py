@@ -5,14 +5,9 @@ Feeds /goals-coming-soon (the clubs in Europe's top five leagues scoring
 furthest below and above their xG over a rolling window), the per-league
 sections on that page, and the one-line xG note on match pages.
 
-Data: Understat's league JSON (understat_feed.fetch_league), per-team
-`history` items, which carry goals scored/conceded and xG/xGA/npxG/npxGA
-for every played league match. Stored in xg_team_results, one row per
-club per match, upserted on (league, team_name, match_date). The weekly
-job refreshes the current season and the previous one, so a 12-month
-window is always fully covered.
-
-Nothing here touches xg_data or the rolling-xG refresher.
+Goals Coming Soon and the match notes use the daily Sportmonks domestic
+fixture snapshots. The Justice Table still uses expected points from
+the weekly Understat archive in xg_team_results.
 """
 from __future__ import annotations
 
@@ -22,14 +17,18 @@ import re
 import sys
 import time
 import unicodedata
+from collections import defaultdict
 from datetime import date, datetime, timedelta
-from typing import Any, Optional
+from math import fsum
+from typing import Any, NamedTuple, Optional
 
 from sqlalchemy import Integer, func
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
+from app.models.form_lab import FormLabSeason
 from app.models.xg_team_result import XGTeamResult
+from app.services.form_lab import numeric
 
 # understat_feed.py lives in backend/ (the app's working directory in the
 # container); make it importable when this module is used from elsewhere.
@@ -56,8 +55,13 @@ LEAGUE_ORDER = list(LEAGUE_LABEL)
 MIN_MATCHES = 8
 WINDOWS = {12: 365, 6: 182}
 
-# Odds API (our Match table) names that don't normalise to Understat's.
+# Odds API match names that differ from Sportmonks participant names.
 ALIASES = {
+    "lille": "LOSC Lille",
+    "lyon": "Olympique Lyonnais",
+    "marseille": "Olympique Marseille",
+    "alaves": "Deportivo Alavés",
+    "deportivo la coruna": "Deportivo A Coruña",
     "1. fc koln": "FC Cologne",
     "1. fc köln": "FC Cologne",
     "borussia monchengladbach": "Borussia M.Gladbach",
@@ -77,7 +81,7 @@ ALIASES = {
 }
 
 
-def season_year(now: Optional[datetime] = None) -> int:
+def season_year(now: Optional[date] = None) -> int:
     """Understat season year (2026 = 2026/27), July rollover."""
     now = now or datetime.utcnow()
     return now.year if now.month >= 7 else now.year - 1
@@ -191,75 +195,79 @@ def _cached(key: str, build):
     return value
 
 
+class _ClubMatch(NamedTuple):
+    day: str
+    goals: int
+    conceded: int
+    xg: float
+    xga: float
+
+
+def _league_gap_rows(current, previous, since, through, min_matches):
+    """Use stable Sportmonks participant IDs and the current season's club names."""
+    matches = defaultdict(list)
+    fixtures = {f['id']: f for season in (previous, current) if season is not None
+                for f in season.data['fixtures']}
+    for fixture in fixtures.values():
+        day = fixture['date'][:10]
+        if not since <= day <= through:
+            continue
+        home_xg = numeric(fixture.get('home_xg'))
+        away_xg = numeric(fixture.get('away_xg'))
+        if home_xg is None or away_xg is None:
+            continue
+        home_goals, away_goals = fixture['hg'], fixture['ag']
+        matches[fixture['home_id']].append(_ClubMatch(day, home_goals, away_goals, home_xg, away_xg))
+        matches[fixture['away_id']].append(_ClubMatch(day, away_goals, home_goals, away_xg, home_xg))
+
+    for team_id, name in current.data['teams'].items():
+        games = matches.get(int(team_id), [])
+        n = len(games)
+        if n < min_matches:
+            continue
+        goals = sum(g.goals for g in games)
+        conceded = sum(g.conceded for g in games)
+        xg = fsum(g.xg for g in games)
+        xga = fsum(g.xga for g in games)
+        gap, def_gap = goals - xg, conceded - xga
+        yield {
+            'league': current.league, 'league_name': LEAGUE_LABEL[current.league],
+            'team': name, 'matches': n, 'goals': goals, 'xg': round(xg, 1),
+            'gap': round(gap, 1), 'gap_per_match': round(gap / n, 2),
+            'conceded': conceded, 'xga': round(xga, 1), 'def_gap': round(def_gap, 1),
+            'def_gap_per_match': round(def_gap / n, 2), 'last_match': max(g.day for g in games),
+        }
+
+
 def table(db: Session, months: int = 12, min_matches: int = MIN_MATCHES) -> dict[str, Any]:
-    """Every club in the division this season with `min_matches`+ league
-    matches in the window: goals, xG, gap (goals minus xG), and the same
-    for defence (conceded minus xGA). Sorted by attack gap, most negative
-    first, so rows[:n] are the underperformers and rows[-n:] reversed are
-    the overperformers."""
+    """Goals and total xG from the same completed Sportmonks league fixtures."""
     months = months if months in WINDOWS else 12
-    days = WINDOWS[months]
+    today = datetime.utcnow().date()
 
     def build():
-        since = date.today() - timedelta(days=days)
-        current = site_season(season_year())
-        # Only clubs in the division this season: a relegated side's window
-        # would otherwise be filled by last season's matches.
-        in_division = (
-            db.query(XGTeamResult.league, XGTeamResult.team_name)
-            .filter(XGTeamResult.season == current)
-            .distinct()
-            .subquery()
-        )
-        q = (
-            db.query(
-                XGTeamResult.league,
-                XGTeamResult.team_name,
-                func.count(XGTeamResult.id).label("matches"),
-                func.sum(XGTeamResult.goals_for).label("goals"),
-                func.sum(XGTeamResult.xg_for).label("xg"),
-                func.sum(XGTeamResult.goals_against).label("conceded"),
-                func.sum(XGTeamResult.xg_against).label("xga"),
-                func.max(XGTeamResult.match_date).label("last_match"),
-            )
-            .join(in_division, (in_division.c.league == XGTeamResult.league) & (in_division.c.team_name == XGTeamResult.team_name))
-            .filter(XGTeamResult.match_date >= since)
-            .group_by(XGTeamResult.league, XGTeamResult.team_name)
-            .having(func.count(XGTeamResult.id) >= min_matches)
-        )
-        rows = []
-        for r in q.all():
-            n = int(r.matches)
-            gap = float(r.goals) - float(r.xg)
-            dgap = float(r.conceded) - float(r.xga)
-            rows.append({
-                "league": r.league,
-                "league_name": LEAGUE_LABEL.get(r.league, r.league),
-                "team": r.team_name,
-                "matches": n,
-                "goals": int(r.goals),
-                "xg": round(float(r.xg), 1),
-                "gap": round(gap, 1),
-                "gap_per_match": round(gap / n, 2),
-                "conceded": int(r.conceded),
-                "xga": round(float(r.xga), 1),
-                "def_gap": round(dgap, 1),
-                "def_gap_per_match": round(dgap / n, 2),
-                "last_match": r.last_match.isoformat(),
-            })
-        rows.sort(key=lambda x: (x["gap"], x["team"]))
-        latest = db.query(func.max(XGTeamResult.match_date)).scalar()
-        refreshed = db.query(func.max(XGTeamResult.updated_at)).scalar()
+        since = (today - timedelta(days=WINDOWS[months])).isoformat()
+        year = season_year(today)
+        current, previous = f'{year}/{year + 1}', f'{year - 1}/{year}'
+        seasons = db.query(FormLabSeason).filter(
+            FormLabSeason.league.in_(LEAGUE_ORDER), FormLabSeason.season.in_((previous, current)),
+        ).all()
+        by_key = {(s.league, s.season): s for s in seasons}
+        rows, refreshed = [], []
+        for league in LEAGUE_ORDER:
+            latest = by_key.get((league, current))
+            if latest is None:
+                continue
+            refreshed.append(latest.updated_at)
+            rows.extend(_league_gap_rows(latest, by_key.get((league, previous)), since,
+                                        today.isoformat(), min_matches))
+        rows.sort(key=lambda r: (r['gap'], r['team']))
         return {
-            "months": months,
-            "window_days": days,
-            "since": since.isoformat(),
-            "latest_match": latest.isoformat() if latest else None,
-            "refreshed_at": refreshed.isoformat() if refreshed else None,
-            "min_matches": min_matches,
-            "clubs_in_window": len(rows),
-            "rows": rows,
+            'source': 'Sportmonks', 'metric': 'xG', 'months': months, 'window_days': WINDOWS[months],
+            'since': since, 'latest_match': max((r['last_match'] for r in rows), default=None),
+            'refreshed_at': min(refreshed).isoformat() + 'Z' if refreshed else None,
+            'min_matches': min_matches, 'clubs_in_window': len(rows), 'rows': rows,
         }
+
     return _cached(f"table:{months}:{min_matches}", build)
 
 

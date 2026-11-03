@@ -11,7 +11,7 @@ import type { XgTableResponse, XgTableRow } from '../types';
 
 const TITLE = 'Teams Underperforming xG: Goals Coming Soon | SteamWatch';
 const DESCRIPTION =
-  "Teams underperforming their xG, and those running hot: goals against expected goals across Europe's top five leagues, last 12 months, updated weekly.";
+  "Compare goals scored with Sportmonks total xG across Europe's top five leagues over the last six or twelve months. Updated daily.";
 
 const TOP_N = 10;
 const LEAGUE_N = 5;
@@ -110,7 +110,7 @@ export default function GoalsComingSoonPage() {
         {' '}{top3(below, true)}
       </P>
       <p className="text-xs text-slate-500 font-mono mb-3">
-        {data ? `Matches from ${fmtDate(data.since)} to ${asOf} · ${data.clubs_in_window} clubs with ${data.min_matches}+ matches · Understat data · updated ${fmtDate(data.refreshed_at)}` : 'Loading'}
+        {data ? `Matches from ${fmtDate(data.since)} to ${asOf} · ${data.clubs_in_window} clubs with ${data.min_matches}+ matches · ${data.source} data · updated ${fmtDate(data.refreshed_at)}` : 'Loading'}
       </p>
       <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
         <nav className="text-xs text-slate-500 font-mono" aria-label="Sections">
@@ -150,18 +150,14 @@ export default function GoalsComingSoonPage() {
 
       <H2 id="method">How it is measured</H2>
       <P>
-        Match-level goals and xG come from Understat for the Premier League, La Liga, Bundesliga, Serie A and Ligue 1, refreshed
-        every Monday. The window is a rolling 12 months of league matches, or 6 months on the toggle, so it spans the end of
-        last season and the start of this one. A club needs at least 8 matches in the window, and a place in the division this
-        season, to appear. xG here is total xG, including penalties, so it lines up with goals scored. Gap is goals minus xG;
-        Def gap is goals conceded minus xGA, so a negative Def gap means a defence conceding less than the chances it allows.
+        Sportmonks supplies the final scores and total xG, including penalties, for the Premier League, La Liga, Bundesliga,
+        Serie A and Ligue 1. A club must be in its division this season and have at least eight league matches in the selected
+        window with total xG for both teams. Gap is goals scored minus xG. Def gap is goals conceded minus xG against.
       </P>
       <H2 id="meaning">What the gap means</H2>
       <P>
-        Over a season, goals track xG closely, and a club well below its xG usually catches up in the end. When that happens
-        is not something the numbers can say. Last season across the five leagues, a club's gap in its first five matches told
-        you almost nothing about its gap in the remaining 33. Read the tables as a list of attacks creating more than they
-        score, and of attacks scoring more than they create, and check the price before assuming the market has not noticed.
+        A team with 18 goals from 21 xG has scored three fewer goals than the chances suggest. Compare the per-match
+        gap as well as the total when two clubs have played different numbers of games.
       </P>
 
       <H2 id="faq">Questions</H2>
@@ -172,11 +168,11 @@ export default function GoalsComingSoonPage() {
       <H3>Which teams are overperforming their xG?</H3>
       <P>As of matches to {asOf}, the clubs furthest above their xG are {above.slice(0, 3).map((r) => `${r.team} (${sgn(r.gap)})`).join(', ')}. Goals usually fall back towards chances created, so these are the regression candidates in the other direction.</P>
       <H3>Do teams that underperform xG catch up?</H3>
-      <P>Usually, over a long enough run: goals track xG closely across a season. When the catch-up happens is not predictable. Across the five leagues last season, a club's goals-minus-xG gap in its first five matches had almost no relationship with its gap over the remaining 33.</P>
+      <P>A team can keep scoring below its xG. The gap describes finishing over the selected matches and gives no timetable for when the next goal will come.</P>
       <H3>Does the gap include penalties?</H3>
       <P>Yes. xG here is total xG including penalty xG, so it compares like with like against goals scored. Five- and ten-game total xG trends are on the <Link to="/tools/rolling-xg" className={a}>Rolling xG</Link> page.</P>
       <H3>How often is this page updated?</H3>
-      <P>Every Monday at 03:30 UTC from Understat, covering the current and previous season, so the 12-month window is always complete.</P>
+      <P>The Sportmonks refresh runs daily at 06:45 UTC. Completed league matches count once total xG is available for both teams.</P>
 
       <H2>More on SteamWatch</H2>
       <ul className="list-disc pl-5 text-slate-300 text-sm space-y-1">

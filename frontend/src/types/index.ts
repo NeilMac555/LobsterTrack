@@ -418,6 +418,7 @@ export interface XgTableRow {
 }
 
 export interface XgTableResponse {
+  source: string;
   months: number;
   window_days: number;
   since: string;

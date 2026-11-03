@@ -37,7 +37,7 @@ Goals, xG, Gap (goals minus xG), Per match, Def gap (conceded minus xGA).
 ## Head
 
 - Title (55): `Teams Underperforming xG: Goals Coming Soon | SteamWatch`
-- Description (149): `Teams underperforming their xG, and those running hot: goals against expected goals across Europe's top five leagues, last 12 months, updated weekly.`
+- Description: `Compare goals scored with Sportmonks total xG across Europe's top five leagues over the last six or twelve months. Updated daily.`
 - Canonical, OG and Twitter tags, one of each, marked `data-prerender`
   so the app's Helmet copies replace them cleanly.
 - JSON-LD: `Dataset` (creator Person Neil Mac -> /about, publisher
@@ -47,21 +47,17 @@ Goals, xG, Gap (goals minus xG), Per match, Def gap (conceded minus xGA).
 
 ## Data
 
-- Table `xg_team_results`: one row per club per league match, goals for
-  and against, xG/xGA, npxG/npxGA, from Understat's league JSON
-  (`understat_feed.fetch_league`), unique on (league, team_name,
-  match_date). Model `app/models/xg_team_result.py`.
-- Refresh: `services/xg_goals.refresh` fetches current and previous
-  season for all five leagues and upserts. Scheduled Mondays 03:30 UTC
-  (`scheduler.xg_goals_refresh_job`), after the rolling-xG refresh, which
-  it does not touch. First fill done by hand on 30 Sep 2026 (4,004 rows).
+- The page reads the same Sportmonks `form_lab_seasons` fixture snapshots
+  as Rolling xG. The daily Form Lab job runs at 06:45 UTC. Current and
+  previous domestic seasons supply scores and total xG (type 5304).
 - Query: `xg_goals.table(db, months)` returns every club in the division
   this season with 8+ matches in the window, sorted by gap ascending.
-  Ten-minute in-process cache, cleared on refresh. Relegated clubs are
-  excluded by requiring at least one match in the current season.
+  The current roster determines eligibility. Stable participant IDs link
+  both seasons. Rankings are cached for ten minutes.
 - Window: 365 or 182 days back from today, by match date.
 - xG is total xG (penalties included) so it compares like with like with
-  goals scored. Non-penalty figures are on Rolling xG.
+  goals scored. Fixtures missing either side's total xG are excluded from
+  both the goals and xG sums. Recorded zero xG counts.
 
 ## Endpoints
 
@@ -97,10 +93,8 @@ Goals, xG, Gap (goals minus xG), Per match, Def gap (conceded minus xGA).
 ## Editorial rules
 
 Plain and factual, no marketing adjectives, no "not X but Y" lines, no
-em dashes. Nothing on the page is a prediction: the regression claim is
-stated with its evidence (last season, first five matches versus the
-remaining 33, near-zero relationship) and the page tells the reader to
-check the price.
+em dashes. Explain the historical gap and the per-match figure without
+promising that a team's finishing will reverse in its next game.
 
 ## Follow-ups (not built)
 

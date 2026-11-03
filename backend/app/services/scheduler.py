@@ -354,9 +354,7 @@ class OddsScheduler:
             logger.error("xG refresh failed", error=str(e))
 
     async def xg_goals_refresh_job(self):
-        """Weekly goals-vs-xG refresh (services/xg_goals) for the
-        /goals-coming-soon page: current and previous season, all five
-        leagues. Independent of the rolling-xG refresher above."""
+        """Weekly Understat archive refresh for the Justice Table's expected points."""
         try:
             from app.services.xg_goals import refresh_async
             summary = await refresh_async()
@@ -615,8 +613,7 @@ class OddsScheduler:
             coalesce=True,
         )
 
-        # Goals vs xG (Understat) for /goals-coming-soon: Monday 03:30 UTC,
-        # after the rolling-xG refresh above.
+        # Justice Table expected points still use the Understat archive.
         self.scheduler.add_job(
             self.xg_goals_refresh_job,
             trigger=CronTrigger(day_of_week="mon", hour=3, minute=30),
