@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
-from app.models import Base, Match, SteamMove, SyndicateAlert, AlertResult, HistoricalMatch
+from app.models import Base, Match, SteamMove, SyndicateAlert, AlertResult, HistoricalMatch, FormLabSeason
 from app.api.routes import get_steam_results, get_drifter_results, get_telegram_results
 from app.services.result_recovery import recover_results
 
@@ -139,3 +139,27 @@ class MarketMoveResultsTests(unittest.TestCase):
             record['home_team'] = 'Home'
             self.db.add(AlertResult(match_id='verified', home_score=1, away_score=0)); self.db.flush()
             self.assertEqual(recover_results(self.db, [m]), 0)
+
+    def test_sportmonks_recovers_old_fixture_and_preserves_identity(self):
+        kickoff = (self.now-timedelta(days=30)).replace(microsecond=0)
+        league = 'soccer_uefa_champs_league'
+        self.db.add(FormLabSeason(key=league+':2026/2027', league=league, season='2026/2027',
+            updated_at=self.now, data={'fixtures':[dict(id=111, date=kickoff.isoformat(),
+                home='FC Bayern München', away='Arsenal', hg=2, ag=2)]}))
+        variations = [
+            ('exact', league, kickoff, 'Bayern Munich', 'Arsenal'),
+            ('wrong_time', league, kickoff+timedelta(days=1), 'Bayern Munich', 'Arsenal'),
+            ('wrong_league', 'soccer_epl', kickoff, 'Bayern Munich', 'Arsenal'),
+            ('reversed', league, kickoff, 'Arsenal', 'Bayern Munich'),
+            ('unknown', league, kickoff, 'Bayern', 'Arsenal'),
+        ]
+        moves = []
+        for identity, competition, when, home, away in variations:
+            self.fixture(identity, league=competition, ko=when, home=home, away=away)
+            moves.append(self.move(identity, score=None))
+        self.assertEqual(recover_results(self.db, moves), 1)
+        self.db.commit()
+        self.assertEqual((moves[0].home_score, moves[0].away_score), (2, 2))
+        self.assertFalse(any(m.result_updated for m in moves[1:]))
+        self.assertEqual(recover_results(self.db, moves), 0)
+        self.assertEqual(self.db.query(AlertResult).count(), 1)

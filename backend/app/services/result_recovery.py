@@ -2,8 +2,58 @@
 import json
 from functools import lru_cache
 from pathlib import Path
+from datetime import datetime
 
-from app.models import AlertResult, HistoricalMatch, Match, SteamMove
+from app.models import AlertResult, FormLabSeason, HistoricalMatch, Match, SteamMove
+
+
+# Reviewed provider spellings. Fixture recovery requires both teams, competition
+# and exact kickoff; unknown spellings remain unresolved.
+SPORTMONKS_NAMES = {
+    'FC Bayern München': 'Bayern Munich',
+    'Inter': 'Inter Milan',
+    'Lens': 'RC Lens',
+    'Viking': 'Viking FK',
+    'Sporting CP': 'Sporting Lisbon',
+    'Kairat': 'FC Kairat',
+    'Panathinaikos': 'Panathinaikos FC',
+    'Riga': 'Riga FC',
+    'Lugano': 'FC Lugano',
+    'Kauno Žalgiris': 'FK Kauno Žalgiris',
+    'Brann': 'SK Brann',
+    'Jablonec': 'FK Jablonec',
+    'Brighton & Hove Albion': 'Brighton and Hove Albion',
+    'Crvena Zvezda': 'Red Star Belgrade',
+    'FC København': 'FC Copenhagen',
+    'Nordsjælland': 'FC Nordsjaelland',
+    'CSKA Sofia': 'PFC CSKA Sofia',
+    'Mjällby': 'Mjällby AIF',
+    'Sturm Graz': 'SK Sturm Graz',
+    'Olympique Marseille': 'Marseille',
+    'Ararat-Armenia': 'FC Ararat-Armenia',
+    'Ferencvárosi': 'Ferencváros TC',
+    'OFI': 'OFI Crete',
+    'Bayer 04 Leverkusen': 'Bayer Leverkusen',
+}
+
+
+def sportmonks_scores(db, matches):
+    """Recover regulation-time finals from published, completed-fixture snapshots."""
+    leagues = {m.sport_key for m in matches}
+    candidates = {}
+    for snapshot in db.query(FormLabSeason).filter(FormLabSeason.league.in_(leagues)):
+        for fixture in snapshot.data['fixtures']:
+            key = (snapshot.league, datetime.fromisoformat(fixture['date']),
+                   SPORTMONKS_NAMES.get(fixture['home'], fixture['home']),
+                   SPORTMONKS_NAMES.get(fixture['away'], fixture['away']))
+            candidates.setdefault(key, set()).add((fixture['id'], fixture['hg'], fixture['ag']))
+    scores = {}
+    for match in matches:
+        records = candidates.get((match.sport_key, match.commence_time, match.home_team, match.away_team), set())
+        if len(records) == 1:
+            _, home, away = next(iter(records))
+            scores[match.id] = (home, away)
+    return scores
 
 
 @lru_cache(maxsize=1)
@@ -42,6 +92,7 @@ def recover_results(db, moves):
     if not ids:
         return 0
     matches = {m.id: m for m in db.query(Match).filter(Match.id.in_(ids))}
+    provider_scores = sportmonks_scores(db, matches.values())
     saved = {r.match_id: (r.home_score, r.away_score)
              for r in db.query(AlertResult).filter(AlertResult.match_id.in_(ids))}
     legacy = {}
@@ -64,6 +115,8 @@ def recover_results(db, moves):
             score = saved[id]
         elif len(legacy.get(id, set())) == 1:
             score = next(iter(legacy[id]))
+        elif legacy.get(id):
+            continue
         else:
             rows = db.query(HistoricalMatch).filter(
                 HistoricalMatch.league == match.sport_key,
@@ -73,12 +126,15 @@ def recover_results(db, moves):
                 HistoricalMatch.fthg.isnot(None), HistoricalMatch.ftag.isnot(None),
                 HistoricalMatch.ftr.in_(['H', 'D', 'A']),
             ).all()
-            if len(rows) != 1:
-                continue
-            row = rows[0]
-            score = (row.fthg, row.ftag)
-            expected = 'H' if score[0] > score[1] else 'A' if score[0] < score[1] else 'D'
-            if row.ftr != expected:
+            if not rows and id in provider_scores:
+                score = provider_scores[id]
+            elif len(rows) == 1:
+                row = rows[0]
+                score = (row.fthg, row.ftag)
+                expected = 'H' if score[0] > score[1] else 'A' if score[0] < score[1] else 'D'
+                if row.ftr != expected or (id in provider_scores and provider_scores[id] != score):
+                    continue
+            else:
                 continue
         if any(not isinstance(n, int) or n < 0 for n in score):
             continue
