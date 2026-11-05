@@ -40,7 +40,6 @@ const tools: Array<{
     path: 'https://amiup.io/?utm_source=steamwatch&utm_medium=cross-promo&utm_campaign=tools',
     icon: '🤖',
     external: true,
-    isNew: true,
   },
   // Forecast Engine hidden from nav 2026-08-05 while the player-level
   // (top-scorer) work is in progress — route redirects to home. Re-add
@@ -48,11 +47,11 @@ const tools: Array<{
   { name: 'Bet Calculator', path: '/tools/bet-calculator', icon: '🎫' },
   { name: 'Hedging Calculator', path: '/tools/hedge-calculator', icon: '🧮' },
   { name: 'Match Model', path: '/tools/match-predictor', icon: '⚽' },
-  { name: 'Form Lab', path: '/tools/form-lab', icon: 'FL', isNew: true },
+  { name: 'Form Lab', path: '/tools/form-lab', icon: 'FL' },
   { name: 'Research Lab', path: '/tools/research-lab', icon: 'RL', isNew: true },
   { name: 'Rolling xG', path: '/tools/rolling-xg', icon: '📊' },
-  { name: 'Manager Ratings', path: '/tools/manager-ratings', icon: '↗', isNew: true, reloadDocument: true },
-  { name: 'Club Ratings', path: '/tools/club-ratings', icon: '🏆', isNew: true },
+  { name: 'Manager Ratings', path: '/tools/manager-ratings', icon: '↗', reloadDocument: true },
+  { name: 'Club Ratings', path: '/tools/club-ratings', icon: '🏆' },
 ];
 
 export default function Layout() {
