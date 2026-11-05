@@ -14,6 +14,7 @@ from app.models import User, get_db
 from app.models.research_track import ResearchTrack
 from app.services.research_query import SAMPLE, Rules, resolve
 from app.services.research_results import report
+from app.services.research_movements import MOVES, movement_question, movement_report
 
 router = APIRouter(prefix="/research")
 
@@ -60,10 +61,17 @@ def example(response: Response, db: Session = Depends(get_db)):
 def run(body: Question, _=Depends(pro), db: Session = Depends(get_db)):
     # A stated sample size checks the result. It never selects an arbitrary subset.
     question = body.question.strip()
+    try:
+        ranking = movement_question(question, body.previous)
+    except ValueError as e:
+        raise HTTPException(422, str(e)) from e
+    if ranking:
+        return movement_report(db, ranking)
     count = re.search(r"\ball\s+(\d+)\s+(games|matches|fixtures)\b", question, re.I)
     if count:
         question = question[: count.start()] + "all games" + question[count.end() :]
-    result = report(db, interpret(question, body.previous))
+    previous = body.previous if not MOVES.search((body.previous or "").casefold()) else None
+    result = report(db, interpret(question, previous))
     if count and int(count[1]) != result["summary"]["games"]:
         raise HTTPException(
             422,

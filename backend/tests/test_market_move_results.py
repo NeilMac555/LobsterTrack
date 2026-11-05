@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.models import Base, Match, SteamMove, SyndicateAlert, AlertResult, HistoricalMatch, FormLabSeason
 from app.api.routes import get_steam_results, get_drifter_results, get_telegram_results
 from app.services.result_recovery import recover_results
+from app.services.research_movements import movement_question, movement_report
 
 
 class MarketMoveResultsTests(unittest.TestCase):
@@ -57,6 +58,36 @@ class MarketMoveResultsTests(unittest.TestCase):
         self.assertAlmostEqual(r.moves[0].movement_percent, 100/1.7-50)
         self.assertEqual(r.profit_units, .7)
         self.assertEqual(asyncio.run(get_telegram_results(self.db, None, 200, None)).total_moves, 0)
+
+    def test_research_movement_leaders_count_matches_not_ticks_alerts_or_results(self):
+        question = "Which team has seen steam moves the most this season from the Top 5 leagues?"
+        q = movement_question(question)
+        self.fixture("fr", league="soccer_france_ligue_one", away="Paris FC")
+        self.move("fr", outcome="away", score=(1, 1))
+        self.move("fr", outcome="away", price=1.6, score=(1, 1))
+        self.fixture("es", league="soccer_spain_la_liga", home="Madrid")
+        self.move("es", score=None)
+        for id, league in [("cup", "soccer_uefa_champs_league"), ("champ", "soccer_efl_champ")]:
+            self.fixture(id, league=league, home="Madrid"); self.move(id)
+        self.fixture("prior", ko=datetime(q.season,6,1)); self.move("prior")
+        self.fixture("future", ko=self.now+timedelta(days=2)); self.move("future")
+        self.fixture("drift"); self.move("drift", price=2.5)
+        r = movement_report(self.db, q)
+        self.assertEqual(r["count"], 2)
+        madrid, paris = r["rows"]
+        self.assertEqual((madrid["rank"], madrid["pending"], paris["rank"], paris["draws"]), (1,1,1,1))
+        self.assertEqual((paris["fixtures"][0]["price"], paris["fixtures"][0]["venue"]),(1.6,"away"))
+        follow = movement_question("What about Ligue 1?", q.canonical)
+        self.assertEqual([t["team"] for t in movement_report(self.db, follow)["rows"]], ["Paris FC"])
+        self.assertEqual(movement_question("What about the top five leagues?", follow.canonical), q)
+        self.assertEqual(movement_question(q.canonical), q)
+        self.assertIsNone(movement_question("Back Lazio every week", q.canonical))
+        drift = movement_question("Which teams have drifted most in the Premier League?")
+        self.assertEqual((drift.direction, movement_report(self.db, drift)["count"]), (-1,1))
+        for s in ("most steamed at home only", "most steam moves in UCL", "most steam moves above 4pp",
+                  "most steam alerts", "Which league has seen the most steam moves?"):
+            with self.subTest(s=s), self.assertRaises(ValueError):
+                movement_question(s)
 
     def test_direction_threshold_timing_and_draw_selection_exclusion(self):
         self.fixture('x')

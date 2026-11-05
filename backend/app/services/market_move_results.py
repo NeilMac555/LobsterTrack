@@ -10,11 +10,16 @@ THRESHOLD_PP = 3.0
 WINDOW_MINUTES = 120
 
 
-def market_move_report(db, direction, since, season_label, league=None, limit=200):
+def qualifying_team_moves(db, direction, since, leagues=None, until=None, observed_by=None):
+    """One largest qualifying move per match and side, even before the result arrives."""
     query = db.query(SteamMove, Match).join(Match, Match.id == SteamMove.match_id).filter(
         SteamMove.outcome.in_(['home', 'away']), SteamMove.match_commence_time >= since)
-    if league:
-        query = query.filter(SteamMove.sport_key == league)
+    if leagues is not None:
+        query = query.filter(SteamMove.sport_key.in_(leagues))
+    if until is not None:
+        query = query.filter(SteamMove.match_commence_time < until)
+    if observed_by is not None:
+        query = query.filter(SteamMove.detected_at <= observed_by)
     pairs = query.all()
     best, scores, excluded = {}, {}, set()
     for move, match in pairs:
@@ -37,6 +42,7 @@ def market_move_report(db, direction, since, season_label, league=None, limit=20
             item = SimpleNamespace(**{c.name: getattr(move, c.name) for c in SteamMove.__table__.columns})
             item.movement_percent = pp
             item.team_name = match.home_team if move.outcome == 'home' else match.away_team
+            item.opponent = match.away_team if move.outcome == 'home' else match.home_team
             best[key] = (priority, item)
     ids = {m.match_id for _, m in best.values()}
     authoritative = {r.match_id: (r.home_score, r.away_score)
@@ -49,6 +55,11 @@ def market_move_report(db, direction, since, season_label, league=None, limit=20
         move.result_updated = score is not None
         if score is not None:
             apply_score(move, score)
+    return all_moves, excluded
+
+
+def market_move_report(db, direction, since, season_label, league=None, limit=200):
+    all_moves, excluded = qualifying_team_moves(db, direction, since, [league] if league else None)
     settled = sorted((m for m in all_moves if m.result_updated),
                      key=lambda m: (m.match_commence_time, m.detected_at, m.id), reverse=True)
     teams = {}
