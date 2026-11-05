@@ -63,7 +63,7 @@ def normalize(f, key, sid, season):
     if ht_h is not None and ht_h>h:ht_h=None
     if ht_a is not None and ht_a>a:ht_a=None
     hp,ap=sides['home'],sides['away']
-    return dict(id=f['id'],season=season,date=f['starting_at'],home_id=hp['id'],away_id=ap['id'],home=hp['name'],away=ap['name'],
+    return dict(id=f['id'],season=season,stage=(f.get('stage') or {}).get('name'),date=f['starting_at'],home_id=hp['id'],away_id=ap['id'],home=hp['name'],away=ap['name'],
         hg=h,ag=a,hh=ht_h,ah=ht_a,first=first_goal(f,h,a),
         hx=stat(f,'xgfixture',7943,hp['id']) if state=='FT' else None,ax=stat(f,'xgfixture',7943,ap['id']) if state=='FT' else None,
         home_xg=stat(f,'xgfixture',5304,hp['id']) if state=='FT' else None,
