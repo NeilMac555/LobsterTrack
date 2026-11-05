@@ -585,20 +585,37 @@ function Lab({ token, member }: { token: string | null; member: boolean }) {
           >
             <label htmlFor="rl-question">Your question</label>
             <div className="rl-inputrow">
-              <input
+              <textarea
                 id="rl-question"
+                rows={3}
                 value={input}
                 maxLength={240}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="How have English clubs done at home in Europe?"
+                onKeyDown={(e) => {
+                  if (
+                    e.key === "Enter" &&
+                    (e.ctrlKey || e.metaKey) &&
+                    !e.nativeEvent.isComposing
+                  ) {
+                    e.preventDefault();
+                    if (!e.repeat) e.currentTarget.form?.requestSubmit();
+                  }
+                }}
+                placeholder="Example: Which teams have seen the most steam moves in Serie A this season?"
                 required
               />
-              <button
-                disabled={busy || !ready || !input.trim()}
-                className="rl-primary"
-              >
-                {busy ? "Working…" : "Run query"}
-              </button>
+              <div className="rl-question-actions">
+                <span className="rl-shortcut">
+                  Ctrl+Enter or ⌘+Enter to run
+                </span>
+                <button
+                  type="submit"
+                  disabled={busy || !ready || !input.trim()}
+                  className="rl-primary"
+                >
+                  {busy ? "Working…" : "Run query"}
+                </button>
+              </div>
             </div>
           </form>
           <div className="rl-examples">
