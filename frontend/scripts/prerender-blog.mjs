@@ -687,6 +687,13 @@ PAGES.push(
 <p>Also on SteamWatch: the <a href="${DOMAIN}/tools/hedge-calculator">Hedge Calculator</a> for locking in a profit or limiting a loss on an open bet.</p>`,
   },
   {
+    path: 'tools/research-lab',
+    title: 'Research Lab: Football Results and Pinnacle Returns | SteamWatch',
+    description: 'Explore the public English clubs in Europe report, then use Pro to ask club questions, check every fixture and follow future results.',
+    ogType: 'website',
+    noscriptHtml: '<h1>Research Lab</h1><p>Explore English clubs at home in Europe in 2026/27. Enable JavaScript to load the current report and its individual fixtures.</p>',
+  },
+  {
     path: 'tools/form-lab',
     title: 'Form Lab: Football Form and Cover Rates | SteamWatch',
     description:

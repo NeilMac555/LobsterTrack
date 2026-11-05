@@ -3,6 +3,14 @@
   "description": "Compare SteamWatch Pro features: Form Lab, rolling xG, Dixon–Coles pricing, Steam Results and Drifters. €19.99 per month.",
   "benefits": [
     {
+      "n": "RL",
+      "name": "Research Lab",
+      "title": "Test your own football questions.",
+      "text": "Compare club records and returns at Pinnacle closing prices, inspect the fixtures and track what happens after you save a question.",
+      "href": "/tools/research-lab",
+      "tags": ["Club records", "Pinnacle P/L", "Saved research"]
+    },
+    {
       "n": "01",
       "name": "Form Lab",
       "title": "Look beyond the last result.",
@@ -64,6 +72,7 @@
     }
   ],
   "inclusions": [
+    "Research Lab queries and saved reports",
     "Full Form Lab access",
     "Full Steam Results team rankings",
     "Rolling xG across available teams",

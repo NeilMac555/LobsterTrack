@@ -26,6 +26,7 @@ import BlogPostPage from './pages/BlogPostPage';
 import RollingXGPage from './pages/RollingXGPage';
 import ClubRatingsPage from './pages/ClubRatingsPage';
 import FormLabPage from './pages/FormLabPage';
+const ResearchLabPage = lazy(() => import('./pages/ResearchLabPage'));
 import TeamPLPage from './pages/TeamPLPage';
 // PowerRankingsPage is temporarily hidden (see the redirected route below).
 import InPlayJumpsPage from './pages/InPlayJumpsPage';
@@ -69,6 +70,7 @@ function App() {
               <Route path="tools/match-predictor" element={<MatchPredictorPage />} />
               <Route path="tools/rolling-xg" element={<RollingXGPage />} />
               <Route path="tools/form-lab" element={<FormLabPage />} />
+              <Route path="tools/research-lab" element={<Suspense fallback={<p role="status">Loading Research Lab…</p>}><ResearchLabPage /></Suspense>} />
               <Route path="tools/club-ratings" element={<ClubRatingsPage />} />
               {/* Forecast Engine hidden 2026-08-05 while player-level
                   (top-scorer) forecasting is built out — redirect to home
