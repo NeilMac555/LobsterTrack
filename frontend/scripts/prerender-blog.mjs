@@ -502,7 +502,7 @@ ${PRO.faqs.map(([q, a]) => `<h3>${esc(q)}</h3><p>${esc(a)}</p>`).join('\n')}`,
     noscriptHtml: `<h1>Club Ratings</h1>
 <p class="pr-lead">A single strength score for every club in the top five European leagues and the UEFA club competitions, placed on one common scale and grouped into six tiers, from Elite (1850 and above) to Lower rated (below 1350). Each club shows its rank, its score, and the change in both since the previous week. The common scale is what lets an English club be compared directly with a Spanish one.</p>
 <h2>How the numbers are calculated</h2>
-<p>The score combines published club strength ratings with match-level non-penalty expected goals from Understat, weighted so that recent matches count for more than older ones, and balanced so that a single result does not dominate. The individual sources and weights are not published. Small gaps between clubs should be read as close calls. Odds play no part in the score.</p>
+<p>The score combines published club strength ratings with match-level non-penalty expected goals from Sportmonks, weighted so that recent matches count for more than older ones, and balanced so that a single result does not dominate. The individual sources and weights are not published. Small gaps between clubs should be read as close calls. Odds play no part in the score.</p>
 <h2>When it updates</h2>
 <p>A new table is published once a week, after Monday 12:00 UTC. If the update is late, the page says so and keeps showing the last published table.</p>
 <h2>Community moves</h2>

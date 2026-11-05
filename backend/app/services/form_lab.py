@@ -44,6 +44,10 @@ def first_goal(f, h, a):
         previous=current
     return first if previous==(h,a) else None
 
+def expected_points(fixture, participant_id):
+    value = stat(fixture, 'xgfixture', 7939, participant_id)
+    return value if value is not None and value <= 3 else None
+
 def normalize(f, key, sid, season):
     if f.get('season_id')!=sid or f.get('league_id')!=LEAGUES[key][0]:return None
     state=(f.get('state') or {}).get('developer_name')
@@ -64,6 +68,8 @@ def normalize(f, key, sid, season):
         hx=stat(f,'xgfixture',7943,hp['id']) if state=='FT' else None,ax=stat(f,'xgfixture',7943,ap['id']) if state=='FT' else None,
         home_xg=stat(f,'xgfixture',5304,hp['id']) if state=='FT' else None,
         away_xg=stat(f,'xgfixture',5304,ap['id']) if state=='FT' else None,
+        home_xpts=expected_points(f,hp['id']) if state=='FT' else None,
+        away_xpts=expected_points(f,ap['id']) if state=='FT' else None,
         hc=stat(f,'statistics',34,hp['id']) if state=='FT' else None,ac=stat(f,'statistics',34,ap['id']) if state=='FT' else None)
 
 _refresh_lock = asyncio.Lock()
@@ -97,7 +103,7 @@ async def _refresh_form_lab(backfill):
                         if existing and name != season_name() and not backfill:
                             # Hydrate the preceding domestic season once for rolling windows.
                             needs_totals = (key not in EUROPE and name == names[-2] and
-                                any('home_xg' not in f for f in existing.data['fixtures']))
+                                any('home_xg' not in f or 'home_xpts' not in f for f in existing.data['fixtures']))
                             if not needs_totals:
                                 continue
                     data=(await request(f"football/seasons/{season['id']}",include='fixtures.participants;fixtures.scores;fixtures.events;fixtures.state;fixtures.statistics;fixtures.xGFixture;fixtures.stage'))['data']
@@ -125,7 +131,7 @@ async def _refresh_form_lab(backfill):
                         old=db.get(FormLabSeason,identity)
                         if old and not {f['id'] for f in old.data['fixtures']}.issubset(rows):raise ValueError('Fixture list shrank')
                         if old and any(f.get(side) is not None and rows[f['id']].get(side) is None
-                                       for f in old.data['fixtures'] for side in ('hx', 'ax', 'home_xg', 'away_xg')):
+                                       for f in old.data['fixtures'] for side in ('hx', 'ax', 'home_xg', 'away_xg', 'home_xpts', 'away_xpts')):
                             raise ValueError('Previously published expected goals are missing')
                         db.merge(FormLabSeason(key=identity,league=key,season=name,updated_at=datetime.utcnow(),data={'fixtures':sorted(rows.values(),key=lambda f:(f['date'],f['id'])),'teams':teams,'standings':standings,'upcoming':upcoming}))
                         db.commit()

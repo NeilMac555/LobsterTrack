@@ -24,13 +24,16 @@ UNDERSTAT_NAMES = {'Coventry':'Coventry City','Ipswich':'Ipswich Town','Hull':'H
 
 
 
-def overview(directory=data.DIRECTORY):
+def overview(directory=data.DIRECTORY, performance=None):
     roster=data.read(directory/'club-board/roster.json')
     warnings=[]
     def source(path,label):
         try:
             value=data.read(directory/path)
             age=(utcnow()-utc(value['observed_at'])).total_seconds()/86400
+            if label == 'Club Elo' and (utcnow().date()-utc(value['rating_date']).date()).days not in range(3):
+                warnings.append('Club Elo: current dated ratings unavailable; source excluded')
+                return {'teams':[], 'observed_at':value['observed_at']}
             if age<0 or age>30:
                 warnings.append(label+': snapshot unavailable for blending (age outside 0–30 days)')
                 return {'teams':[], 'observed_at':value['observed_at']}
@@ -76,17 +79,22 @@ def overview(directory=data.DIRECTORY):
         zs=[(v-scales[s]['centre'])/scales[s]['spread'] for s,v in row['sources'].items()]
         row['score']=float(1500+200*np.mean(zs));row['weights']={s:1/len(zs) for s in row['sources']}
         row['source_spread']=float(200*np.std(zs))
-    warnings.extend(club_performance.apply(rows, directory, key, UNDERSTAT_NAMES))
+    warnings.extend(club_performance.apply(rows, directory, key, UNDERSTAT_NAMES, performance))
     rows.sort(key=lambda r:(-r['score'],r['name']))
     for i,r in enumerate(rows,1):
         r['rank']=i
         r['tier']='Elite' if r['score']>=1850 else 'Contenders' if r['score']>=1800 else 'Strong' if r['score']>=1650 else 'Competitive' if r['score']>=1500 else 'Outsiders' if r['score']>=1350 else 'Lower rated'
     return {'teams':rows,'season':roster['season'],'anchors':anchors,'scales':scales,'warnings':warnings,'as_of':now(),'stale':False,
             'observed_at':{'ECI':eci['observed_at'],'Club Elo':elo['observed_at'],'Driblab':dl['observed_at'],'PitchRank':pitch['observed_at']},
+            'performance_source':'Sportmonks' if performance is not None else 'Understat',
             'used_in_match_price':False,'method':'Fixed-scale external consensus with rolling opponent/venue-adjusted non-penalty xG. 180-day half-life; performance weight up to 50%, reduced for sparse or stale data. Provisional calibration.'}
 
 
-def refresh(directory=data.DIRECTORY):
+def refresh(directory=data.DIRECTORY, performance=None):
+    if performance is None:
+        from app.models.database import SessionLocal
+        with SessionLocal() as db:
+            performance = club_performance.sportmonks_seasons(db, utcnow())
     results={}
     for label,fn in [('ECI',eci_source.refresh),('Club Elo',elo_source.refresh),('PitchRank',europe_pitchrank.refresh)]:
         try:fn(directory);results[label]='Updated'
@@ -99,8 +107,9 @@ def refresh(directory=data.DIRECTORY):
         write_json(directory/'driblab/ratings-snapshots'/(data.digest(snapshot)+'.json'),snapshot)
         write_json(directory/'driblab/ratings.json',snapshot);results['Driblab']='Updated'
     except (httpx.HTTPError,ValueError,KeyError,TypeError):results['Driblab']='Refresh failed; previous snapshot retained.'
-    results.update(club_performance.refresh(directory,force=True))
-    board=overview(directory)
+    for league, seasons in performance.items():
+        results[league] = {s['season']: len(s['matches']) for s in seasons}
+    board=overview(directory, performance)
     if not board.get('stale'):
         write_json(directory/'club-board/last-good.json',board)
         write_json(directory/'club-board/history'/(data.digest(board)+'.json'),board)

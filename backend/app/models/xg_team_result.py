@@ -3,9 +3,7 @@ Per team-match goals and expected goals from Understat (2026-09-30).
 
 One row per club per league match: goals scored and conceded alongside
 total xG / xGA, non-penalty xG / xGA and expected points for the top
-five leagues. The Justice Table uses this Understat archive. Goals Coming
-Soon reads Sportmonks fixtures from FormLabSeason. Archive refresh:
-services/xg_goals.py (weekly, Monday 03:30 UTC, current + previous season).
+five leagues. Historical Understat archive. Live xG tables read Sportmonks fixtures.
 """
 from datetime import datetime
 

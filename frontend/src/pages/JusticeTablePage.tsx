@@ -10,7 +10,7 @@ import type { JusticeResponse, JusticeRow } from '../types';
 
 const TITLE = 'Expected Points Table (xPts): Justice Table | SteamWatch';
 const DESCRIPTION =
-  "Every top-five-league table rebuilt on expected points over the last 12 months: each club's rank on xPts against its rank on results, updated weekly.";
+  "Every top-five-league table rebuilt on expected points over the last 12 months: each club's rank on xPts against its rank on results, updated daily.";
 
 const LEAGUES: Array<[string, string, string]> = [
   ['soccer_epl', 'Premier League', 'premier-league'],
@@ -105,7 +105,7 @@ export default function JusticeTablePage() {
         {all.length > 0 && <> Biggest gaps: {names(over)}. Furthest behind: {names(under)}.</>}
       </P>
       <p className="text-xs text-slate-500 font-mono mb-3">
-        {data ? `Matches from ${fmtDate(data.since)} to ${asOf} · clubs with ${data.min_matches}+ matches · Understat data · updated ${fmtDate(data.refreshed_at)}` : 'Loading'}
+        {data ? `Matches from ${fmtDate(data.since)} to ${asOf} · clubs with ${data.min_matches}+ matches · Sportmonks data · updated ${fmtDate(data.refreshed_at)}` : 'Loading'}
       </p>
       <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
         <nav className="text-xs text-slate-500 font-mono" aria-label="Sections">
@@ -138,14 +138,14 @@ export default function JusticeTablePage() {
 
       <H2 id="method">How it is measured</H2>
       <P>
-        Expected points come from Understat, which turns the xG of both sides in a match into win, draw and loss probabilities
+        Expected points come from Sportmonks, which turns the xG of both sides in a match into win, draw and loss probabilities
         and scores them 3, 1 and 0. A match a side would win 60% of the time and draw 20% of the time is worth 2.0 expected
         points. Summed over the season they give the points a club's chances, and its opponents' chances, deserved. The window is
         a rolling 12 months of league matches, or 6 on the toggle, so it spans the end of last season and the start of this one;
         a club needs 8 matches in the window and a place in the division this season to appear. Each table is sorted on expected
         points, the justice order. Pos is the club's rank on real points over the same window, not its league position. Gap is
-        points minus expected points. Data covers the Premier League, La Liga, Bundesliga, Serie A and Ligue 1 and refreshes every
-        Monday; expected points count penalties, as xG does.
+        points minus expected points. Data covers the Premier League, La Liga, Bundesliga, Serie A and Ligue 1 and refreshes daily.
+        Only games with expected points for both teams count.
       </P>
       <H2 id="meaning">What the table means</H2>
       <P>
@@ -168,9 +168,9 @@ export default function JusticeTablePage() {
       <H3>Which teams are underachieving their expected points?</H3>
       <P>As of matches to {asOf}, the clubs furthest below their expected points over the last {months} months are {names(under)}. Their play has been worth more than their results.</P>
       <H3>Why a rolling 12 months rather than the league table?</H3>
-      <P>Five or six matches into a season the gaps are mostly noise. Twelve months of league matches, about 34 to 38 per club, is enough for expected points to mean something, and the window moves on every week. A 6-month view is on the toggle.</P>
+      <P>Five or six matches into a season the gaps are mostly noise. Twelve months of league matches, about 34 to 38 per club, is enough for expected points to mean something, and the window moves on every day. A 6-month view is on the toggle.</P>
       <H3>How often is the justice table updated?</H3>
-      <P>Every Monday at 03:30 UTC from Understat, covering the current and previous season so the 12-month window is always complete.</P>
+      <P>Daily at 06:45 UTC. A completed match enters the table once Sportmonks supplies expected points for both teams.</P>
 
       <H2>More on SteamWatch</H2>
       <ul className="list-disc pl-5 text-slate-300 text-sm space-y-1">

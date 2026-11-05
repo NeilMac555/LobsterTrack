@@ -13,7 +13,7 @@ SOURCE = 'https://clubelo.com/'
 
 
 def normalise(document, observed_at):
-    dates = re.findall(r'<h1><a href="/(\d{4}-\d{2}-\d{2})/">', document)
+    dates = re.findall(r'<h1><a href="/(\d{4}-\d{2}-\d{2})/(?:Ranking)?">', document)
     if len(set(dates)) != 1: raise ProviderError('Club Elo has no unambiguous rating date.')
     date = dates[0]
     if not 0 <= (utc(observed_at).date() - utc(date).date()).days <= 2:
@@ -43,12 +43,18 @@ def normalise(document, observed_at):
 
 
 def refresh(directory):
-    try:
-        response=httpx.get(SOURCE,timeout=25,follow_redirects=True); response.raise_for_status()
-        document=response.content.decode('utf-8')
-        snapshot=normalise(document,now())
-    except (httpx.HTTPError,UnicodeError):
-        raise ProviderError('Club Elo refresh failed; existing references remain available.') from None
+    errors = []
+    for url in (SOURCE+'Ranking', SOURCE):
+        try:
+            response = httpx.get(url, timeout=20, follow_redirects=True)
+            response.raise_for_status()
+            document = response.content.decode('utf-8')
+            snapshot = normalise(document, now())
+            break
+        except (httpx.HTTPError, UnicodeError, ProviderError) as error:
+            errors.append(type(error).__name__)
+    else:
+        raise ProviderError('Current Club Elo ranking unavailable ('+', '.join(errors)+').')
     folder=directory/'clubelo'
     folder.mkdir(parents=True,exist_ok=True)
     (folder/(snapshot['hash']+'.html')).write_text(document,encoding='utf-8')

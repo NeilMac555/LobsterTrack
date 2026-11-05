@@ -59,12 +59,20 @@ def _publish():
     period = period_for(now)
     with SessionLocal() as db:
         previous = db.query(ClubRatingPublication).order_by(ClubRatingPublication.id.desc()).first()
-        if previous and previous.period >= period:
-            return
         previous_board = previous.board if previous else None
         stored = db.get(ClubRatingInputs, 1)
+        same_week = previous is not None and previous.period == period
+        migrating = (same_week and previous_board.get('performance_source') != 'Sportmonks'
+                     and stored is not None and 'initial' not in stored.results)
+        retry_elo = same_week and stored is not None and stored.results.get('Club Elo', 'Updated') != 'Updated'
+        if previous and (previous.period > period or (same_week and not migrating and not retry_elo)):
+            return
         if stored and now-stored.checked_at < timedelta(hours=6):
             return  # Failed refresh retry backoff.
+        replace_id = previous.id if same_week else None
+        prior = (db.query(ClubRatingPublication).filter(ClubRatingPublication.period < period)
+                 .order_by(ClubRatingPublication.period.desc()).first()) if same_week else previous
+        prior_board = prior.board if prior else None
         inputs = stored.snapshots if stored else json.loads((ROOT/'seed.json').read_text(encoding='utf-8'))
     expected_ids = {t['id'] for t in inputs['club-board/roster.json']['teams']}
     with TemporaryDirectory(prefix='club-ratings-') as folder:
@@ -89,9 +97,9 @@ def _publish():
                 result = club_consensus.refresh(directory)
         board = result['board']
         refreshed = {name: json.loads((directory/name).read_text(encoding='utf-8')) for name in inputs if (directory/name).exists()}
-        # Include new season feeds after rollover, but never collector scratch/history.
-        for path in (directory/'understat/rolling').glob('*.json'):
-            refreshed[path.relative_to(directory).as_posix()] = json.loads(path.read_text(encoding='utf-8'))
+        scale_name = 'club-board/performance-scale-sportmonks-v1.json'
+        if (directory/scale_name).exists():
+            refreshed[scale_name] = json.loads((directory/scale_name).read_text(encoding='utf-8'))
     with SessionLocal() as db:
         state = db.get(ClubRatingInputs, 1)
         if state is None:
@@ -102,7 +110,10 @@ def _publish():
             db.commit()
             log.warning('Incomplete club rating board; publication retained')
             return
-        old = {t['id']: t for t in previous_board['teams']} if previous_board else {}
+        if retry_elo and not migrating and result['results'].get('Club Elo') != 'Updated':
+            db.commit()
+            return
+        old = {t['id']: t for t in prior_board['teams']} if prior_board else {}
         prior_ranks = {t['id']: rank for rank, t in enumerate(sorted(old.values(), key=lambda t: (-t.get('base_score', t['score']), t['name'])), 1)}
         for team in board['teams']:
             prior = old.get(team['id'], {})
@@ -119,6 +130,10 @@ def _publish():
         board.update(published_at=now.isoformat()+'Z', period=period,
                      next_update=(datetime.fromisoformat(period)+timedelta(days=7, hours=12)).isoformat()+'Z',
                      community_rules={'minimum_voters':5,'minimum_agreement':.8,'expires_days':30,'max_rank_change':1,'immediate':True})
-        db.add(ClubRatingPublication(period=period, published_at=now, board=board))
+        if replace_id is None:
+            db.add(ClubRatingPublication(period=period, published_at=now, board=board))
+        else:
+            current = db.get(ClubRatingPublication, replace_id)
+            current.board, current.published_at = board, now
         db.commit()
         log.info('Published club ratings: %s, %s clubs', period, len(board['teams']))

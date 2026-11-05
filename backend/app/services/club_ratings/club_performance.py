@@ -1,12 +1,12 @@
 """Rolling opponent/venue-adjusted non-penalty performance, domestic only."""
-from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
-from pathlib import Path
 import numpy as np
-from understat_feed import fetch_league, parse_matches
+from app.models import FormLabSeason
+from app.services.form_lab import LEAGUES as FORM_LEAGUES, numeric
+from app.services.rolling_xg import DOMESTIC
 from .data import utc, utcnow
 from . import europe_data as data
-from .sportmonks import write_json, now
+from .sportmonks import ProviderError, write_json, now
 
 LEAGUES = {'EPL':'Premier League','La_liga':'La Liga','Bundesliga':'Bundesliga',
            'Serie_A':'Serie A','Ligue_1':'Ligue 1'}
@@ -16,39 +16,32 @@ MAX_WEIGHT = .5
 VERSION = 'rolling-npxg-1'
 
 
-def refresh(directory, force=False):
-    """Shared ingestion with the weekly site feed; local immutable snapshots.
-
-    Refresh current seasons at most weekly unless requested. Retain each valid
-    previous league-season if an upstream payload is incomplete or unavailable.
-    """
-    year = utcnow().year - (utcnow().month < 7)
-    root = directory/'understat/rolling'
-    results = {}
-    def fetch(item):
-        slug, season = item
-        path = root/f'{slug}-{season}.json'
-        old = data.read(path) if path.exists() else None
-        if old and (season < year or (not force and (utcnow()-utc(old['observed_at'])).days < 7)):
-            return f'{slug} {season}', 'Cached'
-        try:
-            legacy = directory/f'understat/{slug}-{season}-source.json'
-            payload = data.read(legacy) if season < year and legacy.exists() else fetch_league(slug, season)
-            matches = parse_matches(payload, season)
-            if old and len(matches) < len(old['matches']):
-                raise ValueError('Match count dropped; retaining previous snapshot')
-            if season < year and not matches:
-                raise ValueError('Empty historical season')
-            snapshot = {'observed_at':now(), 'league':LEAGUES[slug], 'slug':slug,
-                        'season':str(season), 'matches':matches}
-            write_json(root/'snapshots'/(data.digest(snapshot)+'.json'), snapshot)
-            write_json(path, snapshot)
-            return f'{slug} {season}', f'{len(matches)} matches'
-        except Exception as error:
-            return f'{slug} {season}', f'Unavailable; previous snapshot retained ({type(error).__name__})'
-    with ThreadPoolExecutor(max_workers=3) as pool:
-        results.update(pool.map(fetch, [(s,y) for s in LEAGUES for y in (year-1,year)]))
-    return results
+def sportmonks_seasons(db, as_of):
+    """Read the current and previous domestic season by stable participant ID."""
+    year = as_of.year - (as_of.month < 7)
+    seasons = [f"{start}/{start+1}" for start in (year-1, year)]
+    saved = db.query(FormLabSeason).filter(FormLabSeason.league.in_(DOMESTIC),
+                                           FormLabSeason.season.in_(seasons)).all()
+    by_key = {(row.league, row.season): row for row in saved}
+    if not saved:
+        raise ProviderError("Sportmonks performance snapshots have not been populated.")
+    feeds = {}
+    for key in DOMESTIC:
+        league = FORM_LEAGUES[key][1]
+        feeds[league] = []
+        for season in seasons:
+            snapshot = by_key.get((key, season))
+            if snapshot is None:
+                raise ProviderError(f"Missing Sportmonks performance snapshot for {league} {season}.")
+            fixtures = snapshot.data["fixtures"]
+            matches = [dict(match_id=f["id"], date=f["date"], season=season,
+                            home=f["home_id"], away=f["away_id"], home_npxg=f["hx"], away_npxg=f["ax"])
+                       for f in fixtures if numeric(f.get("hx")) is not None and numeric(f.get("ax")) is not None]
+            if fixtures and not matches:
+                raise ProviderError(f"Sportmonks non-penalty xG is unavailable for {league} {season}.")
+            feeds[league].append(dict(observed_at=snapshot.updated_at.isoformat()+"Z",
+                                      season=season[:4], matches=matches, missing=len(fixtures)-len(matches)))
+    return feeds
 
 
 def fit_league(matches, as_of):
@@ -89,14 +82,16 @@ def fit_league(matches, as_of):
     return result
 
 
-def apply(rows, directory, normalise, aliases):
+def apply(rows, directory, normalise, aliases, feeds=None):
     root=directory/'understat/rolling'; as_of=utcnow(); reports=[]
-    calibration_path=directory/'club-board/performance-scale-v1.json'
-    calibration=data.read(calibration_path) if calibration_path.exists() else data.read(Path(__file__).with_name('club-calibration-v1.json'))['performance']
+    # Only the reviewed historical launch seed uses the legacy scale and names.
+    scale_file = "performance-scale-sportmonks-v1.json" if feeds is not None else "performance-scale-v1.json"
+    calibration_path = directory / "club-board" / scale_file
+    calibration = data.read(calibration_path) if calibration_path.exists() else {}
     changed=False
     for slug,league in LEAGUES.items():
-        paths=sorted(root.glob(f'{slug}-*.json'))
-        snapshots=[data.read(p) for p in paths]
+        snapshots = (feeds[league] if feeds is not None else
+                     [data.read(p) for p in sorted(root.glob(f'{slug}-*.json'))])
         if not snapshots:
             reports.append(f'{league}: no performance snapshot');continue
         current_year=as_of.year-(as_of.month<7)
@@ -106,8 +101,15 @@ def apply(rows, directory, normalise, aliases):
             reports.append(f'{league}: current-season feed missing or over 14 days old; performance weight reduced')
         matches={m['match_id']:m for s in snapshots for m in s['matches']}
         fitted=fit_league(list(matches.values()),as_of)
-        by_name={normalise(aliases.get(name,name)):stat for name,stat in fitted.items()}
-        pairs=[(r,by_name[normalise(r['name'])]) for r in rows if league in r['competitions'] and normalise(r['name']) in by_name]
+        if feeds is not None:
+            pairs = [(r, fitted[r['id']]) for r in rows if league in r['competitions'] and r['id'] in fitted]
+            missing = sum(s['missing'] for s in snapshots)
+            if missing:
+                reports.append(f"{league}: {missing} fixtures lack paired non-penalty xG.")
+        else:
+            by_name = {normalise(aliases.get(name, name)):stat for name,stat in fitted.items()}
+            pairs = [(r,by_name[normalise(r['name'])]) for r in rows
+                     if league in r['competitions'] and normalise(r['name']) in by_name]
         # Fix the conversion at first valid calibration, rather than re-stretch
         # every refresh when clubs enter or leave the reference population.
         if league not in calibration:
@@ -128,8 +130,9 @@ def apply(rows, directory, normalise, aliases):
             if stale: weight*=.5
             delta=weight*(target-row['score'])
             row['performance']={**stat,'league':league,'rank':rank,'weight':weight,'score_change':delta,
-                                'rating_contribution':target,'url':f'https://understat.com/league/{slug}',
-                                'observed_at':max(s['observed_at'] for s in snapshots),'stale':stale,
+                                'rating_contribution':target, 'source':'Sportmonks' if feeds is not None else 'Understat',
+                                'url':'https://www.sportmonks.com/' if feeds is not None else f'https://understat.com/league/{slug}',
+                                'observed_at':current['observed_at'] if current else max(s['observed_at'] for s in snapshots),'stale':stale,
                                 'half_life_days':HALF_LIFE,'version':VERSION}
             row['score']+=delta
             row['weights']={s:w*(1-weight) for s,w in row['weights'].items()}

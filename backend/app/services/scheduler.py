@@ -353,15 +353,6 @@ class OddsScheduler:
         except Exception as e:
             logger.error("xG refresh failed", error=str(e))
 
-    async def xg_goals_refresh_job(self):
-        """Weekly Understat archive refresh for the Justice Table's expected points."""
-        try:
-            from app.services.xg_goals import refresh_async
-            summary = await refresh_async()
-            logger.info("xG goals refresh done", rows=summary.get("rows"), errors=summary.get("errors"))
-        except Exception as e:
-            logger.error("xG goals refresh failed", error=str(e))
-
     async def league_constants_refresh_job(self):
         """
         Weekly recompute of avgGoalsPerTeam/homeAwayRatio per league from
@@ -608,17 +599,6 @@ class OddsScheduler:
             trigger=CronTrigger(day_of_week="mon", hour=3, minute=0),
             id="xg_refresh_weekly",
             name="Weekly Understat archive refresh for forecasts",
-            replace_existing=True,
-            max_instances=1,
-            coalesce=True,
-        )
-
-        # Justice Table expected points still use the Understat archive.
-        self.scheduler.add_job(
-            self.xg_goals_refresh_job,
-            trigger=CronTrigger(day_of_week="mon", hour=3, minute=30),
-            id="xg_goals_refresh_weekly",
-            name="Weekly goals vs xG refresh from Understat",
             replace_existing=True,
             max_instances=1,
             coalesce=True,

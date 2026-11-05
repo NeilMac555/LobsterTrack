@@ -220,6 +220,32 @@ class DatabaseTests(unittest.TestCase):
         self.assertEqual(response.status_code,200)
         self.assertEqual(response.json()['session']['used'],1)
 
+    def test_retry_repairs_same_week_against_prior_week_ranks(self):
+        with self.sessions() as db:
+            current = db.query(ClubRatingPublication).one()
+            candidate = json.loads(json.dumps(current.board))
+            candidate['performance_source'] = 'Sportmonks'
+            prior = json.loads(json.dumps(candidate))
+            prior['teams'][0]['base_score'] += 10
+            previous_week = (datetime.fromisoformat(current.period)-timedelta(days=7)).date().isoformat()
+            current.period = previous_week
+            current.board = prior
+            db.add(ClubRatingPublication(period=publication.period_for(datetime.utcnow()),
+                                         published_at=datetime.utcnow(), board=candidate))
+            state = db.get(ClubRatingInputs,1)
+            state.results = {'Club Elo':'Unavailable'}
+            state.checked_at -= timedelta(hours=7)
+            db.commit()
+        with patch.object(publication.club_consensus, 'refresh', return_value={
+                'board':candidate,'results':{'Club Elo':'Updated'}}) as refresh:
+            publication._publish()
+            publication._publish()
+            self.assertEqual(refresh.call_count, 1)
+        with self.sessions() as db:
+            self.assertEqual(db.query(ClubRatingPublication).count(),2)
+            latest = db.query(ClubRatingPublication).order_by(ClubRatingPublication.id.desc()).first()
+            self.assertEqual(latest.board['teams'][0]['score_change'], -10)
+
     def test_publication_idempotence_failure_and_weekly_votes(self):
         with self.sessions() as db:
             original=json.loads(json.dumps(db.query(ClubRatingPublication).one().board))

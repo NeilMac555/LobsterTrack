@@ -8,7 +8,7 @@ the real position alongside, plus method, meaning and an FAQ. Rendered
 into the shared prerender shell like /goals-coming-soon; JusticeTablePage.tsx
 mounts over it and adds the season toggle.
 
-Data: services/xg_goals.justice / justice_summary (Understat, Mondays).
+Data: services/xg_goals.justice / justice_summary (Sportmonks, daily).
 """
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ PATH = "/justice-table"
 CACHE_TTL_SECONDS = 600
 
 TITLE = "Expected Points Table (xPts): Justice Table | SteamWatch"
-DESCRIPTION = "Every top-five-league table rebuilt on expected points over the last 12 months: each club's rank on xPts against its rank on results, updated weekly."
+DESCRIPTION = "Every top-five-league table rebuilt on expected points over the last 12 months: each club's rank on xPts against its rank on results, updated daily."
 assert len(TITLE) < 60 and len(DESCRIPTION) < 155
 
 ANCHOR = {
@@ -100,14 +100,14 @@ def method_html(summ: dict, prev_label: str) -> str:
                 f"{summ['max_gap_club']} at {_sgn(summ['max_gap'])}.")
     return (
         "<h2 id=\"method\">How it is measured</h2>"
-        "<p>Expected points come from Understat, which turns the xG of both sides in a match into win, draw and loss "
+        "<p>Expected points come from Sportmonks, which turns the xG of both sides in a match into win, draw and loss "
         "probabilities and scores them 3, 1 and 0. A match a side would win 60% of the time and draw 20% of the time is worth "
         "2.0 expected points. Summed over the season they give the points a club's chances, and its opponents' chances, "
         "deserved. The window is a rolling 12 months of league matches, or 6 on the toggle, so it spans the end of last season "
         "and the start of this one; a club needs 8 matches in the window and a place in the division this season to appear. "
         "Each table is sorted on expected points, the justice order. Pos is the club's rank on real points over the same window, "
         "not its league position. Gap is points minus expected points. Data covers the Premier League, La Liga, Bundesliga, "
-        "Serie A and Ligue 1 and refreshes every Monday; expected points count penalties, as xG does.</p>"
+        "Serie A and Ligue 1 and refreshes daily. Only games with expected points for both teams count.</p>"
         "<h2 id=\"meaning\">What the table means</h2>"
         "<p>The name comes from the clubs in Christoph Biermann's Football Hackers, Midtjylland and Brentford among them, "
         "which judged themselves on expected points because the real table lies for long stretches. It still does." + prev +
@@ -132,9 +132,9 @@ def faq(over: list[dict], under: list[dict], asof: str) -> list[tuple[str, str]]
          "Their play has been worth more than their results."),
         ("Why a rolling 12 months rather than the league table?",
          "Five or six matches into a season the gaps are mostly noise. Twelve months of league matches, about 34 to 38 per club, "
-         "is enough for expected points to mean something, and the window moves on every week. A 6-month view is on the toggle."),
+         "is enough for expected points to mean something, and the window moves on every day. A 6-month view is on the toggle."),
         ("How often is the justice table updated?",
-         "Every Monday at 03:30 UTC from Understat, covering the current and previous season so the 12-month window is always complete."),
+         "Daily at 06:45 UTC. A completed match enters the table once Sportmonks supplies expected points for both teams."),
     ]
 
 
@@ -157,7 +157,7 @@ def _render(db: Session) -> str:
             "name": "SteamWatch Justice Table: expected points (xPts) tables for Europe's top five leagues, rolling 12 months",
             "description": ("Points and expected points for every club in the Premier League, La Liga, Bundesliga, Serie A and "
                             "Ligue 1 over a rolling 12-month window, with each table sorted on expected points and the rank on "
-                            "real points alongside. From Understat match data, refreshed weekly."),
+                            "real points alongside. From Sportmonks match data, refreshed daily."),
             "url": url,
             "isAccessibleForFree": True,
             "dateModified": data.get("latest_match") or now.date().isoformat(),
@@ -209,7 +209,7 @@ def _render(db: Session) -> str:
         "expected points are what its chances, and its opponents' chances, were worth match by match; the table sorts on them, "
         "with the rank on real points alongside. Gap is points minus expected points: positive means results have been kinder "
         f"than the play. Biggest gaps: {_esc(_names(over))}. Furthest behind: {_esc(_names(under))}.</p>"
-        f"<p class=\"pr-meta\">Matches from {_d(data['since'])} to {asof} · clubs with {data['min_matches']}+ matches · Understat data · updated {_d(updated)}</p>"
+        f"<p class=\"pr-meta\">Matches from {_d(data['since'])} to {asof} · clubs with {data['min_matches']}+ matches · Sportmonks data · updated {_d(updated)}</p>"
         "<nav class=\"pr-meta\" aria-label=\"Sections\">Jump to: "
         + " · ".join(f"<a href=\"#{ANCHOR[lg]}\">{_esc(LEAGUE_LABEL[lg])}</a>" for lg in LEAGUE_ORDER)
         + " · <a href=\"#method\">Method</a> · <a href=\"#faq\">Questions</a></nav>"

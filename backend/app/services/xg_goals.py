@@ -6,8 +6,7 @@ furthest below and above their xG over a rolling window), the per-league
 sections on that page, and the one-line xG note on match pages.
 
 Goals Coming Soon and the match notes use the daily Sportmonks domestic
-fixture snapshots. The Justice Table still uses expected points from
-the weekly Understat archive in xg_team_results.
+fixture snapshots, which also supply expected points for the Justice Table.
 """
 from __future__ import annotations
 
@@ -22,7 +21,6 @@ from datetime import date, datetime, timedelta
 from math import fsum
 from typing import Any, NamedTuple, Optional
 
-from sqlalchemy import Integer, func
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
@@ -298,107 +296,87 @@ def club_gap(db: Session, league: str, team: str, months: int = 12) -> Optional[
 
 # ------------------------------------------------------------------ justice table
 
+def _justice_rows(fixtures, roster, league, since, through, minimum):
+    games = defaultdict(list)
+    for f in fixtures:
+        day = f["date"][:10]
+        if not since <= day <= through:
+            continue
+        home = numeric(f.get("home_xpts"))
+        away = numeric(f.get("away_xpts"))
+        if home is None or away is None or max(home, away) > 3:
+            continue
+        games[f["home_id"]].append((f["hg"], f["ag"], home, day))
+        games[f["away_id"]].append((f["ag"], f["hg"], away, day))
+
+    rows = []
+    for participant, name in roster.items():
+        sample = games.get(int(participant), [])
+        if len(sample) < minimum:
+            continue
+        won = sum(gf > ga for gf, ga, _, _ in sample)
+        drawn = sum(gf == ga for gf, ga, _, _ in sample)
+        points = 3 * won + drawn
+        xpts = round(fsum(xp for _, _, xp, _ in sample), 2)
+        rows.append(dict(league=league, league_name=LEAGUE_LABEL[league], team=name,
+                         matches=len(sample), won=won, drawn=drawn, lost=len(sample)-won-drawn,
+                         goals=sum(g[0] for g in sample), conceded=sum(g[1] for g in sample),
+                         points=points, xpts=xpts, gap=round(points-xpts, 1),
+                         last_match=max(g[3] for g in sample)))
+    rows.sort(key=lambda r: (-r["points"], r["conceded"]-r["goals"], -r["goals"], r["team"]))
+    for pos, row in enumerate(rows, 1):
+        row["pos"] = pos
+    rows.sort(key=lambda r: (-r["xpts"], r["team"]))
+    for pos, row in enumerate(rows, 1):
+        row["xpos"] = pos
+        row["move"] = row["pos"] - pos
+    return rows
+
+
+def _previous_summary(rows, code):
+    if not rows:
+        return {"clubs": 0}
+    places = [abs(r["move"]) for r in rows]
+    largest = max(rows, key=lambda r: abs(r["points"]-r["xpts"]))
+    return dict(season=code, season_label=season_label(code), clubs=len(rows),
+                mean_abs_places=round(sum(places)/len(places), 2),
+                within_two=sum(d <= 2 for d in places),
+                max_gap=largest["gap"], max_gap_club=largest["team"])
+
+
 def justice(db: Session, months: int = 12) -> dict[str, Any]:
-    """Per league: every club's points and expected points over the last
-    `months` (12 or 6) of league matches, sorted on expected points (the
-    justice order) with the rank on real points alongside. Only clubs in
-    the division this season, 8+ matches in the window."""
+    """Compare actual points and Sportmonks xPts over the same eligible fixtures."""
     months = months if months in WINDOWS else 12
-    days = WINDOWS[months]
-    current = site_season(season_year())
-    prev = site_season(season_year() - 1)
 
     def build():
-        since = date.today() - timedelta(days=days)
-        in_division = (
-            db.query(XGTeamResult.league, XGTeamResult.team_name)
-            .filter(XGTeamResult.season == current)
-            .distinct()
-            .subquery()
-        )
-        q = (
-            db.query(
-                XGTeamResult.league,
-                XGTeamResult.team_name,
-                func.count(XGTeamResult.id).label("matches"),
-                func.sum(XGTeamResult.goals_for).label("goals"),
-                func.sum(XGTeamResult.goals_against).label("conceded"),
-                func.sum(XGTeamResult.points).label("points"),
-                func.sum(XGTeamResult.xpts).label("xpts"),
-                func.sum(func.cast(XGTeamResult.points == 3, Integer)).label("won"),
-                func.sum(func.cast(XGTeamResult.points == 1, Integer)).label("drawn"),
-                func.sum(func.cast(XGTeamResult.points == 0, Integer)).label("lost"),
-                func.max(XGTeamResult.match_date).label("last_match"),
-            )
-            .join(in_division, (in_division.c.league == XGTeamResult.league) & (in_division.c.team_name == XGTeamResult.team_name))
-            .filter(XGTeamResult.match_date >= since, XGTeamResult.xpts.isnot(None))
-            .group_by(XGTeamResult.league, XGTeamResult.team_name)
-            .having(func.count(XGTeamResult.id) >= MIN_MATCHES)
-        )
-        leagues: dict[str, list[dict]] = {}
-        latest = None
-        for r in q.all():
-            latest = max(latest, r.last_match) if latest else r.last_match
-            pts, xp = int(r.points or 0), float(r.xpts or 0.0)
-            leagues.setdefault(r.league, []).append({
-                "league": r.league, "league_name": LEAGUE_LABEL.get(r.league, r.league), "team": r.team_name,
-                "matches": int(r.matches), "won": int(r.won or 0), "drawn": int(r.drawn or 0), "lost": int(r.lost or 0),
-                "goals": int(r.goals), "conceded": int(r.conceded), "points": pts, "xpts": round(xp, 2),
-                "gap": round(pts - xp, 1),
-            })
-        for lg, rows in leagues.items():
-            # rank on real points over the window: points, goal difference, goals for
-            for i, r in enumerate(sorted(rows, key=lambda x: (-x["points"], -(x["goals"] - x["conceded"]), -x["goals"], x["team"])), 1):
-                r["pos"] = i
-            rows.sort(key=lambda x: (-x["xpts"], x["team"]))
-            for i, r in enumerate(rows, 1):
-                r["xpos"] = i
-                r["move"] = r["pos"] - r["xpos"]
-        refreshed = db.query(func.max(XGTeamResult.updated_at)).scalar()
-        return {
-            "months": months, "window_days": days, "since": since.isoformat(),
-            "min_matches": MIN_MATCHES,
-            "latest_match": latest.isoformat() if latest else None,
-            "refreshed_at": refreshed.isoformat() if refreshed else None,
-            "leagues": leagues,
-            "previous_label": season_label(prev),
-            "previous_summary": justice_summary(db, prev),
-        }
+        today = datetime.utcnow().date()
+        since = (today - timedelta(days=WINDOWS[months])).isoformat()
+        year = season_year(today)
+        previous, current = f"{year-1}/{year}", f"{year}/{year+1}"
+        seasons = db.query(FormLabSeason).filter(
+            FormLabSeason.league.in_(LEAGUE_ORDER), FormLabSeason.season.in_((previous, current))
+        ).all()
+        by_key = {(s.league, s.season): s for s in seasons}
+        leagues, refreshed, previous_rows = {}, [], []
+        for league in LEAGUE_ORDER:
+            last = by_key.get((league, previous))
+            if last:
+                prior = _justice_rows(last.data["fixtures"], last.data["teams"], league,
+                                      "", today.isoformat(), MIN_MATCHES)
+                if len(prior) >= 10 and max(r["matches"] for r in prior) >= 30:
+                    previous_rows.extend(prior)
+            active = by_key.get((league, current))
+            if active is None:
+                continue
+            fixtures = {f["id"]: f for s in (last, active) if s for f in s.data["fixtures"]}
+            leagues[league] = _justice_rows(fixtures.values(), active.data["teams"], league,
+                                          since, today.isoformat(), MIN_MATCHES)
+            refreshed.append(active.updated_at)
+        code = site_season(year-1)
+        return dict(source="Sportmonks", metric="xPTS", months=months, window_days=WINDOWS[months],
+                    since=since, min_matches=MIN_MATCHES, leagues=leagues,
+                    refreshed_at=min(refreshed).isoformat()+"Z" if refreshed else None,
+                    latest_match=max((r["last_match"] for rows in leagues.values() for r in rows), default=None),
+                    previous_label=season_label(code), previous_summary=_previous_summary(previous_rows, code))
+
     return _cached(f"justice:{months}", build)
-
-
-def justice_summary(db: Session, season: str) -> dict[str, Any]:
-    """How far the real table ended from the expected-points table in a
-    finished season: mean absolute place difference, share within two
-    places, and the largest points gap. Used in the page copy."""
-    def build():
-        q = (
-            db.query(XGTeamResult.league, XGTeamResult.team_name,
-                     func.sum(XGTeamResult.points).label("points"), func.sum(XGTeamResult.xpts).label("xpts"),
-                     func.sum(XGTeamResult.goals_for).label("goals"), func.sum(XGTeamResult.goals_against).label("conceded"),
-                     func.count(XGTeamResult.id).label("matches"))
-            .filter(XGTeamResult.season == season, XGTeamResult.xpts.isnot(None))
-            .group_by(XGTeamResult.league, XGTeamResult.team_name)
-        )
-        by_league: dict[str, list] = {}
-        for r in q.all():
-            by_league.setdefault(r.league, []).append(r)
-        diffs, gaps = [], []
-        for rows in by_league.values():
-            if len(rows) < 10 or max(x.matches for x in rows) < 30:
-                continue  # not a completed season
-            real = {x.team_name: i for i, x in enumerate(sorted(rows, key=lambda x: (-int(x.points or 0), -(x.goals - x.conceded), -x.goals)), 1)}
-            xpos = {x.team_name: i for i, x in enumerate(sorted(rows, key=lambda x: -float(x.xpts or 0)), 1)}
-            for x in rows:
-                diffs.append(abs(real[x.team_name] - xpos[x.team_name]))
-                gaps.append((int(x.points or 0) - float(x.xpts or 0), x.team_name))
-        if not diffs:
-            return {"clubs": 0}
-        mg = max(gaps, key=lambda g: abs(g[0]))
-        return {
-            "season": season, "season_label": season_label(season), "clubs": len(diffs),
-            "mean_abs_places": round(sum(diffs) / len(diffs), 2),
-            "within_two": sum(1 for d in diffs if d <= 2),
-            "max_gap": round(mg[0], 1), "max_gap_club": mg[1],
-        }
-    return _cached(f"justice_summary:{season}", build)
