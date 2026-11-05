@@ -1314,6 +1314,10 @@ async def get_telegram_results(
     days: Optional[int] = Query(None, description="Only include moves from the last N days")
 ):
     """Confirmed Telegram 1X2 alerts, filtered by sent date; 1u at sent odds."""
+    return telegram_report(db, league, limit, days)
+
+
+def telegram_report(db, league=None, limit=200, days=None):
     since = _season_start()
     if days:
         since = max(since, datetime.utcnow()-timedelta(days=days))
@@ -1510,6 +1514,10 @@ async def get_fav_dog_results(
     loses on a draw, which is the honest football-specific difference
     from the tennis original.
     """
+    return fav_dog_report(db, league, seasons, venue)
+
+
+def fav_dog_report(db, league=None, seasons=None, venue=None):
     import statistics
 
     q = (

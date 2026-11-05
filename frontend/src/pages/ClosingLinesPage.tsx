@@ -6,6 +6,7 @@ import { getClosingLinesGrouped } from '../api';
 import type { MatchClosingLines } from '../types';
 import { LEAGUE_CONFIG, VISIBLE_LEAGUES } from '../types';
 import LeagueLogo from '../components/LeagueLogo';
+import PublicSummary from '../components/PublicSummary';
 import { toDisplayDate, formatKickoff, type TimeMode } from '../utils/time';
 import { useTimePreference } from '../contexts/TimePreferenceContext';
 import { useOddsFormat } from '../contexts/OddsFormatContext';
@@ -108,7 +109,7 @@ export default function ClosingLinesPage() {
   return (
     <div>
       <Helmet>
-        <title>Pinnacle Closing Lines Archive: Opening vs Closing Football Odds | SteamWatch</title>
+        <title>Pinnacle Closing Odds History for Football | SteamWatch</title>
         <meta name="description" content="Pinnacle 1X2, Asian Handicap and Totals closing lines for every tracked European football match, grouped by matchweek." />
         <meta property="og:title" content="Closing Lines | SteamWatch" />
         <meta property="og:url" content="https://www.steamwatch.io/closing-lines" />
@@ -125,7 +126,7 @@ export default function ClosingLinesPage() {
             </svg>
           </div>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Closing Lines</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Pinnacle Closing Odds History</h1>
             <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em]">
               Pinnacle close prices &middot; 1X2 / Asian Handicap / Totals &middot; grouped by matchweek
             </p>
@@ -137,6 +138,7 @@ export default function ClosingLinesPage() {
         </div>
       </div>
 
+      {!league && <PublicSummary page="closing-lines" />}
       {/* Free for everyone since 2026-08-23 (Neil: "closing lines doesn't
           need to be behind a paywall") — the blur + PaywallOverlay that
           used to gate this page is in git history if it's ever wanted

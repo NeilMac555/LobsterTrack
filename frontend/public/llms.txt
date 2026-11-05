@@ -30,7 +30,7 @@ SteamWatch reports what moved and what happened next. It does not claim to know 
 ## Tools
 
 - [Match Predictor](https://www.steamwatch.io/tools/match-predictor): Dixon-Coles match probabilities and fair odds from each team's xG form, with league constants recomputed every Monday.
-- [Rolling xG](https://www.steamwatch.io/tools/rolling-xg): rolling 5 and 10 match non-penalty expected goals for and against, per club, top five leagues, from Understat, refreshed every Monday.
+- [Rolling xG](https://www.steamwatch.io/tools/rolling-xg): rolling 5 and 10 match total expected goals, including penalties, for and against each club in the top five leagues, from Sportmonks, refreshed daily.
 - [Form Lab](https://www.steamwatch.io/tools/form-lab): form tables by opponent strength, handicap cover rates, home and away splits and rolling xG.
 - [Club Ratings](https://www.steamwatch.io/tools/club-ratings): weekly strength ratings on one European scale for every club in the top five leagues and the UEFA competitions, published Mondays.
 - [Manager Ratings](https://www.steamwatch.io/tools/manager-ratings): managers ranked by the Elo rating points their clubs gained or lost while they were in charge, top five leagues since July 2016.
@@ -47,7 +47,7 @@ SteamWatch reports what moved and what happened next. It does not claim to know 
 - [Blog index](https://www.steamwatch.io/blog): all posts, newest first.
 - [About](https://www.steamwatch.io/about): who runs SteamWatch (Neil Mac, betting analyst, 7,800+ tracked bets).
 
-## Key findings (Longshot Bias: 8,867 top-five-league matches at Pinnacle closing 1X2 prices, 2021/22 to August 2026, flat stakes, updated weekly)
+## Key findings (Longshot Bias: 8,867 top-five-league matches at Pinnacle closing 1X2 prices, 2021/22 to August 2026, historical study, flat stakes)
 
 - Backing every favourite returned +0.2%. Backing every underdog returned -10.5%. Backing every draw returned -2.0%.
 - The biggest underdogs (closing 5.30 or longer) returned -14.0%; slight favourites (2.19 to 3.09) returned +3.7%.
@@ -64,8 +64,8 @@ SteamWatch reports what moved and what happened next. It does not claim to know 
 
 ## Access
 
-- Free: real-time steam alerts via Telegram (https://t.me/steamwatchalerts), live odds, biggest movers, match pages, the closing line archive, Team P/L, In-Play Jumps, Club Ratings, both calculators, the Longshot Bias explorer for Premier League 25/26 and 26/27, and a public sample of Form Lab and Manager Ratings.
-- Pro (paid): Match Predictor, Rolling xG, Steam Results history, Drifters, the full Longshot Bias explorer (every league and season), full Form Lab, full Manager Ratings.
+- Free: real-time steam alerts via Telegram (https://t.me/steamwatchalerts), live odds, biggest movers, match pages, the closing line archive, Team P/L, In-Play Jumps, Club Ratings, both calculators, the Longshot Bias explorer for all supported leagues, clubs and seasons, and a public sample of Form Lab and Manager Ratings.
+- Pro (paid): Match Predictor, Rolling xG, Steam Results history, Drifters, full Form Lab, full Manager Ratings.
 
 ## Machine-readable
 

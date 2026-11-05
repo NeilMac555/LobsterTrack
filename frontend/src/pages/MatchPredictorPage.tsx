@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { lazy, Suspense, useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -6,6 +6,8 @@ import PaywallOverlay from '../components/PaywallOverlay';
 import { runModel, type ModelOutput, type TeamModelInputs, type LeagueParams } from '../model/valorModel';
 import { getLeagueConstants, getPredictorBaselines } from '../api';
 import type { LeagueConstantsItem, PredictorBaseline } from '../types';
+
+const WorkedPredictorExample = lazy(() => import('../components/WorkedPredictorExample'));
 
 // ===== TYPES =====
 interface TeamInputs {
@@ -420,7 +422,7 @@ export default function MatchPredictorPage() {
   return (
     <div className="max-w-7xl mx-auto">
       <Helmet>
-        <title>Football Match Predictor: Dixon-Coles Probabilities & Fair Odds — SteamWatch</title>
+        <title>Dixon-Coles Football Calculator &amp; Fair Odds | SteamWatch</title>
         <meta name="description" content="Generate match probability predictions using the SteamWatch Dixon-Coles adjusted Poisson model. Fair odds for 1X2, Asian Handicap, and Totals markets." />
         <link rel="canonical" href="https://www.steamwatch.io/tools/match-predictor" />
       </Helmet>
@@ -430,7 +432,7 @@ export default function MatchPredictorPage() {
           <div className="w-1 h-10 sm:h-11 rounded-full bg-gradient-to-b from-red-400 to-red-600 flex-shrink-0" />
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Match Model</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Dixon–Coles Football Calculator</h1>
               <span className="px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.12em] bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded">Beta</span>
             </div>
             <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em]">Dixon-Coles Probability Baseline</p>
@@ -438,6 +440,7 @@ export default function MatchPredictorPage() {
         </div>
       </div>
 
+      <Suspense fallback={null}><WorkedPredictorExample /></Suspense>
       <div className="flex gap-6">
       {/* Data Sources Sidebar */}
       <aside className="hidden lg:block w-72 flex-shrink-0">

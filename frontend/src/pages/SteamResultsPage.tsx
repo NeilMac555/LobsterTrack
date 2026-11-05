@@ -4,6 +4,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 
 import { useMoveResults } from '../hooks/useMoveResults';
 import MoveResultsStatus from '../components/MoveResultsStatus';
+import PublicSummary from '../components/PublicSummary';
 import { LEAGUE_CONFIG, VISIBLE_LEAGUES } from '../types';
 import LeagueLogo from '../components/LeagueLogo';
 import { Helmet } from 'react-helmet-async';
@@ -151,6 +152,7 @@ export default function SteamResultsPage() {
         <p>Each team counts once per match, using its largest qualifying move. P/L uses a flat 1u at that recorded price. Draw selections are excluded; a team bet loses if the match is drawn. Filters use the fixture date.</p>
         <p className="text-white">Net P/L: {formatPL(data.profit_units ?? 0)} · ROI: {data.roi_percent == null ? '—' : `${data.roi_percent.toFixed(2)}%`}</p>
       </div>
+      {!league && !daysFilter && <PublicSummary page="steam-results" />}
       <MoveResultsStatus data={data} checkedAt={checkedAt} error={error} />
       {/* Stats Banner — terminal stat strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4 sm:mb-6">

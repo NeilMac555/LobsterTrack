@@ -3,10 +3,10 @@ import asyncio
 import structlog
 from contextlib import asynccontextmanager
 from pathlib import Path
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse, HTMLResponse
 
 from sqlalchemy import text
 
@@ -14,6 +14,8 @@ from app.config import get_settings
 from app.canonical_host import CanonicalHostMiddleware
 from app.models.database import Base, engine
 from app.api import router
+from app.models import get_db
+from app.services.public_summaries import BUILDERS as SUMMARY_PAGES, get_summary
 from app.services.scheduler import odds_scheduler
 
 # Configure structured logging
@@ -232,6 +234,15 @@ def safe_static_path(directory, relative):
     return candidate
 
 
+@app.get("/api/public-summary/{page}", response_class=HTMLResponse)
+def public_summary(page: str, db=Depends(get_db)):
+    if page not in SUMMARY_PAGES:
+        raise HTTPException(status_code=404)
+    return HTMLResponse(get_summary(db, page), headers={
+        "Cache-Control": "public, max-age=30", "X-Robots-Tag": "noindex",
+    })
+
+
 if os.path.exists(static_dir):
     app.mount("/assets", StaticFiles(directory=os.path.join(static_dir, "assets")), name="assets")
 
@@ -271,6 +282,23 @@ if os.path.exists(static_dir):
         finally:
             db.close()
 
+    @app.get("/closing-lines", response_class=HTMLResponse)
+    @app.get("/steam-results", response_class=HTMLResponse)
+    @app.get("/longshot-bias", response_class=HTMLResponse)
+    def landing_with_summary(request: Request):
+        page = request.url.path.strip("/")
+        template = (Path(static_dir) / page / "index.html").read_text(encoding="utf-8")
+        marker = "<!--live-public-summary-->"
+        if marker not in template:
+            raise RuntimeError(f"Missing summary placeholder for {page}")
+        try:
+            section = _with_db(lambda db: get_summary(db, page))
+        except Exception:
+            logger.exception("public_summary_unavailable", page=page)
+            return HTMLResponse(template.replace(marker, "<p>Latest figures temporarily unavailable.</p>"),
+                                status_code=503, headers={"Retry-After": "60", "Cache-Control": "no-store"})
+        return HTMLResponse(template.replace(marker, section), headers={"Cache-Control": "public, max-age=30"})
+
     # Dynamic sitemaps (services/sitemap.py). Registered before the catch-all
     # so they win; there is no static sitemap.xml any more.
     @app.get("/sitemap.xml")
@@ -290,7 +318,7 @@ if os.path.exists(static_dir):
         return _xml(_with_db(lambda db: _sitemap.sitemap_matches(db, part)))
 
     @app.get("/{full_path:path}")
-    async def serve_frontend(full_path: str):
+    async def serve_frontend(full_path: str, request: Request):
         """Serve the frontend for all non-API routes (2026-09-29 rewrite).
 
         Priority:
@@ -306,6 +334,9 @@ if os.path.exists(static_dir):
           5. anything else: real HTTP 404 with the noindex 404 page
         """
         path = full_path.strip("/")
+        canonical = path.removesuffix("/index.html")
+        if canonical in SUMMARY_PAGES and full_path != canonical:
+            return RedirectResponse(str(request.url.replace(path="/" + canonical)), status_code=308)
         if path:
             static_file = safe_static_path(static_dir, path)
             if os.path.isfile(static_file):

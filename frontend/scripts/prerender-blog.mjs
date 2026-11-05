@@ -12,6 +12,9 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { createServer } from 'vite';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DIST = resolve(__dirname, '..', 'dist');
@@ -296,6 +299,17 @@ function faqSchema(post) {
 // ---------------------------------------------------------------------------
 // Static pages — data (path, meta, JSON-LD, page HTML in `noscriptHtml`)
 // ---------------------------------------------------------------------------
+// Use the same fixture, model and component as the interactive calculator.
+const renderer = await createServer({ configFile: false, root: resolve(__dirname, '..'),
+  esbuild: { jsx: 'automatic' }, optimizeDeps: { noDiscovery: true, include: [] },
+  server: { middlewareMode: true, hmr: false, watch: null }, appType: 'custom' });
+let workedExample;
+try {
+  const { default: Example } = await renderer.ssrLoadModule('/src/components/WorkedPredictorExample.tsx');
+  workedExample = renderToStaticMarkup(createElement(Example));
+} finally {
+  await renderer.close();
+}
 const PAGES = [
   {
     path: 'pro', title: PRO.title, description: PRO.description,
@@ -341,10 +355,11 @@ ${PRO.faqs.map(([q, a]) => `<h3>${esc(q)}</h3><p>${esc(a)}</p>`).join('\n')}`,
       creator: { '@type': 'Organization', name: 'SteamWatch', url: DOMAIN },
       keywords: ['steam moves', 'sharp money', 'football betting', 'line movement'],
     },
-    noscriptHtml: `<h1>Steam Results | SteamWatch</h1>
+    noscriptHtml: `<h1>Steam Results</h1>
+<div data-public-summary="steam-results"><!--live-public-summary--></div>
 <p>Current-season team selections whose Pinnacle 1X2 price shortened by at least 3 percentage points from the first recorded quote, observed in the final two hours before kickoff.</p>
 <p>Each team counts once per fixture, using its largest qualifying recorded move. P/L uses flat 1 unit stakes at that price. Draw selections are excluded; drawn matches lose a team win bet. Pending and interrupted fixtures are excluded from settled P/L.</p>
-<p>The interactive table refreshes every minute and on tab return, with league, minimum-sample and last-30-day filters. Enable JavaScript to load current totals. Team rankings require at least three settled selections.</p>
+<p>The interactive table refreshes every minute and on tab return, with league, minimum-sample and last-30-day filters. Team rankings require at least three settled selections.</p>
 <p>This describes all qualifying recorded team movements, independently of Telegram delivery. Largest-move returns are a descriptive record, not a first-alert betting strategy.</p>
 <p><a href="https://www.steamwatch.io/steam-results">Steam Results</a> · <a href="https://www.steamwatch.io/drifters">Drifters</a> · <a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
   },
@@ -413,7 +428,7 @@ ${PRO.faqs.map(([q, a]) => `<h3>${esc(q)}</h3><p>${esc(a)}</p>`).join('\n')}`,
   },
   {
     path: 'closing-lines',
-    title: 'Pinnacle Closing Lines Archive | SteamWatch',
+    title: 'Pinnacle Closing Odds History for Football | SteamWatch',
     description:
       'Pinnacle closing 1X2, Asian handicap and totals prices for every finished match, by league and matchweek, with the opening price beside each close.',
     ogType: 'website',
@@ -427,14 +442,15 @@ ${PRO.faqs.map(([q, a]) => `<h3>${esc(q)}</h3><p>${esc(a)}</p>`).join('\n')}`,
       temporalCoverage: '2025/..',
       creator: { '@type': 'Organization', name: 'SteamWatch', url: DOMAIN },
     },
-    noscriptHtml: `<h1>Closing Lines</h1>
+    noscriptHtml: `<h1>Pinnacle Closing Odds History</h1>
+<div data-public-summary="closing-lines"><!--live-public-summary--></div>
 <p class="pr-lead">An archive of Pinnacle closing prices. For every finished match SteamWatch tracks it lists the last price recorded before kickoff on the 1X2 market, the Asian handicap (line and both prices) and the totals market (line, over and under), grouped by league and matchweek. The opening price sits beside each close, so the movement is visible in one row.</p>
 <h2>Where the data comes from</h2>
 <p>Prices are Pinnacle's, taken from The Odds API. SteamWatch requests each tracked competition every 15 minutes from the moment a match is listed, every 10 minutes inside two hours of kickoff and every two minutes in the last half hour, and stores every snapshot. The closing line is the final snapshot captured before the recorded kickoff time. The capture time and the number of minutes before kickoff are stored with it. Nothing is back-filled from other bookmakers.</p>
 <h2>How to read the numbers</h2>
-<p>All prices are decimal. The implied probability of a price is 100 divided by the price. The three 1X2 implied probabilities sum to a little over 100%, and the excess is Pinnacle's margin, typically two to three points on these leagues. Open-to-close movement is best read in implied-probability points rather than raw odds: 1.50 to 1.40 is a much bigger move than 5.00 to 4.00. The <a href="/blog/how-to-read-closing-lines-in-football-betting">guide to reading closing lines</a> covers this in more detail, and <a href="/blog/what-is-closing-line-value-in-football-betting">closing line value</a> explains why the close is the benchmark most bettors measure against.</p>
+<p>All prices are decimal. The implied probability of a price is 100 divided by the price. The three 1X2 implied probabilities sum to a little over 100%, and the excess is Pinnacle's margin, typically two to three points on these leagues. Open-to-close movement is best read in implied-probability points rather than raw odds: 1.50 to 1.40 adds 4.76 percentage points, while 5.00 to 4.00 adds 5.00 points. The <a href="/blog/how-to-read-closing-lines-in-football-betting">guide to reading closing lines</a> covers this in more detail, and <a href="/blog/what-is-closing-line-value-in-football-betting">closing line value</a> explains why the close is the benchmark most bettors measure against.</p>
 <h2>Current coverage</h2>
-<p>{{HEADLINE}} Leagues covered: Premier League, EFL Championship, La Liga, Bundesliga, Serie A, Ligue 1, Champions League, Europa League, Conference League and the UEFA Nations League. The Champions League has its own view at <a href="/cl-closing-lines">Champions League Closing Lines</a>.</p>`,
+<p>Leagues covered: Premier League, EFL Championship, La Liga, Bundesliga, Serie A, Ligue 1, Champions League, Europa League, Conference League and the UEFA Nations League. The Champions League has its own view at <a href="/cl-closing-lines">Champions League Closing Lines</a>.</p>`,
   },
   {
     path: 'cl-closing-lines',
@@ -463,7 +479,7 @@ ${PRO.faqs.map(([q, a]) => `<h3>${esc(q)}</h3><p>${esc(a)}</p>`).join('\n')}`,
   },
   {
     path: 'tools/match-predictor',
-    title: 'Match Predictor: Dixon-Coles Model | SteamWatch',
+    title: 'Dixon-Coles Football Calculator & Fair Odds | SteamWatch',
     description:
       'Dixon-Coles match model: enter xG form for two teams and get 1X2, correct score and totals probabilities with fair odds, top five leagues.',
     ogType: 'website',
@@ -477,12 +493,13 @@ ${PRO.faqs.map(([q, a]) => `<h3>${esc(q)}</h3><p>${esc(a)}</p>`).join('\n')}`,
       applicationCategory: 'SportsApplication',
       operatingSystem: 'Web',
     },
-    noscriptHtml: `<h1>Match Predictor</h1>
+    noscriptHtml: `<h1>Dixon–Coles Football Calculator</h1>
 <p class="pr-lead">The Match Predictor turns two teams' expected-goals form into match probabilities using a Dixon-Coles model, a Poisson goals model corrected for its under-prediction of low-scoring draws. It returns probabilities and fair decimal odds for the 1X2 market, the most likely correct scores and the over and under lines.</p>
 <h2>What goes in</h2>
-<p>For each team you enter season figures: xG for and against per match, goals conceded and matches played, and optionally xG over the last six matches, penalties received and conceded, open-play and set-piece xG, and shots for and against.</p>
+<p>Use each team's last 20 completed league matches, home and away combined. Continue into the previous season if needed. Enter xG for and against per match, goals conceded per match and games sampled. Use the same sample for penalties, set pieces and shots. The optional recent-form adjustment uses the last six league matches.</p>
+${workedExample}
 <h2>How the numbers are calculated</h2>
-<p>Penalty xG is stripped out at 0.76 per penalty and set-piece xG is discounted. Season and last-six figures are blended into an attack and a defence strength for each team. Expected goals for each side are attack strength times the opponent's defence strength times the league's average goals per team, adjusted by the league's home advantage ratio. Those two figures feed a Dixon-Coles adjusted Poisson grid of every scoreline, with the draw inflated slightly and the grid renormalised. The 1X2, correct-score and totals probabilities are sums over that grid, and fair odds are 1 divided by the probability, with no margin.</p>
+<p>The model gives half weight to estimated penalty xG and discounts set pieces when a breakdown is supplied. It blends each team's sample with its recent form, then adjusts for the opponent, league scoring rate and home advantage. These goal estimates feed a Dixon–Coles score grid. The calculator adjusts draw probabilities and sums the grid for each market. Fair decimal odds are 1 divided by the resulting probability.</p>
 <h2>Where the league constants come from</h2>
 <p>Average goals per team and the home advantage ratio are recomputed every Monday from finished matches in the current season and the last three completed seasons, weighted towards the most recent. {{HEADLINE}}</p>
 <p>Treat its fair odds as a baseline to set against the Pinnacle price.</p>`,
@@ -606,36 +623,12 @@ ${PRO.faqs.map(([q, a]) => `<h3>${esc(q)}</h3><p>${esc(a)}</p>`).join('\n')}`,
         keywords: ['favourite-longshot bias', 'football betting', 'underdog ROI', 'Pinnacle closing odds', 'blind backing favourites'],
         variableMeasured: ['flat-stake yield by odds band', 'median closing odds', 'cumulative profit in units', 'per-club ROI as favourite and as underdog'],
       },
-      {
-        '@context': 'https://schema.org',
-        '@type': 'FAQPage',
-        mainEntity: [
-          { '@type': 'Question', name: 'Are football favourites profitable to bet on?', acceptedAnswer: { '@type': 'Answer', text: 'Blindly backing every favourite at Pinnacle closing prices across 8,867 top-five-league matches (2021/22 to August 2026) returned +0.2%, near enough level, so favourites as a group are a break-even bet at the close. Slight favourites (2.19 to 3.09) returned +3.7%, and favourites playing away returned +3.2%.' } },
-          { '@type': 'Question', name: 'Why do underdogs lose money in football betting?', acceptedAnswer: { '@type': 'Answer', text: 'Underdogs are systematically overpriced by the market, which is the favourite-longshot bias. Blindly backing every underdog at Pinnacle closing prices lost 10.5% across 8,867 matches, and the biggest underdogs (5.30 and above) lost 14.0%. The price has to be wrong by more than that margin before a dog bet is even level.' } },
-          { '@type': 'Question', name: 'What is the favourite-longshot bias?', acceptedAnswer: { '@type': 'Answer', text: 'The tendency for betting markets to price longshots too short and favourites too long relative to how often each actually wins. In football at Pinnacle closing prices it shows up as favourites returning roughly zero and underdogs returning around minus 10% when backed blindly.' } },
-          { '@type': 'Question', name: 'Is backing the draw profitable in football?', acceptedAnswer: { '@type': 'Answer', text: 'Blindly backing the draw in every match at Pinnacle closing prices returned -2.0% across 8,867 top-five-league matches, so it sits between favourites and underdogs. The Bundesliga (+1.1%) and Serie A (+0.4%) were the only leagues where the draw came out ahead.' } },
-        ],
-      },
     ],
-    noscriptHtml: `<h1>Longshot Bias | SteamWatch</h1>
-<p>What blindly backing every favourite, underdog or draw at Pinnacle closing prices would have returned. 8,867 matches across the Premier League, La Liga, Bundesliga, Serie A and Ligue 1, 2021/22 to August 2026, flat 1 unit stakes, updated automatically.</p>
-<h2>Headline numbers (all five leagues)</h2>
-<ul>
-  <li>Every favourite: +0.2% yield. Super Fav (1.06 to 1.70) -1.2%, Mid Fav (1.70 to 2.19) -1.8%, Slight Fav (2.19 to 3.09) +3.7%.</li>
-  <li>Every underdog: -10.5% yield. Slight Dog (2.58 to 3.62) -9.6%, Mid Dog (3.62 to 5.30) -8.0%, Super Dog (5.30 to 36.00) -14.0%.</li>
-  <li>Every draw: -2.0% yield at a median price of 3.71.</li>
-  <li>Favourite playing at home (5,801 matches): -1.4%. Favourite playing away (3,066 matches): +3.2%.</li>
-</ul>
-<h2>By league</h2>
-<ul>
-  <li>Premier League: favourites -0.5%, underdogs -9.3%, draws -2.5%.</li>
-  <li>La Liga: favourites +3.8%, underdogs -14.6%, draws -5.8%.</li>
-  <li>Bundesliga: favourites -1.1%, underdogs -6.9%, draws +1.1%.</li>
-  <li>Serie A: favourites +0.7%, underdogs -15.6%, draws +0.4%.</li>
-  <li>Ligue 1: favourites -2.6%, underdogs -4.4%, draws -2.7%.</li>
-</ul>
-<h2>Per team</h2>
-<p>Every club in the Premier League, La Liga, Serie A, Bundesliga and Ligue 1 can be pulled up on its own: record, win rate, median close and flat-stake ROI backing or fading them, split by matches where they were the favourite and matches where they were the underdog, with a match-by-match cumulative chart. Example: Aston Villa, all time, +25.9% backing overall.</p>
+    noscriptHtml: `<h1>Favourite–Longshot Bias</h1>
+<div data-public-summary="longshot-bias"><!--live-public-summary--></div>
+<p>The table shows the current record for five European leagues combined. Explore individual clubs, venues, leagues and seasons in the filters.</p>
+<h2>Historical study through August 2026</h2>
+<p>The original 8,867-match study found a +0.2% return backing favourites, −10.5% backing underdogs and −2.0% backing the draw. <a href="/blog/favourite-longshot-bias-in-football-betting">Read the dated study and its odds bands</a>.</p>
 <p>Odds bands are terciles of the filtered data (equal match counts per band). The favourite is whichever side closed shorter. Backing the favourite or the underdog loses on a draw. Prices are football-data.co.uk's Pinnacle closes to January 2026 and SteamWatch's own Pinnacle closing-line capture from February 2026, with the Betfair Exchange close standing in for the roughly 200 matches between the two. Every league, season and team view is free to explore. Confirmed results refresh automatically.</p>
 <p><a href="https://www.steamwatch.io/blog/favourite-longshot-bias-in-football-betting">Read the full breakdown</a> · <a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
   },
@@ -742,10 +735,6 @@ const today = new Date().toISOString().slice(0, 10);
 const fmtN = (n) => Number(n).toLocaleString('en-GB');
 const HEADLINE = {};
 {
-  const cl = await fetchJson('/api/closing-lines?limit=1');
-  HEADLINE['closing-lines'] = cl?.total
-    ? `As of ${today}, ${fmtN(cl.total)} closing lines are on record across the tracked competitions.`
-    : 'The archive grows with every finished match.';
   const ucl = await fetchJson('/api/closing-lines?league=soccer_uefa_champs_league&limit=1');
   HEADLINE['cl-closing-lines'] = ucl?.total
     ? `As of ${today}, ${fmtN(ucl.total)} Champions League closing lines are on record.`

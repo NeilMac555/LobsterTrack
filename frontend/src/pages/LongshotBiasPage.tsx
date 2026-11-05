@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useSearchParams } from 'react-router-dom';
 import LongshotTeamsView from '../components/LongshotTeamsView';
+import PublicSummary from '../components/PublicSummary';
 import {
   LineChart,
   Line,
@@ -218,6 +219,7 @@ export default function LongshotBiasPage() {
       </div>
 
 
+      {view === 'overview' && <PublicSummary page="longshot-bias" />}
       {/* View tabs */}
       <div className="mb-4 inline-flex rounded-lg border border-slate-700/60 overflow-hidden">
         <button
