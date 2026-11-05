@@ -208,6 +208,19 @@ class MembershipAndTracking(unittest.TestCase):
         self.assertEqual(result["summary"]["priced"], 2)
         self.assertEqual(result["summary"]["pnl"], -0.50)
 
+    def test_switch_between_leaderboard_and_match_examples(self):
+        previous = "Lazio in Serie A 2026/27"
+        for text, expected in [
+            ("Which team has seen steam moves the most this season from the Top 5 leagues?", "movement_ranking"),
+            ("Serie A only?", "movement_ranking"),
+            ("Which teams have drifted most in the Premier League?", "movement_ranking"),
+            ("Would I be up backing Lazio every week this season?", None),
+        ]:
+            r = self.client.post("/research/run", json={"question": text, "previous": previous})
+            self.assertEqual(r.status_code, 200, r.text)
+            self.assertEqual(r.json().get("kind"), expected)
+            previous = r.json()["canonical"]
+
     def test_paid_access_and_account_isolation(self):
         ident = self.client.post("/research/tracks", json=self.body).json()["id"]
         self.app.dependency_overrides[get_current_user] = lambda: self.people[1]
