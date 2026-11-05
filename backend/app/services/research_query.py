@@ -97,20 +97,65 @@ pinnacle closing close odds price prices line lines english club clubs team team
 break it down by competition competitions split across played playing league season so far this year made
 at home away out european football wouldve money staking bets tell us record results on done performed doing
 perform performance been doing their when had bought get me if hows the to date too show across competitions
-per both achieve achieved ok okay can could also side sides which break down""".split()
+per both achieve achieved ok okay can could also side sides which break down be
+net total ahead behind earned make earn wager wagers wagered put single profitable stakes""".split()
 )
+
+# Only consume complete betting idioms. For instance, "every week" describes
+# backing each game; "last week" and "weekends only" are different queries.
+EVERY_GAME = re.compile(
+    r"\b(?:(?:each and every|each|every) (?:single )?(?:week|matchweek|matchday)"
+    r"|week in,? week out|week after week)\b"
+)
+# Keep literal separators for short years: "last 26 27" is not a season.
+SEASON_PAIR = re.compile(
+    r"\b(?P<first>20\d{2}|\d{2})(?:\s*[/\-\u2010-\u2014]\s*"
+    r"(?P<end>20\d{2}|\d{2})|\s+(?P<fullyear>20\d{2}))\b"
+)
+STAKE_AMOUNT = re.compile(
+    r"(?<![\w.])([0-9]+(?:\.[0-9]+)?|one|two|three|four|five|ten)"
+    r"\s*(?:u|units?)\b"
+)
+
+
+def question_terms(question, today):
+    """Extract the season and level stake before interpreting football filters."""
+    s = unicodedata.normalize("NFKC", question.casefold()).replace("’", "'")
+    s = re.sub(r"\b(i|we|you)'d\b", r"\1 would", s)
+    s = re.sub(r"\b(would|could)'ve\b", r"\1 have", s)
+    # Mask season spans before norm() turns hyphens into whitespace.
+    pairs = list(SEASON_PAIR.finditer(s))
+    current = season_start(today)
+    relative = set(re.findall(r"\b(this|current|last|previous) season\b", s))
+    requested = {current - (r in {"last", "previous"}) for r in relative}
+    for m in pairs:
+        first = int(m["first"])
+        if len(m["first"]) == 2:
+            first += 2000
+        end = m["end"] or m["fullyear"]
+        expected = str(first + 1) if len(end) == 4 else f"{(first + 1) % 100:02d}"
+        if end != expected:
+            raise ValueError("Use two consecutive years for a season, such as 2026/27.")
+        requested.add(first)
+    if len(requested) > 1:
+        raise ValueError("Choose one season per question.")
+    s = SEASON_PAIR.sub(" ", s)
+    s = re.sub(r"\b(?:this|current|last|previous) season\b", " ", s)
+    s = norm(s).replace("what's", "whats").replace("'s", "").replace("p/l", "pnl")
+    s = EVERY_GAME.sub("every game", s)
+    s = re.sub(r"\blevel (?:stakes?|staking)\b", "flat stake", s)
+    for stake in STAKE_AMOUNT.finditer(s):
+        amount = stake[1]
+        if not (amount == "one" or (amount[0].isdigit() and float(amount) == 1)):
+            raise ValueError(
+                "Research Lab settles 1 unit per game. Ask for a flat 1u stake."
+            )
+    return STAKE_AMOUNT.sub(" ", s), next(iter(requested), current)
 
 
 def parse(question, today=None):
     today = today or date.today()
-    season = season_start(today)
-    s = (
-        norm(question)
-        .replace("’", "'")
-        .replace("what's", "whats")
-        .replace("'s", "")
-        .replace("p/l", "pnl")
-    )
+    s, season = question_terms(question, today)
     s = re.sub(r"\.(?!\d)", " ", s)
     s = re.sub(r"(?<=\w)\?(?=\s|$)|[?,!]", " ", s).strip().rstrip(".")
     if re.search(
@@ -120,18 +165,6 @@ def parse(question, today=None):
         raise ValueError(
             "Try a club to win in 90 minutes. This query supports venue, competitions, season, last N and a closing price limit."
         )
-    years = re.findall(r"\b(20\d{2})[/\-](\d{2}|20\d{2})\b", question)
-    if len(years) > 1 or (years and "last season" in s):
-        raise ValueError("Choose one season per question.")
-    if years:
-        first, second = years[0]
-        if int(second) % 100 != (int(first) + 1) % 100:
-            raise ValueError("Use a season such as 2026/27.")
-        season = int(first)
-        s = re.sub(r"\b20\d{2}[/ ](?:20\d{2}|\d{2})\b", " ", s)
-    elif "last season" in s:
-        season -= 1
-    s = s.replace("last season", " ").replace("this season", " ")
     last = None
     window = re.search(r"\blast\s+(\d+)\b", s)
     if window:
@@ -162,7 +195,6 @@ def parse(question, today=None):
         if not 1 < price <= 1000:
             raise ValueError("Use decimal odds above 1.00 and at most 1000.")
         s = s[: limits.start()] + " " + s[limits.end() :]
-    s = re.sub(r"\b1\s*(?:u|unit)\b", " ", s)
     comps = []
     for name in (
         "UECL",
@@ -254,11 +286,13 @@ def describe(rules):
 
 def resolve(question, previous=None, today=None):
     if previous:
-        short = norm(question).strip(" ?.!")
+        short = " ".join(question.casefold().split()).strip(" ?.!")
         short = re.sub(
             r"^(?:and |what about |how about |what if |show me )+", "", short
         )
         short = re.sub(r"\s+(?:only|instead|games|matches|please)$", "", short)
+        period = short.removesuffix(" season")
+        short = norm(short)
         base = parse(previous, today)
         # A request for a different metric can reuse the exact cohort on screen.
         words = set(
@@ -281,6 +315,17 @@ def resolve(question, previous=None, today=None):
         }.get(short)
         if venue:
             return base.model_copy(update={"venue": venue})
+        explicit_period = SEASON_PAIR.fullmatch(period)
+        if explicit_period or short in {
+            "this season",
+            "current season",
+            "last season",
+            "previous season",
+        }:
+            _, season = question_terms(
+                period if explicit_period else short, today or date.today()
+            )
+            return parse(describe(base.model_copy(update={"season": season})), today)
         if short in (
             "p/l",
             "the p/l",

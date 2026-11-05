@@ -14,9 +14,33 @@ from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
 TODAY = date(2026, 11, 5)
+LAZIO_QUESTION = (
+    "iN SERIE A if I bet on Lazio every week in the 2026 2027 season "
+    "how much would I be up if betting a flat 1u per bet"
+)
 
 
 class Questions(unittest.TestCase):
+    def test_conversational_level_stake_questions(self):
+        canonical = parse("Lazio in Serie A 2026/27", TODAY)
+        for q in (
+            LAZIO_QUESTION,
+            "Would I be up or down if I'd put one unit on Lazio every single match in 26/27?",
+            "How much would I have made backing Lazio week in, week out in 2026–27?",
+            "Would backing Lazio each week at level stakes in the 2026 / 2027 season be profitable?",
+        ):
+            with self.subTest(q=q):
+                self.assertEqual(
+                    resolve(q, "Arsenal away last 5 games", TODAY), canonical
+                )
+        for period in ("last season", "25-26", "2025 2026", "2025/26"):
+            base = "Lazio at home in Serie A 2026/27 below 2.5"
+            with self.subTest(period=period):
+                self.assertEqual(
+                    resolve("What about " + period + "?", base, TODAY),
+                    parse(base.replace("2026/27", "2025/26"), TODAY),
+                )
+
     def test_original_question_and_followup(self):
         rules = parse(
             "What percentage of games have English teams won in Europe this season?",
@@ -48,6 +72,15 @@ class Questions(unittest.TestCase):
             "Arsenal last 500",
             "English clubs in Europe last season",
             "Chelsea below 2 and above 3",
+            "Backing Lazio last week",
+            "Backing Lazio every other week",
+            "Betting Lazio on weekends only",
+            "Lazio every week in 2026 2028",
+            "Lazio in 2025 2026 and 2026/27",
+            "Lazio last season in 2026 2027",
+            "Lazio every week for 2u per game",
+            "Lazio for 1.5 units per game",
+            "Back Lazio over 2.5 goals every week",
         ):
             with self.subTest(q=q), self.assertRaises(ValueError):
                 parse(q, TODAY)
@@ -143,6 +176,37 @@ class MembershipAndTracking(unittest.TestCase):
             json={"question": "Napoli in all 5 games at home in Serie A 2026/27"},
         )
         self.assertEqual(stale.status_code, 422)
+
+    def test_free_text_question_settles_lazio_from_both_venues(self):
+        self.db.add(
+            HistoricalMatch(
+                league="soccer_italy_serie_a",
+                season="2627",
+                match_date=date(2026, 11, 1),
+                home_team="Lazio",
+                away_team="Cagliari",
+                fthg=2,
+                ftag=1,
+                psch=1.50,
+                price_source="close",
+            )
+        )
+        self.db.query(HistoricalMatch).filter_by(away_team="Lazio").update(
+            {"psca": 3.25}
+        )
+        self.db.commit()
+        response = self.client.post(
+            "/research/run",
+            json={
+                "question": LAZIO_QUESTION,
+                "previous": "English clubs in Europe 2026/27 at home",
+            },
+        )
+        self.assertEqual(response.status_code, 200, response.text)
+        result = response.json()
+        self.assertEqual(result["canonical"], "Lazio in Serie A 2026/27")
+        self.assertEqual(result["summary"]["priced"], 2)
+        self.assertEqual(result["summary"]["pnl"], -0.50)
 
     def test_paid_access_and_account_isolation(self):
         ident = self.client.post("/research/tracks", json=self.body).json()["id"]
