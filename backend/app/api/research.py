@@ -1,5 +1,6 @@
 import hashlib
 import json
+import logging
 import re
 from datetime import datetime, timedelta, timezone
 from threading import Lock
@@ -12,11 +13,12 @@ from sqlalchemy.orm import Session
 from app.api.deps import require_user
 from app.models import User, get_db
 from app.models.research_track import ResearchTrack
+from app.services.research_movements import MOVES, movement_question, movement_report
 from app.services.research_query import SAMPLE, Rules, resolve
 from app.services.research_results import report
-from app.services.research_movements import MOVES, movement_question, movement_report
 
 router = APIRouter(prefix="/research")
+logger = logging.getLogger("uvicorn.error.research")
 
 
 class Question(BaseModel):
@@ -58,7 +60,37 @@ def example(response: Response, db: Session = Depends(get_db)):
 
 
 @router.post("/run")
-def run(body: Question, _=Depends(pro), db: Session = Depends(get_db)):
+def run(body: Question, user=Depends(pro), db: Session = Depends(get_db)):
+    # The bounded question and account ID make failed member queries diagnosable.
+    # Never include request headers, access tokens, email or payment information.
+    def record(status, reason=None):
+        logger.info(
+            "research_query %s",
+            json.dumps(
+                dict(
+                    user_id=user.id,
+                    question=body.question,
+                    previous=body.previous,
+                    status=status,
+                    reason=reason,
+                ),
+                ensure_ascii=True,
+            ),
+        )
+
+    try:
+        result = run_question(body, db)
+    except HTTPException as exc:
+        record(exc.status_code, exc.detail)
+        raise
+    except Exception:
+        record(500, "Unexpected query failure")
+        raise
+    record(200)
+    return result
+
+
+def run_question(body: Question, db: Session):
     # A stated sample size checks the result. It never selects an arbitrary subset.
     question = body.question.strip()
     try:
@@ -70,7 +102,9 @@ def run(body: Question, _=Depends(pro), db: Session = Depends(get_db)):
     count = re.search(r"\ball\s+(\d+)\s+(games|matches|fixtures)\b", question, re.I)
     if count:
         question = question[: count.start()] + "all games" + question[count.end() :]
-    previous = body.previous if not MOVES.search((body.previous or "").casefold()) else None
+    previous = (
+        body.previous if not MOVES.search((body.previous or "").casefold()) else None
+    )
     result = report(db, interpret(question, previous))
     if count and int(count[1]) != result["summary"]["games"]:
         raise HTTPException(

@@ -116,6 +116,20 @@ STAKE_AMOUNT = re.compile(
     r"(?<![\w.])([0-9]+(?:\.[0-9]+)?|one|two|three|four|five|ten)"
     r"\s*(?:u|units?)\b"
 )
+RECENT_WORDS = {"five": "5", "ten": "10", "twenty": "20"}
+
+
+def followup_terms(question):
+    """Trim conversational framing, keeping every substantive filter intact."""
+    short = " ".join(question.casefold().split()).strip(" ?.!")
+    short = re.sub(
+        r"^(?:(?:and|what about|how about|what if|show me|just|only)\s+)+", "", short
+    )
+    short = short.removeprefix("the ")
+    short = re.sub(
+        r"(?:\s+(?:only|instead|games|matches|fixtures|please))+$", "", short
+    )
+    return short
 
 
 def question_terms(question, today):
@@ -142,6 +156,8 @@ def question_terms(question, today):
     s = SEASON_PAIR.sub(" ", s)
     s = re.sub(r"\b(?:this|current|last|previous) season\b", " ", s)
     s = norm(s).replace("what's", "whats").replace("'s", "").replace("p/l", "pnl")
+    s = re.sub(r"\breturn on investment\b", "roi", s)
+    s = re.sub(r"\blast (five|ten|twenty)\b", lambda m: "last " + RECENT_WORDS[m[1]], s)
     s = EVERY_GAME.sub("every game", s)
     s = re.sub(r"\blevel (?:stakes?|staking)\b", "flat stake", s)
     for stake in STAKE_AMOUNT.finditer(s):
@@ -286,13 +302,10 @@ def describe(rules):
 
 def resolve(question, previous=None, today=None):
     if previous:
-        short = " ".join(question.casefold().split()).strip(" ?.!")
-        short = re.sub(
-            r"^(?:and |what about |how about |what if |show me )+", "", short
-        )
-        short = re.sub(r"\s+(?:only|instead|games|matches|please)$", "", short)
+        short = followup_terms(question)
         period = short.removesuffix(" season")
         short = norm(short)
+        short = re.sub(r"\breturn on investment\b", "roi", short)
         base = parse(previous, today)
         # A request for a different metric can reuse the exact cohort on screen.
         words = set(
@@ -334,17 +347,23 @@ def resolve(question, previous=None, today=None):
             "roi",
         ):
             return base
+        short = re.sub(
+            r"\blast (five|ten|twenty)\b", lambda m: "last " + RECENT_WORDS[m[1]], short
+        )
         if re.fullmatch(r"last \d+(?: games)?", short):
             return parse(
                 describe(base.model_copy(update={"last": None})) + " " + short, today
             )
-        if re.fullmatch(
-            r"(?:below|above|under|over|sub|at least|at most)\s*\d+(?:\.\d+)?", short
-        ):
+        price_followup = re.fullmatch(
+            r"(?:(?:at )?(?:odds|prices)(?: of)? |priced )?"
+            r"((?:below|above|under|over|sub|at least|at most)\s*\d+(?:\.\d+)?)",
+            short,
+        )
+        if price_followup:
             return parse(
                 describe(base.model_copy(update={"bound": None, "price": None}))
                 + " "
-                + short,
+                + price_followup[1],
                 today,
             )
         if short in (

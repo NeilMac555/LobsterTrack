@@ -11,3 +11,9 @@ Domestic results use the named club’s archived season and league. The nine Eng
 Tracking fixes the season and rules, stores the summary at save time and counts qualifying results from the next UTC date. A last-N window defines the discovery sample, not a cap on forward results. Access to arbitrary runs and all saved-question endpoints requires active Pro membership.
 
 Members can also ask which teams steamed or drifted most across the five domestic leagues or in one named league. These rankings use the same opening prices, 3pp minimum and final two-hour observation window as Steam Results and Drifters. Count the largest qualifying move once per team per fixture, whether or not it was alerted or settled. Rank by count, share places on ties, and show pending results separately. Each row has a fixture ledger. A league-only follow-up retains the direction and season. Saved forward tracking applies to win-bet reports.
+
+## Query validation and support
+
+Win-report follow-ups accept ordinary framing such as “What about the last five games?”, “Home games only” and “What about odds above 2.00?”. Each changes only the requested filter. Ranking follow-ups can change the league, season or direction (“What about drifters?”). Unsupported conditions remain explicit errors; venue-specific rankings, top-N truncation and all-team profit rankings are not supported.
+
+Authenticated Pro query runs emit a `research_query` application log with account ID, bounded question text, previous context, response status and validation reason. The event excludes authentication headers, tokens, email and payment fields. Access failures do not log submitted questions. Logs use the host's existing retention; they are not a permanent analytics database. Questions submitted before this instrumentation cannot be recovered from access logs.
