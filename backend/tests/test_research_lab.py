@@ -1,17 +1,21 @@
+import json
 import unittest
 from datetime import date, datetime, timedelta
 from types import SimpleNamespace
+from unittest.mock import patch
 
-from app.api.deps import get_current_user
-from app.api.research import router
-from app.models import Base, HistoricalMatch, User, get_db
-from app.services.research_query import describe, parse, resolve
-from app.services.research_results import quote, report
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
+
+from app.api.deps import get_current_user
+from app.api.research import router
+from app.models import Base, HistoricalMatch, User, get_db
+from app.services.research_movements import movement_question
+from app.services.research_query import describe, parse, resolve
+from app.services.research_results import quote, report
 
 TODAY = date(2026, 11, 5)
 LAZIO_QUESTION = (
@@ -21,6 +25,73 @@ LAZIO_QUESTION = (
 
 
 class Questions(unittest.TestCase):
+    def test_natural_followups_keep_the_existing_filters(self):
+        base = parse("Lazio in Serie A 2026/27 at home below 3 last 20", TODAY)
+        for q, changes in (
+            ("What about the last 5 games?", {"last": 5}),
+            ("Last 10 matches please", {"last": 10}),
+            ("And the last five games only please?", {"last": 5}),
+            ("Home games only", {"venue": "home"}),
+            ("What about away games only please?", {"venue": "away"}),
+            ("What about odds above 2.00?", {"bound": "above", "price": 2}),
+            ("At odds below 1.8 please", {"bound": "below", "price": 1.8}),
+            ("Prices at least 2", {"bound": "at least", "price": 2}),
+            ("And last season?", {"season": 2025}),
+            ("What's the return on investment?", {}),
+        ):
+            with self.subTest(q=q):
+                self.assertEqual(
+                    resolve(q, describe(base), TODAY), base.model_copy(update=changes)
+                )
+        self.assertEqual(
+            parse("What's Lazio's return on investment this season?", TODAY),
+            parse("Lazio", TODAY),
+        )
+        self.assertEqual(parse("Lazio last twenty matches", TODAY).last, 20)
+        for q in (
+            "Home games on Fridays only",
+            "Last 10 matches except losses",
+            "Odds above 2 and below 3",
+            "Last 5 games against Roma",
+            "Away for two units",
+            "Last 500 matches please",
+        ):
+            with self.subTest(q=q), self.assertRaises(ValueError):
+                resolve(q, describe(base), TODAY)
+
+    def test_movement_followups_keep_direction_scope_and_season(self):
+        base = movement_question("Most steam moves in Serie A 2026/27", today=TODAY)
+        for q, direction, competitions, season in (
+            ("What about drifters?", -1, ("Serie A",), 2026),
+            ("And last season?", 1, ("Serie A",), 2025),
+            ("What about 2025/26?", 1, ("Serie A",), 2025),
+            ("Only Premier League please", 1, ("Premier League",), 2026),
+            ("Both venues", 1, ("Serie A",), 2026),
+        ):
+            with self.subTest(q=q):
+                result = movement_question(q, base.canonical, TODAY)
+                self.assertEqual(
+                    (result.direction, result.competitions, result.season),
+                    (direction, competitions, season),
+                )
+        natural = movement_question(
+            "Which team has the biggest number of steam moves in Serie A this season?",
+            today=TODAY,
+        )
+        self.assertEqual(natural, base)
+        self.assertIsNone(
+            movement_question("Lazio ROI this season", base.canonical, TODAY)
+        )
+        for q in (
+            "Home games only",
+            "What about steam alerts?",
+            "Most drifts above 4pp",
+            "Top 10 most steamed teams",
+            "What about 2027/28?",
+        ):
+            with self.subTest(q=q), self.assertRaises(ValueError):
+                movement_question(q, base.canonical, TODAY)
+
     def test_conversational_level_stake_questions(self):
         canonical = parse("Lazio in Serie A 2026/27", TODAY)
         for q in (
@@ -211,12 +282,20 @@ class MembershipAndTracking(unittest.TestCase):
     def test_switch_between_leaderboard_and_match_examples(self):
         previous = "Lazio in Serie A 2026/27"
         for text, expected in [
-            ("Which team has seen steam moves the most this season from the Top 5 leagues?", "movement_ranking"),
+            (
+                "Which team has seen steam moves the most this season from the Top 5 leagues?",
+                "movement_ranking",
+            ),
             ("Serie A only?", "movement_ranking"),
-            ("Which teams have drifted most in the Premier League?", "movement_ranking"),
+            (
+                "Which teams have drifted most in the Premier League?",
+                "movement_ranking",
+            ),
             ("Would I be up backing Lazio every week this season?", None),
         ]:
-            r = self.client.post("/research/run", json={"question": text, "previous": previous})
+            r = self.client.post(
+                "/research/run", json={"question": text, "previous": previous}
+            )
             self.assertEqual(r.status_code, 200, r.text)
             self.assertEqual(r.json().get("kind"), expected)
             previous = r.json()["canonical"]
@@ -239,6 +318,60 @@ class MembershipAndTracking(unittest.TestCase):
                 self.assertEqual(
                     self.client.post(path, json=self.body).status_code, code
                 )
+
+    def test_validation_records_question_and_reason_only_after_pro_access(self):
+        body = {
+            "question": "What about the last 5 games?",
+            "previous": "Napoli home in Serie A 2026/27",
+        }
+        with patch("app.api.research.logger.info") as log:
+            success = self.client.post("/research/run", json=body)
+            self.assertEqual(success.status_code, 200, success.text)
+            record = json.loads(log.call_args.args[1])
+            self.assertEqual(
+                record,
+                {"user_id": self.people[0].id, **body, "status": 200, "reason": None},
+            )
+            rejected = self.client.post(
+                "/research/run", json={"question": "Napoli BTTS yes"}
+            )
+            self.assertEqual(rejected.status_code, 422)
+            record = json.loads(log.call_args.args[1])
+            self.assertEqual(record["reason"], rejected.json()["detail"])
+            self.assertEqual(record["status"], 422)
+            self.assertEqual(record["question"], "Napoli BTTS yes")
+            log.reset_mock()
+            for user, status in (
+                (None, 401),
+                (SimpleNamespace(subscription=None), 403),
+            ):
+                self.app.dependency_overrides[get_current_user] = lambda: user
+                for question in ("Napoli", "Napoli BTTS yes", "x" * 241, ""):
+                    self.assertEqual(
+                        self.client.post(
+                            "/research/run", json={"question": question}
+                        ).status_code,
+                        status,
+                    )
+            log.assert_not_called()
+
+    def test_payload_validation_and_public_sample_boundary(self):
+        for body in (
+            {},
+            {"question": ""},
+            {"question": "x" * 241},
+            {"question": "Napoli", "previous": "x" * 241},
+        ):
+            with self.subTest(body=body):
+                r = self.client.post("/research/run", json=body)
+                self.assertEqual(r.status_code, 422)
+        self.app.dependency_overrides[get_current_user] = lambda: None
+        with patch(
+            "app.api.research.report", return_value={"canonical": "fixed sample"}
+        ):
+            r = self.client.get("/research/example?question=Napoli")
+            self.assertEqual(r.status_code, 200)
+            self.assertEqual(r.json()["canonical"], "fixed sample")
 
     def test_baseline_is_frozen_and_save_is_idempotent(self):
         data = self.client.post("/research/tracks", json=self.body).json()

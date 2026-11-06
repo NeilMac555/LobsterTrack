@@ -13,6 +13,8 @@ from app.services.research_query import (
     COMP_WORDS,
     EUROPE,
     LEAGUES,
+    SEASON_PAIR,
+    followup_terms,
     question_terms,
     season_start,
 )
@@ -54,25 +56,47 @@ class Movement:
 
 def movement_question(question, previous=None, today=None):
     today = today or datetime.now(timezone.utc).date()
+    if previous and MOVES.search(previous.casefold()):
+        short = followup_terms(question)
+        prior = movement_question(previous, today=today)
+        if prior:
+            scope = re.sub(r"^in (?:the )?", "", short).removeprefix("the ")
+            if re.fullmatch(BIG_FIVE, scope):
+                return Movement(prior.direction, DOMESTIC, prior.season)
+            for comp in DOMESTIC:
+                if re.fullmatch(COMP_WORDS[comp], scope):
+                    return Movement(prior.direction, (comp,), prior.season)
+            if MOVES.fullmatch(short):
+                return Movement(
+                    -1 if short.startswith("drift") else 1,
+                    prior.competitions,
+                    prior.season,
+                )
+            period = short.removesuffix(" season")
+            if SEASON_PAIR.fullmatch(period) or short in {
+                "this season",
+                "current season",
+                "last season",
+                "previous season",
+            }:
+                _, season = question_terms(short, today)
+                if not 2000 <= season <= season_start(today):
+                    raise ValueError("Choose a completed or current season.")
+                return Movement(prior.direction, prior.competitions, season)
+            if short in {"home", "at home", "away", "away from home"}:
+                raise ValueError(
+                    "Steam and drift rankings currently cover all venues. Try a league or season instead."
+                )
+            if short in {"all venues", "both venues", "home and away"}:
+                return prior
     if not MOVES.search(question.casefold()):
-        # Only inherit a leaderboard for an explicit scope follow-up. A new
-        # club/P&L question must still reach the ordinary match query parser.
-        if previous and MOVES.search(previous.casefold()):
-            short = re.sub(
-                r"^(?:(?:and|how about|what about|just|only|in the|in)\s+)+",
-                "",
-                question.casefold().strip(" ?.!"),
-            )
-            short = re.sub(r"\s+(?:only|instead|please)$", "", short)
-            prior = movement_question(previous, today=today)
-            if prior:
-                if re.fullmatch(BIG_FIVE, short.removeprefix("the ")):
-                    return Movement(prior.direction, DOMESTIC, prior.season)
-                for comp in DOMESTIC:
-                    if re.fullmatch(COMP_WORDS[comp], short.removeprefix("the ")):
-                        return Movement(prior.direction, (comp,), prior.season)
         return None
     s, season = question_terms(question, today)
+    s = re.sub(r"\b(?:biggest|highest|largest|greatest) number of\b", "most", s)
+    if re.search(r"\btop \d+ (?:most )?(?:steam|drift)", s):
+        raise ValueError(
+            "The leaderboard shows all teams with shared ranks for ties. Ask which teams steamed or drifted most, without a top-N limit."
+        )
     if re.search(r"\b(?:which|what)\s+leagues?\b", s):
         raise ValueError(
             "This leaderboard ranks teams. Try “Which team has the most steam moves in the top five leagues?”"
