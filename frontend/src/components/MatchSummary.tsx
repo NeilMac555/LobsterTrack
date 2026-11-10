@@ -24,6 +24,32 @@ export default function MatchSummary({ data }: { data: MatchSummaryData }) {
           {data.alerts_text.map((a) => <p key={a} className={p}>{a}</p>)}
         </>
       )}
+      {data.fair && (
+        <section id="fair-price">
+          <h2 className={h2}>{data.fair.heading}</h2>
+          <p className={p}>{data.fair.text.join(' ')}</p>
+          <div className="overflow-x-auto rounded-md border border-slate-700/50 mb-2 max-w-2xl">
+            <table className="w-full text-[13px] font-mono">
+              <thead className="bg-slate-800/60 text-slate-400 text-[11px] uppercase tracking-wider">
+                <tr>
+                  {data.fair.columns.map((c, i) => <th key={c} className={`${i === 0 ? 'text-left' : 'text-right'} px-3 py-2`}>{c}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {data.fair.rows.map((r) => (
+                  <tr key={r.label} className="border-t border-slate-700/40 text-slate-200">
+                    <td className="px-3 py-2 font-sans">{r.label}</td>
+                    <td className="px-3 py-2 text-right tabular-nums text-slate-400">{price(r.price)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums font-bold text-cyan-300">{r.fair.toFixed(2)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{r.prob.toFixed(1)}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="text-xs text-slate-500 max-w-[80ch] mb-2">{data.fair.method}</p>
+        </section>
+      )}
       {data.timeline && (
         <>
           <h2 className={h2}>1X2 price timeline</h2>

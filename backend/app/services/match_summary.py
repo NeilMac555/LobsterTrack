@@ -16,6 +16,8 @@ so the two never drift:
                        kickoff, and the close (upcoming matches: open,
                        7 days, 3 days, 24h and 6h ago, and now)
   late_move            what happened in the final two hours
+  fair                 fair (no-vig) 1X2 prices: Pinnacle's price with the
+                       bookmaker margin removed, and the copy explaining it
   indexable            False when there are too few snapshots to say
                        anything (served noindex, left out of the sitemap)
 
@@ -72,6 +74,18 @@ def _ago(minutes: float) -> str:
     return f"{h} hours" if r == 0 else f"{h} hours {r} minutes"
 
 
+def fair_prices(home: Optional[float], draw: Optional[float], away: Optional[float]):
+    """No-vig prices for a 1X2 market: each implied probability divided by
+    the market total, so the three sum to 100%. Returns (fair prices,
+    fair probabilities in %, margin in %) or None if a price is missing."""
+    if not (home and draw and away) or min(home, draw, away) <= 1.0:
+        return None
+    imp = [1.0 / home, 1.0 / draw, 1.0 / away]
+    total = sum(imp)
+    probs = [x / total for x in imp]
+    return [1.0 / q for q in probs], [q * 100.0 for q in probs], (total - 1.0) * 100.0
+
+
 def page_title(home: str, away: str) -> str:
     t = f"{home} vs {away} Odds Movement | SteamWatch"
     return t if len(t) <= TITLE_MAX else f"{home} vs {away} Odds | SteamWatch"
@@ -108,7 +122,7 @@ def match_summary(db: Session, match, snaps: Optional[list] = None, close: Optio
     out: dict[str, Any] = {
         "match_id": match.id, "finished": finished, "indexable": len(snaps) >= INDEX_MIN_SNAPSHOTS,
         "title": page_title(home, away), "score": None, "result_heading": None, "result": [],
-        "alerts_text": [], "timeline": None, "late_move": None,
+        "alerts_text": [], "timeline": None, "late_move": None, "fair": None,
     }
     where = f"{comp}, {_date(kickoff)}"
     if not snaps:
@@ -188,6 +202,32 @@ def match_summary(db: Session, match, snaps: Optional[list] = None, close: Optio
             out["alerts_text"].append(s)
         if not out["alerts_text"]:
             out["alerts_text"] = ["No SteamWatch steam alert was sent for this match."]
+
+    # ---- fair (no-vig) prices. Pinnacle only: the Betfair Exchange
+    # fallback is not a bookmaker price with a margin to remove.
+    fp = fair_prices(cur["home"], cur["draw"], cur["away"]) if (last.bookmaker or "pinnacle") == "pinnacle" else None
+    if fp:
+        fair, probs, margin = fp
+        when = "closing" if finished else "current"
+        was = "was" if finished else "is"
+        out["fair"] = {
+            "heading": f"{home} vs {away} fair odds (no-vig prices)",
+            "margin": round(margin, 2),
+            "columns": ["Selection", f"Pinnacle {'close' if finished else 'now'}", "Fair price", "Fair probability"],
+            "rows": [{"label": "Draw" if k == "draw" else names[k], "price": cur[k], "fair": round(fair[i], 2), "prob": round(probs[i], 1)}
+                     for i, k in enumerate(("home", "draw", "away"))],
+            "text": [
+                f"The fair odds for {home} vs {away} {'were' if finished else 'are'} {home} {fair[0]:.2f}, "
+                f"the draw {fair[1]:.2f} and {away} {fair[2]:.2f}.",
+                f"A fair price, also called a no-vig price, is Pinnacle's {when} 1X2 price with the bookmaker's margin removed. "
+                f"Pinnacle's margin on this match {was} {margin:.1f}%.",
+                "A bet is a value bet when a bookmaker offers a higher price than the fair price for the same selection."
+                if not finished else
+                "A bet placed before kickoff at a higher price than the closing fair price beat the closing line.",
+            ],
+            "method": "Method: each price is converted to an implied probability (1 divided by the decimal price), "
+                      "and the three probabilities are scaled to add up to 100%.",
+        }
 
     # ---- 1X2 price timeline
     times = [s.fetched_at for s in snaps]

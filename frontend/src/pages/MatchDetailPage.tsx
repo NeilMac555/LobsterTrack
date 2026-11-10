@@ -369,6 +369,21 @@ export default function MatchDetailPage() {
         <XGTablesMatchLink sportKey={match.sport_key} />
       </div>
 
+      {summary?.fair && (
+        <a
+          href="#fair-price"
+          className="mb-4 sm:mb-6 flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-xl border border-cyan-500/25 bg-cyan-500/[0.06] px-4 py-2.5 hover:border-cyan-400/50"
+        >
+          <span className="text-[10px] font-mono font-semibold uppercase tracking-[0.12em] text-cyan-300">Fair price</span>
+          {summary.fair.rows.map((r) => (
+            <span key={r.label} className="font-mono text-sm tabular-nums text-slate-300">
+              <span className="font-sans text-slate-400">{r.label}</span> <span className="font-bold text-white">{r.fair.toFixed(2)}</span>
+            </span>
+          ))}
+          <span className="text-xs text-slate-500">Pinnacle with the {summary.fair.margin.toFixed(1)}% margin removed</span>
+        </a>
+      )}
+
       {/* Odds History Chart */}
       <div className="bg-slate-800/80 rounded-xl sm:rounded-2xl border border-slate-700/50 p-3 sm:p-6 mb-6 sm:mb-8 card-shadow">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 sm:mb-4">

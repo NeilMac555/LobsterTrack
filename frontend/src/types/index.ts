@@ -894,4 +894,12 @@ export interface MatchSummaryData {
   alerts_text: string[];
   timeline: { columns: string[]; rows: Array<{ label: string; home: number | null; draw: number | null; away: number | null }> } | null;
   late_move: string | null;
+  fair: {
+    heading: string;
+    margin: number;
+    columns: string[];
+    rows: Array<{ label: string; price: number | null; fair: number; prob: number }>;
+    text: string[];
+    method: string;
+  } | null;
 }

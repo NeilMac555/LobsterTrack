@@ -308,6 +308,17 @@ def _render(db: Session, match: Match) -> str:
             "<h2>1X2 price timeline</h2>"
             f"<table><thead><tr><th>When</th>{t_head}</tr></thead><tbody>{t_rows}</tbody></table>"
             + (f"<p>{_esc(summary['late_move'])}</p>" if summary["late_move"] else ""))
+    fair_html = ""
+    if summary["fair"]:
+        fr = summary["fair"]
+        f_rows = "".join(
+            f"<tr><td>{_esc(r['label'])}</td><td class=\"pr-num\">{_fmt(r['price'])}</td>"
+            f"<td class=\"pr-num\">{_fmt(r['fair'])}</td><td class=\"pr-num\">{r['prob']:.1f}%</td></tr>" for r in fr["rows"])
+        f_head = "".join(f"<th>{_esc(c)}</th>" for c in fr["columns"])
+        fair_html = (
+            f"<h2>{_esc(fr['heading'])}</h2><p>{_esc(' '.join(fr['text']))}</p>"
+            f"<table><thead><tr>{f_head}</tr></thead><tbody>{f_rows}</tbody></table>"
+            f"<p class=\"pr-meta\">{_esc(fr['method'])}</p>")
     crumbs = {"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
         {"@type": "ListItem", "position": 1, "name": "SteamWatch", "item": f"{DOMAIN}/"},
         {"@type": "ListItem", "position": 2, "name": competition, "item": f"{DOMAIN}{league_link}"},
@@ -325,6 +336,7 @@ def _render(db: Session, match: Match) -> str:
         f"{_xgtables_link(match.sport_key)}"
         f"<p>Implied change is the movement in implied probability (100 divided by the decimal price) from open to {'close' if finished else 'now'}, in percentage points. "
         f"Positive means the price shortened, negative means it drifted. Prices are Pinnacle's, captured roughly every 15 minutes before kickoff.</p>"
+        f"{fair_html}"
         f"{timeline_html}"
         f"{related_html}"
         f"<h2>More on SteamWatch</h2>"
