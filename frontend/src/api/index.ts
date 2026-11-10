@@ -1,4 +1,4 @@
-import type { MatchSummary, MatchDetail, LeagueSummary, Stats, BiggestMover, MatchTotals, SyndicateMove, MatchSpreads, SteamResultsData, ClosingLinesResponse, MatchClosingLinesResponse, XGDataResponse, XgUndershootingResponse, XgTableResponse, XgTableRow, JusticeResponse, TeamPLResponse, InPlayJumpsResponse, LateSteamResponse, LeagueConstantsResponse, ForecastRegistry, ForecastResponse, RecentForecastsResponse, PowerRatingsResponse, PowerRatingHistoryResponse, FavDogData, FavDogTeamData, FavDogTeamsData } from '../types';
+import type { MatchSummary, MatchDetail, LeagueSummary, Stats, BiggestMover, MatchTotals, SyndicateMove, MatchSpreads, SteamResultsData, ClosingLinesResponse, MatchClosingLinesResponse, XGDataResponse, XgUndershootingResponse, XgTableResponse, XgTableRow, JusticeResponse, TeamPLResponse, InPlayJumpsResponse, LateSteamResponse, LeagueConstantsResponse, ForecastRegistry, ForecastResponse, RecentForecastsResponse, PowerRatingsResponse, PowerRatingHistoryResponse, FavDogData, FavDogTeamData, FavDogTeamsData, LeagueFixtures, RelatedMatches } from '../types';
 
 const API_BASE = '/api';
 
@@ -278,4 +278,12 @@ export async function createForecast(question: string): Promise<ForecastResponse
 
 export async function getRecentForecasts(limit: number = 6): Promise<RecentForecastsResponse> {
   return fetchJson<RecentForecastsResponse>(`${API_BASE}/forecast/recent?limit=${limit}`);
+}
+
+export async function getLeagueFixtures(slug: string): Promise<LeagueFixtures> {
+  return fetchJson<LeagueFixtures>(`${API_BASE}/fixtures/league/${encodeURIComponent(slug)}`);
+}
+
+export async function getRelatedMatches(matchId: string): Promise<RelatedMatches> {
+  return fetchJson<RelatedMatches>(`${API_BASE}/fixtures/related/${encodeURIComponent(matchId)}`);
 }

@@ -716,6 +716,52 @@ export const LEAGUE_CONFIG: Record<string, { name: string; shortName: string; co
 // LEAGUE_CONFIG[key] for direct lookups so legacy data still renders.
 export const VISIBLE_LEAGUES = Object.entries(LEAGUE_CONFIG).filter(([, v]) => !v.hidden);
 
+// URL slugs for the indexable league hubs (/league/<slug>). Keep in step
+// with LEAGUES in backend/app/services/fixtures.py.
+export const LEAGUE_SLUGS: Record<string, string> = {
+  "soccer_epl": "premier-league",
+  "soccer_efl_champ": "championship",
+  "soccer_spain_la_liga": "la-liga",
+  "soccer_germany_bundesliga": "bundesliga",
+  "soccer_france_ligue_one": "ligue-1",
+  "soccer_italy_serie_a": "serie-a",
+  "soccer_uefa_champs_league": "champions-league",
+  "soccer_uefa_europa_league": "europa-league",
+  "soccer_uefa_europa_conference_league": "conference-league",
+  "soccer_uefa_champs_league_qualification": "champions-league-qualifying",
+  "soccer_uefa_nations_league": "nations-league",
+  "soccer_fifa_world_cup": "world-cup"
+};
+export const leaguePath = (sportKey: string): string => (LEAGUE_SLUGS[sportKey] ? `/league/${LEAGUE_SLUGS[sportKey]}` : '/');
+export const leagueKeyFromSlug = (slug: string): string | null =>
+  Object.keys(LEAGUE_SLUGS).find((k) => LEAGUE_SLUGS[k] === slug && LEAGUE_CONFIG[k]) ?? null;
+
+export interface FixtureRow {
+  id: string;
+  sport_key: string;
+  home_team: string;
+  away_team: string;
+  commence_time: string;
+  close_home: number | null;
+  close_draw: number | null;
+  close_away: number | null;
+}
+
+export interface LeagueFixtures {
+  sport_key: string;
+  slug: string;
+  name: string;
+  upcoming: FixtureRow[];
+  finished: FixtureRow[];
+}
+
+export interface RelatedMatches {
+  league_slug: string | null;
+  league_name: string;
+  redirect_to: string | null;
+  matches: FixtureRow[];
+}
+
 // ===== Forecast Engine (/tools/forecast) =====
 // Mirrors the payload shapes produced by backend
 // app/services/forecast/engine.py — the payload blob is versioned by

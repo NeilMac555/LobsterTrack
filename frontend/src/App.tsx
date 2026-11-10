@@ -14,6 +14,7 @@ import MatchPredictorPage from './pages/MatchPredictorPage';
 import SteamResultsPage from './pages/SteamResultsPage';
 import DriftersPage from './pages/DriftersPage';
 import DroppingOddsPage from './pages/DroppingOddsPage';
+import LeaguePage from './pages/LeaguePage';
 import GoalsComingSoonPage from './pages/GoalsComingSoonPage';
 import JusticeTablePage from './pages/JusticeTablePage';
 import ClosingLinesPage from './pages/ClosingLinesPage';
@@ -49,6 +50,7 @@ function App() {
               <Route path="match/:matchId" element={<MatchDetailPage />} />
               <Route path="steam-results" element={<SteamResultsPage />} />
               <Route path="dropping-odds" element={<DroppingOddsPage />} />
+              <Route path="league/:slug" element={<LeaguePage />} />
               <Route path="goals-coming-soon" element={<GoalsComingSoonPage />} />
               <Route path="justice-table" element={<JusticeTablePage />} />
               <Route path="drifters" element={<DriftersPage />} />

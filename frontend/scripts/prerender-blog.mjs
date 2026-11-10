@@ -886,6 +886,7 @@ const NAV_HTML = `<header class="pr-header"><div class="pr-wrap pr-bar">
 
 const FOOTER_HTML = `<footer class="pr-footer"><div class="pr-cols">
 <div><h4>Data</h4>${[['/', 'Live odds & biggest movers'], ['/steam-results', 'Steam Results'], ['/dropping-odds', 'Dropping Odds'], ['/goals-coming-soon', 'Goals Coming Soon'], ['/justice-table', 'Justice Table'], ['/drifters', 'Drifters'], ['/closing-lines', 'Closing Lines'], ['/cl-closing-lines', 'Champions League Closing Lines'], ['/team-pnl', 'Team P/L'], ['/longshot-bias', 'Longshot Bias']].map(([h, t]) => `<a href="${h}">${t}</a>`).join('')}</div>
+<div><h4>Leagues</h4><a href="/league/premier-league">Premier League</a><a href="/league/championship">EFL Championship</a><a href="/league/la-liga">La Liga</a><a href="/league/bundesliga">Bundesliga</a><a href="/league/ligue-1">Ligue 1</a><a href="/league/serie-a">Serie A</a><a href="/league/champions-league">Champions League</a><a href="/league/europa-league">Europa League</a><a href="/league/conference-league">Conference League</a></div>
 <div><h4>Tools</h4>${TOOL_LINKS.map(([h, t]) => `<a href="${h}">${t}</a>`).join('')}</div>
 <div><h4>Blog</h4>${POSTS.map((p) => `<a href="/blog/${p.slug}">${esc(p.title)}</a>`).join('')}<a href="/blog">All posts</a></div>
 <div><h4>SteamWatch</h4><a href="/pro">SteamWatch Pro membership</a><a href="/about">About Neil Mac</a><a href="https://t.me/steamwatchalerts">Free Telegram alerts</a><a href="https://x.com/Steamwatchio">@Steamwatchio on X</a></div>

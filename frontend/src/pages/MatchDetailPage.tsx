@@ -4,7 +4,8 @@ import { Helmet } from 'react-helmet-async';
 import { format } from 'date-fns';
 import { getMatchDetail, getMatchTotals, getMatchSpreads } from '../api';
 import type { MatchDetail, MatchTotals, MatchSpreads } from '../types';
-import { LEAGUE_CONFIG } from '../types';
+import { LEAGUE_CONFIG, leaguePath } from '../types';
+import RelatedMatches from '../components/RelatedMatches';
 import OddsChart from '../components/OddsChart';
 import TotalsChart from '../components/TotalsChart';
 import MarketTrendStrip from '../components/MarketTrendStrip';
@@ -187,7 +188,7 @@ export default function MatchDetailPage() {
 
       {/* Back Button */}
       <Link
-        to={`/?league=${match.sport_key}`}
+        to={leaguePath(match.sport_key)}
         className="inline-flex items-center gap-2 text-slate-400 hover:text-white mb-6 sm:mb-8 transition-colors duration-200 font-medium text-sm sm:text-base"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -391,6 +392,7 @@ export default function MatchDetailPage() {
         showChangesOnly={showChangesOnly}
         onToggleShowChanges={() => setShowChangesOnly(!showChangesOnly)}
       />
+      <RelatedMatches matchId={match.id} />
     </div>
   );
 }

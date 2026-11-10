@@ -23,7 +23,8 @@
   ],
   "dynamic": [
     "match/*",
-    "blog/*"
+    "blog/*",
+    "league/*"
   ],
   "internal": [
     "auth/verify",

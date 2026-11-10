@@ -1,11 +1,11 @@
 import '../research-ui.css';
 import { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link, Navigate } from 'react-router-dom';
 import { startOfDay } from 'date-fns';
 import { getMatches, getStats, getBiggestMovers, getSyndicateMoves } from '../api';
 import type { MatchSummary, BiggestMover, SyndicateMove, Stats } from '../types';
-import { LEAGUE_CONFIG } from '../types';
+import { LEAGUE_CONFIG, LEAGUE_SLUGS, leaguePath } from '../types';
 import MatchCard from '../components/MatchCard';
 import Sparkline from '../components/Sparkline';
 import WorldCupMatchCard from '../components/WorldCupMatchCard';
@@ -49,20 +49,13 @@ function groupMatchesByDay(matches: MatchSummary[], timeMode: TimeMode): Grouped
     }));
 }
 
-export default function HomePage() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const league = searchParams.get('league');
-
-  // A league that's since been marked `hidden` in LEAGUE_CONFIG (season
-  // or tournament ended, e.g. World Cup) has no upcoming matches — an
-  // old bookmark or shared link pointing at it would otherwise dead-end
-  // on a permanent "No upcoming matches found" page. Bounce back to the
-  // unfiltered homepage instead.
-  useEffect(() => {
-    if (league && LEAGUE_CONFIG[league]?.hidden) {
-      setSearchParams({}, { replace: true });
-    }
-  }, [league, setSearchParams]);
+export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
+  // The league filter is a route now (/league/<slug>, see LeaguePage),
+  // which passes the league in. An old /?league=<key> link is sent on to
+  // the hub; the server does the same with a 301.
+  const [searchParams] = useSearchParams();
+  const legacyLeague = searchParams.get('league');
+  const league = leagueKey ?? null;
 
   const { user, isSubscribed, subscribe } = useAuth();
   const { mode: timeMode } = useTimePreference();
@@ -181,13 +174,31 @@ export default function HomePage() {
     );
   }
 
+  if (!leagueKey && legacyLeague && LEAGUE_SLUGS[legacyLeague]) {
+    return <Navigate to={leaguePath(legacyLeague)} replace />;
+  }
+
+  const leagueTitle = league && LEAGUE_CONFIG[league]
+    ? (`${LEAGUE_CONFIG[league].name} Odds Movement and Closing Prices | SteamWatch`.length < 60
+      ? `${LEAGUE_CONFIG[league].name} Odds Movement and Closing Prices | SteamWatch`
+      : `${LEAGUE_CONFIG[league].name} Odds Movement | SteamWatch`)
+    : null;
+
   return (
     <div>
-      <Helmet>
-        <title>SteamWatch - Track the Biggest Odds Moves in Football Betting</title>
-        <meta name="description" content="Track the biggest odds moves and see what happened next. Real-time steam alerts, historical ROI, closing-line data and betting-market analysis for serious bettors." />
-        <link rel="canonical" href="https://www.steamwatch.io/" />
-      </Helmet>
+      {league && leagueTitle ? (
+        <Helmet>
+          <title>{leagueTitle}</title>
+          <meta name="description" content={`Every ${LEAGUE_CONFIG[league].name} match this season with its Pinnacle price history: upcoming fixtures, closing 1X2 prices and open-to-kickoff odds movement.`} />
+          <link rel="canonical" href={`https://www.steamwatch.io${leaguePath(league)}`} />
+        </Helmet>
+      ) : (
+        <Helmet>
+          <title>SteamWatch - Track the Biggest Odds Moves in Football Betting</title>
+          <meta name="description" content="Track the biggest odds moves and see what happened next. Real-time steam alerts, historical ROI, closing-line data and betting-market analysis for serious bettors." />
+          <link rel="canonical" href="https://www.steamwatch.io/" />
+        </Helmet>
+      )}
 
       {/* Hero — conversion messaging per the 2026-08-15 homepage brief.
           Copy is deliberately descriptive, not explanatory: SteamWatch

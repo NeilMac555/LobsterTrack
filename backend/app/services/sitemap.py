@@ -112,8 +112,17 @@ def _page_entries() -> list[tuple[str, str]]:
     return out
 
 
-def sitemap_pages() -> str:
-    return _cached("pages", lambda: _urlset(_page_entries()))
+def _league_entries(db) -> list[tuple[str, str]]:
+    """League hubs (/league/<slug>) for every competition with matches this
+    season. They track the odds feed, so lastmod is now."""
+    if db is None:
+        return []
+    from app.services import fixtures as fx
+    return [(f"{DOMAIN}/league/{fx.LEAGUES[k][0]}", _iso(None)) for k in fx.active_leagues(db)]
+
+
+def sitemap_pages(db=None) -> str:
+    return _cached("pages", lambda: _urlset(_page_entries() + _league_entries(db)))
 
 
 # -------------------------------------------------------------- matches
@@ -132,7 +141,10 @@ def _match_entries(db: Session) -> list[tuple[str, str]]:
         .order_by(Match.commence_time.desc())
         .all()
     )
-    return [(f"{DOMAIN}/match/{mid}", _iso(last)) for mid, last in rows]
+    # Duplicate fixture records 301 to the survivor (services/fixtures.py).
+    from app.services.fixtures import ghost_map
+    ghosts = ghost_map(db)
+    return [(f"{DOMAIN}/match/{mid}", _iso(last)) for mid, last in rows if mid not in ghosts]
 
 
 def _match_parts(db: Session) -> list[list[tuple[str, str]]]:

@@ -219,6 +219,9 @@ app.include_router(manager_ratings_router, prefix="/api")
 from app.api.xg_goals_routes import xg_goals_router
 app.include_router(xg_goals_router, prefix="/api")
 
+from app.api.fixtures_routes import fixtures_router
+app.include_router(fixtures_router, prefix="/api")
+
 from app.api.form_lab import router as form_lab_router
 app.include_router(form_lab_router, prefix="/api")
 from app.api.research import router as research_router
@@ -309,7 +312,7 @@ if os.path.exists(static_dir):
 
     @app.get("/sitemap-pages.xml")
     async def sitemap_pages():
-        return _xml(_sitemap.sitemap_pages())
+        return _xml(_with_db(_sitemap.sitemap_pages))
 
     @app.get("/sitemap-matches.xml")
     async def sitemap_matches():
@@ -336,6 +339,12 @@ if os.path.exists(static_dir):
           5. anything else: real HTTP 404 with the noindex 404 page
         """
         path = full_path.strip("/")
+        # Legacy league filter: /?league=<sport_key> is now /league/<slug>.
+        if not path and request.query_params.get("league"):
+            from app.services.fixtures import league_slug
+            _slug = league_slug(request.query_params["league"])
+            if _slug:
+                return RedirectResponse(f"/league/{_slug}", status_code=301)
         canonical = path.removesuffix("/index.html")
         if canonical in SUMMARY_PAGES and full_path != canonical:
             return RedirectResponse(str(request.url.replace(path="/" + canonical)), status_code=308)
@@ -344,8 +353,31 @@ if os.path.exists(static_dir):
             if os.path.isfile(static_file):
                 return FileResponse(static_file)
         prerendered = safe_static_path(static_dir, str(Path(path) / "index.html")) if path else Path(static_dir) / "index.html"
+        if not path and os.path.isfile(prerendered):
+            # Homepage: prerendered copy plus the upcoming fixtures as plain
+            # links, so match pages are discoverable without JavaScript.
+            from app.models.database import SessionLocal
+            from app.services.league_page import render_homepage
+            db = SessionLocal()
+            try:
+                html = render_homepage(db, str(prerendered))
+            finally:
+                db.close()
+            return HTMLResponse(html, headers={"Cache-Control": "public, max-age=300"})
         if os.path.isfile(prerendered):
             return FileResponse(prerendered)
+
+        if path.startswith("league/") and path.count("/") == 1:
+            from app.models.database import SessionLocal
+            from app.services.league_page import render_league_page
+            db = SessionLocal()
+            try:
+                html = render_league_page(db, path.split("/", 1)[1])
+            finally:
+                db.close()
+            if html is None:
+                return _not_found_response()
+            return HTMLResponse(html, headers={"Cache-Control": "public, max-age=600"})
 
         if path == "justice-table":
             from app.models.database import SessionLocal
@@ -382,7 +414,13 @@ if os.path.exists(static_dir):
             from app.services.match_page import render_match_page
             db = SessionLocal()
             try:
-                html, status = render_match_page(db, path.split("/", 1)[1])
+                # Duplicate fixture record -> the surviving record.
+                from app.services.fixtures import ghost_map
+                _mid = path.split("/", 1)[1]
+                _survivor = ghost_map(db).get(_mid)
+                if _survivor:
+                    return RedirectResponse(f"/match/{_survivor}", status_code=301)
+                html, status = render_match_page(db, _mid)
             finally:
                 db.close()
             return HTMLResponse(html, status_code=status)

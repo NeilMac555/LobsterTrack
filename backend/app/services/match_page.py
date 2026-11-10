@@ -253,7 +253,19 @@ def _render(db: Session, match: Match) -> str:
     recorded = (f"<p class=\"pr-meta\">{len(snaps)} pre-kickoff 1X2 snapshots · first {_time_label(first.fetched_at)} · "
                 f"last {_time_label(last.fetched_at)}</p>") if snaps else ""
 
-    league_link = f"/?league={_esc(match.sport_key)}"
+    from app.services import fixtures as fx
+    _slug = fx.league_slug(match.sport_key)
+    league_link = f"/league/{_slug}" if _slug else "/"
+    related_html = ""
+    try:
+        rel = fx.related_matches(db, match.id, match.sport_key, kickoff)
+        if rel:
+            items = "".join(
+                f"<li><a href=\"/match/{_esc(r['id'])}\">{_esc(r['home_team'])} vs {_esc(r['away_team'])}</a> "
+                f"<span class=\"pr-meta\">{_kickoff_label(datetime.fromisoformat(r['commence_time']))}</span></li>" for r in rel)
+            related_html = f"<h2>Other {_esc(competition)} matches this round</h2><ul>{items}</ul>"
+    except Exception:  # noqa: BLE001  related links are a bonus, never a failure
+        related_html = ""
     xg_note = _xg_note(db, match)
     body = (
         f"<p class=\"pr-meta\">{_esc(competition)} · kickoff {_time_label(kickoff)}</p>"
@@ -265,8 +277,9 @@ def _render(db: Session, match: Match) -> str:
         f"{table}{recorded}"
         f"<p>Implied change is the movement in implied probability (100 divided by the decimal price) from open to {'close' if finished else 'now'}, in percentage points. "
         f"Positive means the price shortened, negative means it drifted. Prices are Pinnacle's, captured roughly every 15 minutes before kickoff.</p>"
+        f"{related_html}"
         f"<h2>More on SteamWatch</h2>"
-        f"<ul><li><a href=\"{league_link}\">All {_esc(competition)} matches and movers</a></li>"
+        f"<ul><li><a href=\"{league_link}\">All {_esc(competition)} matches and closing prices</a></li>"
         f"<li><a href=\"/steam-results\">Steam Results: how detected steam moves have performed</a></li>"
         f"<li><a href=\"/closing-lines\">Closing Lines: the Pinnacle close for every finished match</a></li></ul>"
     )

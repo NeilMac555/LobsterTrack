@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { VISIBLE_LEAGUES } from '../types';
+import { VISIBLE_LEAGUES, leaguePath, leagueKeyFromSlug } from '../types';
 import LeagueLogo from './LeagueLogo';
 import { useAuth } from '../contexts/AuthContext';
 import { useTimePreference } from '../contexts/TimePreferenceContext';
@@ -62,7 +62,7 @@ export default function Layout() {
   const navigate = useNavigate();
   const [showLogin, setShowLogin] = useState(false);
   const [loginMode, setLoginMode] = useState<'signin' | 'subscribe'>('signin');
-  const currentLeague = new URLSearchParams(location.search).get('league');
+  const currentLeague = location.pathname.startsWith('/league/') ? leagueKeyFromSlug(location.pathname.split('/')[2] ?? '') : null;
   const [resultsOpen, setResultsOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -357,7 +357,7 @@ export default function Layout() {
                 return (
                   <Link
                     key={key}
-                    to={`/?league=${key}`}
+                    to={leaguePath(key)}
                     className={`flex items-center gap-1.5 px-2 py-1 rounded transition-colors border whitespace-nowrap ${
                       isActive
                         ? 'bg-cyan-500/15 border-cyan-500/30'
@@ -520,7 +520,7 @@ export default function Layout() {
                   {leagues.map(([key, config]) => (
                     <Link
                       key={key}
-                      to={`/?league=${key}`}
+                      to={leaguePath(key)}
                       className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200 ${
                         currentLeague === key
                           ? 'bg-blue-600 ring-2 ring-blue-400/50'
