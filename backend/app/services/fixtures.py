@@ -36,7 +36,7 @@ LEAGUES: dict[str, tuple[str, str, bool]] = {
     "soccer_uefa_europa_league": ("europa-league", "Europa League", True),
     "soccer_uefa_europa_conference_league": ("conference-league", "Conference League", True),
     "soccer_uefa_champs_league_qualification": ("champions-league-qualifying", "Champions League Qualifying", False),
-    "soccer_uefa_nations_league": ("nations-league", "UEFA Nations League", False),
+    "soccer_uefa_nations_league": ("nations-league", "UEFA Nations League", True),
     "soccer_fifa_world_cup": ("world-cup", "FIFA World Cup", False),
 }
 SLUG_TO_KEY = {v[0]: k for k, v in LEAGUES.items()}
