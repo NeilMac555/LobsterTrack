@@ -61,7 +61,7 @@ export const BLOG_POSTS: BlogPost[] = [
 <h3>What is the difference between steam moves and regular line movement?</h3>
 <p>Regular line movement can be caused by team news, public money, or liability management. Steam moves are specifically driven by sharp, informed money and typically cascade across multiple books quickly.</p>
 <h3>Why is Pinnacle important for tracking steam moves?</h3>
-<p>Pinnacle takes the highest limits in the world and their lines are shaped by the sharpest bettors. When Pinnacle moves a line, the rest of the market follows. It is the benchmark for identifying genuine sharp action.</p>
+<p>Pinnacle takes the highest limits in the world and their lines are shaped by the sharpest bettors. <a href="https://www.steamwatch.io/dropping-odds">When Pinnacle moves</a> a line, the rest of the market follows. It is the benchmark for identifying genuine sharp action.</p>
 <p><a href="https://www.steamwatch.io/steam-results">View Steam Results on SteamWatch</a></p>`,
     content: (
       <>
@@ -173,8 +173,7 @@ export const BLOG_POSTS: BlogPost[] = [
         <h3>Total Goals Markets</h3>
         <p>
           Over/under lines are another favourite for sharp action. Weather, team news, tactical
-          matchups, and situational factors all create edges that models can exploit. When a totals
-          line steams, pay attention.
+          matchups, and situational factors all create edges that models can exploit. When <Link to="/goals-coming-soon" className="text-red-400 hover:text-red-300">a totals line steams</Link>, pay attention.
         </p>
 
         <h3>Match Result Markets Are Noisy</h3>
@@ -214,7 +213,7 @@ export const BLOG_POSTS: BlogPost[] = [
         <h3>Pinnacle Is Your Benchmark</h3>
         <p>
           Pinnacle takes the highest limits in the world and their lines are shaped by the sharpest
-          bettors on the planet. When Pinnacle moves, the rest of the market follows. If you can
+          bettors on the planet. <Link to="/dropping-odds" className="text-red-400 hover:text-red-300">When Pinnacle moves</Link>, the rest of the market follows. If you can
           only watch one book, watch Pinnacle.
         </p>
 
@@ -237,7 +236,7 @@ export const BLOG_POSTS: BlogPost[] = [
           </li>
           <li>
             <strong>Ignoring the closing line.</strong> The closing line — the final number before
-            kick-off — is the most efficient price. If you consistently beat the closing line,
+            kick-off — is the most efficient price. If you consistently <Link to="/blog/what-is-closing-line-value-in-football-betting" className="text-red-400 hover:text-red-300">beat the closing line</Link>,
             you're sharp. If you don't, it doesn't matter how many steam moves you followed.
           </li>
           <li>
@@ -315,7 +314,7 @@ export const BLOG_POSTS: BlogPost[] = [
     ],
     noscriptHtml: `<h1>What Is Closing Line Value (CLV) in Football Betting?</h1>
 <p>By Neil Macdonald — August 15, 2026</p>
-<p>Closing line value (CLV) is the difference between the odds you took and the final odds available just before kickoff — the closing line. Back a team at 2.20 that closes at 2.00 and you beat the close. Do that consistently and you are almost certainly a long-term winner, whatever this month's results say.</p>
+<p>Closing line value (CLV) is the difference between the odds you took and the final odds available just before kickoff — <a href="https://www.steamwatch.io/blog/how-to-read-closing-lines-in-football-betting">the closing line</a>. Back a team at 2.20 that closes at 2.00 and you beat the close. Do that consistently and you are almost certainly a long-term winner, whatever this month's results say.</p>
 <h2>Why the closing line is the benchmark</h2>
 <p>The closing line is the most informed price the market ever produces. By kickoff it has absorbed every bet, every confirmed team-news drop, and every model that fired. At a high-limit book like Pinnacle, the close is the sharpest single estimate of the true probabilities that exists anywhere.</p>
 <h2>How to calculate CLV</h2>
@@ -335,7 +334,7 @@ export const BLOG_POSTS: BlogPost[] = [
         <h2>Closing Line Value, Defined</h2>
         <p>
           Closing line value is the difference between the odds you took and the final odds
-          available just before kickoff — the closing line. Back a team at 2.20 on Tuesday, watch
+          available just before kickoff — <Link to="/blog/how-to-read-closing-lines-in-football-betting" className="text-red-400 hover:text-red-300">the closing line</Link>. Back a team at 2.20 on Tuesday, watch
           it close at 2.00 on Saturday, and you beat the close. That's positive CLV.
         </p>
         <p>
@@ -396,7 +395,7 @@ export const BLOG_POSTS: BlogPost[] = [
           </li>
           <li>
             <strong>The close is sharpest where liquidity is deepest.</strong> Pinnacle's Asian
-            Handicap close on a Premier League match is a superb benchmark. A low-liquidity market
+            Handicap close on <Link to="/league/premier-league" className="text-red-400 hover:text-red-300">a Premier League match</Link> is a superb benchmark. A low-liquidity market
             close is a weaker one.
           </li>
           <li>
@@ -470,7 +469,7 @@ export const BLOG_POSTS: BlogPost[] = [
 <p>By Neil Macdonald — August 15, 2026</p>
 <p>A drifter is a selection whose odds lengthen before kickoff — the price "drifts" out, meaning its implied probability falls. A team that opens at 2.00 and closes at 2.30 has drifted: the market's final estimate of its chances dropped from 50% to roughly 43.5%.</p>
 <h2>Drift is the other half of steam</h2>
-<p>Probability in a market has to add up. When money piles onto one outcome and its price shortens (steam), that probability comes from somewhere — the other outcomes lengthen. Steam and drift are two views of the same repricing. SteamWatch tracks both sides: steam moves on one page, drifters on another, each with the outcome recorded afterwards.</p>
+<p>Probability in a market has to add up. When money piles onto one outcome and its price shortens (<a href="https://www.steamwatch.io/blog/what-are-steam-moves-in-football-betting">steam</a>), that probability comes from somewhere — the other outcomes lengthen. Steam and drift are two views of the same repricing. SteamWatch tracks both sides: steam moves on one page, drifters on another, each with the outcome recorded afterwards.</p>
 <h2>Why odds drift</h2>
 <p>A price drifts when the weight of money and information moves against that outcome: the market is backing the other side, confirmed team news weakened the case, or the opening price was simply too short. Whatever the specific cause, drift means the market revised that outcome's probability downward — and kept revising it until kickoff.</p>
 <h2>Backing or fading drifters</h2>
@@ -479,7 +478,7 @@ export const BLOG_POSTS: BlogPost[] = [
     content: (
       <>
         <p>
-          Everyone watches the steamers — the prices collapsing as money piles in. The other side
+          Everyone watches <Link to="/steam-results" className="text-red-400 hover:text-red-300">the steamers</Link> — the prices collapsing as money piles in. The other side
           of that trade gets less attention, and it shouldn't: for every price that shortens,
           another one drifts.
         </p>
@@ -494,12 +493,12 @@ export const BLOG_POSTS: BlogPost[] = [
         <h2>Drift Is the Other Half of Steam</h2>
         <p>
           Probability in a market has to add up. When money piles onto one outcome and its price
-          shortens — steam — that probability comes from somewhere. The other outcomes lengthen.
+          shortens — <Link to="/blog/what-are-steam-moves-in-football-betting" className="text-red-400 hover:text-red-300">steam</Link> — that probability comes from somewhere. The other outcomes lengthen.
           Steam and drift are two views of the same repricing event.
         </p>
         <p>
           That's why watching drift is watching steam from the other direction. If the away side
-          in a match steams from 3.60 to 3.20, the home side is drifting at the same moment, and
+          in a match <Link to="/dropping-odds" className="text-red-400 hover:text-red-300">steams from 3.60 to 3.20</Link>, the home side is drifting at the same moment, and
           both moves are telling you about the same shift in the market's opinion.
         </p>
 
@@ -529,7 +528,7 @@ export const BLOG_POSTS: BlogPost[] = [
         <h2>Backing or Fading Drifters</h2>
         <p>
           The tempting story is that a drifter is "value" — you're getting 2.30 on something that
-          was 2.00 a few days ago. But remember what the closing line is: the most informed price
+          was 2.00 a few days ago. But remember <Link to="/blog/how-to-read-closing-lines-in-football-betting" className="text-red-400 hover:text-red-300">what the closing line is</Link>: the most informed price
           the market produces. Drift means that informed estimate <em>fell</em>. Blindly backing
           drifters means systematically taking outcomes the market downgraded.
         </p>
@@ -600,7 +599,7 @@ export const BLOG_POSTS: BlogPost[] = [
 <h2>Which market's close to trust</h2>
 <p>Asian Handicap closes at high-limit books are the sharpest read on relative team strength — that is where professional volume concentrates. Totals closes are the market's best estimate of goal expectation. 1X2 closes carry more recreational money and slightly more margin, so they are the noisiest of the three.</p>
 <h2>What to do with it</h2>
-<p>Compare every price you take against the eventual close (closing line value), and study open-to-close patterns by league and team. SteamWatch records opening and closing Pinnacle prices for every tracked match across all three markets.</p>
+<p>Compare every price you take against the eventual close (<a href="https://www.steamwatch.io/blog/what-is-closing-line-value-in-football-betting">closing line value</a>), and study open-to-close patterns by league and team. SteamWatch records opening and closing Pinnacle prices for every tracked match across all three markets.</p>
 <p><a href="https://www.steamwatch.io/closing-lines">View Closing Lines on SteamWatch</a></p>`,
     content: (
       <>
@@ -639,7 +638,7 @@ export const BLOG_POSTS: BlogPost[] = [
           </li>
           <li>
             <strong>Lengthened, 2.00 → 2.30:</strong> the market cut its estimate from 50% to
-            43.5%. This is a drifter.
+            43.5%. This is <Link to="/blog/what-is-a-drifter-in-football-betting" className="text-red-400 hover:text-red-300">a drifter</Link>.
           </li>
           <li>
             <strong>Flat, 2.05 → 2.04:</strong> the opener was already about right. Most lines,
@@ -674,12 +673,11 @@ export const BLOG_POSTS: BlogPost[] = [
         <ol>
           <li>
             <strong>Grade yourself against them.</strong> Compare every price you take with the
-            eventual close — that's closing line value, the best predictor of long-term profit
+            eventual close — that's <Link to="/blog/what-is-closing-line-value-in-football-betting" className="text-red-400 hover:text-red-300">closing line value</Link>, the best predictor of long-term profit
             there is.
           </li>
           <li>
-            <strong>Study open-to-close patterns.</strong> Which leagues move most? Which teams
-            get backed late, week after week? Patterns in how lines close are patterns in how the
+            <strong>Study open-to-close patterns.</strong> Which leagues move most? <Link to="/steam-results" className="text-red-400 hover:text-red-300">Which teams get backed late</Link>, week after week? Patterns in how lines close are patterns in how the
             market thinks.
           </li>
           <li>
@@ -742,7 +740,7 @@ export const BLOG_POSTS: BlogPost[] = [
     ],
     noscriptHtml: `<h1>Favourite-Longshot Bias in Football: The Data</h1>
 <p>By Neil Macdonald - September 2, 2026</p>
-<p>Every punter has heard that the market overprices longshots. I wanted to see what that looks like in football with real closing prices rather than a paper from 2004, so I ran every Pinnacle closing 1X2 price we hold across the top 5 leagues, 2021/22 through to the end of August 2026. 8,867 matches. Flat 1 unit on the favourite in every one of them, 1 unit on the dog, 1 unit on the draw, and see what comes back.</p>
+<p>Every punter has heard that the market overprices longshots. I wanted to see what that looks like in football with real closing prices rather than a paper from 2004, so I ran every <a href="https://www.steamwatch.io/closing-lines">Pinnacle closing 1X2 price</a> we hold across the top 5 leagues, 2021/22 through to the end of August 2026. 8,867 matches. Flat 1 unit on the favourite in every one of them, 1 unit on the dog, 1 unit on the draw, and see what comes back.</p>
 <h2>What blind backing returns</h2>
 <p>Favourites: +0.2% over 8,867 bets. Near enough level, the vig handed back and nothing else.</p>
 <p>Underdogs: -10.5% over the same 8,867 matches.</p>
@@ -754,19 +752,19 @@ export const BLOG_POSTS: BlogPost[] = [
 <h2>Away favourites are the number to remember</h2>
 <p>The market still pays too much respect to home advantage in the 1X2 and it has done for 5 seasons. Fav at home, 5,801 matches, -1.4%. Fav away, 3,066 matches, +3.2%. Slight Favs playing away came in at +6.8%, the dogs at home against them lost 13.3%, and the Super Dogs at home to an away fav lost 18.6p in the pound.</p>
 <h2>By league</h2>
-<p>Serie A is the worst place to back a dog, -15.6% overall and -23.9% on Super Dogs, with La Liga next at -14.6%.</p>
+<p><a href="https://www.steamwatch.io/league/serie-a">Serie A</a> is the worst place to back a dog, -15.6% overall and -23.9% on Super Dogs, with <a href="https://www.steamwatch.io/league/la-liga">La Liga</a> next at -14.6%.</p>
 <p>La Liga favs +3.8%, the only league where all 3 fav bands are positive.</p>
-<p>Bundesliga favs -1.1% and dogs -6.9%, and it's one of only two leagues where the draw came out ahead (+1.1%), Serie A being the other (+0.4%).</p>
-<p>Ligue 1 Mid Dogs show +8.4%, which I'd treat as noise from 553 matches rather than an edge, the other two dog bands are -5.8% and -16.0%.</p>
-<p>Premier League favs -0.5%, dogs -9.3%, Super Dogs -17.6%.</p>
+<p><a href="https://www.steamwatch.io/league/bundesliga">Bundesliga</a> favs -1.1% and dogs -6.9%, and it's one of only two leagues where the draw came out ahead (+1.1%), Serie A being the other (+0.4%).</p>
+<p><a href="https://www.steamwatch.io/league/ligue-1">Ligue 1</a> Mid Dogs show +8.4%, which I'd treat as noise from 553 matches rather than an edge, the other two dog bands are -5.8% and -16.0%.</p>
+<p><a href="https://www.steamwatch.io/league/premier-league">Premier League</a> favs -0.5%, dogs -9.3%, Super Dogs -17.6%.</p>
 <h2>What I'd take from it</h2>
 <p>Blind favourites come out level and blind dogs cost you just over 10%. You can still back a dog, the price just has to be wrong by more than 10% before you're level, and away favs in tight games are the one blind angle that's been paying.</p>
-<p>One patch in the sample: about 200 matches between mid January and mid February 2026, football-data stopped publishing Pinnacle prices in January and our own closing line capture didn't start until the 12th of February. Those use the Betfair Exchange close instead, which is quoted before commission so it runs a shade better than Pinnacle. Everything from the 12th of February on is our own Pinnacle record and it updates every week. Every number above is on the Longshot Bias page with league, season and venue filters, and you can pull up any club in the five leagues on its own, Premier League 25/26 and 26/27 are free to look at.</p>
+<p>One patch in the sample: about 200 matches between mid January and mid February 2026, football-data stopped publishing Pinnacle prices in January and our own closing line capture didn't start until the 12th of February. Those use the Betfair Exchange close instead, which is quoted before commission so it runs a shade better than Pinnacle. Everything from the 12th of February on is our own Pinnacle record and it updates every week. Every number above is on the <a href="https://www.steamwatch.io/longshot-bias">Longshot Bias page</a> with league, season and venue filters, and you can pull up any club in the five leagues on its own, Premier League 25/26 and 26/27 are free to look at.</p>
 <p><a href="https://www.steamwatch.io/longshot-bias">View Longshot Bias on SteamWatch</a></p>`,
     content: (
       <>
         <p>
-          Every punter has heard that the market overprices longshots. I wanted to see what that looks like in football with real closing prices rather than a paper from 2004, so I ran every Pinnacle closing 1X2 price we hold across the top 5 leagues, 2021/22 through to the end of August 2026. 8,867 matches. Flat 1 unit on the favourite in every one of them, 1 unit on the dog, 1 unit on the draw, and see what comes back.
+          Every punter has heard that the market overprices longshots. I wanted to see what that looks like in football with real closing prices rather than a paper from 2004, so I ran every <Link to="/closing-lines" className="text-red-400 hover:text-red-300">Pinnacle closing 1X2 price</Link> we hold across the top 5 leagues, 2021/22 through to the end of August 2026. 8,867 matches. Flat 1 unit on the favourite in every one of them, 1 unit on the dog, 1 unit on the draw, and see what comes back.
         </p>
 
         <h2>What blind backing returns</h2>
@@ -798,19 +796,19 @@ export const BLOG_POSTS: BlogPost[] = [
 
         <h2>By league</h2>
         <p>
-          Serie A is the worst place to back a dog, -15.6% overall and -23.9% on Super Dogs, with La Liga next at -14.6%.
+          <Link to="/league/serie-a" className="text-red-400 hover:text-red-300">Serie A</Link> is the worst place to back a dog, -15.6% overall and -23.9% on Super Dogs, with <Link to="/league/la-liga" className="text-red-400 hover:text-red-300">La Liga</Link> next at -14.6%.
         </p>
         <p>
           La Liga favs +3.8%, the only league where all 3 fav bands are positive.
         </p>
         <p>
-          Bundesliga favs -1.1% and dogs -6.9%, and it's one of only two leagues where the draw came out ahead (+1.1%), Serie A being the other (+0.4%).
+          <Link to="/league/bundesliga" className="text-red-400 hover:text-red-300">Bundesliga</Link> favs -1.1% and dogs -6.9%, and it's one of only two leagues where the draw came out ahead (+1.1%), Serie A being the other (+0.4%).
         </p>
         <p>
-          Ligue 1 Mid Dogs show +8.4%, which I'd treat as noise from 553 matches rather than an edge, the other two dog bands are -5.8% and -16.0%.
+          <Link to="/league/ligue-1" className="text-red-400 hover:text-red-300">Ligue 1</Link> Mid Dogs show +8.4%, which I'd treat as noise from 553 matches rather than an edge, the other two dog bands are -5.8% and -16.0%.
         </p>
         <p>
-          Premier League favs -0.5%, dogs -9.3%, Super Dogs -17.6%.
+          <Link to="/league/premier-league" className="text-red-400 hover:text-red-300">Premier League</Link> favs -0.5%, dogs -9.3%, Super Dogs -17.6%.
         </p>
 
         <h2>What I'd take from it</h2>
@@ -818,7 +816,7 @@ export const BLOG_POSTS: BlogPost[] = [
           Blind favourites come out level and blind dogs cost you just over 10%. You can still back a dog, the price just has to be wrong by more than 10% before you're level, and away favs in tight games are the one blind angle that's been paying.
         </p>
         <p>
-          One patch in the sample: about 200 matches between mid January and mid February 2026, football-data stopped publishing Pinnacle prices in January and our own closing line capture didn't start until the 12th of February. Those use the Betfair Exchange close instead, which is quoted before commission so it runs a shade better than Pinnacle. Everything from the 12th of February on is our own Pinnacle record and it updates every week. Every number above is on the Longshot Bias page with league, season and venue filters, and you can pull up any club in the five leagues on its own, Premier League 25/26 and 26/27 are free to look at.
+          One patch in the sample: about 200 matches between mid January and mid February 2026, football-data stopped publishing Pinnacle prices in January and our own closing line capture didn't start until the 12th of February. Those use the Betfair Exchange close instead, which is quoted before commission so it runs a shade better than Pinnacle. Everything from the 12th of February on is our own Pinnacle record and it updates every week. Every number above is on the <Link to="/longshot-bias" className="text-red-400 hover:text-red-300">Longshot Bias page</Link> with league, season and venue filters, and you can pull up any club in the five leagues on its own, Premier League 25/26 and 26/27 are free to look at.
         </p>
         <p>
           <Link to="/longshot-bias">View Longshot Bias on SteamWatch</Link>
