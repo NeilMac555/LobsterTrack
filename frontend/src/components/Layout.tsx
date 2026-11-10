@@ -661,13 +661,52 @@ export default function Layout() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-slate-800/50 border-t border-slate-700/50 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-4">
-          <AmIUpCTA placement="footer" />
-          <div className="my-4 flex flex-wrap justify-center gap-x-6 gap-y-2"><Link to="/pro" className="inline-flex min-h-11 items-center text-sm text-cyan-300 hover:text-white">SteamWatch Pro membership →</Link><Link to="/pro/demo" className="inline-flex min-h-11 items-center text-sm text-cyan-300 hover:text-white">Try the Pro demo →</Link></div>
-          <p className="text-center text-slate-500 text-xs sm:text-sm font-medium">
-            {isProDemoPage ? 'Historical demo · Decimal odds · No live prices' : 'Pinnacle odds via The Odds API • Updates every 15 minutes'}
-          </p>
+      <footer className="bg-slate-900/70 border-t border-slate-700/50 mt-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-10 pb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-[1.5fr_1fr_1fr_1fr_1fr] gap-x-6 gap-y-8">
+            <div className="col-span-2 md:col-span-4 lg:col-span-1 lg:pr-6">
+              <Link to="/" className="inline-flex items-center gap-2.5">
+                <img src="/logos/mark-on-dark.svg" width={26} height={26} alt="" className="rounded-[7px]" />
+                <span className="text-[17px] font-bold tracking-tight text-slate-100">
+                  SteamWatch<span className="font-medium text-slate-500">.io</span>
+                </span>
+              </Link>
+              <p className="mt-3 text-sm leading-relaxed text-slate-400 max-w-sm">
+                Pinnacle odds movement, steam alerts and published results for European football.
+              </p>
+              <div className="mt-4 max-w-sm [&>a]:mx-0"><AmIUpCTA placement="footer" /></div>
+            </div>
+            {[
+              { title: 'Markets', links: [{ name: 'Live odds', path: '/' }, ...results] },
+              { title: 'Tools', links: tools.filter((t) => !t.external) },
+              { title: 'Leagues', links: leagues.map(([key, cfg]) => ({ name: cfg.name, path: leaguePath(key) })) },
+              { title: 'SteamWatch', links: [
+                { name: 'Pro membership', path: '/pro' }, { name: 'Pro demo', path: '/pro/demo' },
+                { name: 'Closing lines', path: '/closing-lines' }, { name: 'Blog', path: '/blog' }, { name: 'About', path: '/about' },
+              ] },
+            ].map((col) => (
+              <nav key={col.title} aria-label={col.title}>
+                <h2 className="text-[11px] font-mono font-semibold uppercase tracking-[0.14em] text-slate-500 mb-3">{col.title}</h2>
+                <ul className="space-y-2">
+                  {col.links.map((l) => (
+                    <li key={l.path}>
+                      <Link
+                        to={l.path}
+                        reloadDocument={(l as { reloadDocument?: boolean }).reloadDocument}
+                        className="text-sm text-slate-300 hover:text-cyan-300"
+                      >
+                        {l.name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            ))}
+          </div>
+          <div className="mt-8 pt-5 border-t border-slate-700/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-slate-500">
+            <p>{isProDemoPage ? 'Historical demo · Decimal odds · No live prices' : 'Pinnacle odds via The Odds API · Updates every 15 minutes'}</p>
+            <p>For readers aged 18 and over. Please bet responsibly.</p>
+          </div>
         </div>
       </footer>
 

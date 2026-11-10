@@ -37,7 +37,7 @@ export default function LeaguePage() {
 
   return (
     <div>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+      <div className="mb-6">
         <p className="text-xs text-slate-500 font-mono mb-2"><Link to="/" className={a}>SteamWatch</Link> › {name}</p>
         <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-2">{name} odds movement</h1>
         <p className="text-slate-300 text-[15px] leading-relaxed max-w-[72ch]">
@@ -48,7 +48,7 @@ export default function LeaguePage() {
 
       <HomePage leagueKey={leagueKey} />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10">
+      <div className="pb-4">
         <h2 className="text-lg font-bold text-white mt-8 mb-1">{name} results and closing prices</h2>
         <p className="text-xs text-slate-500 mb-3">Home, Draw and Away are the Pinnacle closing 1X2 prices, the last snapshot before kickoff.</p>
         {data && data.finished.length === 0 && <p className="text-slate-400 text-sm">No finished matches recorded yet this season.</p>}

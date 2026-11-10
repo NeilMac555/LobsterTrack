@@ -6,9 +6,8 @@ import { startOfDay } from 'date-fns';
 import { getMatches, getStats, getBiggestMovers, getSyndicateMoves } from '../api';
 import type { MatchSummary, BiggestMover, SyndicateMove, Stats } from '../types';
 import { LEAGUE_CONFIG, LEAGUE_SLUGS, leaguePath } from '../types';
-import MatchCard from '../components/MatchCard';
+import MatchRow, { MatchRowHeader } from '../components/MatchRow';
 import Sparkline from '../components/Sparkline';
-import WorldCupMatchCard from '../components/WorldCupMatchCard';
 import LeagueLogo from '../components/LeagueLogo';
 import TeamBadge from '../components/TeamBadge';
 import { SteamGuideModal, HelpButton } from '../components/SteamGuideModal';
@@ -489,7 +488,7 @@ export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
           </div>
 
           {/* Desktop Table */}
-          <div className="hidden md:block overflow-x-auto">
+          <div className="hidden lg:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="bg-slate-700/30">
@@ -612,7 +611,7 @@ export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
           </div>
 
           {/* Mobile Cards */}
-          <div className="md:hidden divide-y divide-slate-700/50">
+          <div className="lg:hidden divide-y divide-slate-700/50">
             {marketMovers.map((mover, index) => {
               const isSignificant = Math.abs(mover.movement_percent) >= 5;
               const leagueInfo = LEAGUE_CONFIG[mover.sport_key];
@@ -853,7 +852,7 @@ export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
           ) : (
             <>
               {/* Desktop Table */}
-              <div className="hidden md:block overflow-x-auto">
+              <div className="hidden lg:block overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="bg-slate-700/30">
@@ -958,7 +957,7 @@ export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
               </div>
 
               {/* Mobile Cards */}
-              <div className="md:hidden divide-y divide-slate-700/50">
+              <div className="lg:hidden divide-y divide-slate-700/50">
                 {syndicateMoves.map((move, index) => {
                   const leagueInfo = LEAGUE_CONFIG[move.sport_key];
                   const hours = Math.floor(move.minutes_to_kickoff / 60);
@@ -1066,7 +1065,7 @@ export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
           <p className="text-slate-400 text-base sm:text-lg">No upcoming matches found</p>
         </div>
       ) : (
-        <div className="space-y-8 sm:space-y-12">
+        <div className="space-y-6 sm:space-y-8">
           {groupedMatches.map((group) => {
             // Calculate total snapshots for this day
             const totalSnapshots = group.matches.reduce((sum, m) => sum + m.odds_count, 0);
@@ -1074,8 +1073,8 @@ export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
             return (
               <section key={group.date.toISOString()}>
                 {/* Day Header */}
-                <div className="flex items-center gap-3 sm:gap-4 mb-5 sm:mb-6">
-                  <h3 className="text-lg sm:text-xl font-bold text-white whitespace-nowrap">{group.label}</h3>
+                <div className="flex items-center gap-3 sm:gap-4 mb-2.5 sm:mb-3">
+                  <h3 className="text-base sm:text-lg font-bold text-white whitespace-nowrap">{group.label}</h3>
                   <div className="flex-1 h-px bg-gradient-to-r from-slate-700 to-transparent"></div>
                   <span className="text-xs sm:text-sm text-slate-500 font-medium whitespace-nowrap">
                     {group.matches.length} match{group.matches.length !== 1 ? 'es' : ''}
@@ -1085,16 +1084,14 @@ export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
                   </span>
                 </div>
 
-                {/* Matches Grid — tournament-shaped card for WC fixtures,
-                    league card for everything else. */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-7">
-                  {group.matches.map((match) =>
-                    match.sport_key === 'soccer_fifa_world_cup' ? (
-                      <WorldCupMatchCard key={match.id} match={match} />
-                    ) : (
-                      <MatchCard key={match.id} match={match} />
-                    )
-                  )}
+                {/* Compact fixture rows (MatchRow), one panel per day. */}
+                <div className="rounded-xl border border-slate-700/60 bg-slate-800/60 overflow-hidden card-shadow-lg">
+                  <MatchRowHeader />
+                  <div className="divide-y divide-slate-700/40">
+                    {group.matches.map((match) => (
+                      <MatchRow key={match.id} match={match} showLeague={!league} />
+                    ))}
+                  </div>
                 </div>
               </section>
             );
