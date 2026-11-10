@@ -16,8 +16,9 @@ an answer-first paragraph on the biggest open-to-now move, a real
 <table> of prices, WebPage JSON-LD, and links back to the
 league view, Steam Results and Closing Lines.
 
-Indexing: a match with no odds snapshots is served with a noindex robots
-meta rather than a 404. Finished matches keep a normal indexable page
+Indexing: a match with fewer than 12 pre-kickoff snapshots (see
+services/match_summary.py) is served with a noindex robots meta rather
+than a 404, and is left out of the sitemap. Finished matches keep a normal indexable page
 showing opening and closing prices.
 """
 from __future__ import annotations
@@ -26,7 +27,7 @@ import html
 import json
 import os
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from functools import lru_cache
 from typing import Optional
 
@@ -37,6 +38,7 @@ from app.models.closing_line import MarketType
 
 DOMAIN = "https://www.steamwatch.io"
 CACHE_TTL_SECONDS = 60
+FINISHED_TTL_SECONDS = 6 * 3600
 _cache: dict[str, tuple[float, str, int]] = {}
 
 
@@ -111,7 +113,10 @@ def render_match_page(db: Session, match_id: str) -> tuple[str, int]:
         return _not_found_page(), 404
 
     html_out = _render(db, match)
-    _cache[match_id] = (now_ts + CACHE_TTL_SECONDS, html_out, 200)
+    # A match that finished over a day ago only changes when a late result
+    # or closing line lands, so it is cached for hours, not a minute.
+    settled = datetime.utcnow() - _naive_utc(match.commence_time) > timedelta(days=1)
+    _cache[match_id] = (now_ts + (FINISHED_TTL_SECONDS if settled else CACHE_TTL_SECONDS), html_out, 200)
     if len(_cache) > 2000:  # crude bound; entries expire anyway
         for k in list(_cache)[:500]:
             _cache.pop(k, None)
@@ -222,8 +227,12 @@ def _render(db: Session, match: Match) -> str:
                 best, step_time = d, b.fetched_at
 
     # ---- copy
-    title = f"{home} vs {away} Odds Movement, {competition} {_kickoff_label(kickoff)} | SteamWatch"
-    description = f"{home} vs {away}: how the 1X2, Asian handicap and totals prices moved from open to kickoff."
+    # Title, description, result, alerts and the price timeline come from
+    # match_summary, which the React page also reads (MatchSummary.tsx).
+    from app.services.match_summary import match_summary
+    summary = match_summary(db, match, snaps=snaps, close=(
+        (h2h_close.close_home, h2h_close.close_draw, h2h_close.close_away) if h2h_close else None))
+    title, description = summary["title"], summary["description"]
 
     if not has_odds:
         lead = (f"No pre-kickoff Pinnacle prices have been recorded for {home} vs {away} ({competition}, "
@@ -267,16 +276,40 @@ def _render(db: Session, match: Match) -> str:
     except Exception:  # noqa: BLE001  related links are a bonus, never a failure
         related_html = ""
     xg_note = _xg_note(db, match)
+    result_html = ""
+    if summary["result"]:
+        result_html = f"<h2>{_esc(summary['result_heading'])}</h2><p>{_esc(' '.join(summary['result']))}</p>"
+    alerts_html = ""
+    if summary["alerts_text"]:
+        alerts_html = "<h2>Steam alerts</h2>" + "".join(f"<p>{_esc(a)}</p>" for a in summary["alerts_text"])
+    timeline_html = ""
+    if summary["timeline"]:
+        tl = summary["timeline"]
+        t_rows = "".join(
+            f"<tr><td>{_esc(r['label'])}</td><td class=\"pr-num\">{_fmt(r['home'])}</td>"
+            f"<td class=\"pr-num\">{_fmt(r['draw'])}</td><td class=\"pr-num\">{_fmt(r['away'])}</td></tr>" for r in tl["rows"])
+        t_head = "".join(f"<th>{_esc(c)}</th>" for c in tl["columns"])
+        timeline_html = (
+            "<h2>1X2 price timeline</h2>"
+            f"<table><thead><tr><th>When</th>{t_head}</tr></thead><tbody>{t_rows}</tbody></table>"
+            + (f"<p>{_esc(summary['late_move'])}</p>" if summary["late_move"] else ""))
+    crumbs = {"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        {"@type": "ListItem", "position": 1, "name": "SteamWatch", "item": f"{DOMAIN}/"},
+        {"@type": "ListItem", "position": 2, "name": competition, "item": f"{DOMAIN}{league_link}"},
+        {"@type": "ListItem", "position": 3, "name": f"{home} vs {away}", "item": url}]}
     body = (
         f"<p class=\"pr-meta\">{_esc(competition)} · kickoff {_time_label(kickoff)}</p>"
         f"<h1>{_esc(home)} vs {_esc(away)}: odds movement</h1>"
         f"<p class=\"pr-lead\">{_esc(lead)}</p>"
         f"{notes}"
+        f"{result_html}"
+        f"{alerts_html}"
         f"{xg_note}"
         f"<h2>Pinnacle prices, open to {'close' if finished else 'now'}</h2>"
         f"{table}{recorded}"
         f"<p>Implied change is the movement in implied probability (100 divided by the decimal price) from open to {'close' if finished else 'now'}, in percentage points. "
         f"Positive means the price shortened, negative means it drifted. Prices are Pinnacle's, captured roughly every 15 minutes before kickoff.</p>"
+        f"{timeline_html}"
         f"{related_html}"
         f"<h2>More on SteamWatch</h2>"
         f"<ul><li><a href=\"{league_link}\">All {_esc(competition)} matches and closing prices</a></li>"
@@ -304,7 +337,7 @@ def _render(db: Session, match: Match) -> str:
         f"<title data-prerender=\"1\">{_esc(title)}</title>",
         f"<meta name=\"description\" content=\"{_esc(description)}\" data-prerender=\"1\" />",
         f"<link rel=\"canonical\" href=\"{url}\" data-prerender=\"1\" />",
-        "<meta name=\"robots\" content=\"noindex\" data-prerender=\"1\" />" if not has_odds else "",
+        "<meta name=\"robots\" content=\"noindex, follow\" data-prerender=\"1\" />" if not summary["indexable"] else "",
         "<meta property=\"og:type\" content=\"website\" data-prerender=\"1\" />",
         f"<meta property=\"og:title\" content=\"{_esc(title)}\" data-prerender=\"1\" />",
         f"<meta property=\"og:description\" content=\"{_esc(description)}\" data-prerender=\"1\" />",
@@ -312,6 +345,7 @@ def _render(db: Session, match: Match) -> str:
         f"<meta name=\"twitter:title\" content=\"{_esc(title)}\" data-prerender=\"1\" />",
         f"<meta name=\"twitter:description\" content=\"{_esc(description)}\" data-prerender=\"1\" />",
         f"<script type=\"application/ld+json\">{json.dumps(json_ld)}</script>",
+        f"<script type=\"application/ld+json\">{json.dumps(crumbs)}</script>",
     ]
     head = "\n    ".join(p for p in head_parts if p)
     return _shell().replace("<!--PRERENDER:HEAD-->", head, 1).replace("<!--PRERENDER:CONTENT-->", body, 1)

@@ -129,9 +129,15 @@ def sitemap_pages(db=None) -> str:
 
 def _match_entries(db: Session) -> list[tuple[str, str]]:
     now = datetime.utcnow()
+    # Only matches with enough pre-kickoff price history to be indexable
+    # (match_summary.INDEX_MIN_SNAPSHOTS); thinner ones are served noindex.
+    from app.services.match_summary import INDEX_MIN_SNAPSHOTS
     latest = (
         db.query(OddsSnapshot.match_id, func.max(OddsSnapshot.fetched_at).label("last"))
+        .join(Match, Match.id == OddsSnapshot.match_id)
+        .filter(OddsSnapshot.fetched_at < Match.commence_time)
         .group_by(OddsSnapshot.match_id)
+        .having(func.count(OddsSnapshot.id) >= INDEX_MIN_SNAPSHOTS)
         .subquery()
     )
     rows = (

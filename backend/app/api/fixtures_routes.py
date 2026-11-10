@@ -32,3 +32,15 @@ def get_related(match_id: str, db: Session = Depends(get_db)):
         "redirect_to": fx.ghost_map(db).get(match_id),
         "matches": fx.related_matches(db, m.id, m.sport_key, m.commence_time),
     }
+
+
+@fixtures_router.get("/summary/{match_id}")
+def get_summary(match_id: str, db: Session = Depends(get_db)):
+    """Title, description, result, steam alerts and 1X2 price timeline for
+    a match page (services/match_summary.py). Same copy the server-rendered
+    page carries."""
+    m = db.query(Match).filter(Match.id == match_id).first()
+    if not m:
+        raise HTTPException(status_code=404, detail="Unknown match")
+    from app.services.match_summary import match_summary
+    return fx._cached(f"summary:{match_id}", lambda: match_summary(db, m), ttl=300)

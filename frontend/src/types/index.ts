@@ -881,3 +881,17 @@ export interface RecentForecastsResponse {
     payload: ForecastResponse;
   }>;
 }
+
+export interface MatchSummaryData {
+  match_id: string;
+  finished: boolean;
+  indexable: boolean;
+  title: string;
+  description: string;
+  score: { home: number; away: number } | null;
+  result_heading: string | null;
+  result: string[];
+  alerts_text: string[];
+  timeline: { columns: string[]; rows: Array<{ label: string; home: number | null; draw: number | null; away: number | null }> } | null;
+  late_move: string | null;
+}

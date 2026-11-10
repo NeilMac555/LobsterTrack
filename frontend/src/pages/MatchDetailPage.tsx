@@ -6,6 +6,9 @@ import { getMatchDetail, getMatchTotals, getMatchSpreads } from '../api';
 import type { MatchDetail, MatchTotals, MatchSpreads } from '../types';
 import { LEAGUE_CONFIG, leaguePath } from '../types';
 import RelatedMatches from '../components/RelatedMatches';
+import MatchSummary from '../components/MatchSummary';
+import { getMatchSummary } from '../api';
+import type { MatchSummaryData } from '../types';
 import OddsChart from '../components/OddsChart';
 import TotalsChart from '../components/TotalsChart';
 import MarketTrendStrip from '../components/MarketTrendStrip';
@@ -100,6 +103,17 @@ export default function MatchDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [showChangesOnly, setShowChangesOnly] = useState(true);
   const [timeFrame, setTimeFrame] = useState<TimeFrame>('all');
+  // Title, description, result, alerts and price timeline: the same copy
+  // the server-rendered page carries (backend services/match_summary.py).
+  const [summary, setSummary] = useState<MatchSummaryData | null>(null);
+
+  useEffect(() => {
+    if (!matchId) return;
+    let cancelled = false;
+    setSummary(null);
+    getMatchSummary(matchId).then((d) => { if (!cancelled) setSummary(d); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [matchId]);
 
   useEffect(() => {
     async function fetchMatch() {
@@ -170,10 +184,11 @@ export default function MatchDetailPage() {
   const firstOdds = match.odds_history[0];
   const isBetfairSourced = match.current_odds_bookmaker === 'betfair_ex_eu';
 
-  const metaDesc = `${match.home_team} vs ${match.away_team}: how the 1X2, Asian handicap and totals prices moved from open to kickoff.`;
-  // Same string the server-rendered HTML carries, so crawlers that run JS
-  // see one consistent title (see backend/app/services/match_page.py).
-  const pageTitle = `${match.home_team} vs ${match.away_team} Odds Movement, ${match.league_name} ${format(matchDate, 'd MMM yyyy')} | SteamWatch`;
+  // Same strings the server-rendered HTML carries, so crawlers that run JS
+  // see one consistent title and description.
+  const shortTitle = `${match.home_team} vs ${match.away_team} Odds Movement | SteamWatch`;
+  const pageTitle = summary?.title ?? (shortTitle.length <= 60 ? shortTitle : `${match.home_team} vs ${match.away_team} Odds | SteamWatch`);
+  const metaDesc = summary?.description ?? `${match.home_team} vs ${match.away_team}, ${format(matchDate, 'd MMM yyyy')}: Pinnacle prices from open to kickoff.`;
 
   return (
     <div>
@@ -184,6 +199,7 @@ export default function MatchDetailPage() {
         <meta property="og:description" content={metaDesc} />
         <meta property="og:url" content={`https://www.steamwatch.io/match/${matchId}`} />
         <link rel="canonical" href={`https://www.steamwatch.io/match/${matchId}`} />
+        {summary && !summary.indexable && <meta name="robots" content="noindex, follow" />}
       </Helmet>
 
       {/* Back Button */}
@@ -392,6 +408,7 @@ export default function MatchDetailPage() {
         showChangesOnly={showChangesOnly}
         onToggleShowChanges={() => setShowChangesOnly(!showChangesOnly)}
       />
+      {summary && <MatchSummary data={summary} />}
       <RelatedMatches matchId={match.id} />
     </div>
   );
