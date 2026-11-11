@@ -226,6 +226,8 @@ decisions that shape the build, with the recommendation at the time:
 
 ## Done
 
+- 2026-11-11 `b16cb68` — Link xGTables beneath match-header prices for every competition except UNL, public for all visitors with matching server HTML and referral tracking; build, competition exclusion, desktop/mobile and keyboard checks passed.
+
 - 2026-11-11 `42d6d48` — Add public xGTables homepage card, Tools link and Team P/L/Justice Table referrals with placement UTMs and Plausible click tracking; build, destinations, desktop/mobile and keyboard checks passed.
 
 - 2026-10-19 `30b486b` — Restore all qualifying steam rankings, refresh both movement tables every minute, recover seven missing final scores and exclude two interrupted fixtures. See docs/steam-results.md.
