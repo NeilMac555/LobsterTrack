@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { getJusticeTable } from '../api';
 import type { JusticeResponse, JusticeRow } from '../types';
+import { XGTablesContextLink } from '../components/XGTables';
 
 // /justice-table — client twin of backend/app/services/justice_table_page.py,
 // which server-renders the current season for crawlers. Keep copy identical
@@ -135,6 +136,7 @@ export default function JusticeTablePage() {
         );
       })}
       <p className="text-xs text-slate-500 mt-3 max-w-[72ch]">xPos is the rank on expected points over the window; Pos is the rank on real points over the same window. Gap is points minus expected points.</p>
+      <XGTablesContextLink placement="contextual-justice-table" />
 
       <H2 id="method">How it is measured</H2>
       <P>

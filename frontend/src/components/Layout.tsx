@@ -9,6 +9,7 @@ import LoginModal from './LoginModal';
 import CheckoutSuccessBanner from './CheckoutSuccessBanner';
 import ProSessionIntro from './ProSessionIntro';
 import AmIUpCTA from './AmIUpCTA';
+import { xgTablesUrl, trackXGTablesClick } from './XGTables';
 
 const leagues = VISIBLE_LEAGUES;
 
@@ -24,7 +25,7 @@ const results = [
 
 // `external: true` makes a tool entry open in a new tab and render as
 // a plain <a> instead of a router <Link> — used for cross-promo items
-// that live outside the SteamWatch app (currently just AmIUp).
+// that live outside the SteamWatch app.
 // `isNew: true` adds a small red NEW badge to the entry so it visibly
 // stands out from the rest of the list.
 const tools: Array<{
@@ -34,6 +35,7 @@ const tools: Array<{
   external?: boolean;
   reloadDocument?: boolean;
   isNew?: boolean;
+  onClick?: () => void;
 }> = [
   {
     name: 'AI Bet Tracker',
@@ -50,6 +52,7 @@ const tools: Array<{
   { name: 'Form Lab', path: '/tools/form-lab', icon: 'FL' },
   { name: 'Research Lab', path: '/tools/research-lab', icon: 'RL', isNew: true },
   { name: 'Rolling xG', path: '/tools/rolling-xg', icon: '📊' },
+  { name: 'xGTables — Football xG', path: xgTablesUrl('tools-menu'), icon: 'xG', external: true, onClick: () => trackXGTablesClick('tools-menu') },
   { name: 'Manager Ratings', path: '/tools/manager-ratings', icon: '↗', reloadDocument: true },
   { name: 'Club Ratings', path: '/tools/club-ratings', icon: '🏆' },
 ];
@@ -186,9 +189,16 @@ export default function Layout() {
                   mobile-menu entry below + the route in App.tsx to re-enable. */}
 
               {/* Tools dropdown */}
-              <div className="relative" ref={dropdownRef}>
+              <div className="relative" ref={dropdownRef} onKeyDown={(event) => {
+                if (event.key === 'Escape') {
+                  setToolsOpen(false);
+                  dropdownRef.current?.querySelector('button')?.focus();
+                }
+              }}>
                 <button
                   onClick={() => setToolsOpen(!toolsOpen)}
+                  aria-expanded={toolsOpen}
+                  aria-controls="desktop-tools-links"
                   className={navItemClass(isToolsPage) + ' flex items-center gap-1'}
                 >
                   Tools
@@ -199,11 +209,10 @@ export default function Layout() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
-                {toolsOpen && (
-                  <div className="absolute left-0 mt-3 w-60 bg-slate-800 border border-slate-700 rounded-md shadow-xl shadow-black/30 overflow-hidden z-50">
+                  <div id="desktop-tools-links" hidden={!toolsOpen} className="absolute left-0 mt-3 w-64 bg-slate-800 border border-slate-700 rounded-md shadow-xl shadow-black/30 overflow-hidden z-50">
                     {tools.map((tool) => {
                       const isActive = !tool.external && location.pathname === tool.path;
-                      const innerClasses = `flex items-center gap-2.5 px-3 py-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors ${
+                      const innerClasses = `flex items-center gap-2.5 px-3 py-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-cyan-300 ${
                         isActive
                           ? 'bg-cyan-500/10 text-cyan-300'
                           : 'text-slate-300 hover:bg-slate-700 hover:text-white'
@@ -225,10 +234,11 @@ export default function Layout() {
                           href={tool.path}
                           target="_blank"
                           rel="noopener"
-                          onClick={() => setToolsOpen(false)}
+                          onClick={() => { tool.onClick?.(); setToolsOpen(false); }}
                           className={innerClasses}
                         >
                           {innerContent}
+                          <span className="sr-only"> (opens in a new tab)</span>
                         </a>
                       ) : (
                         <Link
@@ -242,7 +252,6 @@ export default function Layout() {
                       );
                     })}
                   </div>
-                )}
               </div>
             </nav>
 
@@ -323,6 +332,8 @@ export default function Layout() {
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="lg:hidden p-2 rounded-md bg-slate-800/60 border border-slate-700/60 text-slate-300 hover:text-white transition-colors"
               aria-label="Toggle menu"
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-menu"
             >
               {mobileMenuOpen ? (
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -402,7 +413,12 @@ export default function Layout() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-slate-700/50 bg-slate-800/95 backdrop-blur-md">
+          <div id="mobile-menu" className="lg:hidden max-h-[calc(100dvh-52px)] overflow-y-auto border-t border-slate-700/50 bg-slate-800/95 backdrop-blur-md" onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              setMobileMenuOpen(false);
+              event.currentTarget.closest('header')?.querySelector<HTMLButtonElement>('[aria-controls="mobile-menu"]')?.focus();
+            }
+          }}>
             <div className="px-4 py-4 space-y-4">
               {!isProDemoPage && <>
               {/* Time display toggle — same control as desktop, styled
@@ -614,7 +630,7 @@ export default function Layout() {
                 <div className="space-y-1">
                   {tools.map((tool) => {
                     const isActive = !tool.external && location.pathname === tool.path;
-                    const classes = `flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors ${
+                    const classes = `flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-cyan-300 ${
                       isActive
                         ? 'bg-blue-600/20 text-blue-400'
                         : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700 hover:text-white'
@@ -636,9 +652,11 @@ export default function Layout() {
                         href={tool.path}
                         target="_blank"
                         rel="noopener"
+                        onClick={() => { tool.onClick?.(); setMobileMenuOpen(false); }}
                         className={classes}
                       >
                         {inner}
+                        <span className="sr-only"> (opens in a new tab)</span>
                       </a>
                     ) : (
                       <Link key={tool.path} to={tool.path} reloadDocument={tool.reloadDocument} className={classes}>

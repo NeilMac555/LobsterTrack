@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { useSearchParams } from 'react-router-dom';
 import { getTeamPnL } from '../api';
 import type { TeamPLResponse, TeamPLRow, TeamPLViewStats } from '../types';
+import { XGTablesContextLink } from '../components/XGTables';
 
 // Leagues we currently have data for. The disabled entries below are
 // architectural placeholders — switch them on once the importer +
@@ -490,6 +491,7 @@ export default function TeamPLPage() {
           </div>
         </div>
       )}
+      <XGTablesContextLink placement="contextual-team-pnl" />
     </div>
   );
 }

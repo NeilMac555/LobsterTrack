@@ -170,7 +170,9 @@ def render_homepage(db: Session, static_index_path: str) -> str:
             parts.append(f"<h3><a href=\"/league/{slug}\">{_esc(name)}</a></h3><ul>{items}</ul>")
         parts.append(f"<h2>Competitions</h2><p>{league_links_html(db)}</p>")
         block = "".join(parts)
-        if "</main>" in page:
+        if "<!--HOMEPAGE:MARKETS-->" in page:
+            page = page.replace("<!--HOMEPAGE:MARKETS-->", block, 1)
+        elif "</main>" in page:
             page = page.replace("</main>", block + "</main>", 1)
     except Exception:  # noqa: BLE001  never let the list break the homepage
         pass

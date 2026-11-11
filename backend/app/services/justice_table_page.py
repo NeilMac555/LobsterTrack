@@ -215,6 +215,7 @@ def _render(db: Session) -> str:
         + " · <a href=\"#method\">Method</a> · <a href=\"#faq\">Questions</a></nav>"
         + "".join(sections)
         + "<p class=\"pr-meta\">xPos is the rank on expected points over the window; Pos is the rank on real points over the same window. Gap is points minus expected points.</p>"
+        + '<p><a href="https://www.xgtables.io/?utm_source=steamwatch&amp;utm_medium=referral&amp;utm_campaign=xgtables_launch&amp;utm_content=contextual-justice-table" target="_blank" rel="noopener">Explore team xG and results on xGTables.<span class="sr-only"> (opens in a new tab)</span></a></p>'
         + method_html(summ, prev_label)
         + f"<h2 id=\"faq\">Questions</h2>{faq_html}"
         "<h2>More on SteamWatch</h2>"

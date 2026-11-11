@@ -304,9 +304,14 @@ const renderer = await createServer({ configFile: false, root: resolve(__dirname
   esbuild: { jsx: 'automatic' }, optimizeDeps: { noDiscovery: true, include: [] },
   server: { middlewareMode: true, hmr: false, watch: null }, appType: 'custom' });
 let workedExample;
+let xgTablesCard;
+let xgTablesTeamLink;
 try {
   const { default: Example } = await renderer.ssrLoadModule('/src/components/WorkedPredictorExample.tsx');
   workedExample = renderToStaticMarkup(createElement(Example));
+  const { XGTablesCard, XGTablesContextLink } = await renderer.ssrLoadModule('/src/components/XGTables.tsx');
+  xgTablesCard = renderToStaticMarkup(createElement(XGTablesCard));
+  xgTablesTeamLink = renderToStaticMarkup(createElement(XGTablesContextLink, { placement: 'contextual-team-pnl' }));
 } finally {
   await renderer.close();
 }
@@ -601,7 +606,7 @@ ${workedExample}
 <h2>Where the data comes from</h2>
 <p>Results and closing prices for 2021/22 to January 2026 are the Pinnacle closing columns from football-data.co.uk. From February 2026 the closing price is SteamWatch's own capture from The Odds API: the last Pinnacle snapshot before kickoff. For the roughly 200 matches between the two sources, where neither has a Pinnacle price, the Betfair Exchange closing price stands in. Results are re-imported every Monday and prices filled the same morning.</p>
 <h2>A current figure</h2>
-<p>{{HEADLINE}} The same closing prices drive <a href="/longshot-bias">Longshot Bias</a>, which asks the same question of favourites and underdogs as groups rather than of individual clubs.</p>`,
+<p>{{HEADLINE}} The same closing prices drive <a href="/longshot-bias">Longshot Bias</a>, which asks the same question of favourites and underdogs as groups rather than of individual clubs.</p>${xgTablesTeamLink}`,
   },
   {
     path: 'longshot-bias',
@@ -1046,7 +1051,7 @@ writePage('', renderPage({
 <h2>Leagues covered</h2>
 <p>Premier League, EFL Championship, La Liga, Bundesliga, Serie A, Ligue 1, Champions League, Europa League, Conference League and the UEFA Nations League.</p>
 <h2>Free alerts</h2>
-<p>Steam alerts go out in real time on <a href="https://t.me/steamwatchalerts">Telegram</a>. <a href="/blog/what-are-steam-moves-in-football-betting">What is a steam move?</a></p>`,
+<p>Steam alerts go out in real time on <a href="https://t.me/steamwatchalerts">Telegram</a>. <a href="/blog/what-are-steam-moves-in-football-betting">What is a steam move?</a></p><!--HOMEPAGE:MARKETS-->${xgTablesCard}`,
 }));
 
 // ---------------------------------------------------------------------------

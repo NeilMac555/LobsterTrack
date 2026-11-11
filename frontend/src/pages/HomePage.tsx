@@ -18,6 +18,7 @@ import { useTimePreference } from '../contexts/TimePreferenceContext';
 import { useOddsFormat } from '../contexts/OddsFormatContext';
 import { formatOdds } from '../utils/odds';
 import { BLOG_POSTS } from '../blog/posts';
+import { XGTablesCard } from '../components/XGTables';
 
 interface GroupedMatches {
   label: string;
@@ -1098,6 +1099,7 @@ export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
           })}
         </div>
       )}
+      {!league && <XGTablesCard />}
     </div>
   );
 }
