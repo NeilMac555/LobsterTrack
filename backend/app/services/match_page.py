@@ -152,9 +152,12 @@ def _xgtables_link(sport_key: str) -> str:
     if sport_key == "soccer_uefa_nations_league":
         return ""
     return (
+        '<aside aria-label="Free football statistics on xGTables">'
+        '<h2><img src="/brand/xgtables-wordmark.svg" alt="xGTables.io" width="144" height="40"></h2>'
+        '<p>Free xG tables, match results and player statistics.</p>'
         '<p><a href="https://www.xgtables.io/?utm_source=steamwatch&amp;utm_medium=referral'
         '&amp;utm_campaign=xgtables_launch&amp;utm_content=contextual-match" target="_blank" rel="noopener">'
-        'Explore team xG and results on xGTables.<span class="sr-only"> (opens in a new tab)</span></a></p>'
+        'Explore xGTables<span class="sr-only"> (opens in a new tab)</span></a></p></aside>'
     )
 
 

@@ -36,9 +36,25 @@ export function XGTablesMatchLink({ sportKey }: { sportKey: string }) {
   if (sportKey === 'soccer_uefa_nations_league') return null;
 
   return (
-    <div className="border-t border-slate-700/50 px-4 py-3 sm:px-6">
-      <XGTablesContextLink placement="contextual-match" className="text-sm" />
-    </div>
+    <aside aria-label="Free football statistics on xGTables" className="flex flex-col gap-4 border-t border-[#FF8FB1]/30 bg-[#FF8FB1]/[0.06] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-6 sm:py-5">
+      <div className="min-w-0">
+        <img src="/brand/xgtables-wordmark.svg" alt="xGTables.io" width="144" height="40" className="h-10 w-auto" />
+        <p className="mt-2 text-sm leading-relaxed text-slate-200">Free xG tables, match results and player statistics.</p>
+      </div>
+      <a
+        href={xgTablesUrl('contextual-match')}
+        target="_blank"
+        rel="noopener"
+        onClick={() => trackXGTablesClick('contextual-match')}
+        className="inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-3 rounded-md bg-[#FF8FB1] px-5 py-3 text-sm font-semibold text-[#121212] transition-colors hover:bg-[#FFA9C3] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#FF8FB1] sm:w-auto"
+      >
+        Explore xGTables
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M5 12h14m-6-6 6 6-6 6" />
+        </svg>
+        <span className="sr-only"> (opens in a new tab)</span>
+      </a>
+    </aside>
   );
 }
 
