@@ -226,6 +226,8 @@ decisions that shape the build, with the recommendation at the time:
 
 ## Done
 
+- 2026-11-11 `576f4ed` — Replace the plain match referral with the original xGTables wordmark, pink callout and prominent CTA; preserve public access, tracking and UNL exclusion; build, desktop/tablet/mobile and keyboard checks passed.
+
 - 2026-11-11 `b16cb68` — Link xGTables beneath match-header prices for every competition except UNL, public for all visitors with matching server HTML and referral tracking; build, competition exclusion, desktop/mobile and keyboard checks passed.
 
 - 2026-11-11 `42d6d48` — Add public xGTables homepage card, Tools link and Team P/L/Justice Table referrals with placement UTMs and Plausible click tracking; build, destinations, desktop/mobile and keyboard checks passed.
