@@ -1,4 +1,4 @@
-type Placement = 'homepage' | 'tools-menu' | 'contextual-team-pnl' | 'contextual-justice-table';
+type Placement = 'homepage' | 'tools-menu' | 'contextual-team-pnl' | 'contextual-justice-table' | 'contextual-match';
 
 export function xgTablesUrl(placement: Placement): string {
   return `https://www.xgtables.io/?utm_source=steamwatch&utm_medium=referral&utm_campaign=xgtables_launch&utm_content=${placement}`;
@@ -12,9 +12,12 @@ export function trackXGTablesClick(placement: Placement): void {
   }
 }
 
-export function XGTablesContextLink({ placement }: { placement: 'contextual-team-pnl' | 'contextual-justice-table' }) {
+export function XGTablesContextLink({ placement, className = 'mt-6 text-sm' }: {
+  placement: 'contextual-team-pnl' | 'contextual-justice-table' | 'contextual-match';
+  className?: string;
+}) {
   return (
-    <p className="mt-6 text-sm">
+    <p className={className}>
       <a
         href={xgTablesUrl(placement)}
         target="_blank"
@@ -26,6 +29,16 @@ export function XGTablesContextLink({ placement }: { placement: 'contextual-team
         <span className="sr-only"> (opens in a new tab)</span>
       </a>
     </p>
+  );
+}
+
+export function XGTablesMatchLink({ sportKey }: { sportKey: string }) {
+  if (sportKey === 'soccer_uefa_nations_league') return null;
+
+  return (
+    <div className="border-t border-slate-700/50 px-4 py-3 sm:px-6">
+      <XGTablesContextLink placement="contextual-match" className="text-sm" />
+    </div>
   );
 }
 

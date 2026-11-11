@@ -19,6 +19,7 @@ import Sparkline from '../components/Sparkline';
 import { countryFlagImgUrl } from '../utils/countryFlags';
 import Bet105Button from '../components/Bet105Button';
 import XgGapNote from '../components/XgGapNote';
+import { XGTablesMatchLink } from '../components/XGTables';
 import TeamMarketContext from '../components/TeamMarketContext';
 import { parseUtc, formatKickoff } from '../utils/time';
 import { useTimePreference } from '../contexts/TimePreferenceContext';
@@ -365,6 +366,7 @@ export default function MatchDetailPage() {
             });
           })()}
         </div>
+        <XGTablesMatchLink sportKey={match.sport_key} />
       </div>
 
       {/* Odds History Chart */}

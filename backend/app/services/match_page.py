@@ -148,6 +148,16 @@ def _xg_note(db: Session, match: Match) -> str:
         return ""
 
 
+def _xgtables_link(sport_key: str) -> str:
+    if sport_key == "soccer_uefa_nations_league":
+        return ""
+    return (
+        '<p><a href="https://www.xgtables.io/?utm_source=steamwatch&amp;utm_medium=referral'
+        '&amp;utm_campaign=xgtables_launch&amp;utm_content=contextual-match" target="_blank" rel="noopener">'
+        'Explore team xG and results on xGTables.<span class="sr-only"> (opens in a new tab)</span></a></p>'
+    )
+
+
 def _render(db: Session, match: Match) -> str:
     kickoff = _naive_utc(match.commence_time)
     finished = datetime.utcnow() >= kickoff
@@ -307,6 +317,7 @@ def _render(db: Session, match: Match) -> str:
         f"{xg_note}"
         f"<h2>Pinnacle prices, open to {'close' if finished else 'now'}</h2>"
         f"{table}{recorded}"
+        f"{_xgtables_link(match.sport_key)}"
         f"<p>Implied change is the movement in implied probability (100 divided by the decimal price) from open to {'close' if finished else 'now'}, in percentage points. "
         f"Positive means the price shortened, negative means it drifted. Prices are Pinnacle's, captured roughly every 15 minutes before kickoff.</p>"
         f"{timeline_html}"
