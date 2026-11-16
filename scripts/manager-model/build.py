@@ -36,6 +36,9 @@ for lid in DOM:
         for c in active:
             current.append({'id':c['coach_id'],'team_id':t['id'],'club':t['name'],'league':DOM[lid],'appointment':c.get('start'),'appointment_ambiguous':len(active)!=1})
 for o in overrides:
+    names[o['coach_id']]=o['name']
+    if o.get('end_exclusive') and NOW[:10]>=o['end_exclusive']:
+        continue
     old=next(c for c in current if c['team_id']==o['team_id'])
     current=[c for c in current if c['team_id']!=o['team_id']]
     current.append({**old,'id':o['coach_id'],'appointment':o['start'],'appointment_ambiguous':False,'verification_source':o['source'],'verified_at':o['verified_at']})
@@ -63,6 +66,8 @@ for f in sorted(fixtures.values(),key=lambda x:(x['starting_at'],x['id'])):
         tid=o['team_id']
         if tid not in (h,a): continue
         date=f['starting_at'][:10]
+        if o.get('end_exclusive') and date>=o['end_exclusive']:
+            continue
         if date>=o['start']:
             if cm[tid]!={o['coach_id']}:
                 corrections.append({'fixture_id':f['id'],'team_id':tid,'date':date,'provider_coaches':sorted(cm[tid]),'corrected_coach':o['coach_id'],'source':o['source']})

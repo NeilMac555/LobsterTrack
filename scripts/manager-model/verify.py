@@ -8,7 +8,9 @@ assert 37523743 not in {r['id'] for r in rows}
 assert all(r['eligible']==(r['recent_games']>=20) for r in rows)
 assert all(r['eligible'] or r['is_current'] for r in rows)
 assert not any(r['id']==32849 and r['is_current'] for r in rows)
-assert {97499,95553}.issubset(r['id'] for r in rows)
+for o in g['overrides']:
+    if not o.get('end_exclusive') or g['NOW'][:10]<o['end_exclusive']:
+        assert any(r['is_current'] and r['id']==o['coach_id'] and r['team_id']==o['team_id'] for r in rows)
 for o in g['overrides']:
     assert not any(e['team_id']==o['team_id'] and e['date']>=o['previous_end_exclusive'] for e in logs[o['previous_coach_id']])
 for o in g['historical']:

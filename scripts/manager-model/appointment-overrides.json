@@ -1,0 +1,25 @@
+[
+  {
+    "team_id": 266,
+    "coach_id": 97499,
+    "name": "Julien Lachuer",
+    "start": "2026-06-27",
+    "previous_coach_id": 37523743,
+    "previous_end_exclusive": "2026-06-17",
+    "verified_at": "2026-09-19",
+    "source": "https://www.lequipe.fr/Football/Actualites/Brest-officialise-la-nomination-de-julien-lachuer-au-poste-d-entraineur/1698800"
+  },
+  {
+    "team_id": 271,
+    "coach_id": 95553,
+    "name": "Yannick Cahuzac",
+    "start": "2026-09-17",
+    "previous_coach_id": 32849,
+    "previous_end_exclusive": "2026-09-15",
+    "verified_at": "2026-09-19",
+    "source": "https://www.afp.com/fr/ligue-1-toppmoller-parti-cahuzac-de-jouer-lens",
+    "end_exclusive": "2026-11-12",
+    "end_source": "https://www.rclens.fr/fr/communique-officiel-rclens-20261112",
+    "successor_source": "https://www.rclens.fr/fr/didier-digard-entraineur-rclens-20261113"
+  }
+]
