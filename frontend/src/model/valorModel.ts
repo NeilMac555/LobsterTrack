@@ -289,40 +289,51 @@ export function runModel(inputs: ModelInputs, params: ModelParams): ModelOutput 
   const l6xgfH = h.last6XGFor, l6xgaH = h.last6XGAgainst;
   const l6xgfA = a.last6XGFor, l6xgaA = a.last6XGAgainst;
 
-  let formApplied = false;
-  if (formWeight > 0) {
-    if (Math.abs(l6xgfH - exH) > 0.001 || Math.abs(l6xgaH - eaH) > 0.001) {
-      exH = (1 - formWeight) * exH + formWeight * l6xgfH;
-      eaH = (1 - formWeight) * eaH + formWeight * l6xgaH;
-      formApplied = true;
-    }
-    if (Math.abs(l6xgfA - exA) > 0.001 || Math.abs(l6xgaA - eaA) > 0.001) {
-      exA = (1 - formWeight) * exA + formWeight * l6xgfA;
-      eaA = (1 - formWeight) * eaA + formWeight * l6xgaA;
-      formApplied = true;
-    }
+  // 0 means "not provided" (a blank form field), same contract as the
+  // other advanced inputs: a team is only blended when BOTH of its last-6
+  // values were given. Blending a blank as if it were 0.00 xG would cut
+  // that team's attack and xG against by formWeight.
+  const formProvidedH = formWeight > 0 && l6xgfH > 0 && l6xgaH > 0;
+  const formProvidedA = formWeight > 0 && l6xgfA > 0 && l6xgaA > 0;
+  let formAppliedH = false, formAppliedA = false;
+  if (formProvidedH && (Math.abs(l6xgfH - exH) > 0.001 || Math.abs(l6xgaH - eaH) > 0.001)) {
+    exH = (1 - formWeight) * exH + formWeight * l6xgfH;
+    eaH = (1 - formWeight) * eaH + formWeight * l6xgaH;
+    formAppliedH = true;
   }
-  if (formApplied) {
+  if (formProvidedA && (Math.abs(l6xgfA - exA) > 0.001 || Math.abs(l6xgaA - eaA) > 0.001)) {
+    exA = (1 - formWeight) * exA + formWeight * l6xgfA;
+    eaA = (1 - formWeight) * eaA + formWeight * l6xgaA;
+    formAppliedA = true;
+  }
+  if (formAppliedH || formAppliedA) {
     log.push(`Step 1c — Form (${formWeight}): H_atk=${exH.toFixed(3)} H_def=${eaH.toFixed(3)} A_atk=${exA.toFixed(3)} A_def=${eaA.toFixed(3)}`);
   } else {
     log.push(`Step 1c — Form: SKIPPED — values match season data`);
   }
+  if (formWeight > 0 && !formProvidedH) log.push(`Step 1c — Form (H): SKIPPED — last 6 xG not provided`);
+  if (formWeight > 0 && !formProvidedA) log.push(`Step 1c — Form (A): SKIPPED — last 6 xG not provided`);
 
   // Step 2: Attack strength
   // Season inputs retain half of penalty xG; recent-form inputs are raw xG.
   // Apply that same blend to the live league reference so an average team
-  // stays average as the league scoring environment changes.
-  const referenceXG = lg.avgPenaltyXG === undefined ? lg.avgXG
-    : Math.max(0.05, lg.avgXG - 0.5 * lg.avgPenaltyXG * (1 - formWeight));
-  const atkH = exH / referenceXG, atkA = exA / referenceXG;
-  log.push(`League references: xG=${lg.avgXG.toFixed(3)} adjusted xG=${referenceXG.toFixed(3)} goals=${lg.avgGoals.toFixed(3)}`);
+  // stays average as the league scoring environment changes. The reference
+  // is per team: a team whose last-6 values were not provided is all
+  // season data, so its reference carries the full half-penalty discount.
+  const referenceFor = (formProvided: boolean) => lg.avgPenaltyXG === undefined ? lg.avgXG
+    : Math.max(0.05, lg.avgXG - 0.5 * lg.avgPenaltyXG * (1 - (formProvided ? formWeight : 0)));
+  const referenceXGH = referenceFor(formProvidedH), referenceXGA = referenceFor(formProvidedA);
+  const atkH = exH / referenceXGH, atkA = exA / referenceXGA;
+  log.push(referenceXGH === referenceXGA
+    ? `League references: xG=${lg.avgXG.toFixed(3)} adjusted xG=${referenceXGH.toFixed(3)} goals=${lg.avgGoals.toFixed(3)}`
+    : `League references: xG=${lg.avgXG.toFixed(3)} adjusted xG H=${referenceXGH.toFixed(3)} A=${referenceXGA.toFixed(3)} goals=${lg.avgGoals.toFixed(3)}`);
   log.push(`Step 2 — Attack Strength: H=${atkH.toFixed(3)} A=${atkA.toFixed(3)}`);
 
-  // Step 3: Defence strength (80/20 blend)
+  // Step 3: Defence strength (80/20 blend), each team against its own reference
   const dbH = 0.80 * eaH + 0.20 * h.goalsAgainst;
   const dbA = 0.80 * eaA + 0.20 * a.goalsAgainst;
-  const avgDB = 0.80 * referenceXG + 0.20 * lg.avgGoals;
-  const defH = dbH / avgDB, defA = dbA / avgDB;
+  const defH = dbH / (0.80 * referenceXGH + 0.20 * lg.avgGoals);
+  const defA = dbA / (0.80 * referenceXGA + 0.20 * lg.avgGoals);
   log.push(`Step 3 — Defence Strength: H=${defH.toFixed(3)} A=${defA.toFixed(3)}`);
 
   // Step 4: Lambda (base rate = league avg goals per team, home advantage
