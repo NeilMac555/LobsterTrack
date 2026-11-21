@@ -814,6 +814,7 @@ const TOOL_LINKS = [
   ['/tools/form-lab', 'Form Lab'],
   ['/tools/club-ratings', 'Club Ratings'],
   ['/tools/manager-ratings', 'Manager Ratings'],
+  ['/tools/research-lab', 'Research Lab'],
 ];
 
 const SHELL_CSS = `
@@ -866,7 +867,7 @@ const FOOTER_HTML = `<footer class="pr-footer"><div class="pr-cols">
 <div><h4>Leagues</h4><a href="/league/premier-league">Premier League</a><a href="/league/championship">EFL Championship</a><a href="/league/la-liga">La Liga</a><a href="/league/bundesliga">Bundesliga</a><a href="/league/ligue-1">Ligue 1</a><a href="/league/serie-a">Serie A</a><a href="/league/champions-league">Champions League</a><a href="/league/europa-league">Europa League</a><a href="/league/conference-league">Conference League</a></div>
 <div><h4>Tools</h4>${TOOL_LINKS.map(([h, t]) => `<a href="${h}">${t}</a>`).join('')}</div>
 <div><h4>Blog</h4>${POSTS.map((p) => `<a href="/blog/${p.slug}">${esc(p.title)}</a>`).join('')}<a href="/blog">All posts</a></div>
-<div><h4>SteamWatch</h4><a href="/pro">SteamWatch Pro membership</a><a href="/about">About Neil Mac</a><a href="https://t.me/steamwatchalerts">Free Telegram alerts</a><a href="https://x.com/Steamwatchio">@Steamwatchio on X</a></div>
+<div><h4>SteamWatch</h4><a href="/pro">SteamWatch Pro membership</a><a href="/pro/demo">Pro demo</a><a href="/about">About Neil Mac</a><a href="https://t.me/steamwatchalerts">Free Telegram alerts</a><a href="https://x.com/Steamwatchio">@Steamwatchio on X</a></div>
 </div><p class="pr-note">Pinnacle odds via The Odds API · updated every 15 minutes</p></footer>`;
 
 // The Vite template, read once BEFORE the homepage overwrites dist/index.html.
