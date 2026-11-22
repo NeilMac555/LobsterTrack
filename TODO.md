@@ -11,8 +11,10 @@ session; update before finishing (move cards, add new ones, trim Done).
   the Kraken and Biski; 3D chests, gems and pickups; 3D effects for the
   powers (beams, novas, pools); 3D bridges and liquids; 3D title and select
   screens. Not yet measured on a real GPU or phone: the test browser has no
-  GPU (software rendering, ~1-4 fps), so the gameplay tests run with
-  ?gfx=hd and 3d-test with ?gfx=3d&q=fixed.
+  GPU (software rendering, ~1-4 fps). Browser tests now live in
+  game/tests/ (smoke-test.js [hd|3d], music tests); the older per-feature
+  suite (3d-test, act tests, heroes-test, ...) was scratchpad-only and is
+  gone, so rebuild coverage there as features are touched.
 - GitHub Pages: needs Settings -> Pages -> Source "GitHub Actions"; to
   deploy from the feature branch, allow it under Settings -> Environments
   -> github-pages (or merge to main). URL will be
@@ -26,6 +28,10 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 ## Next
 
+- Mutant Academy soundtrack: tracks loop end-to-start (they were not
+  written as loops, and MP3 adds a short gap); trim loop points or
+  crossfade at the loop if it grates. iOS ignores media volume, so the
+  crossfades there are hard cuts. Not yet heard on a real phone.
 - Mutant Academy select screen on 4:3 screens (e.g. 1280x960, W=320):
   the hero panel runs off the bottom and the hint text overlaps it. Not
   new; needs a compact layout for short, narrow screens. The new PERK
@@ -78,6 +84,8 @@ session; update before finishing (move cards, add new ones, trim Done).
 
 (newest first)
 
+- Mutant Academy: browser tests kept in the repo, game/tests/ (315fb9a)
+- Mutant Academy: recorded soundtrack, Kevin MacLeod CC BY 4.0 (title, Acts I-V, boss) with the synth as fallback; title menu no longer overlaps the tagline (4fb3a29)
 - Mutant Academy: BACK button (and Esc) on the hero select screen, which had no way back to the title (3f03b07)
 - Mutant Academy: Acts II-V in 3D (rock walls, act props and light) and 3D models for most monsters plus the Maggot Queen and the Devil (b8ec7ed)
 - Mutant Academy: 3D graphics mode for Act I (three.js + KayKit CC0: dungeon, heroes, skeletons, Butcher; lantern shadows, bloom; HD fallback), GitHub Pages workflow (9494030)
