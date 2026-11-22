@@ -114,6 +114,25 @@ the newer abilities:
 - `feral.png` (Feral Cat) — derived from `biski.png` (Shepardskin's CC0 "Cat
   sprites", see above), recoloured as a ginger tabby.
 
+## Music (`music/`)
+
+All seven tracks are by **Kevin MacLeod** (incompetech.com), licensed under
+**Creative Commons: By Attribution 4.0** (https://creativecommons.org/licenses/by/4.0/),
+from his discography on the Internet Archive:
+https://archive.org/details/KevinMacLeod_2019-04_Discography
+
+- `title.mp3` — "Five Armies" (title and menus)
+- `act1.mp3` — "Video Dungeon Crawl" (Act I)
+- `act2.mp3` — "Desert City" (Act II)
+- `act3.mp3` — "Rite of Passage" (Act III)
+- `act4.mp3` — "Stormfront" (Act IV)
+- `act5.mp3` — "Nightmare Machine" (Act V)
+- `boss.mp3` — "8bit Dungeon Boss" (every act boss)
+
+Modifications: volume lowered (to about -28 LUFS, level with the game's sound
+effects) and re-encoded as 96 kbps MP3. The game's own FM-synth themes (original,
+written in `game.js`) play whenever a track can't load.
+
 ## Sound effects (hero hurt voices, `sfx/`)
 
 Trimmed, pitch-adjusted for some heroes, normalised and re-encoded as MP3:

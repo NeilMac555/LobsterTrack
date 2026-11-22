@@ -160,10 +160,12 @@ function setMuted(m) {
   muted = m;
   music.on = !m;
   try { if (masterGain) masterGain.gain.value = m ? 0 : 1; } catch (e) {}
+  if (m) silenceStreams();
 }
 // tab hidden -> total silence; back -> resume unless muted
 document.addEventListener('visibilitychange', () => {
   try {
+    if (document.hidden) silenceStreams();
     if (!audioCtx) return;
     if (document.hidden) audioCtx.suspend();
     else if (!muted) audioCtx.resume();
@@ -659,6 +661,58 @@ function noiseHit(t, dur, vol) {
     src.start(t); src.stop(t + dur + 0.02);
   } catch (e) {}
 }
+// ---------- recorded soundtrack ----------
+// Kevin MacLeod tracks (CC BY 4.0, see assets/CREDITS.md), one per act plus the
+// title and boss themes, streamed from assets/music/ and mastered down to the
+// synth's level. Whenever the track a scene wants can't play (still loading,
+// autoplay refused, a file:// page or a bundle without it) the synth theme
+// above plays instead, so there is never silence.
+const TRACK_FOR = { 1: 'act1', 2: 'act2', 3: 'act3', 4: 'act4', 5: 'act5' };
+const MENU_SCENES = new Set(['title', 'select', 'shop', 'bestiary']);
+const streams = {};   // track name -> looping <audio>
+function stream(name) {
+  if (!streams[name]) {
+    const a = new Audio(), key = 'music/' + name;
+    a.loop = true; a.preload = 'auto'; a.volume = 0;
+    a.addEventListener('error', () => { a.dead = true; });
+    a.src = (typeof EMBEDDED_ASSETS !== 'undefined' && EMBEDDED_ASSETS[key]) || ('assets/' + key + '.mp3');
+    streams[name] = a;
+  }
+  return streams[name];
+}
+function wantedTrack() {
+  if (!music.started || !music.on || muted || document.hidden) return null;
+  if (scene === 'play') return state.actBoss ? 'boss' : TRACK_FOR[music.song];
+  return MENU_SCENES.has(scene) ? 'title' : null;
+}
+function playStream(a) {
+  if (a.pending) return;
+  a.pending = true;
+  try {
+    a.play().then(() => { a.pending = false; a.blocked = false; }, () => { a.pending = false; a.blocked = true; });
+  } catch (e) { a.pending = false; a.dead = true; }
+}
+// every 60 ms: fade the wanted track in and the others out; the synth fills any gap
+function musicFrame() {
+  const want = wantedTrack();
+  if (want) stream(want);
+  if (scene === 'play') stream('boss');   // fetched early so the boss arrives with his theme
+  let live = false;
+  for (const name in streams) {
+    const a = streams[name];
+    if (name === want && !a.dead) {
+      if (a.paused) { if (!a.blocked) playStream(a); }
+      else if (a.readyState >= 3) { live = true; a.volume = Math.min(1, a.volume + 0.075); }
+    } else if (!a.paused) {
+      a.volume = Math.max(0, a.volume - 0.1);
+      if (a.volume === 0) a.pause();
+    }
+  }
+  if (!live && scene !== 'intro') musicTick();   // the story's narration plays over its own bells
+}
+function silenceStreams() {
+  for (const name in streams) { streams[name].pause(); streams[name].volume = 0; }
+}
 function startMusic() {
   try {
     audioOut();
@@ -668,18 +722,24 @@ function startMusic() {
     if (music.started) return;
     music.started = true;
     music.nextT = audioCtx.currentTime + 0.1;
-    music.timer = setInterval(musicTick, 60);
+    music.timer = setInterval(musicFrame, 60);
+    musicFrame();   // ask for the track while we're still inside the gesture
   } catch (e) {}
   loadVoices();
 }
 function stopMusic() {
   if (music.timer) { clearInterval(music.timer); music.timer = null; }
+  silenceStreams();
 }
 function unlockAudio() {
   try { if (audioCtx && audioCtx.state === 'suspended' && !muted) audioCtx.resume(); } catch (e) {}
+  if (!music.started && scene === 'title' && !muted) startMusic();   // the title theme starts on the first key or tap
+  // a track the browser refused to autoplay gets another go on this gesture
+  for (const name in streams) if (streams[name].blocked) { streams[name].blocked = false; if (name === wantedTrack()) playStream(streams[name]); }
 }
-window.addEventListener('pointerdown', unlockAudio);
-window.addEventListener('keydown', unlockAudio);
+// capture phase: this runs before a tap's own handler, which may already be leaving the title
+window.addEventListener('pointerdown', unlockAudio, true);
+window.addEventListener('keydown', unlockAudio, true);
 
 // ---------- bitmap fonts ----------
 // 5×7 uppercase font on a 6-dot advance (monospace, like an 8×8 tile font).
@@ -6756,7 +6816,7 @@ function renderTitle() {
   drawText('SURVIVE FIVE ACTS. SLAY THE DEVIL.', W / 2, ty + 10, C.lgrey, { align: 'center' });
   // START GAME / BESTIARY, the classic title-screen pair, and the graphics switch
   const items = ['START GAME', 'ACADEMY', 'STORY', 'BESTIARY', 'GRAPHICS: ' + GFX_LABEL[GFX]];
-  const gap = H >= 250 ? 14 : 12, my = Math.min(Math.round(H * 0.53), H - 34 - items.length * gap);
+  const gap = H >= 250 ? 14 : 12, my = Math.max(ty + 22, Math.min(Math.round(H * 0.53), H - 34 - items.length * gap));   // never up into the tagline
   addHit(0, 0, W, H, 'any');
   items.forEach((label, i) => {
     const y = my + i * gap, on = i === titleSel, w = textW(label);
@@ -6765,7 +6825,9 @@ function renderTitle() {
     addHit(Math.round(W / 2 - w / 2) - 14, y - 4, w + 28, 14, 'title:' + i);
   });
   const credit = 'ART: CALCIUMTRICE / ANSIMUZ / REDSHRIKE / BJERK / YURINIKOLAI / CRAFTPIX / DCSS / LPC / OPP / SEVARIHK / SHEPARDSKIN';
-  if (credit.length * 6 < W - 8) drawText(credit, W / 2, H - 10, C.grey, { align: 'center', shadow: false });
+  const wide = credit.length * 6 < W - 8;
+  drawText(W >= 310 ? 'MUSIC: KEVIN MACLEOD (INCOMPETECH.COM), CC BY 4.0' : 'MUSIC: KEVIN MACLEOD, CC BY 4.0', W / 2, H - (wide ? 20 : 30), C.grey, { align: 'center', shadow: false });
+  if (wide) drawText(credit, W / 2, H - 10, C.grey, { align: 'center', shadow: false });
   else {
     drawText('ART: CALCIUMTRICE / ANSIMUZ / BJERK / DCSS', W / 2, H - 20, C.grey, { align: 'center', shadow: false });
     drawText('REDSHRIKE / LPC / BUCH / SHEPARDSKIN', W / 2, H - 10, C.grey, { align: 'center', shadow: false });
