@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.models import Base, Match, HistoricalMatch, ClosingLine, AlertResult
 from app.models.closing_line import MarketType
-from app.services.bias_results_refresh import sync_league
+from app.services.bias_results_refresh import sync_league, valid_close
 
 
 class BiasRefreshTests(unittest.TestCase):
@@ -90,6 +90,45 @@ class BiasRefreshTests(unittest.TestCase):
         self.db.add(AlertResult(match_id='lazio',home_score=2,away_score=1))
         self.db.flush()
         self.assertEqual(self.run_sync([])['inserted'],1)
+
+    def test_small_kickoff_correction_repairs_existing_unpriced_final(self):
+        # Recorded close at 13:58 for a 14:00 kickoff; provider later says 14:02.
+        self.match.commence_time += timedelta(minutes=2)
+        self.db.add(HistoricalMatch(season='2627', league=self.league,
+            match_date=self.match.commence_time.date(), home_team='Lazio',
+            away_team='Cagliari', fthg=2, ftag=1, ftr='H', price_source='missing'))
+        self.db.flush()
+        self.assertEqual(self.run_sync([])['updated'], 1)
+        row = self.row()
+        self.assertEqual((row.psch, row.pscd, row.psca, row.price_source),
+                         (1.5, 4.53, 6.87, 'steamwatch_close'))
+        self.assertEqual(self.run_sync([])['updated'], 0)
+        self.assertEqual(self.db.query(HistoricalMatch).count(), 1)
+
+    def test_kickoff_correction_keeps_identity_and_both_pre_match_guards(self):
+        original = self.match.commence_time
+        for delta in [-5, 5]:
+            with self.subTest(allowed_delta=delta):
+                self.match.commence_time = original + timedelta(minutes=delta)
+                self.close.captured_at = original - timedelta(minutes=6)
+                self.assertTrue(valid_close(self.close, self.match))
+        for delta in [-6, 6, 24 * 60]:
+            with self.subTest(rejected_delta=delta):
+                self.match.commence_time = original + timedelta(minutes=delta)
+                self.assertFalse(valid_close(self.close, self.match))
+        self.match.commence_time = original + timedelta(minutes=2)
+        self.close.captured_at = original + timedelta(minutes=1)
+        self.assertFalse(valid_close(self.close, self.match))  # after original KO
+        self.match.commence_time = original - timedelta(minutes=2)
+        self.close.captured_at = original - timedelta(minutes=1)
+        self.assertFalse(valid_close(self.close, self.match))  # after corrected KO
+        self.match.commence_time = original + timedelta(minutes=2)
+        self.close.captured_at = original - timedelta(minutes=29)
+        self.assertFalse(valid_close(self.close, self.match))  # 31 minutes old now
+        self.match.commence_time = original
+        self.close.captured_at = original - timedelta(minutes=2)
+        self.close.match_id = 'different-event'
+        self.assertFalse(valid_close(self.close, self.match))
 
 
 if __name__ == '__main__':

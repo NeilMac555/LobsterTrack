@@ -36,12 +36,19 @@ def confirmed_score(event, match):
 
 
 def valid_close(close, match):
-    if not close or close.league != match.sport_key or (close.home_team, close.away_team) != (match.home_team, match.away_team):
+    if not close or close.match_id != match.id or close.league != match.sport_key or (close.home_team, close.away_team) != (match.home_team, match.away_team):
         return False
-    if naive_utc(close.kickoff_time) != naive_utc(match.commence_time):
+    captured_kickoff = naive_utc(close.kickoff_time)
+    current_kickoff = naive_utc(match.commence_time)
+    captured_at = naive_utc(close.captured_at)
+    # The provider can adjust the actual kickoff after we capture the close
+    # (Rayo–Valencia moved from 15:15 to 15:17). Keep the exact event identity,
+    # allow only a small clock correction, and require a fresh pre-match price
+    # against BOTH timestamps. Rescheduled or in-play prices remain excluded.
+    if abs(current_kickoff - captured_kickoff) > timedelta(minutes=5):
         return False
-    age = naive_utc(match.commence_time) - naive_utc(close.captured_at)
-    return (timedelta(0) < age <= timedelta(minutes=30)
+    ages = (captured_kickoff - captured_at, current_kickoff - captured_at)
+    return (all(timedelta(0) < age <= timedelta(minutes=30) for age in ages)
             and all(v is not None and isfinite(v) and v > 1 for v in (close.close_home, close.close_draw, close.close_away)))
 
 

@@ -124,23 +124,43 @@ export default function TeamPLPage() {
 
   useEffect(() => {
     let alive = true;
+    let running = false;
+    let hasData = false;
     setLoading(true);
     setError(null);
     setData(null);  // clear stale data immediately when switching leagues
-    getTeamPnL({
-      league,
-      seasons: INCLUDED_SEASONS,
-      date_from: COLLECTION_START,
-      opponents: effectiveOpponents === 'top' ? 'top' : undefined,
-    })
-      .then((res) => {
-        if (!alive) return;
-        setData(res);
+    const refresh = () => {
+      if (!alive || document.hidden || running) return;
+      running = true;
+      getTeamPnL({
+        league,
+        seasons: INCLUDED_SEASONS,
+        date_from: COLLECTION_START,
+        opponents: effectiveOpponents === 'top' ? 'top' : undefined,
       })
-      .catch(() => alive && setError('Failed to load team P/L. The data import may not have run yet for this league — try again in a minute.'))
-      .finally(() => alive && setLoading(false));
+        .then((res) => {
+          if (!alive) return;
+          hasData = true;
+          setData(res);
+          setError(null);
+        })
+        .catch(() => {
+          if (alive) setError(hasData
+            ? 'Could not refresh team P/L. Showing the last loaded results; retrying automatically.'
+            : 'Failed to load team P/L. Retrying automatically in a minute.');
+        })
+        .finally(() => {
+          running = false;
+          if (alive) setLoading(false);
+        });
+    };
+    refresh();
+    const timer = window.setInterval(refresh, 60_000);
+    document.addEventListener('visibilitychange', refresh);
     return () => {
       alive = false;
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', refresh);
     };
   }, [league, effectiveOpponents]);
 
@@ -431,7 +451,7 @@ export default function TeamPLPage() {
       )}
 
       {/* Table */}
-      {!loading && !error && data && sortedRows.length > 0 && (
+      {!loading && data && sortedRows.length > 0 && (
         <div className="bg-slate-800/80 rounded-xl border border-slate-700/60 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-xs sm:text-sm">
