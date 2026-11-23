@@ -1,3 +1,4 @@
+import { SharpSideSoccerContextLink } from '../components/SharpSideSoccer';
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
@@ -96,6 +97,8 @@ export default function DroppingOddsPage() {
           <Link to="/blog/how-to-read-closing-lines-in-football-betting" className="text-cyan-400 hover:underline">how to read closing lines</Link>.
         </p>
       </div>
+
+      <SharpSideSoccerContextLink placement="dropping-odds" />
 
       <h2 className="text-lg font-bold text-white mt-8 mb-3">Biggest drops in the last 48 hours</h2>
       {error && <p className="text-red-400 text-sm">{error}</p>}

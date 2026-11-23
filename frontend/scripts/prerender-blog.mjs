@@ -307,12 +307,24 @@ const renderer = await createServer({ configFile: false, root: resolve(__dirname
 let workedExample;
 let xgTablesCard;
 let xgTablesTeamLink;
+const sharpSideCards = {};
+const sharpSideLinks = {};
 try {
   const { default: Example } = await renderer.ssrLoadModule('/src/components/WorkedPredictorExample.tsx');
   workedExample = renderToStaticMarkup(createElement(Example));
   const { XGTablesCard, XGTablesContextLink } = await renderer.ssrLoadModule('/src/components/XGTables.tsx');
   xgTablesCard = renderToStaticMarkup(createElement(XGTablesCard));
   xgTablesTeamLink = renderToStaticMarkup(createElement(XGTablesContextLink, { placement: 'contextual-team-pnl' }));
+  const { SharpSideSoccerCard, SharpSideSoccerContextLink } = await renderer.ssrLoadModule('/src/components/SharpSideSoccer.tsx');
+  for (const placement of ['homepage', 'pro']) {
+    sharpSideCards[placement] = renderToStaticMarkup(createElement(SharpSideSoccerCard, { placement }));
+  }
+  for (const placement of ['predictor', 'closing-lines', 'dropping-odds']) {
+    sharpSideLinks[placement] = renderToStaticMarkup(createElement(SharpSideSoccerContextLink, { placement }));
+  }
+  // The dynamic Dropping Odds renderer uses the same component's HTML.
+  mkdirSync(resolve(DIST, 'data'), { recursive: true });
+  writeFileSync(resolve(DIST, 'data', 'sharp-side-soccer.json'), JSON.stringify(sharpSideLinks), 'utf-8');
 } finally {
   await renderer.close();
 }
@@ -324,6 +336,7 @@ const PAGES = [
 <h2>Spot the move. Build your view.</h2>
 <p>The market tells you what moved. Pro gives you the tools to investigate why. Bring team form, expected goals, historical results and model pricing into your football research.</p>
 <p><a href="/pro/demo">Try the free interactive Pro demo</a>: explore 12 research tools with real historical samples, no sign-up needed.</p>
+${sharpSideCards.pro}
 <h2>Inside your membership</h2>
 <ul>${PRO.inclusions.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>
 ${PRO.benefits.map((b) => `<section><h2><a href="${b.href}">${esc(b.name)}</a></h2><h3>${esc(b.title)}</h3><p>${esc(b.text)}</p></section>`).join('\n')}
@@ -436,6 +449,7 @@ ${PRO.faqs.map(([q, a]) => `<h3>${esc(q)}</h3><p>${esc(a)}</p>`).join('\n')}`,
     },
     noscriptHtml: `<h1>Pinnacle Closing Odds History</h1>
 <div data-public-summary="closing-lines"><!--live-public-summary--></div>
+${sharpSideLinks['closing-lines']}
 <p class="pr-lead">An archive of Pinnacle closing prices. For every finished match SteamWatch tracks it lists the last price recorded before kickoff on the 1X2 market, the Asian handicap (line and both prices) and the totals market (line, over and under), grouped by league and matchweek. The opening price sits beside each close, so the movement is visible in one row.</p>
 <h2>Where the data comes from</h2>
 <p>Prices are Pinnacle's, taken from The Odds API. SteamWatch requests each tracked competition every 15 minutes from the moment a match is listed, every 10 minutes inside two hours of kickoff and every two minutes in the last half hour, and stores every snapshot. The closing line is the final snapshot captured before the recorded kickoff time. The capture time and the number of minutes before kickoff are stored with it. Nothing is back-filled from other bookmakers.</p>
@@ -465,6 +479,7 @@ ${PRO.faqs.map(([q, a]) => `<h3>${esc(q)}</h3><p>${esc(a)}</p>`).join('\n')}`,
 <h2>What goes in</h2>
 <p>Use each team's last 20 completed league matches, home and away combined. Continue into the previous season if needed. Enter xG for and against per match, goals conceded per match and games sampled. Use the same sample for penalties, set pieces and shots. The optional recent-form adjustment uses the last six league matches.</p>
 ${workedExample}
+${sharpSideLinks.predictor}
 <h2>How the numbers are calculated</h2>
 <p>The model gives half weight to estimated penalty xG and discounts set pieces when a breakdown is supplied. It blends each team's sample with its recent form, then adjusts for the opponent, league scoring rate and home advantage. These goal estimates feed a Dixon–Coles score grid. The calculator adjusts draw probabilities and sums the grid for each market. Fair decimal odds are 1 divided by the resulting probability.</p>
 <h2>Where the league constants come from</h2>
@@ -1004,7 +1019,7 @@ writePage('', renderPage({
 <h2>Leagues covered</h2>
 <p>Premier League, EFL Championship, La Liga, Bundesliga, Serie A, Ligue 1, Champions League, Europa League, Conference League and the UEFA Nations League.</p>
 <h2>Free alerts</h2>
-<p>Steam alerts go out in real time on <a href="https://t.me/steamwatchalerts">Telegram</a>. <a href="/blog/what-are-steam-moves-in-football-betting">What is a steam move?</a></p><!--HOMEPAGE:MARKETS-->${xgTablesCard}`,
+<p>Steam alerts go out in real time on <a href="https://t.me/steamwatchalerts">Telegram</a>. <a href="/blog/what-are-steam-moves-in-football-betting">What is a steam move?</a></p><!--HOMEPAGE:MARKETS-->${sharpSideCards.homepage}${xgTablesCard}`,
 }));
 
 // ---------------------------------------------------------------------------

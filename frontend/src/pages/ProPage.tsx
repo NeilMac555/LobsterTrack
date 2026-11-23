@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../contexts/AuthContext';
 import LoginModal from '../components/LoginModal';
 import './ProPage.css';
+import { SharpSideSoccerCard } from '../components/SharpSideSoccer';
 import proContent from '../content/pro.json';
 
 const { benefits, inclusions, faqs } = proContent;
@@ -53,6 +54,7 @@ export default function ProPage() {
         </div>
       </div>
     </section>
+    <SharpSideSoccerCard placement="pro" />
     <section id="included" className="pro-features scroll-mt-28 py-14">
       <p className="font-mono text-xs uppercase tracking-[0.2em] text-cyan-300">Inside your membership</p><h2 className="mt-3 text-3xl font-bold tracking-tight text-white">A stronger research process, in one place.</h2>
       <div className="mt-8 grid gap-5 md:grid-cols-2">{benefits.map(b => <article key={b.n} className="pro-feature rounded-2xl border border-slate-700/80 bg-slate-800/50 p-6 sm:p-8"><div className="flex justify-between text-xs font-mono uppercase tracking-widest"><span className="text-cyan-300">{b.name}</span><span className="text-slate-500">{b.n}</span></div><h3 className="mt-5 text-xl font-bold text-white">{b.title}</h3><p className="mt-3 leading-relaxed text-slate-400">{b.text}</p><div className="mt-5 flex flex-wrap gap-2">{b.tags.map(t => <span key={t} className="rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-300">{t}</span>)}</div><Link to={b.href} className="mt-6 inline-block text-sm font-semibold text-cyan-300 hover:text-white">Explore {b.name} →</Link></article>)}</div>

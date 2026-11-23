@@ -1,3 +1,4 @@
+import { SharpSideSoccerContextLink } from '../components/SharpSideSoccer';
 import { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -139,6 +140,7 @@ export default function ClosingLinesPage() {
       </div>
 
       {!league && <PublicSummary page="closing-lines" />}
+      <SharpSideSoccerContextLink placement="closing-lines" />
       {/* Free for everyone since 2026-08-23 (Neil: "closing lines doesn't
           need to be behind a paywall") — the blur + PaywallOverlay that
           used to gate this page is in git history if it's ever wanted

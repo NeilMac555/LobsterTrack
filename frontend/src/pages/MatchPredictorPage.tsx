@@ -1,3 +1,4 @@
+import { SharpSideSoccerContextLink } from '../components/SharpSideSoccer';
 import { lazy, Suspense, useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useSearchParams } from 'react-router-dom';
@@ -441,6 +442,7 @@ export default function MatchPredictorPage() {
       </div>
 
       <Suspense fallback={null}><WorkedPredictorExample /></Suspense>
+      {!result && <SharpSideSoccerContextLink placement="predictor" />}
       <div className="flex gap-6">
       {/* Data Sources Sidebar */}
       <aside className="hidden lg:block w-72 flex-shrink-0">
@@ -845,6 +847,8 @@ export default function MatchPredictorPage() {
           </div>
         </div>
       )}
+
+      {result && <SharpSideSoccerContextLink placement="predictor" />}
 
       {/* Data Sources (mobile only — sidebar handles desktop) */}
       <div className="mt-6 lg:hidden">

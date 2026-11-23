@@ -20,6 +20,7 @@ import { useOddsFormat } from '../contexts/OddsFormatContext';
 import { formatOdds } from '../utils/odds';
 import { BLOG_POSTS } from '../blog/posts';
 import { XGTablesCard } from '../components/XGTables';
+import { SharpSideSoccerCard } from '../components/SharpSideSoccer';
 
 interface GroupedMatches {
   label: string;
@@ -1033,6 +1034,8 @@ export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
         onClose={() => setShowLoginFromCTA(false)}
         mode="subscribe"
       />
+
+      {!league && <SharpSideSoccerCard placement="homepage" />}
 
       {/* Page Header */}
       <div className="mb-5 sm:mb-6 flex items-center gap-3">

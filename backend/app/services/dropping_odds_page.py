@@ -45,6 +45,16 @@ def _shell() -> str:
         return f.read()
 
 
+@lru_cache(maxsize=1)
+def _sharp_side_callout() -> str:
+    # Generated from the React component during the frontend build.
+    try:
+        with open(os.path.join(_static_dir(), "data", "sharp-side-soccer.json"), encoding="utf-8") as f:
+            return json.load(f)["dropping-odds"]
+    except FileNotFoundError:
+        return ""  # Local backend-only runs do not require the frontend build.
+
+
 def _esc(v) -> str:
     return html.escape(str(v), quote=True)
 
@@ -171,6 +181,7 @@ def _render(db: Session) -> str:
         "<h1>Dropping Odds Today</h1>"
         f"<p class=\"pr-meta\">{len(movers)} fixtures with a shortening price · rebuilt {stamp} · Pinnacle prices via The Odds API</p>"
         f"{intro_html(steam_record_sentence(db))}"
+        f"{_sharp_side_callout()}"
         "<h2>Biggest drops in the last 48 hours</h2>"
         f"{_table(movers)}"
         "<p class=\"pr-meta\">From is the opening price, or the price 48 hours ago for matches listed earlier than that.</p>"
