@@ -35,6 +35,7 @@ from sqlalchemy.orm import Session
 
 from app.models import Match, OddsSnapshot, TotalsSnapshot, SpreadsSnapshot, ClosingLine
 from app.models.closing_line import MarketType
+from app.services.odds_quality import preferred_snapshot_sql
 
 DOMAIN = "https://www.steamwatch.io"
 CACHE_TTL_SECONDS = 60
@@ -170,7 +171,8 @@ def _render(db: Session, match: Match) -> str:
 
     snaps = (
         db.query(OddsSnapshot)
-        .filter(OddsSnapshot.match_id == match.id, OddsSnapshot.fetched_at < kickoff)
+        .filter(OddsSnapshot.match_id == match.id, OddsSnapshot.fetched_at < kickoff,
+                preferred_snapshot_sql(OddsSnapshot))
         .order_by(OddsSnapshot.fetched_at.asc())
         .all()
     )

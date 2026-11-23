@@ -1,3 +1,4 @@
+from app.services.odds_quality import preferred_snapshot_sql
 from app.services.telegram_results import alert_moves
 from fastapi import APIRouter, Depends, HTTPException, Query, Header, UploadFile, File
 from sqlalchemy.orm import Session
@@ -264,7 +265,7 @@ async def get_matches(
             ).label('rn')
         )
         .filter(OddsSnapshot.match_id.in_(match_ids))
-        .filter(OddsSnapshot.in_play == False)  # noqa: E712
+        .filter(preferred_snapshot_sql(OddsSnapshot))  # noqa: E712
         .subquery()
     )
 
@@ -297,7 +298,7 @@ async def get_matches(
             ).label('rn')
         )
         .filter(OddsSnapshot.match_id.in_(match_ids))
-        .filter(OddsSnapshot.in_play == False)  # noqa: E712
+        .filter(preferred_snapshot_sql(OddsSnapshot))  # noqa: E712
         .subquery()
     )
 
@@ -324,7 +325,7 @@ async def get_matches(
             func.count(OddsSnapshot.id).label('count')
         )
         .filter(OddsSnapshot.match_id.in_(match_ids))
-        .filter(OddsSnapshot.in_play == False)  # noqa: E712
+        .filter(preferred_snapshot_sql(OddsSnapshot))  # noqa: E712
         .group_by(OddsSnapshot.match_id)
         .all()
     )
@@ -349,7 +350,7 @@ async def get_matches(
         .filter(OddsSnapshot.match_id.in_(match_ids))
         .filter(OddsSnapshot.home_odds.isnot(None))
         .filter(OddsSnapshot.home_odds > 0)
-        .filter(OddsSnapshot.in_play == False)  # noqa: E712
+        .filter(preferred_snapshot_sql(OddsSnapshot))  # noqa: E712
         .subquery()
     )
     spark_rows = (
@@ -409,7 +410,7 @@ async def get_match_detail(match_id: str, db: Session = Depends(get_db)):
     # Get only pre-kickoff odds snapshots (exclude in-play odds)
     snapshots = (
         db.query(OddsSnapshot)
-        .filter(OddsSnapshot.match_id == match_id)
+        .filter(OddsSnapshot.match_id == match_id, preferred_snapshot_sql(OddsSnapshot))
         .filter(OddsSnapshot.fetched_at < match.commence_time)
         .order_by(OddsSnapshot.fetched_at.asc())
         .all()
@@ -951,7 +952,7 @@ def compute_biggest_movers(db: Session, limit: int = 4, sport_key: Optional[str]
             ).label('rn')
         )
         .filter(OddsSnapshot.match_id.in_(match_ids))
-        .filter(OddsSnapshot.in_play == False)  # noqa: E712
+        .filter(preferred_snapshot_sql(OddsSnapshot))  # noqa: E712
         .subquery()
     )
     latest_1x2 = {row.match_id: row for row in db.query(latest_1x2_subq).filter(latest_1x2_subq.c.rn == 1).all()}
@@ -968,7 +969,7 @@ def compute_biggest_movers(db: Session, limit: int = 4, sport_key: Optional[str]
             ).label('rn')
         )
         .filter(OddsSnapshot.match_id.in_(match_ids))
-        .filter(OddsSnapshot.in_play == False)  # noqa: E712
+        .filter(preferred_snapshot_sql(OddsSnapshot))  # noqa: E712
         .subquery()
     )
     opening_1x2 = {row.match_id: row for row in db.query(opening_1x2_subq).filter(opening_1x2_subq.c.rn == 1).all()}
@@ -991,7 +992,7 @@ def compute_biggest_movers(db: Session, limit: int = 4, sport_key: Optional[str]
             ).label('rn')
         )
         .filter(OddsSnapshot.match_id.in_(match_ids))
-        .filter(OddsSnapshot.in_play == False)  # noqa: E712
+        .filter(preferred_snapshot_sql(OddsSnapshot))  # noqa: E712
         .filter(OddsSnapshot.fetched_at <= cutoff_48h)
         .subquery()
     )
@@ -1206,7 +1207,7 @@ def compute_biggest_movers(db: Session, limit: int = 4, sport_key: Optional[str]
                     .filter(OddsSnapshot.match_id == match_id)
                     .filter(odds_col.isnot(None))
                     .filter(odds_col > 0)
-                    .filter(OddsSnapshot.in_play == False)  # noqa: E712
+                    .filter(preferred_snapshot_sql(OddsSnapshot))  # noqa: E712
                     .filter(OddsSnapshot.fetched_at >= cutoff_48h)
                     .order_by(OddsSnapshot.fetched_at.desc())
                     .limit(SPARK_SOURCE_POINTS)
@@ -2477,40 +2478,17 @@ async def admin_delete_empty_match(
 @router.post("/admin/purge-junk-snapshots")
 async def admin_purge_junk_snapshots(
     password: str = Query(..., description="Admin password"),
-    dry_run: bool = Query(True, description="Default true: report what WOULD be deleted without deleting"),
+    dry_run: bool = Query(True, description="Default true: preview recoverable quarantine and derived-history repair"),
     db: Session = Depends(get_db),
 ):
-    """One-shot cleanup for dead-orderbook odds snapshots (2026-08-30,
-    reported by a Pro user as impossible 'opening odds'): rows whose
-    3-way implied probabilities sum outside [0.90, 1.35] — e.g. a
-    just-listed match's empty Betfair book at 1.06/1.01/1.06 (~280%).
-    These poisoned opening prices and every movement figure derived
-    from them. The ingest gate in odds_fetcher._store_odds now rejects
-    such rows at source; this removes the historical ones. Run with
-    dry_run=true first and eyeball the counts."""
+    """Compatibility endpoint: archive/rebuild, never irreversibly purge history."""
     if password != ADMIN_PASSWORD:
         raise HTTPException(status_code=401, detail="Invalid password")
-
-    where = (
-        "home_odds > 1 AND draw_odds > 1 AND away_odds > 1 "
-        "AND (1/home_odds + 1/draw_odds + 1/away_odds) NOT BETWEEN 0.90 AND 1.35"
-    )
-    counts = db.execute(text(
-        f"SELECT bookmaker, count(*) FROM odds_snapshots WHERE {where} GROUP BY bookmaker"
-    )).fetchall()
-    total = sum(c for _, c in counts)
-
-    deleted = 0
-    if not dry_run and total:
-        deleted = db.execute(text(f"DELETE FROM odds_snapshots WHERE {where}")).rowcount
+    from app.services.odds_quality_repair import repair_history
+    summary = repair_history(db, dry_run=dry_run)
+    if not dry_run:
         db.commit()
-
-    return {
-        "dry_run": dry_run,
-        "junk_rows_by_bookmaker": {b: c for b, c in counts},
-        "total_junk_rows": total,
-        "deleted": deleted,
-    }
+    return {"dry_run": dry_run, **summary}
 
 
 @router.post("/admin/fill-historical-prices")
@@ -4149,14 +4127,14 @@ async def get_tweet_diagnostics(
         latest = (
             db.query(OddsSnapshot)
             .filter(OddsSnapshot.match_id == m.id)
-            .filter(OddsSnapshot.in_play == False)  # noqa: E712
+            .filter(preferred_snapshot_sql(OddsSnapshot))  # noqa: E712
             .order_by(OddsSnapshot.fetched_at.desc())
             .first()
         )
         opening = (
             db.query(OddsSnapshot)
             .filter(OddsSnapshot.match_id == m.id)
-            .filter(OddsSnapshot.in_play == False)  # noqa: E712
+            .filter(preferred_snapshot_sql(OddsSnapshot))  # noqa: E712
             .filter(OddsSnapshot.fetched_at >= window_start)
             .order_by(OddsSnapshot.fetched_at.asc())
             .first()

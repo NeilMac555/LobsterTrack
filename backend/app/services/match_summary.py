@@ -30,6 +30,8 @@ from typing import Any, Optional
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
+from app.models import OddsSnapshot
+from app.services.odds_quality import preferred_snapshot_sql
 
 INDEX_MIN_SNAPSHOTS = 12          # about three hours of price history
 CHECKPOINTS = [(48, "48 hours before"), (24, "24 hours before"), (6, "6 hours before"), (1, "1 hour before")]
@@ -94,9 +96,9 @@ def match_summary(db: Session, match, snaps: Optional[list] = None, close: Optio
     finished = now >= kickoff
     home, away, comp = match.home_team, match.away_team, match.league_name
     if snaps is None:
-        snaps = db.execute(text("select fetched_at, home_odds, draw_odds, away_odds from odds_snapshots "
-                                "where match_id = :id and fetched_at < :ko order by fetched_at asc"),
-                           {"id": match.id, "ko": kickoff}).fetchall()
+        snaps = db.query(OddsSnapshot).filter(OddsSnapshot.match_id == match.id,
+            OddsSnapshot.fetched_at < kickoff, preferred_snapshot_sql(OddsSnapshot)
+        ).order_by(OddsSnapshot.fetched_at, OddsSnapshot.id).all()
     if close is None and finished:
         c = db.execute(text("select close_home, close_draw, close_away from closing_lines "
                             "where match_id = :id and market_type = 'H2H'"), {"id": match.id}).fetchone()

@@ -1,3 +1,4 @@
+from app.services.odds_quality import valid_snapshot_sql
 import structlog
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
@@ -209,7 +210,9 @@ class SyndicateAlerter:
         # fires on an unvalidated source.
         baseline = (
             db.query(OddsSnapshot)
-            .filter(OddsSnapshot.match_id == match.id, OddsSnapshot.bookmaker == "pinnacle")
+            .filter(OddsSnapshot.match_id == match.id, OddsSnapshot.bookmaker == "pinnacle",
+                    OddsSnapshot.in_play.is_(False), OddsSnapshot.fetched_at < match.commence_time,
+                    valid_snapshot_sql(OddsSnapshot))
             .filter(OddsSnapshot.fetched_at >= window_start)
             .order_by(OddsSnapshot.fetched_at.asc())
             .first()
@@ -217,7 +220,9 @@ class SyndicateAlerter:
 
         latest = (
             db.query(OddsSnapshot)
-            .filter(OddsSnapshot.match_id == match.id, OddsSnapshot.bookmaker == "pinnacle")
+            .filter(OddsSnapshot.match_id == match.id, OddsSnapshot.bookmaker == "pinnacle",
+                    OddsSnapshot.in_play.is_(False), OddsSnapshot.fetched_at < match.commence_time,
+                    valid_snapshot_sql(OddsSnapshot))
             .order_by(OddsSnapshot.fetched_at.desc())
             .first()
         )

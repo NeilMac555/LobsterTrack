@@ -6,6 +6,7 @@ from time import monotonic
 from urllib.parse import quote
 
 from sqlalchemy import and_
+from app.services.odds_quality import valid_snapshot_sql, valid_book_sql
 
 from app.api.routes import _season_label, _season_start, fav_dog_report, telegram_report
 from app.models import ClosingLine, OddsSnapshot
@@ -38,18 +39,18 @@ def latest_closes(db):
     verified = db.query(s.id).filter(and_(
         s.match_id == c.match_id, s.bookmaker == 'pinnacle', s.fetched_at == c.captured_at,
         s.home_odds == c.close_home, s.draw_odds == c.close_draw, s.away_odds == c.close_away,
-        s.in_play.is_(False),
+        s.in_play.is_(False), valid_snapshot_sql(s),
     )).exists()
     closes = db.query(c).filter(
         c.market_type == MarketType.H2H, c.kickoff_time <= datetime.utcnow(),
-        c.captured_at < c.kickoff_time, c.close_home > 1, c.close_draw > 1, c.close_away > 1,
+        c.captured_at < c.kickoff_time, valid_book_sql(c.close_home, c.close_draw, c.close_away),
         verified,
     ).order_by(c.kickoff_time.desc(), c.captured_at.desc(), c.match_id).limit(5).all()
     rows = []
     for close in closes:
         opener = db.query(s).filter(
             s.match_id == close.match_id, s.bookmaker == 'pinnacle', s.in_play.is_(False),
-            s.fetched_at <= close.captured_at, s.home_odds > 1, s.draw_odds > 1, s.away_odds > 1,
+            s.fetched_at <= close.captured_at, valid_snapshot_sql(s),
         ).order_by(s.fetched_at, s.id).first()
         if opener:
             rows.append((f'{close.home_team} vs {close.away_team}', '/match/' + quote(close.match_id, safe=''), [
@@ -81,6 +82,23 @@ def steam_summary(db):
                                 alerts.roi_percent, alerts.profit_history[-1].date if alerts.profit_history else None)])
 
 
+def drifters_summary(db):
+    start = _season_start()
+    report = market_move_report(db, -1, start, _season_label(start), limit=0)
+    n, wins = report['total_moves'], report['total_wins']
+    latest = report['latest_settled_kickoff']
+    through = latest.strftime('%d %b %Y') if latest else None
+    note = (f"From {start:%d %b %Y} through {through}, SteamWatch recorded {n:,} settled team drifts: "
+            f"{100*wins/n:.1f}% won; flat 1u at each selection's largest qualifying recorded drift price "
+            f"returned {report['profit_units']:+.2f}u ({report['roi_percent']:+.2f}% ROI). "
+            "These are Pinnacle implied-probability falls of at least 3 percentage points observed in the final two hours before kickoff, "
+            "counting each team once per match; this is a descriptive record, not Telegram-alert performance or a first-alert betting strategy."
+            if n else 'No settled qualifying team drifts in the current season yet.')
+    return table('Drifters: current-season record', note, PROFIT_COLUMNS,
+                 [profit_row('All qualifying team drifts', n, wins, report['profit_units'],
+                             report['roi_percent'], latest.date().isoformat() if latest else None)])
+
+
 def bias_summary(db):
     report = fav_dog_report(db)
     rows = [profit_row(label, band.matches, band.wins, band.profit_units,
@@ -91,7 +109,7 @@ def bias_summary(db):
                  PROFIT_COLUMNS, rows)
 
 
-BUILDERS = {'closing-lines': latest_closes, 'steam-results': steam_summary, 'longshot-bias': bias_summary}
+BUILDERS = {'closing-lines': latest_closes, 'steam-results': steam_summary, 'longshot-bias': bias_summary, 'drifters': drifters_summary}
 _locks = {key: Lock() for key in BUILDERS}
 _cache = {}
 

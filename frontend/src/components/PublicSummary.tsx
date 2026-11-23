@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import './PublicSummary.css';
 
-type Page = 'closing-lines' | 'steam-results' | 'longshot-bias';
+type Page = 'closing-lines' | 'steam-results' | 'longshot-bias' | 'drifters';
 // Capture the server-rendered section before React mounts on direct visits.
 const initial = document.querySelector<HTMLElement>('[data-public-summary]');
 const initialPage = initial?.dataset.publicSummary;

@@ -1,3 +1,4 @@
+import ownership from '../content/ownership.json';
 import { Helmet } from 'react-helmet-async';
 
 
@@ -5,6 +6,7 @@ export default function AboutPage() {
   return (
     <div className="max-w-3xl mx-auto">
       <Helmet>
+        <script type="application/ld+json">{JSON.stringify(ownership)}</script>
         <title>About Neil Mac, Betting Analyst | SteamWatch</title>
         <meta name="description" content="Neil Mac is a football betting analyst with 20+ years' experience and 7,800+ tracked bets. He built SteamWatch to track steam moves and closing lines." />
         <meta property="og:title" content="About Neil Mac, Betting Analyst | SteamWatch" />
@@ -29,6 +31,11 @@ export default function AboutPage() {
           European football across the Premier League, La Liga, Bundesliga, Serie A, Ligue 1,
           and Champions League — tracking where the sharp money flows and why.
         </p>
+      </section>
+
+      <section className="mb-10 text-slate-300 leading-relaxed">
+        <h2 className="text-xl font-bold text-white mb-4">Other projects</h2>
+        <p>SteamWatch is built by Neil Macdonald (Neil Mac), who runs <a className="text-cyan-400 underline" href="https://www.sharpsidesoccer.com/">Sharp Side Soccer</a> with Will White and also builds <a className="text-cyan-400 underline" href="https://amiup.io/">Am I Up</a> and <a className="text-cyan-400 underline" href="https://www.xgtables.io/">xGTables</a>.</p>
       </section>
 
       {/* Track Record */}

@@ -1,0 +1,96 @@
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Person",
+      "@id": "https://www.steamwatch.io/about#neil-macdonald",
+      "name": "Neil Macdonald",
+      "alternateName": "Neil Mac",
+      "url": "https://www.steamwatch.io/about",
+      "jobTitle": "Football betting analyst",
+      "sameAs": [
+        "https://x.com/NeilMac555",
+        "https://www.youtube.com/@neilmac555"
+      ],
+      "affiliation": [
+        {
+          "@id": "https://www.steamwatch.io/#organization"
+        },
+        {
+          "@id": "https://www.sharpsidesoccer.com/#organization"
+        }
+      ]
+    },
+    {
+      "@type": "Organization",
+      "@id": "https://www.steamwatch.io/#organization",
+      "name": "SteamWatch",
+      "url": "https://www.steamwatch.io/",
+      "founder": {
+        "@id": "https://www.steamwatch.io/about#neil-macdonald"
+      },
+      "sameAs": [
+        "https://x.com/Steamwatchio",
+        "https://t.me/steamwatchalerts"
+      ]
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://www.steamwatch.io/#website",
+      "name": "SteamWatch",
+      "url": "https://www.steamwatch.io/",
+      "publisher": {
+        "@id": "https://www.steamwatch.io/#organization"
+      },
+      "creator": {
+        "@id": "https://www.steamwatch.io/about#neil-macdonald"
+      }
+    },
+    {
+      "@type": "WebApplication",
+      "@id": "https://www.steamwatch.io/#application",
+      "name": "SteamWatch",
+      "url": "https://www.steamwatch.io/",
+      "applicationCategory": "SportsApplication",
+      "operatingSystem": "Web",
+      "creator": {
+        "@id": "https://www.steamwatch.io/about#neil-macdonald"
+      },
+      "publisher": {
+        "@id": "https://www.steamwatch.io/#organization"
+      },
+      "isPartOf": {
+        "@id": "https://www.steamwatch.io/#website"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "EUR"
+      }
+    },
+    {
+      "@type": "Organization",
+      "@id": "https://www.sharpsidesoccer.com/#organization",
+      "name": "Sharp Side Soccer",
+      "url": "https://www.sharpsidesoccer.com/"
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://amiup.io/#website",
+      "name": "Am I Up",
+      "url": "https://amiup.io/",
+      "creator": {
+        "@id": "https://www.steamwatch.io/about#neil-macdonald"
+      }
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://www.xgtables.io/#website",
+      "name": "xGTables",
+      "url": "https://www.xgtables.io/",
+      "creator": {
+        "@id": "https://www.steamwatch.io/about#neil-macdonald"
+      }
+    }
+  ]
+}

@@ -50,6 +50,18 @@ async def _initial_fetch():
         logger.warning("initial odds fetch failed (non-fatal)", error=str(e))
 
 
+async def _repair_odds_history():
+    from app.services.odds_quality_repair import run_once
+    for attempt in range(3):
+        try:
+            result = await asyncio.to_thread(run_once)
+            logger.info("Odds quality repair complete", **result)
+            return
+        except Exception as exc:
+            logger.error("Odds quality repair failed", attempt=attempt + 1, error=type(exc).__name__)
+            await asyncio.sleep(30)
+
+
 def _run_startup_migrations_sync():
     """
     All the idempotent ADD COLUMN IF NOT EXISTS / CREATE INDEX IF NOT
@@ -172,6 +184,7 @@ async def lifespan(app: FastAPI):
     # interval anyway, so this is just to warm the cache faster.
     logger.info("Scheduling initial odds fetch (non-blocking)")
     asyncio.create_task(_initial_fetch())
+    asyncio.create_task(_repair_odds_history())
 
     yield
 
@@ -287,6 +300,7 @@ if os.path.exists(static_dir):
         finally:
             db.close()
 
+    @app.get("/drifters", response_class=HTMLResponse)
     @app.get("/closing-lines", response_class=HTMLResponse)
     @app.get("/steam-results", response_class=HTMLResponse)
     @app.get("/longshot-bias", response_class=HTMLResponse)

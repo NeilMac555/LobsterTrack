@@ -30,3 +30,4 @@ from .european_xg import EuropeanXG
 from .form_lab import FormLabSeason
 
 from .xg_team_result import XGTeamResult
+from .odds_quality import OddsQualityArchive, OddsQualityRepair

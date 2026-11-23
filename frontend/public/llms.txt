@@ -4,6 +4,14 @@
 
 SteamWatch reports what moved and what happened next. It does not claim to know why a price moved.
 
+## Ownership and related projects
+
+SteamWatch is built by [Neil Macdonald (Neil Mac)](https://www.steamwatch.io/about). Neil runs [Sharp Side Soccer](https://www.sharpsidesoccer.com/), a football betting publication on Substack, with Will White. He also builds [Am I Up](https://amiup.io/) and [xGTables](https://www.xgtables.io/). These are separate products and publications connected through their creator, not alternate names for SteamWatch.
+
+## Odds quality and provenance
+
+SteamWatch accepts complete 1X2 books with finite decimal prices above 1.00 and total implied probability between 90% and 112%. The broad lower bound accommodates exchange fallback coverage; passing this check does not guarantee an accurate quote. Rejected ticks and corrected historical records are retained in an internal audit archive. Pinnacle charts and movement comparisons use Pinnacle history when available, without joining earlier Betfair fallback prices into the same series. Historical Telegram alert records retain the prices actually sent.
+
 ## What the data is
 
 - Odds source: Pinnacle, via The Odds API, captured roughly every 15 minutes and stored as time-series snapshots. The closing line is the last snapshot before kickoff.

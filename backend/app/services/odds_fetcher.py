@@ -4,6 +4,9 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
+from app.services.odds_quality import rejection_reason, valid_snapshot_sql
+from app.services.odds_quality_repair import archive_payload
+from app.models.odds_quality import OddsQualityArchive
 
 from app.config import get_settings
 from app.models import Match, OddsSnapshot, SteamMove, TotalsSnapshot, SpreadsSnapshot
@@ -154,7 +157,7 @@ class OddsFetcher:
         """
         Store fetched odds in the database.
         Creates matches if they don't exist, adds odds snapshots.
-        Also detects and records late steam moves (>5% within 2 hours of kickoff).
+        Also detects and records late steam moves (>=3pp within 2 hours of kickoff).
         """
         db = SessionLocal()
         try:
@@ -190,42 +193,27 @@ class OddsFetcher:
                 if match_odds and bookmaker_used == "betfair_ex_eu":
                     ever_had_pinnacle = (
                         db.query(OddsSnapshot.id)
-                        .filter(OddsSnapshot.match_id == match.id, OddsSnapshot.bookmaker == "pinnacle")
+                        .filter(OddsSnapshot.match_id == match.id, OddsSnapshot.bookmaker == "pinnacle",
+                                OddsSnapshot.in_play.is_(False), OddsSnapshot.fetched_at < fetch_time,
+                                valid_snapshot_sql(OddsSnapshot))
                         .first()
                         is not None
                     )
                     if ever_had_pinnacle:
                         match_odds = None
 
-                # Overround sanity gate (2026-08-30, after a Pro user
-                # reported "opening odds" of 1.06-1.08 on nearly every
-                # match): a real 3-way book's implied probabilities sum
-                # to ~100-112% (Pinnacle ~102-105%; a liquid exchange
-                # ~101-110%). A DEAD Betfair order book — a match listed
-                # weeks out with no liquidity yet — shows best-available
-                # prices like 1.06/1.01/1.06, summing to ~280%. Those
-                # rows used to be stored and, being the match's FIRST
-                # snapshot, became its "opening odds" everywhere,
-                # turning every movement figure into noise (96 of 118
-                # upcoming matches were affected when audited). Reject
-                # any snapshot whose book doesn't sum sanely; existing
-                # junk was purged via /admin/purge-junk-snapshots.
+                # Quarantine incomplete/non-finite books and books over 112%.
+                # Rejected ticks remain auditable, but cannot become opening prices.
                 if match_odds:
-                    h, d, a = match_odds.get("home"), match_odds.get("draw"), match_odds.get("away")
-                    if h and d and a and h > 1 and d > 1 and a > 1:
-                        overround = 1 / h + 1 / d + 1 / a
-                        if not (0.90 <= overround <= 1.35):
-                            logger.debug(
-                                "Rejecting insane odds snapshot",
-                                match_id=match.id,
-                                bookmaker=bookmaker_used,
-                                odds=f"{h}/{d}/{a}",
-                                overround=round(overround, 3),
-                            )
-                            match_odds = None
-                    else:
-                        # A 3-way book missing an outcome or quoting 1.00
-                        # is equally unusable.
+                    h, d, a = (match_odds.get(k) for k in ('home', 'draw', 'away'))
+                    reason = rejection_reason(h, d, a)
+                    if reason:
+                        db.add(OddsQualityArchive(**archive_payload('incoming_odds',
+                            f'{match.id}:{fetch_time.isoformat()}:{bookmaker_used}', match.id,
+                            dict(home_odds=h, draw_odds=d, away_odds=a, bookmaker=bookmaker_used,
+                                 fetched_at=fetch_time, last_update=match_odds.get('last_update')), reason)))
+                        logger.info('Quarantined invalid 1X2 book', match_id=match.id,
+                                    bookmaker=bookmaker_used, reason=reason)
                         match_odds = None
 
                 if match_odds:
@@ -294,10 +282,12 @@ class OddsFetcher:
         sport_key: str
     ) -> int:
         """
-        Detect if current odds represent a significant late move (>5% within 2 hours of kickoff).
+        Detect if current odds represent a significant late move (>=3pp within 2 hours of kickoff).
         Records any detected steam moves to the database.
         Returns count of steam moves recorded.
         """
+        if rejection_reason(*(current_odds.get(k) for k in ("home", "draw", "away"))):
+            return 0
         # Make commence_time timezone-aware if it isn't
         commence_time = match.commence_time
         if commence_time.tzinfo is None:
@@ -326,7 +316,9 @@ class OddsFetcher:
         # mix sources into one "movement" figure.
         opening_snapshot = (
             db.query(OddsSnapshot)
-            .filter(OddsSnapshot.match_id == match.id, OddsSnapshot.bookmaker == "pinnacle")
+            .filter(OddsSnapshot.match_id == match.id, OddsSnapshot.bookmaker == "pinnacle",
+                    OddsSnapshot.in_play.is_(False), OddsSnapshot.fetched_at < fetch_time,
+                    valid_snapshot_sql(OddsSnapshot))
             .order_by(OddsSnapshot.fetched_at.asc())
             .first()
         )
@@ -338,7 +330,9 @@ class OddsFetcher:
         # Get the most recent snapshot (to compare against)
         previous_snapshot = (
             db.query(OddsSnapshot)
-            .filter(OddsSnapshot.match_id == match.id, OddsSnapshot.bookmaker == "pinnacle")
+            .filter(OddsSnapshot.match_id == match.id, OddsSnapshot.bookmaker == "pinnacle",
+                    OddsSnapshot.in_play.is_(False), OddsSnapshot.fetched_at < fetch_time,
+                    valid_snapshot_sql(OddsSnapshot))
             .order_by(OddsSnapshot.fetched_at.desc())
             .first()
         )

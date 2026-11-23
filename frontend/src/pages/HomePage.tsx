@@ -1,3 +1,4 @@
+import ownership from '../content/ownership.json';
 import '../research-ui.css';
 import { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
@@ -197,6 +198,7 @@ export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
           <title>SteamWatch - Track the Biggest Odds Moves in Football Betting</title>
           <meta name="description" content="Track the biggest odds moves and see what happened next. Real-time steam alerts, historical ROI, closing-line data and betting-market analysis for serious bettors." />
           <link rel="canonical" href="https://www.steamwatch.io/" />
+          <script type="application/ld+json">{JSON.stringify(ownership)}</script>
         </Helmet>
       )}
 
@@ -1100,6 +1102,7 @@ export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
         </div>
       )}
       {!league && <XGTablesCard />}
+      {!league && <p className="mt-4 text-sm text-slate-400 leading-relaxed">Built by <Link to="/about" className="underline text-slate-300">Neil Macdonald</Link>, who runs <a href="https://www.sharpsidesoccer.com/" className="underline text-slate-300">Sharp Side Soccer</a> with Will White and also builds <a href="https://amiup.io/" className="underline text-slate-300">Am I Up</a> and <a href="https://www.xgtables.io/" className="underline text-slate-300">xGTables</a>.</p>}
     </div>
   );
 }

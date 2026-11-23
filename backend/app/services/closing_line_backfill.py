@@ -23,6 +23,7 @@ from datetime import timedelta
 
 import structlog
 from sqlalchemy import func
+from app.services.odds_quality import valid_book_sql
 from sqlalchemy.orm import Session
 
 from app.models import ClosingLine, Match
@@ -89,7 +90,7 @@ def fill_historical_prices(db: Session, leagues: list[str] | None = None) -> dic
             .join(Match, Match.id == ClosingLine.match_id)
             .filter(Match.sport_key == league)
             .filter(ClosingLine.market_type == MarketType.H2H)
-            .filter(ClosingLine.close_home.isnot(None))
+            .filter(valid_book_sql(ClosingLine.close_home, ClosingLine.close_draw, ClosingLine.close_away))
             .filter(ClosingLine.close_draw.isnot(None))
             .filter(ClosingLine.close_away.isnot(None))
             .all()

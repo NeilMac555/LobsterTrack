@@ -1,6 +1,6 @@
 """Refresh priced, confirmed league results independently of Telegram alerts."""
 from datetime import datetime, timedelta, timezone
-from math import isfinite
+from app.services.odds_quality import rejection_reason
 
 import httpx
 
@@ -49,7 +49,7 @@ def valid_close(close, match):
         return False
     ages = (captured_kickoff - captured_at, current_kickoff - captured_at)
     return (all(timedelta(0) < age <= timedelta(minutes=30) for age in ages)
-            and all(v is not None and isfinite(v) and v > 1 for v in (close.close_home, close.close_draw, close.close_away)))
+            and rejection_reason(close.close_home, close.close_draw, close.close_away) is None)
 
 
 def sync_league(db, league, events, now=None):

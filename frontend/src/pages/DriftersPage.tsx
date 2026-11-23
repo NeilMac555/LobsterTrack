@@ -1,3 +1,4 @@
+import PublicSummary from '../components/PublicSummary';
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 
@@ -146,10 +147,9 @@ export default function DriftersPage() {
         </div>
       </div>
 
-      {/* Full-page paywall for non-Pro users — Drifters is Pro-only.
-          We deliberately don't show stats / win-rate / league filter
-          to free users either; they're meaningful only with the team
-          rankings underneath. */}
+      {!league && !daysFilter && <PublicSummary page="drifters" />}
+
+      {/* The aggregate record is public; detailed rankings remain Pro. */}
       {!isSubscribed && (
         <div className="mb-6 sm:mb-8">
           <PaywallOverlay
@@ -181,7 +181,7 @@ export default function DriftersPage() {
           <div className="text-2xl sm:text-3xl font-mono font-bold tabular-nums tracking-tight text-emerald-400 leading-none mt-1.5">
             {data.win_rate !== null ? `${data.win_rate}%` : '—'}
           </div>
-          <div className="text-[10px] sm:text-xs text-slate-500 mt-1">hit rate vs. close</div>
+          <div className="text-[10px] sm:text-xs text-slate-500 mt-1">won after the drift</div>
         </div>
         <div className="bg-slate-800/80 rounded-xl border border-slate-700/60 px-3 sm:px-4 py-2.5 sm:py-3">
           <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">W / D / L</div>

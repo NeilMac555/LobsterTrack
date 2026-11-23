@@ -19,6 +19,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DIST = resolve(__dirname, '..', 'dist');
 const DOMAIN = 'https://www.steamwatch.io';
+const OWNERSHIP = JSON.parse(readFileSync(resolve(__dirname, '..', 'src', 'content', 'ownership.json'), 'utf-8'));
 const PRO = JSON.parse(readFileSync(resolve(__dirname, '..', 'src', 'content', 'pro.json'), 'utf-8'));
 
 // ---------------------------------------------------------------------------
@@ -400,29 +401,15 @@ ${PRO.faqs.map(([q, a]) => `<h3>${esc(q)}</h3><p>${esc(a)}</p>`).join('\n')}`,
     description:
       "Neil Mac is a football betting analyst with 20+ years' experience and 7,800+ tracked bets. He built SteamWatch to track steam moves and closing lines.",
     ogType: 'website',
-    jsonLd: {
-      '@context': 'https://schema.org',
-      '@type': 'Person',
-      name: 'Neil Mac',
-      alternateName: ['Neil Macdonald', 'Neil Mac Tips', 'NeilMac555', 'Bookie Insiders Football'],
-      url: `${DOMAIN}/about`,
-      jobTitle: 'Professional Football Betting Analyst',
-      knowsAbout: ['football betting', 'steam moves', 'sharp money', 'closing line value', 'Dixon-Coles model'],
-      sameAs: [
-        'https://x.com/NeilMac555',
-        'https://www.sharpsidesoccer.com/',
-'https://www.honestbettingreviews.com/best-football-tipster-telegram/',
-        'https://smartsportstrader.com/bookie-insiders-football-review/',
-        'https://www.bet-experts.com/tipster-review/neil-mac/',
-        'https://www.youtube.com/@neilmac555',
-      ],
-    },
+    jsonLd: OWNERSHIP,
     noscriptHtml: `<h1>About Neil Mac — Football Betting Analyst & SteamWatch Founder</h1>
 <p>Neil Mac is a professional football betting analyst with over 20 years of experience in sports betting markets. He has worked with Paddy Power, Oddschecker, and Covers.com.</p>
 <h2>Track Record</h2>
 <p>7,800+ bets tracked, +464 units profit, 4%+ ROI. All results independently tracked and publicly verifiable.</p>
 <h2>What is SteamWatch?</h2>
 <p>SteamWatch tracks sharp money movement across major European football betting markets using Pinnacle odds data updated every 15 minutes. Features include Biggest Movers, Syndicate Moves with Telegram alerts, Steam Results with P/L tracking, Closing Line Analysis, Rolling xG, and a Dixon-Coles Match Prediction Model.</p>
+<h2>Other projects</h2>
+<p>SteamWatch is built by <a href="/about">Neil Macdonald (Neil Mac)</a>, who runs <a href="https://www.sharpsidesoccer.com/">Sharp Side Soccer</a> with Will White and also builds <a href="https://amiup.io/">Am I Up</a> and <a href="https://www.xgtables.io/">xGTables</a>.</p>
 <h2>Find Neil Mac</h2>
 <ul>
 <li><a href="https://www.sharpsidesoccer.com/">Sharp Side Soccer (Substack)</a></li>
@@ -576,9 +563,10 @@ ${workedExample}
       keywords: ['drifters', 'odds drift', 'football betting', 'line movement'],
     },
     noscriptHtml: `<h1>Drifters | SteamWatch</h1>
+<div data-public-summary="drifters"><!--live-public-summary--></div>
 <p>Current-season team selections whose Pinnacle 1X2 price lengthened by at least 3 percentage points from the first recorded quote, observed in the final two hours before kickoff.</p>
 <p>Each team counts once per fixture, using its largest qualifying recorded move. P/L uses flat 1 unit stakes at that price. Draw selections are excluded; drawn matches lose a team win bet. Pending and interrupted fixtures are excluded from settled P/L.</p>
-<p>The interactive table refreshes every minute and on tab return, with league, minimum-sample and last-30-day filters. Enable JavaScript to load current totals. Team rankings require at least three settled selections.</p>
+<p>The interactive table refreshes every minute and on tab return, with league, minimum-sample and last-30-day filters. The public season summary is available without JavaScript. Team rankings require at least three settled selections.</p>
 <p>This describes all qualifying recorded team movements, independently of Telegram delivery. Largest-move returns are a descriptive record, not a first-alert betting strategy.</p>
 <p><a href="https://www.steamwatch.io/steam-results">Steam Results</a> · <a href="https://www.steamwatch.io/drifters">Drifters</a> · <a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
   },
@@ -1019,14 +1007,7 @@ writePage('', renderPage({
     description: 'Track the biggest odds moves and see what happened next. Real-time steam alerts, historical ROI, closing-line data and betting-market analysis for serious bettors.',
     url: `${DOMAIN}/`,
     jsonLd: [
-      {
-        '@context': 'https://schema.org', '@type': 'WebApplication', name: 'SteamWatch', url: DOMAIN,
-        description: 'Track the biggest odds moves across major football betting markets and see what happened next',
-        applicationCategory: 'SportsApplication', operatingSystem: 'Web',
-        sameAs: ['https://x.com/Steamwatchio', 'https://t.me/steamwatchalerts'],
-        offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
-        author: { '@type': 'Person', name: 'Neil Macdonald', url: `${DOMAIN}/about` },
-      },
+      OWNERSHIP,
       {
         '@context': 'https://schema.org', '@type': 'FAQPage',
         mainEntity: [
@@ -1039,6 +1020,7 @@ writePage('', renderPage({
     ],
   }),
   contentHtml: `<h1>Track the biggest odds moves. See what happened next.</h1>
+<p class="pr-meta">SteamWatch is built by <a href="/about">Neil Macdonald (Neil Mac)</a>, who runs <a href="https://www.sharpsidesoccer.com/">Sharp Side Soccer</a> with Will White and also builds <a href="https://amiup.io/">Am I Up</a> and <a href="https://www.xgtables.io/">xGTables</a>.</p>
 <p class="pr-lead">SteamWatch records Pinnacle football odds roughly every 15 minutes across Europe's major leagues, flags the significant pre-kickoff moves, and keeps a public record of how those moves performed.</p>
 <h2>What is on the site</h2>
 <ul>
