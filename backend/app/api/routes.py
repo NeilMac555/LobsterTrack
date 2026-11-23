@@ -215,7 +215,7 @@ async def get_power_ranking_history(team: str, db: Session = Depends(get_db)):
 
 
 @router.get("/matches", response_model=list[MatchSummary])
-async def get_matches(
+def get_matches(
     db: Session = Depends(get_db),
     league: Optional[str] = Query(None, description="Filter by sport_key"),
     upcoming_only: bool = Query(True, description="Only show future matches"),
@@ -248,125 +248,10 @@ async def get_matches(
 
     match_ids = [m.id for m in matches]
 
-    # Batch query: Get latest odds for all matches using window function.
-    # Filter to pre-game only — current odds shouldn't drift into in-play
-    # territory because Steam Results / Drifters / sparklines / movement
-    # math all assume pre-game-only inputs.
-    latest_subq = (
-        db.query(
-            OddsSnapshot.match_id,
-            OddsSnapshot.home_odds,
-            OddsSnapshot.draw_odds,
-            OddsSnapshot.away_odds,
-            OddsSnapshot.bookmaker,
-            func.row_number().over(
-                partition_by=OddsSnapshot.match_id,
-                order_by=OddsSnapshot.fetched_at.desc()
-            ).label('rn')
-        )
-        .filter(OddsSnapshot.match_id.in_(match_ids))
-        .filter(preferred_snapshot_sql(OddsSnapshot))  # noqa: E712
-        .subquery()
-    )
-
-    latest_odds_query = (
-        db.query(latest_subq)
-        .filter(latest_subq.c.rn == 1)
-        .all()
-    )
-    latest_odds_map = {
-        row.match_id: {
-            'home': row.home_odds,
-            'draw': row.draw_odds,
-            'away': row.away_odds,
-            'bookmaker': row.bookmaker,
-        }
-        for row in latest_odds_query
-    }
-
-    # Batch query: Get opening odds (first snapshot) for all matches.
-    # Pre-game only — opening price by definition.
-    opening_subq = (
-        db.query(
-            OddsSnapshot.match_id,
-            OddsSnapshot.home_odds,
-            OddsSnapshot.draw_odds,
-            OddsSnapshot.away_odds,
-            func.row_number().over(
-                partition_by=OddsSnapshot.match_id,
-                order_by=OddsSnapshot.fetched_at.asc()
-            ).label('rn')
-        )
-        .filter(OddsSnapshot.match_id.in_(match_ids))
-        .filter(preferred_snapshot_sql(OddsSnapshot))  # noqa: E712
-        .subquery()
-    )
-
-    opening_odds_query = (
-        db.query(opening_subq)
-        .filter(opening_subq.c.rn == 1)
-        .all()
-    )
-    opening_odds_map = {
-        row.match_id: {
-            'home': row.home_odds,
-            'draw': row.draw_odds,
-            'away': row.away_odds
-        }
-        for row in opening_odds_query
-    }
-
-    # Batch query: Get odds count for all matches. Pre-game only so the
-    # 'N snapshots' badge on each card reflects how rich the pre-match
-    # tracking history is (not contaminated by a handful of in-play rows).
-    odds_counts_query = (
-        db.query(
-            OddsSnapshot.match_id,
-            func.count(OddsSnapshot.id).label('count')
-        )
-        .filter(OddsSnapshot.match_id.in_(match_ids))
-        .filter(preferred_snapshot_sql(OddsSnapshot))  # noqa: E712
-        .group_by(OddsSnapshot.match_id)
-        .all()
-    )
-    odds_count_map = {row.match_id: row.count for row in odds_counts_query}
-
-    # Batch query: get the most recent N home_odds for each match to power
-    # inline sparklines on match cards. We keep this modest (N=12) to cap
-    # payload size — a dozen points is enough to show a trend.
-    # Pre-game only — Home Trend is a pre-match concept; an in-play snapshot
-    # mixed into the line would distort the visual.
-    SPARK_POINTS = 12
-    spark_subq = (
-        db.query(
-            OddsSnapshot.match_id,
-            OddsSnapshot.home_odds,
-            OddsSnapshot.fetched_at,
-            func.row_number().over(
-                partition_by=OddsSnapshot.match_id,
-                order_by=OddsSnapshot.fetched_at.desc()
-            ).label('rn')
-        )
-        .filter(OddsSnapshot.match_id.in_(match_ids))
-        .filter(OddsSnapshot.home_odds.isnot(None))
-        .filter(OddsSnapshot.home_odds > 0)
-        .filter(preferred_snapshot_sql(OddsSnapshot))  # noqa: E712
-        .subquery()
-    )
-    spark_rows = (
-        db.query(spark_subq)
-        .filter(spark_subq.c.rn <= SPARK_POINTS)
-        .order_by(spark_subq.c.match_id, spark_subq.c.fetched_at.asc())
-        .all()
-    )
-    # Group into a per-match list of home implied probabilities (0-100).
-    # Rising line = home being backed, falling = home drifting. Consistent
-    # with the green/red movement convention elsewhere on the site.
-    spark_map: dict[str, list[float]] = {}
-    for row in spark_rows:
-        spark_map.setdefault(row.match_id, []).append(
-            round((1.0 / row.home_odds) * 100, 2)
-        )
+    # The old implementation scanned and validated the same history four times.
+    # One ranked query supplies the opener, latest quote, count and 12-point trend.
+    from app.services.homepage_odds import match_odds_summary
+    latest_odds_map, opening_odds_map, odds_count_map, spark_map = match_odds_summary(db, match_ids)
 
     result = []
     for match in matches:
@@ -464,10 +349,13 @@ async def trigger_fetch():
 
 
 @router.get("/stats")
-async def get_stats(db: Session = Depends(get_db)):
+def get_stats(db: Session = Depends(get_db)):
     """
     Get overall statistics about tracked data.
     """
+    cached = _cache_get('stats')
+    if cached is not None:
+        return cached
     total_matches = db.query(func.count(Match.id)).scalar()
     total_snapshots = db.query(func.count(OddsSnapshot.id)).scalar()
     upcoming_matches = (
@@ -483,7 +371,7 @@ async def get_stats(db: Session = Depends(get_db)):
     oldest_snapshot = db.query(func.min(OddsSnapshot.fetched_at)).scalar()
     newest_snapshot = db.query(func.max(OddsSnapshot.fetched_at)).scalar()
 
-    return {
+    result = {
         "total_matches": total_matches,
         "upcoming_matches": upcoming_matches,
         "total_odds_snapshots": total_snapshots,
@@ -491,6 +379,8 @@ async def get_stats(db: Session = Depends(get_db)):
         "newest_data": newest_snapshot.isoformat() + "Z" if newest_snapshot else None,
         "tracked_leagues": list(settings.leagues.keys())
     }
+    _cache_put('stats', result)
+    return result
 
 
 @router.get("/in-play-jumps")
@@ -900,7 +790,7 @@ async def get_late_steam(
 
 
 @router.get("/biggest-movers", response_model=list[BiggestMover])
-async def get_biggest_movers(
+def get_biggest_movers(
     db: Session = Depends(get_db),
     limit: int = Query(4, le=50, description="Number of movers to return"),
     sport_key: Optional[str] = Query(None, description="Optional league filter — e.g. soccer_fifa_world_cup")
@@ -1067,39 +957,6 @@ def compute_biggest_movers(db: Session, limit: int = 4, sport_key: Optional[str]
         for match_id, baseline_t in baseline_totals.items()
     }
 
-    # === SPREADS (ASIAN HANDICAP) MARKET ===
-    latest_spreads_subq = (
-        db.query(
-            SpreadsSnapshot.match_id,
-            SpreadsSnapshot.line,
-            SpreadsSnapshot.home_odds,
-            SpreadsSnapshot.away_odds,
-            func.row_number().over(
-                partition_by=SpreadsSnapshot.match_id,
-                order_by=SpreadsSnapshot.fetched_at.desc()
-            ).label('rn')
-        )
-        .filter(SpreadsSnapshot.match_id.in_(match_ids))
-        .subquery()
-    )
-    latest_spreads = {row.match_id: row for row in db.query(latest_spreads_subq).filter(latest_spreads_subq.c.rn == 1).all()}
-
-    opening_spreads_subq = (
-        db.query(
-            SpreadsSnapshot.match_id,
-            SpreadsSnapshot.line,
-            SpreadsSnapshot.home_odds,
-            SpreadsSnapshot.away_odds,
-            func.row_number().over(
-                partition_by=SpreadsSnapshot.match_id,
-                order_by=SpreadsSnapshot.fetched_at.asc()
-            ).label('rn')
-        )
-        .filter(SpreadsSnapshot.match_id.in_(match_ids))
-        .subquery()
-    )
-    opening_spreads = {row.match_id: row for row in db.query(opening_spreads_subq).filter(opening_spreads_subq.c.rn == 1).all()}
-
     # Calculate movements for all outcomes across all markets
     # Only consider SHORTENING odds (being backed) — the side smart money is on
     movers = []
@@ -1156,12 +1013,6 @@ def compute_biggest_movers(db: Session, limit: int = 4, sport_key: Optional[str]
                             'movement_percent': pct,
                             'direction': 'down'
                         }
-
-        # Spreads (Asian Handicap) outcomes — disabled for now (line changes cause noise)
-        # latest_s = latest_spreads.get(match_id)
-        # opening_s = opening_spreads.get(match_id)
-        # if latest_s and opening_s:
-        #     ...
 
         if best_move and abs(best_pct) > 0.1:
             movers.append(best_move)
@@ -1255,7 +1106,7 @@ def compute_biggest_movers(db: Session, limit: int = 4, sport_key: Optional[str]
 
 
 @router.get("/syndicate-moves", response_model=list[SyndicateMove])
-async def get_syndicate_moves(
+def get_syndicate_moves(
     db: Session = Depends(get_db),
     limit: int = Query(4, le=20, description="Number of moves to return")
 ):

@@ -70,47 +70,53 @@ export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [moversState, setMoversState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [alertsState, setAlertsState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [showSteamGuide, setShowSteamGuide] = useState(false);
 
-  // Full-page data fetch — runs on mount and whenever the league filter changes.
+  // Independent sections: a slow statistics query must not hide fixtures or movers.
   useEffect(() => {
-    async function fetchData() {
+    let active = true;
+    function fetchData() {
       setLoading(true);
       setError(null);
-      try {
-        // Fetch all data in parallel for maximum speed. Biggest movers
-        // is now scoped to the active league filter so the WC default
-        // view gets its own Biggest Movers section instead of going
-        // dark whenever the filter is anything other than 'All'.
-        const [matchesData, statsData, moversData, syndicateData] = await Promise.all([
-          getMatches({ league: league || undefined, limit: 200 }),
-          getStats(),
-          getBiggestMovers(50, league || undefined),
-          league ? Promise.resolve([]) : getSyndicateMoves(4)
-        ]);
-        setMatches(league ? matchesData : matchesData.filter((match) => !LEAGUE_CONFIG[match.sport_key]?.hidden));
-        setBiggestMovers(league ? moversData : moversData.filter((move) => !LEAGUE_CONFIG[move.sport_key]?.hidden));
-        setSyndicateMoves(syndicateData);
-        setStats(statsData);
-        if (statsData.newest_data) {
-          setLastUpdated(new Date(statsData.newest_data));
-        }
-      } catch (err) {
-        setError('Failed to load data. Is the backend running?');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
+      setMatches([]);
+      setBiggestMovers([]);
+      setSyndicateMoves([]);
+      setMoversState('loading');
+      setAlertsState('loading');
+      void getMatches({ league: league || undefined, limit: 200 }).then((data) => {
+        if (active) setMatches(league ? data : data.filter((match) => !LEAGUE_CONFIG[match.sport_key]?.hidden));
+      }).catch(() => {
+        if (active) setError('Matches are temporarily unavailable. Please refresh to try again.');
+      }).finally(() => { if (active) setLoading(false); });
+      void getBiggestMovers(50, league || undefined).then((data) => {
+        if (!active) return;
+        setBiggestMovers(league ? data : data.filter((move) => !LEAGUE_CONFIG[move.sport_key]?.hidden));
+        setMoversState('ready');
+      }).catch(() => { if (active) setMoversState('error'); });
+      void (league ? Promise.resolve([]) : getSyndicateMoves(4)).then((data) => {
+        if (!active) return;
+        setSyndicateMoves(data);
+        setAlertsState('ready');
+      }).catch(() => { if (active) setAlertsState('error'); });
+      void getStats().then((data) => {
+        if (!active) return;
+        setStats(data);
+        if (data.newest_data) setLastUpdated(new Date(data.newest_data));
+      }).catch(() => { /* Statistics are supplementary; never block the market. */ });
     }
-    fetchData();
+    void fetchData();
+    return () => { active = false; };
   }, [league]);
 
   // Keep the stat strip honest even when the page has been open a while.
   // Every 60s: re-fetch stats + top mover so "LAST FETCH" reflects real time.
-  // Every 10s: tick a dummy state to force the "X ago" label to recompute.
-  const [, setClockTick] = useState(0);
+  // Every 10s: update the clock for the age label and upcoming-move window.
+  const [clockNow, setClockNow] = useState(() => Date.now());
   useEffect(() => {
+    let active = true;
     // Periodic refresh now runs for any league filter so the WC default
     // view (and any other future filter) keeps its movers + stats in
     // sync without forcing a full reload.
@@ -120,7 +126,9 @@ export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
           getStats(),
           getBiggestMovers(50, league || undefined),
         ]);
+        if (!active) return;
         setStats(statsData);
+        setMoversState('ready');
         setBiggestMovers(league ? moversData : moversData.filter((move) => !LEAGUE_CONFIG[move.sport_key]?.hidden));
         if (statsData.newest_data) {
           setLastUpdated(new Date(statsData.newest_data));
@@ -131,8 +139,9 @@ export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
     };
 
     const statsInterval = setInterval(refreshStats, 60 * 1000);
-    const clockInterval = setInterval(() => setClockTick(t => t + 1), 10 * 1000);
+    const clockInterval = setInterval(() => setClockNow(Date.now()), 10 * 1000);
     return () => {
+      active = false;
       clearInterval(statsInterval);
       clearInterval(clockInterval);
     };
@@ -142,7 +151,7 @@ export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
   const leagueConfig = league ? LEAGUE_CONFIG[league] : null;
   const marketMovers = useMemo(() => biggestMovers.slice(0, 4), [biggestMovers]);
   const topMover = useMemo(() => {
-    const now = Date.now();
+    const now = clockNow;
     const threeDaysFromNow = now + (3 * 24 * 60 * 60 * 1000);
 
     // The API returns movers ordered by movement size, so the first
@@ -151,29 +160,7 @@ export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
       const kickoff = new Date(mover.commence_time).getTime();
       return Number.isFinite(kickoff) && kickoff >= now && kickoff <= threeDaysFromNow;
     }) ?? null;
-  }, [biggestMovers]);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="flex items-center gap-3">
-          <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-slate-400">Loading matches...</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 text-center">
-        <p className="text-red-400">{error}</p>
-        <p className="text-slate-500 mt-2 text-sm">
-          Make sure the backend is running at http://localhost:8000
-        </p>
-      </div>
-    );
-  }
+  }, [biggestMovers, clockNow]);
 
   if (!leagueKey && legacyLeague && LEAGUE_SLUGS[legacyLeague]) {
     return <Navigate to={leaguePath(legacyLeague)} replace />;
@@ -250,7 +237,11 @@ export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
               </span>
             </div>
-            {topMover ? (() => {
+            {moversState !== 'ready' ? (
+              <p role="status" className="py-6 text-sm text-slate-300">
+                {moversState === 'loading' ? 'Loading market moves…' : 'Market moves are temporarily unavailable.'}
+              </p>
+            ) : topMover ? (() => {
               const mover = topMover;
               const shortening = mover.direction === 'down';
               const selectionBadgeUrl = mover.outcome === 'home'
@@ -414,7 +405,7 @@ export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
                   <div className="text-lg sm:text-2xl font-mono font-bold text-slate-600 leading-none mt-2 sm:mt-1.5">—</div>
                 );
               }
-              const ageSeconds = Math.floor((Date.now() - lastUpdated!.getTime()) / 1000);
+              const ageSeconds = Math.floor((clockNow - lastUpdated!.getTime()) / 1000);
               // Anything > 30 min = almost certainly a quiet window or outage;
               // display "Live" so users don't see stale numbers.
               if (ageSeconds > 30 * 60) {
@@ -847,7 +838,11 @@ export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
             <span className="hidden sm:inline-block text-[10px] font-mono uppercase tracking-[0.12em] text-amber-400/80 font-semibold">Within 16h · 4pp+ move</span>
           </div>
 
-          {syndicateMoves.length === 0 ? (
+          {alertsState !== 'ready' ? (
+            <p role="status" className="px-6 py-8 text-center text-sm text-slate-300">
+              {alertsState === 'loading' ? 'Loading Telegram alerts…' : 'Telegram alerts are temporarily unavailable.'}
+            </p>
+          ) : syndicateMoves.length === 0 ? (
             <div className="px-6 py-8 text-center">
               <p className="text-slate-500 text-sm">No upcoming Telegram alerts</p>
               <p className="text-slate-600 text-xs mt-1 font-mono tracking-tight">Confirmed alerts appear here after they are sent</p>
@@ -1048,7 +1043,7 @@ export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
             <div className="min-w-0">
               <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight truncate">{leagueConfig.name}</h2>
               <p className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold mt-0.5 tabular-nums">
-                {matches.length} upcoming match{matches.length !== 1 ? 'es' : ''} · Live odds
+                {loading ? 'Loading fixtures…' : error ? 'Fixtures unavailable' : `${matches.length} upcoming match${matches.length !== 1 ? 'es' : ''} · Live odds`}
               </p>
             </div>
           </div>
@@ -1056,14 +1051,18 @@ export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">All Matches</h2>
             <p className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold mt-0.5 tabular-nums">
-              {matches.length} upcoming match{matches.length !== 1 ? 'es' : ''} · Live odds
+              {loading ? 'Loading fixtures…' : error ? 'Fixtures unavailable' : `${matches.length} upcoming match${matches.length !== 1 ? 'es' : ''} · Live odds`}
             </p>
           </div>
         )}
       </div>
 
       {/* Matches by Day */}
-      {groupedMatches.length === 0 ? (
+      {loading || error ? (
+        <div className="min-h-64 rounded-xl border border-slate-700/50 bg-slate-800/50 p-8 sm:p-16 text-center">
+          <p role="status" className="text-slate-300">{error || 'Loading matches…'}</p>
+        </div>
+      ) : groupedMatches.length === 0 ? (
         <div className="bg-slate-800/50 rounded-2xl border border-slate-700/50 p-8 sm:p-16 text-center">
           <p className="text-slate-400 text-base sm:text-lg">No upcoming matches found</p>
         </div>

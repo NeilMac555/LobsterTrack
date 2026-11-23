@@ -158,7 +158,7 @@ class OddsQualityTests(unittest.TestCase):
         self.assertEqual(detail.odds_history[0].home_odds, 1.8)
         self.assertEqual(detail.current_odds_bookmaker, 'pinnacle')
         _RESPONSE_CACHE.clear()
-        result = asyncio.run(get_matches(self.db, league=None, upcoming_only=False, limit=50, offset=0))
+        result = get_matches(self.db, league=None, upcoming_only=False, limit=50, offset=0)
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].opening_home_odds, 1.8)
 

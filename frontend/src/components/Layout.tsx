@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, Suspense } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { VISIBLE_LEAGUES, leaguePath, leagueKeyFromSlug } from '../types';
 import LeagueLogo from './LeagueLogo';
@@ -679,7 +679,9 @@ export default function Layout() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
         <ProSessionIntro />
         <CheckoutSuccessBanner />
-        <Outlet />
+        <Suspense fallback={<p role="status" className="py-16 text-center text-slate-300">Loading page…</p>}>
+          <Outlet />
+        </Suspense>
       </main>
 
       {/* Footer */}
