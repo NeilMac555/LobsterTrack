@@ -12,6 +12,7 @@ from sqlalchemy import text
 
 from app.config import get_settings
 from app.canonical_host import CanonicalHostMiddleware
+from app.legacy_routes import legacy_router
 from app.models.database import Base, engine
 from app.api import router
 from app.models import get_db
@@ -225,6 +226,7 @@ async def redirect_trailing_slash(request: Request, call_next):
 
 # Include API routes
 app.add_middleware(CanonicalHostMiddleware)
+app.include_router(legacy_router)
 app.include_router(router, prefix="/api")
 from app.api.manager_ratings import manager_ratings_router
 app.include_router(manager_ratings_router, prefix="/api")
@@ -360,12 +362,13 @@ if os.path.exists(static_dir):
             if _slug:
                 return RedirectResponse(f"/league/{_slug}", status_code=301)
         canonical = path.removesuffix("/index.html")
+        page_headers = {"X-Robots-Tag": "noindex, follow"} if canonical == "in-play-jumps" else {}
         if canonical in SUMMARY_PAGES and full_path != canonical:
             return RedirectResponse(str(request.url.replace(path="/" + canonical)), status_code=308)
         if path:
             static_file = safe_static_path(static_dir, path)
             if os.path.isfile(static_file):
-                return FileResponse(static_file)
+                return FileResponse(static_file, headers=page_headers)
         prerendered = safe_static_path(static_dir, str(Path(path) / "index.html")) if path else Path(static_dir) / "index.html"
         if not path and os.path.isfile(prerendered):
             # Homepage: prerendered copy plus the upcoming fixtures as plain
@@ -379,7 +382,7 @@ if os.path.exists(static_dir):
                 db.close()
             return HTMLResponse(html, headers={"Cache-Control": "public, max-age=300"})
         if os.path.isfile(prerendered):
-            return FileResponse(prerendered)
+            return FileResponse(prerendered, headers=page_headers)
 
         if path.startswith("league/") and path.count("/") == 1:
             from app.models.database import SessionLocal

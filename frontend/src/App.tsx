@@ -18,7 +18,6 @@ import LeaguePage from './pages/LeaguePage';
 import GoalsComingSoonPage from './pages/GoalsComingSoonPage';
 import JusticeTablePage from './pages/JusticeTablePage';
 import ClosingLinesPage from './pages/ClosingLinesPage';
-import CLClosingLinesPage from './pages/CLClosingLinesPage';
 import AdminEmailsPage from './pages/AdminEmailsPage';
 import AuthVerifyPage from './pages/AuthVerifyPage';
 import AboutPage from './pages/AboutPage';
@@ -55,14 +54,14 @@ function App() {
               <Route path="justice-table" element={<JusticeTablePage />} />
               <Route path="drifters" element={<DriftersPage />} />
               <Route path="closing-lines" element={<ClosingLinesPage />} />
-              <Route path="cl-closing-lines" element={<CLClosingLinesPage />} />
+              <Route path="cl-closing-lines" element={<Navigate to="/closing-lines?league=soccer_uefa_champs_league" replace />} />
               <Route path="team-pnl" element={<TeamPLPage />} />
               {/* Power Rankings hidden 2026-08-15 per Neil after the deploy
                   outage — parked, not deleted (the fitter, API routes and
                   data all remain; the weekly refresh job is paused in
                   scheduler.py). Restore the PowerRankingsPage import + this
                   route + the Layout.tsx nav entries to re-enable. */}
-              <Route path="power-rankings" element={<Navigate to="/" replace />} />
+              <Route path="power-rankings" element={<Navigate to="/tools/club-ratings" replace />} />
               <Route path="in-play-jumps" element={<InPlayJumpsPage />} />
               <Route path="longshot-bias" element={<LongshotBiasPage />} />
               {/* Short-lived original URL for this page (renamed same day). */}

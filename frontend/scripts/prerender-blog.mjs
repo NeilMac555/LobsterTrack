@@ -442,32 +442,7 @@ ${PRO.faqs.map(([q, a]) => `<h3>${esc(q)}</h3><p>${esc(a)}</p>`).join('\n')}`,
 <h2>How to read the numbers</h2>
 <p>All prices are decimal. The implied probability of a price is 100 divided by the price. The three 1X2 implied probabilities sum to a little over 100%, and the excess is Pinnacle's margin, typically two to three points on these leagues. Open-to-close movement is best read in implied-probability points rather than raw odds: 1.50 to 1.40 adds 4.76 percentage points, while 5.00 to 4.00 adds 5.00 points. The <a href="/blog/how-to-read-closing-lines-in-football-betting">guide to reading closing lines</a> covers this in more detail, and <a href="/blog/what-is-closing-line-value-in-football-betting">closing line value</a> explains why the close is the benchmark most bettors measure against.</p>
 <h2>Current coverage</h2>
-<p>Leagues covered: Premier League, EFL Championship, La Liga, Bundesliga, Serie A, Ligue 1, Champions League, Europa League, Conference League and the UEFA Nations League. The Champions League has its own view at <a href="/cl-closing-lines">Champions League Closing Lines</a>.</p>`,
-  },
-  {
-    path: 'cl-closing-lines',
-    title: 'Champions League Closing Lines | SteamWatch',
-    description:
-      'Pinnacle closing 1X2, Asian handicap and totals prices for every Champions League match tracked, with the opening price beside each close.',
-    ogType: 'website',
-    jsonLd: {
-      '@context': 'https://schema.org',
-      '@type': 'Dataset',
-      name: 'SteamWatch Champions League Closing Lines',
-      description:
-        'Opening vs closing odds for Champions League matches',
-      url: `${DOMAIN}/cl-closing-lines`,
-      temporalCoverage: '2025/..',
-      creator: { '@type': 'Organization', name: 'SteamWatch', url: DOMAIN },
-    },
-    noscriptHtml: `<h1>Champions League Closing Lines</h1>
-<p class="pr-lead">The Champions League slice of the closing-line archive. For each match in the competition SteamWatch has tracked, it lists the last Pinnacle price recorded before kickoff on the 1X2 market, the Asian handicap and the totals market, with the opening price alongside.</p>
-<h2>Where the data comes from</h2>
-<p>Prices are Pinnacle's, via The Odds API, requested every 15 minutes from the moment a fixture is listed, every 10 minutes inside two hours of kickoff and every two minutes in the last half hour. Every snapshot is stored, and the close is the final one before the recorded kickoff time. European fixtures are listed later than domestic ones, so the opening price here is usually a few days before the match rather than a week or more, and open-to-close movement is correspondingly smaller. Capture began in February 2026, so the archive starts at the 2025/26 knockout rounds, and the 2026/27 league phase is added matchday by matchday.</p>
-<h2>How to read the numbers</h2>
-<p>Prices are decimal. Implied probability is 100 divided by the price, and the Champions League 1X2 market carries a Pinnacle margin of around two to three points. The Asian handicap line is shown from the home side's perspective with both prices. The totals line is the main line at close with its over and under prices. Movement is best compared in implied-probability points: a shortening of 0.10 on a 1.50 favourite is a bigger move than the same 0.10 on a 4.00 outsider.</p>
-<h2>Current coverage</h2>
-<p>{{HEADLINE}} The archive for the domestic leagues is at <a href="/closing-lines">Closing Lines</a>. How the market has treated European favourites and underdogs will join <a href="/longshot-bias">Longshot Bias</a> once the sample justifies it.</p>`,
+<p>Leagues covered: Premier League, EFL Championship, La Liga, Bundesliga, Serie A, Ligue 1, Champions League, Europa League, Conference League and the UEFA Nations League. Use the <a href="/closing-lines?league=soccer_uefa_champs_league">Champions League filter</a> to view its archive.</p>`,
   },
   {
     path: 'tools/match-predictor',
@@ -634,6 +609,7 @@ ${workedExample}
 PAGES.push(
   {
     path: 'in-play-jumps',
+    robots: 'noindex, follow',
     title: 'In-Play Jumps: Pinnacle Close vs Polymarket | SteamWatch',
     description:
       'The gap between the Pinnacle closing line and Polymarket\'s first five minutes of in-play trading, match by match, in implied-probability points.',
@@ -735,10 +711,6 @@ const today = new Date().toISOString().slice(0, 10);
 const fmtN = (n) => Number(n).toLocaleString('en-GB');
 const HEADLINE = {};
 {
-  const ucl = await fetchJson('/api/closing-lines?league=soccer_uefa_champs_league&limit=1');
-  HEADLINE['cl-closing-lines'] = ucl?.total
-    ? `As of ${today}, ${fmtN(ucl.total)} Champions League closing lines are on record.`
-    : 'The archive grows with every finished Champions League match.';
   const pnl = await fetchJson('/api/team-pnl?league=soccer_epl');
   const allRows = (pnl?.rows || []).filter((r) => r.season === 'all' && r.back?.overall?.matches >= 100);
   const best = allRows.sort((a, b) => b.back.overall.roi - a.back.overall.roi)[0];
@@ -829,7 +801,6 @@ const TOOL_LINKS = [
   ['/tools/form-lab', 'Form Lab'],
   ['/tools/club-ratings', 'Club Ratings'],
   ['/tools/manager-ratings', 'Manager Ratings'],
-  ['/in-play-jumps', 'In-Play Jumps'],
 ];
 
 const SHELL_CSS = `
@@ -878,8 +849,8 @@ const NAV_HTML = `<header class="pr-header"><div class="pr-wrap pr-bar">
 </div></header>`;
 
 const FOOTER_HTML = `<footer class="pr-footer"><div class="pr-cols">
-<div><h4>Data</h4>${[['/', 'Live odds & biggest movers'], ['/steam-results', 'Steam Results'], ['/dropping-odds', 'Dropping Odds'], ['/goals-coming-soon', 'Goals Coming Soon'], ['/justice-table', 'Justice Table'], ['/drifters', 'Drifters'], ['/closing-lines', 'Closing Lines'], ['/cl-closing-lines', 'Champions League Closing Lines'], ['/team-pnl', 'Team P/L'], ['/longshot-bias', 'Longshot Bias']].map(([h, t]) => `<a href="${h}">${t}</a>`).join('')}</div>
-<div><h4>Leagues</h4><a href="/league/premier-league">Premier League</a><a href="/league/championship">EFL Championship</a><a href="/league/la-liga">La Liga</a><a href="/league/bundesliga">Bundesliga</a><a href="/league/ligue-1">Ligue 1</a><a href="/league/serie-a">Serie A</a><a href="/league/champions-league">Champions League</a><a href="/league/europa-league">Europa League</a><a href="/league/conference-league">Conference League</a><a href="/league/nations-league">UEFA Nations League</a></div>
+<div><h4>Data</h4>${[['/', 'Live odds & biggest movers'], ['/steam-results', 'Steam Results'], ['/dropping-odds', 'Dropping Odds'], ['/goals-coming-soon', 'Goals Coming Soon'], ['/justice-table', 'Justice Table'], ['/drifters', 'Drifters'], ['/closing-lines', 'Closing Lines'], ['/team-pnl', 'Team P/L'], ['/longshot-bias', 'Longshot Bias']].map(([h, t]) => `<a href="${h}">${t}</a>`).join('')}</div>
+<div><h4>Leagues</h4><a href="/league/premier-league">Premier League</a><a href="/league/championship">EFL Championship</a><a href="/league/la-liga">La Liga</a><a href="/league/bundesliga">Bundesliga</a><a href="/league/ligue-1">Ligue 1</a><a href="/league/serie-a">Serie A</a><a href="/league/champions-league">Champions League</a><a href="/league/europa-league">Europa League</a><a href="/league/conference-league">Conference League</a></div>
 <div><h4>Tools</h4>${TOOL_LINKS.map(([h, t]) => `<a href="${h}">${t}</a>`).join('')}</div>
 <div><h4>Blog</h4>${POSTS.map((p) => `<a href="/blog/${p.slug}">${esc(p.title)}</a>`).join('')}<a href="/blog">All posts</a></div>
 <div><h4>SteamWatch</h4><a href="/pro">SteamWatch Pro membership</a><a href="/about">About Neil Mac</a><a href="https://t.me/steamwatchalerts">Free Telegram alerts</a><a href="https://x.com/Steamwatchio">@Steamwatchio on X</a></div>
@@ -983,7 +954,7 @@ console.log(`Pre-rendered ${POSTS.length} blog page(s).`);
 // ---------------------------------------------------------------------------
 for (const page of PAGES) {
   writePage(page.path, renderPage({
-    head: headTags({ title: page.title, description: page.description, url: `${DOMAIN}/${page.path}`, ogType: page.ogType, jsonLd: page.jsonLd }),
+    head: headTags({ title: page.title, description: page.description, url: `${DOMAIN}/${page.path}`, ogType: page.ogType, jsonLd: page.jsonLd, robots: page.robots }),
     contentHtml: page.noscriptHtml.replace('{{HEADLINE}}', HEADLINE[page.path] ?? ''),
   }));
 }

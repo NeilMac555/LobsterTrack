@@ -37,24 +37,28 @@ const tools: Array<{
   isNew?: boolean;
   onClick?: () => void;
 }> = [
+  // Forecast Engine hidden from nav 2026-08-05 while the player-level
+  // (top-scorer) work is in progress — route redirects to home. Re-add
+  // this entry and the App.tsx route to bring it back.
+  { name: 'Match Model', path: '/tools/match-predictor', icon: '⚽' },
+  { name: 'Form Lab', path: '/tools/form-lab', icon: 'FL' },
+  { name: 'Research Lab', path: '/tools/research-lab', icon: 'RL', isNew: true },
+  { name: 'Rolling xG', path: '/tools/rolling-xg', icon: '📊' },
+  { name: 'Manager Ratings', path: '/tools/manager-ratings', icon: '↗', reloadDocument: true },
+  { name: 'Club Ratings', path: '/tools/club-ratings', icon: '🏆' },
+  { name: 'xGTables — Football xG', path: xgTablesUrl('tools-menu'), icon: 'xG', external: true, onClick: () => trackXGTablesClick('tools-menu') },
   {
     name: 'AI Bet Tracker',
     path: 'https://amiup.io/?utm_source=steamwatch&utm_medium=cross-promo&utm_campaign=tools',
     icon: '🤖',
     external: true,
   },
-  // Forecast Engine hidden from nav 2026-08-05 while the player-level
-  // (top-scorer) work is in progress — route redirects to home. Re-add
-  // this entry and the App.tsx route to bring it back.
+];
+
+// Calculators remain public and discoverable without crowding the main menu.
+const calculators = [
   { name: 'Bet Calculator', path: '/tools/bet-calculator', icon: '🎫' },
   { name: 'Hedging Calculator', path: '/tools/hedge-calculator', icon: '🧮' },
-  { name: 'Match Model', path: '/tools/match-predictor', icon: '⚽' },
-  { name: 'Form Lab', path: '/tools/form-lab', icon: 'FL' },
-  { name: 'Research Lab', path: '/tools/research-lab', icon: 'RL', isNew: true },
-  { name: 'Rolling xG', path: '/tools/rolling-xg', icon: '📊' },
-  { name: 'xGTables — Football xG', path: xgTablesUrl('tools-menu'), icon: 'xG', external: true, onClick: () => trackXGTablesClick('tools-menu') },
-  { name: 'Manager Ratings', path: '/tools/manager-ratings', icon: '↗', reloadDocument: true },
-  { name: 'Club Ratings', path: '/tools/club-ratings', icon: '🏆' },
 ];
 
 export default function Layout() {
@@ -696,7 +700,7 @@ export default function Layout() {
             </div>
             {[
               { title: 'Markets', links: [{ name: 'Live odds', path: '/' }, ...results] },
-              { title: 'Tools', links: tools.filter((t) => !t.external) },
+              { title: 'Tools', links: [...tools.filter((t) => !t.external), ...calculators] },
               { title: 'Leagues', links: leagues.map(([key, cfg]) => ({ name: cfg.name, path: leaguePath(key) })) },
               { title: 'SteamWatch', links: [
                 { name: 'Pro membership', path: '/pro' }, { name: 'Pro demo', path: '/pro/demo' },

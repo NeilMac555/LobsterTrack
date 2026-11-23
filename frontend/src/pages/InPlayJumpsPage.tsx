@@ -143,6 +143,7 @@ export default function InPlayJumpsPage() {
         <title>In-Play Jumps: Pinnacle Close vs Polymarket | SteamWatch</title>
         <meta name="description" content="The gap between the Pinnacle closing line and Polymarket's first five minutes of in-play trading, match by match, in implied-probability points." />
         <link rel="canonical" href="https://www.steamwatch.io/in-play-jumps" />
+        <meta name="robots" content="noindex, follow" />
       </Helmet>
 
       {/* Header */}

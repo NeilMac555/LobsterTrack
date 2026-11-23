@@ -89,8 +89,8 @@ export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
           getBiggestMovers(50, league || undefined),
           league ? Promise.resolve([]) : getSyndicateMoves(4)
         ]);
-        setMatches(matchesData);
-        setBiggestMovers(moversData);
+        setMatches(league ? matchesData : matchesData.filter((match) => !LEAGUE_CONFIG[match.sport_key]?.hidden));
+        setBiggestMovers(league ? moversData : moversData.filter((move) => !LEAGUE_CONFIG[move.sport_key]?.hidden));
         setSyndicateMoves(syndicateData);
         setStats(statsData);
         if (statsData.newest_data) {
@@ -121,7 +121,7 @@ export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
           getBiggestMovers(50, league || undefined),
         ]);
         setStats(statsData);
-        setBiggestMovers(moversData);
+        setBiggestMovers(league ? moversData : moversData.filter((move) => !LEAGUE_CONFIG[move.sport_key]?.hidden));
         if (statsData.newest_data) {
           setLastUpdated(new Date(statsData.newest_data));
         }

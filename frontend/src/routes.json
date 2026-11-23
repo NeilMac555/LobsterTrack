@@ -5,9 +5,7 @@
     "steam-results",
     "drifters",
     "closing-lines",
-    "cl-closing-lines",
     "team-pnl",
-    "in-play-jumps",
     "longshot-bias",
     "tools/hedge-calculator",
     "tools/bet-calculator",
@@ -28,13 +26,15 @@
   ],
   "internal": [
     "auth/verify",
-    "admin/emails"
+    "admin/emails",
+    "in-play-jumps"
   ],
   "redirects": [
     "power-rankings",
     "favs-dogs",
     "tools/forecast",
-    "tools/world-cup"
+    "tools/world-cup",
+    "cl-closing-lines"
   ],
   "static_only": [
     "tools/manager-ratings"
