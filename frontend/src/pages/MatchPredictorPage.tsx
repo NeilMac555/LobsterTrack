@@ -422,8 +422,8 @@ export default function MatchPredictorPage() {
   return (
     <div className="max-w-7xl mx-auto">
       <Helmet>
-        <title>Dixon-Coles Football Calculator &amp; Fair Odds | SteamWatch</title>
-        <meta name="description" content="Generate match probability predictions using the SteamWatch Dixon-Coles adjusted Poisson model. Fair odds for 1X2, Asian Handicap, and Totals markets." />
+        <title>Dixon-Coles Football Model &amp; Calculator | SteamWatch</title>
+        <meta name="description" content="Use the Dixon-Coles football model and calculator to turn team xG into match probabilities and fair odds for 1X2, BTTS, Asian handicaps and totals." />
         <link rel="canonical" href="https://www.steamwatch.io/tools/match-predictor" />
       </Helmet>
       {/* Page Header */}
@@ -432,7 +432,7 @@ export default function MatchPredictorPage() {
           <div className="w-1 h-10 sm:h-11 rounded-full bg-gradient-to-b from-red-400 to-red-600 flex-shrink-0" />
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Dixon–Coles Football Calculator</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Dixon-Coles Football Model &amp; Calculator</h1>
               <span className="px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.12em] bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded">Beta</span>
             </div>
             <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em]">Dixon-Coles Probability Baseline</p>

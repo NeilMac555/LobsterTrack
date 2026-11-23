@@ -484,21 +484,21 @@ ${PRO.faqs.map(([q, a]) => `<h3>${esc(q)}</h3><p>${esc(a)}</p>`).join('\n')}`,
   },
   {
     path: 'tools/match-predictor',
-    title: 'Dixon-Coles Football Calculator & Fair Odds | SteamWatch',
+    title: 'Dixon-Coles Football Model & Calculator | SteamWatch',
     description:
-      'Dixon-Coles match model: enter xG form for two teams and get 1X2, correct score and totals probabilities with fair odds, top five leagues.',
+      'Use the Dixon-Coles football model and calculator to turn team xG into match probabilities and fair odds for 1X2, BTTS, Asian handicaps and totals.',
     ogType: 'website',
     jsonLd: {
       '@context': 'https://schema.org',
       '@type': 'WebApplication',
-      name: 'SteamWatch Match Predictor',
+      name: 'Dixon-Coles Football Model & Calculator | SteamWatch',
       url: `${DOMAIN}/tools/match-predictor`,
       description:
         'Dixon-Coles adjusted Poisson model for football match probability predictions',
       applicationCategory: 'SportsApplication',
       operatingSystem: 'Web',
     },
-    noscriptHtml: `<h1>Dixon–Coles Football Calculator</h1>
+    noscriptHtml: `<h1>Dixon-Coles Football Model &amp; Calculator</h1>
 <p class="pr-lead">The Match Predictor turns two teams' expected-goals form into match probabilities using a Dixon-Coles model, a Poisson goals model corrected for its under-prediction of low-scoring draws. It returns probabilities and fair decimal odds for the 1X2 market, the most likely correct scores and the over and under lines.</p>
 <h2>What goes in</h2>
 <p>Use each team's last 20 completed league matches, home and away combined. Continue into the previous season if needed. Enter xG for and against per match, goals conceded per match and games sampled. Use the same sample for penalties, set pieces and shots. The optional recent-form adjustment uses the last six league matches.</p>
