@@ -20,6 +20,7 @@ import time
 import httpx
 import structlog
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response
+from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_user
@@ -207,16 +208,39 @@ async def telegram_channel_admin(
     return out
 
 
-@router.post("/admin/email-pro-members")
-async def email_pro_members(
+@router.post("/admin/email-broadcast")
+async def email_broadcast(
     password: str = Query(..., description="Admin password"),
     campaign: str = Query(...),
     mode: str = Query("preview", description="preview (nothing sent), test (one copy to the admin address) or send"),
     db: Session = Depends(get_db),
 ):
-    """Send an approved one-off email to active Pro members. See services/member_broadcast."""
+    """Send an approved one-off email campaign. See services/member_broadcast."""
     from app.api.routes import ADMIN_PASSWORD
     from app.services.member_broadcast import run
     if password != ADMIN_PASSWORD:
         raise HTTPException(status_code=401, detail="Invalid password")
     return await run(db, campaign, mode)
+
+
+_UNSUB_PAGE = (
+    "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"robots\" content=\"noindex\">"
+    "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>SteamWatch email preferences</title></head>"
+    "<body style=\"font-family:-apple-system,Segoe UI,Arial,sans-serif;background:#0d1418;color:#e2e8f0;"
+    "max-width:480px;margin:80px auto;padding:0 20px;line-height:1.5;\"><h1 style=\"font-size:20px;\">{title}</h1>"
+    "<p>{body}</p><p><a href=\"https://www.steamwatch.io\" style=\"color:#22d3ee;\">Back to SteamWatch</a></p></body></html>"
+)
+
+
+@router.api_route("/unsubscribe", methods=["GET", "POST"], include_in_schema=False)
+def unsubscribe_email(r: str = Query(""), s: str = Query(""), db: Session = Depends(get_db)):
+    """One-click opt-out from marketing email. GET is the link in the email;
+    POST is what mail apps send for their own Unsubscribe button."""
+    from app.services.member_broadcast import unsubscribe
+    if unsubscribe(db, r, s):
+        return HTMLResponse(_UNSUB_PAGE.format(
+            title="You're unsubscribed",
+            body="You won't get any more marketing emails from SteamWatch. Login links and payment receipts still arrive as normal."))
+    return HTMLResponse(_UNSUB_PAGE.format(
+        title="That link didn't work",
+        body="Reply to the email you received and you'll be taken off the list by hand."), status_code=400)
