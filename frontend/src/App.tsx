@@ -48,6 +48,7 @@ function App() {
               <Route path="match/:matchId" element={<MatchDetailPage />} />
               <Route path="steam-results" element={<SteamResultsPage />} />
               <Route path="dropping-odds" element={<DroppingOddsPage />} />
+              <Route path="dropping-odds/:league" element={<DroppingOddsPage />} />
               <Route path="league/:slug" element={<LeaguePage />} />
               <Route path="goals-coming-soon" element={<Navigate to="/tools/rolling-xg" replace />} />
               <Route path="justice-table" element={<Navigate to="/tools/rolling-xg" replace />} />

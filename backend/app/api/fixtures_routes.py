@@ -19,6 +19,18 @@ def get_league(slug: str, db: Session = Depends(get_db)):
     return fx.league_fixtures(db, key)
 
 
+@fixtures_router.get("/dropping-odds/{slug}")
+def get_dropping_odds_league(slug: str, db: Session = Depends(get_db)):
+    """Title and commentary for /dropping-odds/<slug>, the same content the
+    server-rendered page uses (services/dropping_odds_page.league_content)."""
+    from app.services.dropping_odds_page import league_content, page_leagues
+    content = league_content(db, slug)
+    if not content:
+        raise HTTPException(status_code=404, detail="Unknown league")
+    leagues = [{"slug": fx.LEAGUES[k][0], "name": fx.LEAGUES[k][1]} for k in page_leagues(db)]
+    return {**content, "leagues": leagues}
+
+
 @fixtures_router.get("/related/{match_id}")
 def get_related(match_id: str, db: Session = Depends(get_db)):
     """Other matches in the same competition around the same date, plus the

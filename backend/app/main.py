@@ -406,6 +406,18 @@ if os.path.exists(static_dir):
                 db.close()
             return HTMLResponse(html, headers={"Cache-Control": "public, max-age=300"})
 
+        if path.startswith("dropping-odds/") and path.count("/") == 1:
+            from app.models.database import SessionLocal
+            from app.services.dropping_odds_page import render_dropping_odds_league_page
+            db = SessionLocal()
+            try:
+                html = render_dropping_odds_league_page(db, path.split("/", 1)[1])
+            finally:
+                db.close()
+            if html is None:
+                return _not_found_response()
+            return HTMLResponse(html, headers={"Cache-Control": "public, max-age=300"})
+
         if path.startswith("match/") and path.count("/") == 1:
             from app.models.database import SessionLocal
             from app.services.match_page import render_match_page

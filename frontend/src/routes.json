@@ -22,7 +22,8 @@
   "dynamic": [
     "match/*",
     "blog/*",
-    "league/*"
+    "league/*",
+    "dropping-odds/*"
   ],
   "internal": [
     "auth/verify",

@@ -1,7 +1,7 @@
 import { SharpSideSoccerContextLink } from '../components/SharpSideSoccer';
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { getBiggestMovers, getSteamResults } from '../api';
 import type { BiggestMover } from '../types';
 
@@ -30,13 +30,55 @@ function kickoffUtc(iso: string): string {
   return `${day} ${month} ${hh}:${mm} UTC`;
 }
 
+// /dropping-odds/<league>: title and commentary come from the backend
+// (GET /api/fixtures/dropping-odds/<slug>), which builds them once for both
+// the server-rendered page and this one.
+interface LeagueContent {
+  slug: string;
+  sport_key: string;
+  name: string;
+  h1: string;
+  title: string;
+  description: string;
+  paragraphs: { heading: string | null; html: string }[];
+  leagues: { slug: string; name: string }[];
+}
+
+const LEAGUES_FALLBACK: [string, string][] = [
+  ['premier-league', 'Premier League'], ['championship', 'EFL Championship'], ['la-liga', 'La Liga'],
+  ['bundesliga', 'Bundesliga'], ['ligue-1', 'Ligue 1'], ['serie-a', 'Serie A'],
+  ['champions-league', 'Champions League'], ['europa-league', 'Europa League'], ['conference-league', 'Conference League'],
+];
+
+// Keyed by league so moving between league pages starts from a clean state.
 export default function DroppingOddsPage() {
+  const { league } = useParams();
+  return <DroppingOdds key={league ?? 'all'} league={league} />;
+}
+
+function DroppingOdds({ league }: { league?: string }) {
+  const [content, setContent] = useState<LeagueContent | null>(null);
+  const [missing, setMissing] = useState(false);
   const [movers, setMovers] = useState<BiggestMover[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [record, setRecord] = useState<string>("The season's record of every logged steam move is on Steam Results.");
 
   useEffect(() => {
     let cancelled = false;
+    if (league) {
+      fetch(`/api/fixtures/dropping-odds/${encodeURIComponent(league)}`)
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error('missing'))))
+        .then((c: LeagueContent) => {
+          if (cancelled) return;
+          setContent(c);
+          return getBiggestMovers(50, c.sport_key).then((rows) => {
+            if (cancelled) return;
+            setMovers([...rows].sort((a, b) => (impliedChange(b.opening_odds, b.current_odds) ?? 0) - (impliedChange(a.opening_odds, a.current_odds) ?? 0)));
+          });
+        })
+        .catch(() => { if (!cancelled) setMissing(true); });
+      return () => { cancelled = true; };
+    }
     getBiggestMovers(50)
       .then((rows) => {
         if (cancelled) return;
@@ -52,7 +94,118 @@ export default function DroppingOddsPage() {
       })
       .catch(() => {});
     return () => { cancelled = true; };
-  }, []);
+  }, [league]);
+
+  const leagueLinks = (content?.leagues.map((l) => [l.slug, l.name] as [string, string]) ?? LEAGUES_FALLBACK).filter(([s]) => s !== league);
+  const byCompetition = (
+    <>
+      <h2 className="text-lg font-bold text-white mt-8 mb-2">Dropping odds by competition</h2>
+      <p className="text-sm text-slate-300 max-w-[72ch]">
+        {leagueLinks.map(([s, n], i) => (
+          <span key={s}>{i > 0 && ' · '}<Link to={`/dropping-odds/${s}`} className="text-cyan-400 hover:underline">{n}</Link></span>
+        ))}
+      </p>
+    </>
+  );
+  const table = (
+    <>
+      {error && <p className="text-red-400 text-sm">{error}</p>}
+      {movers && movers.length === 0 && (
+        <p className="text-slate-400 text-sm">
+          No price has dropped by more than a fraction of a point in the last 48 hours. The table fills as fixtures are listed and prices move.
+        </p>
+      )}
+      {movers && movers.length > 0 && (
+        <div className="overflow-x-auto rounded-md border border-slate-700/50">
+          <table className="w-full text-[13px] font-mono">
+            <thead className="bg-slate-800/60 text-slate-400 text-[11px] uppercase tracking-wider">
+              <tr>
+                <th className="text-left px-3 py-2">Kickoff</th>
+                <th className="text-left px-3 py-2">Match</th>
+                <th className="text-left px-3 py-2">Competition</th>
+                <th className="text-left px-3 py-2">Selection</th>
+                <th className="text-right px-3 py-2">From</th>
+                <th className="text-right px-3 py-2">Now</th>
+                <th className="text-right px-3 py-2">Implied change</th>
+              </tr>
+            </thead>
+            <tbody>
+              {movers.map((m) => {
+                const pp = impliedChange(m.opening_odds, m.current_odds);
+                return (
+                  <tr key={m.match_id} className="border-t border-slate-700/40 text-slate-200">
+                    <td className="px-3 py-2 whitespace-nowrap tabular-nums">{kickoffUtc(m.commence_time)}</td>
+                    <td className="px-3 py-2">
+                      <Link to={`/match/${m.match_id}`} className="text-cyan-400 hover:underline">
+                        {m.home_team} v {m.away_team}
+                      </Link>
+                    </td>
+                    <td className="px-3 py-2 text-slate-400">{m.league_name}</td>
+                    <td className="px-3 py-2">
+                      {m.outcome_name} <span className="text-slate-500">({MARKET_LABEL[m.market] ?? m.market})</span>
+                    </td>
+                    <td className="px-3 py-2 text-right tabular-nums">{m.opening_odds.toFixed(2)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{m.current_odds.toFixed(2)}</td>
+                    <td className={`px-3 py-2 text-right tabular-nums ${pp !== null && pp > 0.05 ? 'text-red-400' : ''}`}>
+                      {pp === null ? '—' : `${pp > 0 ? '+' : ''}${pp.toFixed(1)}pp`}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </>
+  );
+
+  if (league) {
+    if (missing) {
+      return (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <Helmet><meta name="robots" content="noindex" /></Helmet>
+          <h1 className="text-2xl font-bold text-white mb-2">Competition not found</h1>
+          <p className="text-slate-300 text-sm">
+            See <Link to="/dropping-odds" className="text-cyan-400 hover:underline">Dropping Odds Today</Link> for every competition.
+          </p>
+        </div>
+      );
+    }
+    if (!content) return <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-slate-500 text-sm font-mono">Loading</div>;
+    const url = `https://www.steamwatch.io/dropping-odds/${content.slug}`;
+    const [lead, ...rest] = content.paragraphs;
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <Helmet>
+          <title>{content.title}</title>
+          <meta name="description" content={content.description} />
+          <link rel="canonical" href={url} />
+          <meta property="og:title" content={content.title} />
+          <meta property="og:description" content={content.description} />
+          <meta property="og:url" content={url} />
+        </Helmet>
+        <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-2">{content.h1}</h1>
+        <p className="text-xs text-slate-500 font-mono mb-4">
+          {movers ? `${movers.length} fixtures with a shortening price` : 'Loading'} · Pinnacle prices via The Odds API
+        </p>
+        <p className="max-w-[72ch] text-slate-200 text-[15px] leading-relaxed" dangerouslySetInnerHTML={{ __html: lead.html }} />
+        <h2 className="text-lg font-bold text-white mt-8 mb-3">Biggest {content.name} drops in the last 48 hours</h2>
+        {table}
+        <p className="text-xs text-slate-500 mt-3 max-w-[72ch]">
+          From is the opening price, or the price 48 hours ago for matches listed earlier than that. Implied change is in percentage points, largest first; positive means the price shortened.
+        </p>
+        <div className="league-copy max-w-[72ch] text-slate-300 text-[15px] leading-relaxed">
+          {rest.map((p) => (
+            <div key={p.heading ?? 'lead'}>
+              <h2 className="text-lg font-bold text-white mt-8 mb-2">{p.heading}</h2>
+              <p className="[&_a]:text-cyan-400 [&_a:hover]:underline" dangerouslySetInnerHTML={{ __html: p.html }} />
+            </div>
+          ))}
+        </div>
+        {byCompetition}
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -101,59 +254,15 @@ export default function DroppingOddsPage() {
       <SharpSideSoccerContextLink placement="dropping-odds" />
 
       <h2 className="text-lg font-bold text-white mt-8 mb-3">Biggest drops in the last 48 hours</h2>
-      {error && <p className="text-red-400 text-sm">{error}</p>}
-      {movers && movers.length === 0 && (
-        <p className="text-slate-400 text-sm">
-          No price has dropped by more than a fraction of a point in the last 48 hours. The table fills as fixtures are listed and prices move.
-        </p>
-      )}
-      {movers && movers.length > 0 && (
-        <div className="overflow-x-auto rounded-md border border-slate-700/50">
-          <table className="w-full text-[13px] font-mono">
-            <thead className="bg-slate-800/60 text-slate-400 text-[11px] uppercase tracking-wider">
-              <tr>
-                <th className="text-left px-3 py-2">Kickoff</th>
-                <th className="text-left px-3 py-2">Match</th>
-                <th className="text-left px-3 py-2">Competition</th>
-                <th className="text-left px-3 py-2">Selection</th>
-                <th className="text-right px-3 py-2">From</th>
-                <th className="text-right px-3 py-2">Now</th>
-                <th className="text-right px-3 py-2">Implied change</th>
-              </tr>
-            </thead>
-            <tbody>
-              {movers.map((m) => {
-                const pp = impliedChange(m.opening_odds, m.current_odds);
-                return (
-                  <tr key={m.match_id} className="border-t border-slate-700/40 text-slate-200">
-                    <td className="px-3 py-2 whitespace-nowrap tabular-nums">{kickoffUtc(m.commence_time)}</td>
-                    <td className="px-3 py-2">
-                      <Link to={`/match/${m.match_id}`} className="text-cyan-400 hover:underline">
-                        {m.home_team} v {m.away_team}
-                      </Link>
-                    </td>
-                    <td className="px-3 py-2 text-slate-400">{m.league_name}</td>
-                    <td className="px-3 py-2">
-                      {m.outcome_name} <span className="text-slate-500">({MARKET_LABEL[m.market] ?? m.market})</span>
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums">{m.opening_odds.toFixed(2)}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{m.current_odds.toFixed(2)}</td>
-                    <td className={`px-3 py-2 text-right tabular-nums ${pp !== null && pp > 0.05 ? 'text-red-400' : ''}`}>
-                      {pp === null ? '—' : `${pp > 0 ? '+' : ''}${pp.toFixed(1)}pp`}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+      {table}
       <p className="text-xs text-slate-500 mt-3 max-w-[72ch]">
         From is the opening price, or the price 48 hours ago for matches listed earlier than that.
       </p>
       <p className="text-xs text-slate-500 mt-1 max-w-[72ch]">
         Implied change is in percentage points, largest first; positive means the price shortened. Each match links to its full open-to-kickoff price history.
       </p>
+
+      {byCompetition}
 
       <h2 className="text-lg font-bold text-white mt-8 mb-2">More on SteamWatch</h2>
       <ul className="list-disc pl-5 text-slate-300 text-sm space-y-1">

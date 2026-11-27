@@ -118,7 +118,9 @@ def _league_entries(db) -> list[tuple[str, str]]:
     if db is None:
         return []
     from app.services import fixtures as fx
-    return [(f"{DOMAIN}/league/{fx.LEAGUES[k][0]}", _iso(None)) for k in fx.active_leagues(db)]
+    from app.services.dropping_odds_page import page_leagues
+    return ([(f"{DOMAIN}/league/{fx.LEAGUES[k][0]}", _iso(None)) for k in fx.active_leagues(db)]
+            + [(f"{DOMAIN}/dropping-odds/{fx.LEAGUES[k][0]}", _iso(None)) for k in page_leagues(db)])
 
 
 def sitemap_pages(db=None) -> str:

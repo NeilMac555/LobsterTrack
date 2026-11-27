@@ -71,6 +71,7 @@ def league_links_html(db: Session, current: Optional[str] = None) -> str:
 
 
 def _render_hub(db: Session, sport_key: str) -> str:
+    from app.services.dropping_odds_page import page_leagues
     data = fx.league_fixtures(db, sport_key)
     name, slug = data["name"], data["slug"]
     url = f"{DOMAIN}/league/{slug}"
@@ -121,7 +122,10 @@ def _render_hub(db: Session, sport_key: str) -> str:
         "<h2>Other competitions</h2>"
         f"<p>{league_links_html(db, sport_key)}</p>"
         "<h2>More on SteamWatch</h2>"
-        "<ul><li><a href=\"/dropping-odds\">Dropping Odds: the biggest price drops in the last 48 hours</a></li>"
+        "<ul>"
+        + (f"<li><a href=\"/dropping-odds/{slug}\">{_esc(name)} dropping odds: the biggest price drops in the last 48 hours</a></li>"
+           if sport_key in page_leagues(db) else "")
+        + "<li><a href=\"/dropping-odds\">Dropping Odds: all competitions</a></li>"
         "<li><a href=\"/steam-results\">Steam Results: how detected steam moves have performed</a></li>"
         "<li><a href=\"/closing-lines\">Closing Lines: the Pinnacle close for every finished match</a></li></ul>"
     )
