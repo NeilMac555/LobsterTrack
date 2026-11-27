@@ -205,3 +205,18 @@ async def telegram_channel_admin(
     out["channel"] = {k: ((await bot("getChat", chat_id=chat)).get("result") or {}).get(k) for k in ("title", "type")}
     out["linked_members"] = db.query(TelegramMember).count()
     return out
+
+
+@router.post("/admin/email-pro-members")
+async def email_pro_members(
+    password: str = Query(..., description="Admin password"),
+    campaign: str = Query(...),
+    mode: str = Query("preview", description="preview (nothing sent), test (one copy to the admin address) or send"),
+    db: Session = Depends(get_db),
+):
+    """Send an approved one-off email to active Pro members. See services/member_broadcast."""
+    from app.api.routes import ADMIN_PASSWORD
+    from app.services.member_broadcast import run
+    if password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid password")
+    return await run(db, campaign, mode)
