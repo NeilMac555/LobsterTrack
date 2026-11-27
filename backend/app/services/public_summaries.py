@@ -9,6 +9,7 @@ from sqlalchemy import and_
 from app.services.odds_quality import valid_snapshot_sql, valid_book_sql
 
 from app.api.routes import _season_label, _season_start, fav_dog_report, telegram_report
+from app.services.telegram_results import alert_record_start
 from app.models import ClosingLine, OddsSnapshot
 from app.models.closing_line import MarketType
 from app.services.market_move_results import market_move_report
@@ -74,7 +75,7 @@ def steam_summary(db):
     alerts = telegram_report(db, limit=0)
     latest = moves['latest_settled_kickoff']
     return table('Season P/L across all competitions',
-                 f'From {start:%d %b %Y}, one unit per settled bet. Qualifying team moves use the largest recorded move in the final two hours, by fixture date. Delivered Telegram alerts use the odds and date sent. The two samples can overlap.',
+                 f'From {start:%d %b %Y}, one unit per settled bet. Qualifying team moves use the largest recorded move in the final two hours, by fixture date. Delivered Telegram alerts are counted from {alert_record_start(start):%d %b %Y}, when the current alert model took effect, at the odds and date sent. The two samples can overlap.',
                  PROFIT_COLUMNS, [
                      profit_row('Qualifying steam moves', moves['total_moves'], moves['total_wins'], moves['profit_units'],
                                 moves['roi_percent'], latest.date().isoformat() if latest else None),

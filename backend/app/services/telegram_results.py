@@ -1,6 +1,20 @@
 """The sent-alert ledger is the only selection/price source for alert reporting."""
+from datetime import datetime
 from types import SimpleNamespace
 from app.models import SyndicateAlert, Match, SteamMove, AlertResult
+
+
+# The published alert record starts here (Neil, 2026-11-27). The alert
+# rules were changed several times in August 2026 (window widened on the
+# 14th and 22nd, threshold raised on the 24th), so alerts sent before
+# September were produced by a different model from the one in use now.
+# Every place that shows the record states this start date.
+ALERT_RECORD_START = datetime(2026, 9, 1)
+
+
+def alert_record_start(season_start):
+    """Later of the season start and ALERT_RECORD_START."""
+    return max(season_start, ALERT_RECORD_START)
 
 
 def alert_moves(db, since=None, league=None, until=None):

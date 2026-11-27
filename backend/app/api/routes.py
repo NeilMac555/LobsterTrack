@@ -1,5 +1,5 @@
 from app.services.odds_quality import preferred_snapshot_sql
-from app.services.telegram_results import alert_moves
+from app.services.telegram_results import alert_moves, alert_record_start
 from fastapi import APIRouter, Depends, HTTPException, Query, Header, UploadFile, File
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, text
@@ -1125,7 +1125,7 @@ def get_syndicate_moves(
 @router.get("/steam-moves", response_model=SteamMoveStats)
 async def get_steam_moves(db: Session = Depends(get_db)):
     """Counts of confirmed sent alerts, never raw detector observations."""
-    moves = alert_moves(db, since=_season_start())
+    moves = alert_moves(db, since=alert_record_start(_season_start()))
     settled = [m for m in moves if m.result_updated]
     wins = sum(m.won for m in settled)
     return SteamMoveStats(total_moves=len(moves), moves_with_results=len(settled),
@@ -1170,7 +1170,7 @@ async def get_telegram_results(
 
 
 def telegram_report(db, league=None, limit=200, days=None):
-    since = _season_start()
+    since = alert_record_start(_season_start())
     if days:
         since = max(since, datetime.utcnow()-timedelta(days=days))
     all_moves = alert_moves(db, since=since, league=league)
