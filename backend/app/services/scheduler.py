@@ -483,6 +483,16 @@ class OddsScheduler:
         except Exception as e:
             logger.error("outright fetch failed", error=str(e))
 
+    async def telegram_members_job(self):
+        try:
+            from app.api.telegram_access import remove_lapsed_members
+            result = await remove_lapsed_members()
+            if result.get("removed") or result.get("failed"):
+                logger.info("Telegram channel sweep", **result)
+        except Exception as e:
+            logger.error("Telegram channel sweep failed", error=str(e))
+            self._record_error("telegram_members", str(e))
+
     async def tweet_check_job(self):
         """
         Every minute, sweep recently-kicked-off matches for the in-play
@@ -716,6 +726,19 @@ class OddsScheduler:
             trigger=IntervalTrigger(minutes=1),
             id="tweet_check",
             name="Autonomous tweet check (closing-line + in-play recap)",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
+
+        # Alerts channel housekeeping: remove members whose subscription
+        # is no longer active. All state is in telegram_members, so a
+        # missed run is simply picked up by the next one.
+        self.scheduler.add_job(
+            self.telegram_members_job,
+            trigger=IntervalTrigger(minutes=10),
+            id="telegram_members",
+            name="Remove lapsed members from the Telegram alerts channel",
             replace_existing=True,
             max_instances=1,
             coalesce=True,

@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
-import { requestMagicLink, verifyMagicLink, getMe, createCheckoutSession, createPortalSession } from '../api/auth';
+import { requestMagicLink, verifyMagicLink, getMe, createCheckoutSession, createPortalSession, createTelegramInvite } from '../api/auth';
 import type { UserInfo } from '../api/auth';
 
 interface AuthContextType {
@@ -14,6 +14,7 @@ interface AuthContextType {
   refreshUser: () => Promise<void>;
   subscribe: () => Promise<void>;
   manageSubscription: () => Promise<void>;
+  joinTelegram: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -99,8 +100,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.href = portal_url;
   }, [token]);
 
+  const joinTelegram = useCallback(async () => {
+    const t = token || localStorage.getItem('auth_token');
+    if (!t) return;
+    try {
+      const { invite_link } = await createTelegramInvite(t);
+      window.location.href = invite_link;
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : 'Could not create an invite link');
+    }
+  }, [token]);
+
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, isSubscribed, login, verify, logout, refreshUser, subscribe, manageSubscription }}>
+    <AuthContext.Provider value={{ user, token, isLoading, isSubscribed, login, verify, logout, refreshUser, subscribe, manageSubscription, joinTelegram }}>
       {children}
     </AuthContext.Provider>
   );

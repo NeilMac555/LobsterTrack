@@ -31,3 +31,5 @@ from .form_lab import FormLabSeason
 
 from .xg_team_result import XGTeamResult
 from .odds_quality import OddsQualityArchive, OddsQualityRepair
+
+from .telegram_member import TelegramMember

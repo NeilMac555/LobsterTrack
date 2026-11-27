@@ -97,3 +97,15 @@ export async function createPortalSession(token: string): Promise<{ portal_url: 
   }
   return res.json();
 }
+
+export async function createTelegramInvite(token: string): Promise<{ invite_link: string }> {
+  const res = await fetch(`${API_BASE}/pro/telegram-invite`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({ detail: 'Could not create an invite link' }));
+    throw new Error(data.detail || 'Could not create an invite link');
+  }
+  return res.json();
+}

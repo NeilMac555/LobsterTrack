@@ -241,6 +241,8 @@ from app.api.form_lab import router as form_lab_router
 app.include_router(form_lab_router, prefix="/api")
 from app.api.research import router as research_router
 app.include_router(research_router, prefix="/api")
+from app.api.telegram_access import router as telegram_access_router
+app.include_router(telegram_access_router, prefix="/api")
 
 # Serve static frontend files in production
 static_dir = os.path.join(os.path.dirname(__file__), "..", "static")

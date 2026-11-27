@@ -61,7 +61,7 @@ const calculators = [
 
 export default function Layout() {
   const location = useLocation();
-  const { user, logout, manageSubscription, isSubscribed } = useAuth();
+  const { user, logout, manageSubscription, joinTelegram, isSubscribed } = useAuth();
   const { mode: timeMode, toggle: toggleTimeMode } = useTimePreference();
   const { format: oddsFormat, toggle: toggleOddsFormat } = useOddsFormat();
   const navigate = useNavigate();
@@ -302,6 +302,14 @@ export default function Layout() {
                       </div>
                       {isSubscribed && (
                         <button
+                          onClick={() => { setAccountOpen(false); joinTelegram(); }}
+                          className="w-full text-left px-3 py-2.5 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+                        >
+                          Join Telegram Alerts
+                        </button>
+                      )}
+                      {isSubscribed && (
+                        <button
                           onClick={() => { setAccountOpen(false); manageSubscription(); }}
                           className="w-full text-left px-3 py-2.5 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
                         >
@@ -490,6 +498,14 @@ export default function Layout() {
                         className="w-full text-center px-4 py-3 rounded-xl text-sm font-bold uppercase tracking-wider bg-gradient-to-br from-cyan-400 to-cyan-500 text-slate-900 hover:brightness-110 transition-all disabled:opacity-70"
                       >
                         Go Pro →
+                      </button>
+                    )}
+                    {isSubscribed && (
+                      <button
+                        onClick={() => { setMobileMenuOpen(false); joinTelegram(); }}
+                        className="w-full text-left px-4 py-3 rounded-xl text-sm bg-slate-700/50 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+                      >
+                        Join Telegram Alerts
                       </button>
                     )}
                     {isSubscribed && (
