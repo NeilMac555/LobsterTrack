@@ -1004,7 +1004,7 @@ writePage('', renderPage({
       },
     ],
   }),
-  contentHtml: `<h1>Track the biggest odds moves. See what happened next.</h1>
+  contentHtml: `<h1>Steam alerts, straight to Telegram.</h1>
 <p class="pr-meta">SteamWatch is built by <a href="/about">Neil Macdonald (Neil Mac)</a>, who runs <a href="https://www.sharpsidesoccer.com/">Sharp Side Soccer</a> with Will White and also builds <a href="https://amiup.io/">Am I Up</a> and <a href="https://www.xgtables.io/">xGTables</a>.</p>
 <p class="pr-lead">SteamWatch records Pinnacle football odds roughly every 15 minutes across Europe's major leagues, flags the significant pre-kickoff moves, and keeps a public record of how those moves performed.</p>
 <h2>What is on the site</h2>
@@ -1017,8 +1017,8 @@ writePage('', renderPage({
 </ul>
 <h2>Leagues covered</h2>
 <p>Premier League, EFL Championship, La Liga, Bundesliga, Serie A, Ligue 1, Champions League, Europa League, Conference League and the UEFA Nations League.</p>
-<h2>Free alerts</h2>
-<p>Steam alerts go out in real time to SteamWatch Pro members on <a href="/pro">Telegram</a>. <a href="/blog/what-are-steam-moves-in-football-betting">What is a steam move?</a></p><!--HOMEPAGE:MARKETS-->${sharpSideCards.homepage}${xgTablesCard}`,
+<h2>Pro Telegram alerts</h2>
+<p>Steam alerts go out in real time to SteamWatch Pro members on <a href="/pro">Telegram</a>. Every alert is logged at the Pinnacle price when it fired, and the record is public on this page and on <a href="/steam-results">Steam Results</a>. Prices are checked every 6 minutes on matchday and every 2 minutes before kickoff. <a href="/blog/what-are-steam-moves-in-football-betting">What is a steam move?</a></p><!--HOMEPAGE:MARKETS-->${sharpSideCards.homepage}${xgTablesCard}`,
 }));
 
 // ---------------------------------------------------------------------------

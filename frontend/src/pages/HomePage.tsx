@@ -3,9 +3,9 @@ import '../research-ui.css';
 import { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useSearchParams, Link, Navigate } from 'react-router-dom';
-import { startOfDay } from 'date-fns';
-import { getMatches, getStats, getBiggestMovers, getSyndicateMoves } from '../api';
-import type { MatchSummary, BiggestMover, SyndicateMove, Stats } from '../types';
+import { format, startOfDay } from 'date-fns';
+import { getMatches, getStats, getBiggestMovers, getTelegramResults } from '../api';
+import type { MatchSummary, BiggestMover, SteamResultsData, Stats } from '../types';
 import { LEAGUE_CONFIG, LEAGUE_SLUGS, leaguePath } from '../types';
 import MatchRow, { MatchRowHeader } from '../components/MatchRow';
 import Sparkline from '../components/Sparkline';
@@ -51,6 +51,11 @@ function groupMatchesByDay(matches: MatchSummary[], timeMode: TimeMode): Grouped
     }));
 }
 
+/** +1.50 / -1.00: a number with its sign always shown. */
+function signed(value: number, digits: number): string {
+  return `${value >= 0 ? '+' : ''}${value.toFixed(digits)}`;
+}
+
 export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
   // The league filter is a route now (/league/<slug>, see LeaguePage),
   // which passes the league in. An old /?league=<key> link is sent on to
@@ -67,7 +72,8 @@ export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
 
   const [matches, setMatches] = useState<MatchSummary[]>([]);
   const [biggestMovers, setBiggestMovers] = useState<BiggestMover[]>([]);
-  const [syndicateMoves, setSyndicateMoves] = useState<SyndicateMove[]>([]);
+  const [alertRecord, setAlertRecord] = useState<SteamResultsData | null>(null);
+  const [loadingAllAlerts, setLoadingAllAlerts] = useState(false);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -84,7 +90,7 @@ export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
       setError(null);
       setMatches([]);
       setBiggestMovers([]);
-      setSyndicateMoves([]);
+      setAlertRecord(null);
       setMoversState('loading');
       setAlertsState('loading');
       void getMatches({ league: league || undefined, limit: 200 }).then((data) => {
@@ -97,9 +103,9 @@ export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
         setBiggestMovers(league ? data : data.filter((move) => !LEAGUE_CONFIG[move.sport_key]?.hidden));
         setMoversState('ready');
       }).catch(() => { if (active) setMoversState('error'); });
-      void (league ? Promise.resolve([]) : getSyndicateMoves(4)).then((data) => {
+      void (league ? Promise.resolve(null) : getTelegramResults(10)).then((data) => {
         if (!active) return;
-        setSyndicateMoves(data);
+        setAlertRecord(data);
         setAlertsState('ready');
       }).catch(() => { if (active) setAlertsState('error'); });
       void getStats().then((data) => {
@@ -148,6 +154,17 @@ export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
     };
   }, [league]);
 
+  const showAllAlerts = () => {
+    setLoadingAllAlerts(true);
+    getTelegramResults(5000)
+      .then(setAlertRecord)
+      .catch(() => { /* keep the short list */ })
+      .finally(() => setLoadingAllAlerts(false));
+  };
+
+  // The hero only calls the alerts profitable while the live record says so.
+  const alertsInProfit = !!alertRecord && alertRecord.total_moves > 0 && (alertRecord.profit_units ?? 0) > 0;
+
   const groupedMatches = useMemo(() => groupMatchesByDay(matches, timeMode), [matches, timeMode]);
   const leagueConfig = league ? LEAGUE_CONFIG[league] : null;
   const marketMovers = useMemo(() => biggestMovers.slice(0, 4), [biggestMovers]);
@@ -190,22 +207,32 @@ export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
         </Helmet>
       )}
 
-      {/* Hero — conversion messaging per the 2026-08-15 homepage brief.
-          Copy is deliberately descriptive, not explanatory: SteamWatch
-          reports odds moves and what happened next — it does NOT claim to
-          know WHY a move happened (no "syndicates", no "sharp money", no
-          market mind-reading). Keep that constraint if editing this copy. */}
+      {/* Hero — sells the Pro Telegram alerts (copy approved by Neil,
+          2026-11-27). Every figure is read live from the delivered-alert
+          record, never typed in, and the word "Profitable" only shows
+          while that record is in profit. Still descriptive, not
+          explanatory: no claim to know WHY a price moved, and the alert
+          rules (threshold, window) are not stated anywhere on this page. */}
       {!league && (
         <div className="mb-5 sm:mb-7 grid lg:grid-cols-[0.9fr_1.4fr] gap-5 lg:gap-8 items-stretch">
           <div className="px-1 sm:px-2 py-5 sm:py-8 text-left flex flex-col justify-center">
           <h1 className="text-2xl sm:text-4xl font-bold text-white tracking-tight leading-tight">
-            Track the market.
-            <br className="hidden sm:block" />
-            <span className="sm:hidden"> </span>
-            Understand the move.
+            {alertsInProfit ? 'Profitable steam alerts, straight to Telegram.' : 'Steam alerts, straight to Telegram.'}
           </h1>
-          <p className="text-slate-400 text-sm sm:text-base mt-3 sm:mt-4 max-w-lg leading-relaxed font-mono">
-            Real-time closing line movement, steam alerts, and historical analysis for sharp bettors.
+          <p className="text-slate-300 text-sm sm:text-base mt-3 sm:mt-4 max-w-lg leading-relaxed font-mono">
+            {alertRecord && alertRecord.total_moves > 0 && (
+              <>
+                {alertRecord.total_moves} alerts since 1 September. {alertRecord.total_wins} winners.{' '}
+                <span className={alertsInProfit ? 'text-emerald-400 font-bold' : 'font-bold'}>
+                  {signed(alertRecord.profit_units ?? 0, 2)} units
+                  {alertRecord.roi_percent != null && <>, {signed(alertRecord.roi_percent, 1)}% ROI</>}
+                </span>.{' '}
+              </>
+            )}
+            Every alert is logged at the Pinnacle price when it fired, and the full record is public.
+          </p>
+          <p className="text-slate-400 text-sm sm:text-base mt-2 max-w-lg leading-relaxed font-mono">
+            <span className="text-white font-bold">Now faster.</span> Prices are checked every 6 minutes on matchday and every 2 minutes before kickoff.
           </p>
           <div className="mt-5 sm:mt-7 flex flex-col sm:flex-row items-start gap-3">
             {/* Alerts go to the private Pro channel. Members get their own
@@ -225,15 +252,21 @@ export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
               </svg>
               </Link>
             )}
-            {!isSubscribed && (
-              <button
-                onClick={() => { window.location.href = "/pro"; }}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/10 font-mono text-xs sm:text-sm font-bold uppercase tracking-[0.12em] transition-colors"
-              >
-                {subscribing ? 'Redirecting to Stripe…' : 'Explore SteamWatch Pro'}
-              </button>
-            )}
+            <a
+              href="#alert-record"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/10 font-mono text-xs sm:text-sm font-bold uppercase tracking-[0.12em] transition-colors"
+            >
+              See the full record
+            </a>
           </div>
+          {!isSubscribed && (
+            <p className="text-slate-300 text-xs sm:text-sm mt-4 font-mono">
+              Pro is €19.99 a month. Code <span className="text-white font-bold">STEAM50</span> gets 50% off for life.
+            </p>
+          )}
+          <p className="text-slate-500 text-[11px] sm:text-xs mt-3 max-w-lg leading-relaxed">
+            Level stakes, 1 unit per alert. Past results are no guarantee of future results.
+          </p>
           </div>
 
           <div className="rounded-xl border border-slate-700/60 bg-slate-800/90 px-5 sm:px-7 py-5 sm:py-6 card-shadow min-h-[220px] flex flex-col justify-between">
@@ -826,133 +859,73 @@ export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
         </div>
       )}
 
-      {/* Syndicate Moves - Late Sharp Action */}
+      {/* Telegram alert record. Settled alerts only: live alerts are a Pro
+          feature and go to the private Telegram channel, so nothing for a
+          match that has not kicked off is listed here (Neil, 2026-11-27).
+          The alert rules are deliberately not described on this page. */}
       {!league && (
-        <div className="bg-slate-800/80 rounded-2xl border border-amber-500/30 overflow-hidden mb-6 sm:mb-10 card-shadow"
+        <div id="alert-record" className="bg-slate-800/80 rounded-2xl border border-amber-500/30 overflow-hidden mb-6 sm:mb-10 card-shadow scroll-mt-24"
           style={{
             boxShadow: '0 0 20px -5px rgba(245, 158, 11, 0.15)'
           }}
         >
-          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-700/50 flex items-center justify-between bg-gradient-to-r from-amber-500/10 to-transparent">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-700/50 flex items-center justify-between gap-3 bg-gradient-to-r from-amber-500/10 to-transparent">
             <div className="flex items-center gap-3">
-              {/* Amber accent bar matching the terminal rhythm */}
               <div className="w-1 h-6 sm:h-7 rounded-full bg-gradient-to-b from-amber-400 to-amber-600 flex-shrink-0" />
               <div>
                 <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">Telegram Alerts</h2>
-                <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em] font-semibold">Confirmed sent alerts · odds at time sent</p>
+                <p className="text-slate-500 text-[10px] sm:text-xs mt-0.5 font-mono uppercase tracking-[0.12em] font-semibold">Settled alerts · odds at time sent</p>
               </div>
             </div>
-            <span className="hidden sm:inline-block text-[10px] font-mono uppercase tracking-[0.12em] text-amber-400/80 font-semibold">Within 16h · 4pp+ move</span>
+            {alertRecord && alertRecord.total_moves > 0 && (
+              <span className="text-right text-[10px] sm:text-xs font-mono uppercase tracking-[0.1em] text-amber-400/90 font-semibold tabular-nums">
+                {alertRecord.total_moves} alerts · {signed(alertRecord.profit_units ?? 0, 2)}u
+                {alertRecord.roi_percent != null && <> · {signed(alertRecord.roi_percent, 1)}% ROI</>}
+              </span>
+            )}
           </div>
 
-          {alertsState !== 'ready' ? (
+          {alertsState !== 'ready' || !alertRecord ? (
             <p role="status" className="px-6 py-8 text-center text-sm text-slate-300">
-              {alertsState === 'loading' ? 'Loading Telegram alerts…' : 'Telegram alerts are temporarily unavailable.'}
+              {alertsState === 'loading' ? 'Loading the alert record…' : 'The alert record is temporarily unavailable.'}
             </p>
-          ) : syndicateMoves.length === 0 ? (
-            <div className="px-6 py-8 text-center">
-              <p className="text-slate-500 text-sm">No upcoming Telegram alerts</p>
-              <p className="text-slate-600 text-xs mt-1 font-mono tracking-tight">Confirmed alerts appear here after they are sent</p>
-            </div>
+          ) : alertRecord.moves.length === 0 ? (
+            <p className="px-6 py-8 text-center text-slate-500 text-sm">No settled alerts yet this season</p>
           ) : (
             <>
-              {/* Desktop Table */}
-              <div className="hidden lg:block overflow-x-auto">
+              <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-slate-700/30">
-                      <th className="px-6 py-3 text-left text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">
-                        Match
-                      </th>
-                      <th className="px-4 py-3 text-center text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">
-                        League
-                      </th>
-                      <th className="px-4 py-3 text-center text-[10px] font-mono font-semibold text-amber-400/80 uppercase tracking-[0.12em]">
-                        KO In
-                      </th>
-                      <th className="px-4 py-3 text-left text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">
-                        Outcome
-                      </th>
-                      <th className="px-4 py-3 text-center text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">
-                        Prob &Delta;
-                      </th>
-                      <th className="px-4 py-3 text-center text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">
-                        Alert odds
-                      </th>
+                    <tr className="bg-slate-700/30 text-[10px] font-mono font-semibold text-slate-500 uppercase tracking-[0.12em]">
+                      <th className="px-3 sm:px-6 py-3 text-left">Date</th>
+                      <th className="px-2 sm:px-4 py-3 text-left">Selection</th>
+                      <th className="px-2 sm:px-4 py-3 text-center">Odds</th>
+                      <th className="hidden sm:table-cell px-2 sm:px-4 py-3 text-center">Score</th>
+                      <th className="px-3 sm:px-6 py-3 text-right">P/L</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-700/50">
-                    {syndicateMoves.map((move, index) => {
-                      const leagueInfo = LEAGUE_CONFIG[move.sport_key];
-                      const hours = Math.floor(move.minutes_to_kickoff / 60);
-                      const mins = move.minutes_to_kickoff % 60;
-                      const timeToKO = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
-
-                      // Determine outcome label and color based on market type
-                      let outcomeLabel: string;
-                      let outcomeColor: string;
-                      if (move.market === '1x2') {
-                        outcomeLabel = move.outcome === 'home' ? 'H' : move.outcome === 'draw' ? 'D' : 'A';
-                        outcomeColor = move.outcome === 'home' ? 'bg-emerald-500/20 text-emerald-400' :
-                                       move.outcome === 'draw' ? 'bg-yellow-500/20 text-yellow-400' :
-                                       'bg-red-500/20 text-red-400';
-                      } else if (move.market === 'totals') {
-                        outcomeLabel = move.outcome === 'over' ? 'O' : 'U';
-                        outcomeColor = move.outcome === 'over' ? 'bg-emerald-500/20 text-emerald-400' :
-                                       'bg-orange-500/20 text-orange-400';
-                      } else {
-                        outcomeLabel = 'AH';
-                        outcomeColor = 'bg-blue-500/20 text-blue-400';
-                      }
-
+                    {alertRecord.moves.map((move) => {
+                      const pl = move.won ? move.current_odds - 1 : -1;
                       return (
-                        <tr key={`${move.match_id}-${index}`} className="hover:bg-slate-700/20 transition-colors duration-150">
-                          <td className="px-6 py-4">
-                            <Link
-                              to={`/match/${move.match_id}`}
-                              className="text-white hover:text-amber-400 transition-colors"
-                            >
-                              <div className="font-semibold text-base tracking-tight">
-                                {move.home_team} vs {move.away_team}
-                              </div>
+                        <tr key={move.id} className="hover:bg-slate-700/20 transition-colors duration-150">
+                          <td className="px-3 sm:px-6 py-3 text-slate-400 text-xs font-mono tabular-nums whitespace-nowrap">
+                            {format(toDisplayDate(move.match_commence_time, timeMode), 'd MMM')}
+                          </td>
+                          <td className="px-2 sm:px-4 py-3">
+                            <Link to={`/match/${move.match_id}`} className="flex items-center gap-2 text-white hover:text-amber-400 transition-colors">
+                              <LeagueLogo sportKey={move.sport_key} size="sm" />
+                              <span className="font-semibold text-sm tracking-tight">{move.team_name}</span>
                             </Link>
                           </td>
-                          <td className="px-4 py-4 text-center">
-                            <div className="flex items-center justify-center gap-2">
-                              <LeagueLogo sportKey={move.sport_key} size="sm" />
-                              <span className="text-slate-500 text-[11px] hidden lg:inline font-mono uppercase tracking-[0.1em] font-semibold">
-                                {leagueInfo?.shortName || ''}
-                              </span>
-                            </div>
+                          <td className="px-2 sm:px-4 py-3 text-center font-mono font-bold text-white tabular-nums">
+                            {formatOdds(move.current_odds, oddsFormat)}
                           </td>
-                          <td className="px-4 py-4 text-center">
-                            <span className="px-2 py-0.5 rounded font-mono text-[11px] font-bold tabular-nums tracking-tight bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                              {timeToKO}
-                            </span>
+                          <td className="hidden sm:table-cell px-2 sm:px-4 py-3 text-center font-mono text-slate-300 tabular-nums whitespace-nowrap">
+                            {move.home_score}-{move.away_score}
                           </td>
-                          <td className="px-4 py-4">
-                            <div className="flex items-center gap-2">
-                              <span className={`px-2 py-0.5 rounded font-mono text-[11px] font-bold tracking-wide ${outcomeColor}`}>
-                                {outcomeLabel}
-                              </span>
-                              <span className="text-slate-300 text-sm truncate max-w-[120px] font-medium">
-                                {move.outcome_name}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-4 text-center">
-                            <div className="inline-flex items-baseline gap-0.5">
-                              <span className="font-mono text-red-400 text-base leading-none">↓</span>
-                              <span className="font-mono font-bold text-red-400 tabular-nums tracking-tight leading-none text-xl">
-                                {Math.abs(move.movement_percent).toFixed(1)}
-                              </span>
-                              <span className="font-mono text-red-400/70 text-xs leading-none">pp</span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-4 text-center">
-                            <span className="font-mono font-bold text-white tabular-nums text-lg tracking-tight">
-                              {formatOdds(move.current_odds, oddsFormat)}
-                            </span>
+                          <td className={`px-3 sm:px-6 py-3 text-right font-mono font-bold tabular-nums whitespace-nowrap ${move.won ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {signed(pl, 2)}u
                           </td>
                         </tr>
                       );
@@ -960,75 +933,22 @@ export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
                   </tbody>
                 </table>
               </div>
-
-              {/* Mobile Cards */}
-              <div className="lg:hidden divide-y divide-slate-700/50">
-                {syndicateMoves.map((move, index) => {
-                  const leagueInfo = LEAGUE_CONFIG[move.sport_key];
-                  const hours = Math.floor(move.minutes_to_kickoff / 60);
-                  const mins = move.minutes_to_kickoff % 60;
-                  const timeToKO = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
-
-                  // Determine outcome label and color based on market type
-                  let outcomeLabel: string;
-                  let outcomeColor: string;
-                  if (move.market === '1x2') {
-                    outcomeLabel = move.outcome === 'home' ? 'H' : move.outcome === 'draw' ? 'D' : 'A';
-                    outcomeColor = move.outcome === 'home' ? 'bg-emerald-500/20 text-emerald-400' :
-                                   move.outcome === 'draw' ? 'bg-yellow-500/20 text-yellow-400' :
-                                   'bg-red-500/20 text-red-400';
-                  } else if (move.market === 'totals') {
-                    outcomeLabel = move.outcome === 'over' ? 'O' : 'U';
-                    outcomeColor = move.outcome === 'over' ? 'bg-emerald-500/20 text-emerald-400' :
-                                   'bg-orange-500/20 text-orange-400';
-                  } else {
-                    outcomeLabel = 'AH';
-                    outcomeColor = 'bg-blue-500/20 text-blue-400';
-                  }
-
-                  return (
-                    <Link
-                      key={`${move.match_id}-${index}`}
-                      to={`/match/${move.match_id}`}
-                      className="block p-4 hover:bg-slate-700/20 active:bg-slate-700/30 transition-colors"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <LeagueLogo sportKey={move.sport_key} size="sm" />
-                            <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-slate-500 font-semibold">{leagueInfo?.shortName}</span>
-                            <span className="px-1.5 py-0.5 rounded font-mono text-[10px] font-bold tabular-nums tracking-tight bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                              {timeToKO}
-                            </span>
-                          </div>
-                          <div className="text-white font-semibold text-sm truncate tracking-tight">
-                            {move.home_team} vs {move.away_team}
-                          </div>
-                          <div className="flex items-center gap-2 mt-2">
-                            <span className={`px-2 py-0.5 rounded font-mono text-[10px] font-bold tracking-wide ${outcomeColor}`}>
-                              {outcomeLabel}
-                            </span>
-                            <span className="text-slate-400 text-xs truncate">{move.outcome_name}</span>
-                          </div>
-                        </div>
-                        <div className="text-right flex-shrink-0 flex flex-col items-end">
-                          <div className="flex items-baseline gap-0.5 leading-none">
-                            <span className="text-red-400 text-lg font-mono leading-none">↓</span>
-                            <span className="font-mono font-bold text-red-400 tabular-nums tracking-tight leading-none text-2xl">
-                              {Math.abs(move.movement_percent).toFixed(1)}
-                            </span>
-                            <span className="font-mono text-red-400/70 text-xs leading-none">pp</span>
-                          </div>
-                          <div className="text-[11px] font-mono mt-1.5 tabular-nums">
-                            <span className="text-slate-500">Now</span>
-                            <span className="text-slate-600 mx-1">·</span>
-                            <span className="text-white font-bold">{formatOdds(move.current_odds, oddsFormat)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
+              <div className="px-4 sm:px-6 py-3.5 border-t border-slate-700/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <p className="text-slate-400 text-xs sm:text-sm">
+                  {isSubscribed
+                    ? 'New alerts go to the Pro Telegram channel as they fire.'
+                    : <>Alerts for upcoming matches go to Pro members on Telegram. <Link to="/pro" className="text-cyan-300 hover:text-cyan-200 font-semibold">Get Pro Steam Alerts</Link></>}
+                </p>
+                {alertRecord.moves.length < alertRecord.total_moves && (
+                  <button
+                    type="button"
+                    disabled={loadingAllAlerts}
+                    onClick={showAllAlerts}
+                    className="self-start sm:self-auto text-[11px] font-mono font-bold uppercase tracking-[0.12em] text-amber-400 hover:text-amber-300 disabled:opacity-60"
+                  >
+                    {loadingAllAlerts ? 'Loading…' : `Show all ${alertRecord.total_moves} alerts`}
+                  </button>
+                )}
               </div>
             </>
           )}

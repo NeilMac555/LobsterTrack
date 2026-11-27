@@ -78,6 +78,12 @@ export async function getMatchTotals(matchId: string): Promise<MatchTotals> {
   return fetchJson<MatchTotals>(`${API_BASE}/matches/${matchId}/totals`);
 }
 
+// The delivered Telegram alert record: season totals plus the most
+// recent settled alerts. Settled only, so it never shows a live alert.
+export async function getTelegramResults(limit: number = 10): Promise<SteamResultsData> {
+  return fetchJson<SteamResultsData>(`${API_BASE}/telegram-results?limit=${limit}`, { cache: 'no-store' });
+}
+
 export async function getSyndicateMoves(limit: number = 4): Promise<SyndicateMove[]> {
   return fetchJson<SyndicateMove[]>(`${API_BASE}/syndicate-moves?limit=${limit}`);
 }
