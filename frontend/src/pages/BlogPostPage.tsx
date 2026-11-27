@@ -77,14 +77,12 @@ export default function BlogPostPage() {
           >
             View Steam Results
           </Link>
-          <a
-            href="https://t.me/steamwatchalerts"
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            to="/pro"
             className="px-4 py-2 bg-[#2AABEE]/20 border border-[#2AABEE]/40 rounded-lg text-[#2AABEE] text-sm font-medium hover:bg-[#2AABEE]/30 transition-colors"
           >
-            Free Telegram Alerts
-          </a>
+            Pro Telegram Alerts
+          </Link>
         </div>
       </div>
     </div>

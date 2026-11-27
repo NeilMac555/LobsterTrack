@@ -340,7 +340,7 @@ ${sharpSideCards.pro}
 <h2>Inside your membership</h2>
 <ul>${PRO.inclusions.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>
 ${PRO.benefits.map((b) => `<section><h2><a href="${b.href}">${esc(b.name)}</a></h2><h3>${esc(b.title)}</h3><p>${esc(b.text)}</p></section>`).join('\n')}
-<h2>Free to explore</h2><p>Follow the odds overview, join the free Telegram alerts and explore public results and tool previews.</p>
+<h2>Free to explore</h2><p>Follow the odds overview and explore public results and tool previews.</p>
 <h2>Pro adds the detail</h2><p>Research form in depth, compare underlying performances, examine full team rankings and generate model prices.</p>
 <h2>Before you join</h2>
 ${PRO.faqs.map(([q, a]) => `<h3>${esc(q)}</h3><p>${esc(a)}</p>`).join('\n')}`,
@@ -427,7 +427,7 @@ ${PRO.faqs.map(([q, a]) => `<h3>${esc(q)}</h3><p>${esc(a)}</p>`).join('\n')}`,
 <ul>
 <li><a href="https://www.sharpsidesoccer.com/">Sharp Side Soccer (Substack)</a></li>
 <li><a href="https://x.com/NeilMac555">X / Twitter</a></li>
-<li><a href="https://t.me/steamwatchalerts">Telegram Alerts</a></li>
+<li><a href="/pro">Pro Telegram Alerts</a></li>
 </ul>
 <p><a href="https://www.steamwatch.io">Back to SteamWatch</a></p>`,
   },
@@ -867,7 +867,7 @@ const FOOTER_HTML = `<footer class="pr-footer"><div class="pr-cols">
 <div><h4>Leagues</h4><a href="/league/premier-league">Premier League</a><a href="/league/championship">EFL Championship</a><a href="/league/la-liga">La Liga</a><a href="/league/bundesliga">Bundesliga</a><a href="/league/ligue-1">Ligue 1</a><a href="/league/serie-a">Serie A</a><a href="/league/champions-league">Champions League</a><a href="/league/europa-league">Europa League</a><a href="/league/conference-league">Conference League</a></div>
 <div><h4>Tools</h4>${TOOL_LINKS.map(([h, t]) => `<a href="${h}">${t}</a>`).join('')}</div>
 <div><h4>Blog</h4>${POSTS.map((p) => `<a href="/blog/${p.slug}">${esc(p.title)}</a>`).join('')}<a href="/blog">All posts</a></div>
-<div><h4>SteamWatch</h4><a href="/pro">SteamWatch Pro membership</a><a href="/pro/demo">Pro demo</a><a href="/about">About Neil Mac</a><a href="https://t.me/steamwatchalerts">Free Telegram alerts</a><a href="https://x.com/Steamwatchio">@Steamwatchio on X</a></div>
+<div><h4>SteamWatch</h4><a href="/pro">SteamWatch Pro membership</a><a href="/pro/demo">Pro demo</a><a href="/about">About Neil Mac</a><a href="/pro">Pro Telegram alerts</a><a href="https://x.com/Steamwatchio">@Steamwatchio on X</a></div>
 </div><p class="pr-note">Pinnacle odds via The Odds API · updated every 15 minutes</p></footer>`;
 
 // The Vite template, read once BEFORE the homepage overwrites dist/index.html.
@@ -998,7 +998,7 @@ writePage('', renderPage({
         mainEntity: [
           { '@type': 'Question', name: 'What is SteamWatch?', acceptedAnswer: { '@type': 'Answer', text: 'SteamWatch tracks the biggest odds moves in football betting markets and shows what happened next. It records Pinnacle odds roughly every 15 minutes across Europe\'s major leagues, highlights significant pre-kickoff price moves, and keeps a historical record of how those moves performed.' } },
           { '@type': 'Question', name: 'What is a steam move in football betting?', acceptedAnswer: { '@type': 'Answer', text: 'A steam move is a sudden, significant shift in a betting line. On SteamWatch it means an implied-probability move of 3 or more percentage points on an outcome before kickoff. SteamWatch reports the move and its outcome; it does not claim to know why the market moved.' } },
-          { '@type': 'Question', name: 'Is SteamWatch free?', acceptedAnswer: { '@type': 'Answer', text: 'The core is free: real-time steam alerts via Telegram, live odds and biggest movers, the closing line archive, team profit/loss records, the full Longshot Bias explorer, and bet and hedge calculators. SteamWatch Pro adds the Dixon-Coles match predictor, rolling xG tables, the historical steam results directory and full Drifter rankings.' } },
+          { '@type': 'Question', name: 'Is SteamWatch free?', acceptedAnswer: { '@type': 'Answer', text: 'The core is free: live odds and biggest movers, the closing line archive, team profit/loss records, the full Longshot Bias explorer, and bet and hedge calculators. SteamWatch Pro adds real-time steam alerts in a private Telegram channel, the Dixon-Coles match predictor, rolling xG tables, the historical steam results directory and full Drifter rankings.' } },
           { '@type': 'Question', name: 'Which leagues does SteamWatch track?', acceptedAnswer: { '@type': 'Answer', text: 'Premier League, EFL Championship, La Liga, Bundesliga, Serie A, Ligue 1, and the UEFA Champions League, Europa League, Conference League and Nations League, using Pinnacle odds updated roughly every 15 minutes.' } },
         ],
       },
@@ -1018,7 +1018,7 @@ writePage('', renderPage({
 <h2>Leagues covered</h2>
 <p>Premier League, EFL Championship, La Liga, Bundesliga, Serie A, Ligue 1, Champions League, Europa League, Conference League and the UEFA Nations League.</p>
 <h2>Free alerts</h2>
-<p>Steam alerts go out in real time on <a href="https://t.me/steamwatchalerts">Telegram</a>. <a href="/blog/what-are-steam-moves-in-football-betting">What is a steam move?</a></p><!--HOMEPAGE:MARKETS-->${sharpSideCards.homepage}${xgTablesCard}`,
+<p>Steam alerts go out in real time to SteamWatch Pro members on <a href="/pro">Telegram</a>. <a href="/blog/what-are-steam-moves-in-football-betting">What is a steam move?</a></p><!--HOMEPAGE:MARKETS-->${sharpSideCards.homepage}${xgTablesCard}`,
 }));
 
 // ---------------------------------------------------------------------------

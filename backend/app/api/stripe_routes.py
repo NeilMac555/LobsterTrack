@@ -45,6 +45,7 @@ async def create_checkout_session(user: User = Depends(require_user), db: Sessio
         line_items=[{"price": settings.stripe_price_id, "quantity": 1}],
         success_url=f"{settings.frontend_url}/tools/match-predictor?checkout=success",
         cancel_url=f"{settings.frontend_url}/tools/match-predictor?checkout=cancel",
+        allow_promotion_codes=True,
     )
 
     return {"checkout_url": session.url}

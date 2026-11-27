@@ -266,15 +266,10 @@ export const BLOG_POSTS: BlogPost[] = [
           <Link to="/steam-results" className="text-red-400 hover:text-red-300">
             Steam Results
           </Link>{' '}
-          for historical performance, or get instant alerts via our{' '}
-          <a
-            href="https://t.me/steamwatchalerts"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[#2AABEE] hover:text-[#2AABEE]/80"
-          >
-            free Telegram channel
-          </a>
+          for historical performance, or get instant alerts in the{' '}
+          <Link to="/pro" className="text-[#2AABEE] hover:text-[#2AABEE]/80">
+            SteamWatch Pro Telegram channel
+          </Link>
           .
         </p>
       </>

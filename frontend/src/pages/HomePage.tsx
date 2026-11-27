@@ -59,7 +59,7 @@ export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
   const legacyLeague = searchParams.get('league');
   const league = leagueKey ?? null;
 
-  const { user, isSubscribed, subscribe } = useAuth();
+  const { user, isSubscribed, subscribe, joinTelegram } = useAuth();
   const { mode: timeMode } = useTimePreference();
   const { format: oddsFormat } = useOddsFormat();
   const [showLoginFromCTA, setShowLoginFromCTA] = useState(false);
@@ -208,17 +208,23 @@ export default function HomePage({ leagueKey }: { leagueKey?: string } = {}) {
             Real-time closing line movement, steam alerts, and historical analysis for sharp bettors.
           </p>
           <div className="mt-5 sm:mt-7 flex flex-col sm:flex-row items-start gap-3">
-            <a
-              href="https://t.me/steamwatchalerts"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-[#2AABEE] hover:bg-[#229ED9] text-white font-mono text-xs sm:text-sm font-bold uppercase tracking-[0.12em] transition-colors"
-            >
-              Get Free Steam Alerts
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            {/* Alerts go to the private Pro channel. Members get their own
+                invite link; everyone else is sent to the Pro page. */}
+            {isSubscribed ? (
+              <button type="button" onClick={() => joinTelegram()} className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-[#2AABEE] hover:bg-[#229ED9] text-white font-mono text-xs sm:text-sm font-bold uppercase tracking-[0.12em] transition-colors">
+                Join Pro Telegram Alerts
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
-            </a>
+              </button>
+            ) : (
+              <Link to="/pro" className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-[#2AABEE] hover:bg-[#229ED9] text-white font-mono text-xs sm:text-sm font-bold uppercase tracking-[0.12em] transition-colors">
+                Get Pro Steam Alerts
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+              </Link>
+            )}
             {!isSubscribed && (
               <button
                 onClick={() => { window.location.href = "/pro"; }}

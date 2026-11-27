@@ -136,7 +136,7 @@ class EmailSender:
                 — Neil Mac<br>
                 <a href="https://x.com/NeilMac555" style="color: #64748b;">@NeilMac555</a> ·
                 <a href="https://www.sharpsidesoccer.com/" style="color: #64748b;">Sharp Side Soccer</a> ·
-                <a href="https://t.me/steamwatchalerts" style="color: #64748b;">Telegram</a>
+                <a href="https://www.steamwatch.io/pro" style="color: #64748b;">SteamWatch Pro</a>
             </p>
         </div>
         """
