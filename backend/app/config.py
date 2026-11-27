@@ -57,8 +57,11 @@ class Settings(BaseSettings):
         # "soccer_uefa_champs_league_qualification": "Champions League Qualifying",
         "soccer_uefa_europa_league": "Europa League",
         "soccer_uefa_europa_conference_league": "Conference League",
-        # Nations League back on for the November 2026 window (Neil, 2026-11-10).
-        "soccer_uefa_nations_league": "UEFA Nations League",
+        # Nations League polling off per Neil (2026-11-27): the November
+        # window ended 17 Nov and the next games are 25 Mar 2027, but the
+        # listed fixtures still cost 3 Odds API credits every 15 minutes
+        # (~8,600 a month). Restore in the week before 25 Mar 2027.
+        # "soccer_uefa_nations_league": "UEFA Nations League",
         "soccer_fifa_world_cup": "FIFA World Cup",
     }
 
