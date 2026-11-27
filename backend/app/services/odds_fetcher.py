@@ -41,12 +41,16 @@ class OddsFetcher:
         self.last_quota: dict | None = None
         self.last_quota_at: datetime | None = None
 
-    async def fetch_all_leagues(self, sport_keys: list = None) -> dict:
+    async def fetch_all_leagues(self, sport_keys: list = None, h2h_only_keys=None) -> dict:
         """
         Fetch odds for configured leagues.
         If sport_keys is provided, only fetch those leagues.
+        Leagues in h2h_only_keys get match odds only (1 API credit
+        instead of 3): the fast pre-kickoff refresh, which exists for
+        the alerts, and the alerts only read match odds.
         Returns summary of what was fetched.
         """
+        h2h_only_keys = set(h2h_only_keys or ())
         summary = {
             "leagues_processed": 0,
             "matches_found": 0,
@@ -72,6 +76,9 @@ class OddsFetcher:
                         matches=result["matches"],
                         odds_stored=result["odds_stored"]
                     )
+
+                    if sport_key in h2h_only_keys:
+                        continue
 
                     # Fetch totals for all leagues
                     try:

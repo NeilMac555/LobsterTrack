@@ -24,8 +24,44 @@ WINDOW_DEFAULT = 15    # No matches imminent (>2hrs out)
 WINDOW_EARLY = 10      # T-120 to T-30
 WINDOW_CLOSING = 2     # T-30 to T-0
 
+# Fast match-odds refresh (Neil, 2026-11-27). Inside FAST_WINDOW_MINUTES
+# of a kickoff the league's match odds are refreshed every
+# FAST_INTERVAL minutes so alerts fire sooner. These extra refreshes
+# pull match odds only (1 API credit, not 3): the alerts read nothing
+# else. The full three-market refresh keeps the schedule above.
+FAST_WINDOW_MINUTES = 720
+FAST_INTERVAL = 6
+
+# Usage brake for the fast refresh. The Odds API plan is a fixed number
+# of credits per calendar month (resets on the 1st, UTC) and running out
+# stops ALL price tracking. The fast refresh is only allowed while usage
+# is at or under an even pace towards FAST_BUDGET_SHARE of the plan,
+# plus FAST_BUDGET_HEADROOM credits so a busy weekend early in the month
+# is not cut off. Over that pace the fast refresh pauses by itself and
+# the normal schedule carries on untouched.
+FAST_BUDGET_SHARE = 0.95
+FAST_BUDGET_HEADROOM = 4000
+
 # Tick interval - runs at the fastest rate we might need
 TICK_INTERVAL = 2  # minutes
+
+
+def fast_budget_ok(quota, now) -> bool:
+    """True while Odds API usage is under the pace the fast refresh may use.
+
+    quota is odds_fetcher.last_quota ({"used": "...", "remaining": "..."}).
+    With no reading yet (just started) the answer is True: the first
+    fetch of any kind supplies one.
+    """
+    try:
+        used = int(quota["used"])
+        plan = used + int(quota["remaining"])
+    except (TypeError, KeyError, ValueError):
+        return True
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    next_month = (month_start + timedelta(days=32)).replace(day=1)
+    elapsed = (now - month_start) / (next_month - month_start)
+    return used <= FAST_BUDGET_SHARE * plan * elapsed + FAST_BUDGET_HEADROOM
 
 
 class OddsScheduler:
@@ -37,12 +73,17 @@ class OddsScheduler:
     | T-120 to T-30                 | 10 min  | Catch early steam         |
     | T-30 to T-0                   | 2 min   | Catch sharp money         |
     | Exact KO timestamp            | 1 shot  | True closing line capture |
+
+    On top of that, match odds alone are refreshed every 6 minutes inside
+    12 hours of a kickoff (see FAST_INTERVAL), for faster alerts.
     """
 
     def __init__(self):
         self.scheduler = AsyncIOScheduler()
         self._is_running = False
         self._last_fetch_by_league: dict[str, datetime] = {}
+        self._last_fast_fetch_by_league: dict[str, datetime] = {}
+        self._fast_paused_logged = False
         self._scheduled_ko_jobs: set[str] = set()  # match IDs with KO jobs scheduled
 
         # Health / diagnostics — surfaced via /api/admin/fetcher-health
@@ -122,6 +163,44 @@ class OddsScheduler:
         finally:
             db.close()
 
+    def _in_fast_window(self, sport_key: str) -> bool:
+        """True when the league has a match kicking off inside FAST_WINDOW_MINUTES."""
+        from app.models import Match
+        from app.models.database import SessionLocal
+
+        db = SessionLocal()
+        try:
+            now = datetime.utcnow().replace(tzinfo=timezone.utc)
+            return db.query(Match.id).filter(
+                Match.sport_key == sport_key,
+                Match.commence_time > now,
+                Match.commence_time <= now + timedelta(minutes=FAST_WINDOW_MINUTES),
+            ).first() is not None
+        finally:
+            db.close()
+
+    def _fast_refresh_allowed(self, now) -> bool:
+        """The usage brake. Logs once each time it switches on or off."""
+        ok = fast_budget_ok(odds_fetcher.last_quota, now)
+        if not ok and not self._fast_paused_logged:
+            logger.warning("Fast match-odds refresh paused: Odds API usage is ahead of pace",
+                           quota=odds_fetcher.last_quota)
+            self._record_error("fast_refresh", "paused: Odds API usage is ahead of pace")
+        elif ok and self._fast_paused_logged:
+            logger.info("Fast match-odds refresh resumed", quota=odds_fetcher.last_quota)
+        self._fast_paused_logged = not ok
+        return ok
+
+    def _fast_due(self, sport_key: str, now) -> bool:
+        """Is a match-odds-only refresh due for this league?"""
+        seen = [t for t in (self._last_fetch_by_league.get(sport_key),
+                            self._last_fast_fetch_by_league.get(sport_key)) if t]
+        # Half a minute of tolerance: ticks land a few seconds apart, and
+        # without it a 6 minute interval would slip to 8.
+        if seen and (now - max(seen)).total_seconds() / 60 < FAST_INTERVAL - 0.5:
+            return False
+        return self._in_fast_window(sport_key)
+
     async def smart_tick(self):
         """
         Main tick that runs every 2 minutes.
@@ -131,6 +210,8 @@ class OddsScheduler:
             now = datetime.utcnow()
             self._last_tick_at = now
             leagues_to_fetch = []
+            fast_leagues = []
+            fast_allowed = self._fast_refresh_allowed(now)
 
             for sport_key in settings.leagues:
                 interval, ko_matches = self._get_league_refresh_info(sport_key)
@@ -146,22 +227,35 @@ class OddsScheduler:
 
                 if should_fetch:
                     leagues_to_fetch.append((sport_key, interval))
+                elif fast_allowed and self._fast_due(sport_key, now):
+                    fast_leagues.append(sport_key)
 
                 # Schedule one-shot KO jobs for closing line capture
                 for match_id, ko_time in ko_matches:
                     self._schedule_ko_fetch(sport_key, match_id, ko_time)
 
-            if not leagues_to_fetch:
+            if not leagues_to_fetch and not fast_leagues:
                 self._last_tick_result = "idle (no leagues due)"
                 return
 
             sport_keys = [sk for sk, _ in leagues_to_fetch]
-            intervals_str = ", ".join(f"{sk}({iv}m)" for sk, iv in leagues_to_fetch)
+            intervals_str = ", ".join(
+                [f"{sk}({iv}m)" for sk, iv in leagues_to_fetch]
+                + [f"{sk}(fast 1x2)" for sk in fast_leagues]
+            )
             logger.info("Smart fetch", leagues=intervals_str)
 
-            summary = await odds_fetcher.fetch_all_leagues(sport_keys=sport_keys)
+            summary = await odds_fetcher.fetch_all_leagues(
+                sport_keys=sport_keys + fast_leagues, h2h_only_keys=fast_leagues
+            )
             self._last_fetch_summary = summary
-            self._last_tick_result = f"ok: fetched {len(sport_keys)} leagues, {summary.get('odds_stored', 0)} snapshots"
+            self._last_tick_result = (
+                f"ok: fetched {len(sport_keys)} leagues"
+                + (f" + {len(fast_leagues)} match odds only" if fast_leagues else "")
+                + f", {summary.get('odds_stored', 0)} snapshots"
+            )
+            for sk in fast_leagues:
+                self._last_fast_fetch_by_league[sk] = now
 
             # Surface any fetch-level errors into the recent-errors log
             for err in summary.get("errors", []) or []:
@@ -185,7 +279,7 @@ class OddsScheduler:
             if summary.get("odds_stored", 0) > 0 or summary.get("errors"):
                 logger.info(
                     "Smart fetch complete",
-                    leagues=len(sport_keys),
+                    leagues=len(sport_keys) + len(fast_leagues),
                     matches=summary["matches_found"],
                     odds=summary["odds_stored"],
                     errors=len(summary["errors"])
@@ -796,6 +890,13 @@ class OddsScheduler:
                 "default": WINDOW_DEFAULT,
                 "early": WINDOW_EARLY,
                 "closing": WINDOW_CLOSING,
+            },
+            "fast_refresh": {
+                "interval_minutes": FAST_INTERVAL,
+                "window_minutes": FAST_WINDOW_MINUTES,
+                "markets": "match odds only",
+                "paused_by_usage_brake": not fast_budget_ok(odds_fetcher.last_quota, now),
+                "last_fetch_at": {k: iso(v) for k, v in self._last_fast_fetch_by_league.items()},
             },
             "leagues": leagues,
             "api_quota": {
