@@ -129,7 +129,7 @@ XG_NOTE_MIN_GAP = 3.0
 
 def _xg_note(db: Session, match: Match) -> str:
     """One sentence per side on goals vs expected goals over the last 12
-    months (services/xg_goals), linking to /goals-coming-soon. Only for
+    months (services/xg_goals). Only for
     clubs the data can name with confidence and gaps of 3+ goals; never
     lets a data problem break a match page. XgGapNote.tsx mirrors it."""
     try:
@@ -144,7 +144,7 @@ def _xg_note(db: Session, match: Match) -> str:
                          f"last 12 months ({r['matches']} league matches).")
         if not lines:
             return ""
-        return f"<p class=\"pr-note\">{' '.join(lines)} See <a href=\"/goals-coming-soon\">Goals Coming Soon</a>.</p>"
+        return f"<p class=\"pr-note\">{' '.join(lines)}</p>"
     except Exception:  # noqa: BLE001
         return ""
 

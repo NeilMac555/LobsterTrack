@@ -138,15 +138,6 @@ function Managers() {
   </Feature>;
 }
 
-function Goals() {
-  const row = cards.goals.row;
-  return <Feature id="goals" title="Goals coming soon?" benefit="Find teams scoring less than their xG." pro={false} href="/goals-coming-soon" sample="Mainz 05 · 33 matches · 12-month sample to Oct 2026">
-    <div className="demo-preview-label">Mainz 05<span>Goals vs xG</span></div>
-    <div className="demo-goal-bars"><div><span>Goals</span><div style={{ width: `${row.goals / row.xg * 100}%` }}>{row.goals}</div></div><div><span>Expected goals</span><div style={{ width: '100%' }}>{row.xg}</div></div></div>
-    <p className="demo-goal-gap"><strong>{Math.abs(row.gap).toFixed(1)}</strong> below xG <span>A research lead, not a promise of goals.</span></p>
-  </Feature>;
-}
-
 const slides = [
   { id: 'form', title: 'Form Lab', preview: <Form /> },
   { id: 'steam', title: 'Steam moves', preview: <Movement /> },
@@ -159,7 +150,6 @@ const slides = [
   { id: 'closing', title: 'Closing lines', preview: <Closing /> },
   { id: 'pnl', title: 'Team profit & loss', preview: <PnL /> },
   { id: 'ratings', title: 'Club ratings', preview: <Ratings /> },
-  { id: 'goals', title: 'Goals coming soon?', preview: <Goals /> },
 ];
 
 export default function ProDemoPage() {
@@ -177,7 +167,7 @@ export default function ProDemoPage() {
   }
   return <div className="pro-demo">
     <Helmet><title>Explore SteamWatch | Try Our Football Research Tools</title><meta name="description" content="Swipe through SteamWatch’s football research tools. Try steam records, drifters, favourite–longshot bias, Form Lab and the Dixon–Coles model. No sign-up needed." /><link rel="canonical" href="https://www.steamwatch.io/pro/demo" /></Helmet>
-    <header className="demo-intro"><div><h1>Find your next angle.</h1><p>Click through 12 tools. Try the controls. Find what works for you.</p></div><div className="demo-membership"><Link className="demo-pro-button" to="/pro">Explore Pro <Arrow /></Link><span>€19.99 / month · renews automatically</span></div></header>
+    <header className="demo-intro"><div><h1>Find your next angle.</h1><p>Click through {slides.length} tools. Try the controls. Find what works for you.</p></div><div className="demo-membership"><Link className="demo-pro-button" to="/pro">Explore Pro <Arrow /></Link><span>€19.99 / month · renews automatically</span></div></header>
     <section className="demo-carousel" aria-label="Explore SteamWatch tools" aria-roledescription="carousel">
       <label className="demo-tool-picker"><span>Jump to a tool</span><select value={slide.id} onChange={event => select(slides.findIndex(item => item.id === event.target.value))}>{slides.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>
       <div className="demo-slide-layout">
@@ -207,7 +197,7 @@ export default function ProDemoPage() {
           <div className="demo-slide-content" key={slide.id}>{slide.preview}</div>
         </div>
         <button type="button" className="demo-slide-arrow demo-slide-next" aria-label="Next feature" aria-controls="demo-active-slide" disabled={index === slides.length - 1} onClick={() => select(index + 1)}><Arrow /></button>
-        <div className="demo-slide-progress"><span aria-live="polite" aria-atomic="true">{index + 1} of {slides.length} <span className="demo-sr-only">— {slide.title}</span></span><div className="demo-progress-marks" aria-hidden="true">{slides.map((item, i) => <span key={item.id} className={i === index ? 'is-current' : ''} />)}</div><span className="demo-navigation-hint">{index === slides.length - 1 ? 'You’ve seen all 12 tools' : 'Use the arrows or swipe'}</span></div>
+        <div className="demo-slide-progress"><span aria-live="polite" aria-atomic="true">{index + 1} of {slides.length} <span className="demo-sr-only">— {slide.title}</span></span><div className="demo-progress-marks" aria-hidden="true">{slides.map((item, i) => <span key={item.id} className={i === index ? 'is-current' : ''} />)}</div><span className="demo-navigation-hint">{index === slides.length - 1 ? `You’ve seen all ${slides.length} tools` : 'Use the arrows or swipe'}</span></div>
       </div>
       <p className="demo-sample-notice">Real historical samples · no sign-up needed</p>
     </section>
@@ -217,7 +207,7 @@ export default function ProDemoPage() {
       <p>Favourite–longshot examples use the 2025/26 Premier League and backing returns at the tool’s recorded market prices. Team P/L uses Arsenal’s available records from 12 February 2026, at 1 unit per bet. Open the full tools for price coverage, filters and settlement details. A unit is an equal stake, independent of currency.</p>
       <p>The live Rolling xG page uses Sportmonks total xG, including penalties. Form Lab uses Sportmonks non-penalty xG. The predictor example in this demo uses historical Understat inputs. Arsenal–Leeds examples use matches before 10 October 2026; model inputs are the last 20 games at all venues. The current predictor reconstructs fair prices from historical inputs; these are not saved pre-match forecasts.</p>
       <p>Model absence scenarios reduce Arsenal’s scoring rate by 6% (weakened) or 12% (severe), while increasing Leeds’ by the same percentage. They are hypothetical, not team news. Other parameters and the archived league baseline are fixed. Form Lab controls do not alter model inputs. Fair odds exclude bookmaker margin.</p>
-      <p>The odds chart uses archived quotes; only the last quote’s bookmaker is identified as Pinnacle. Closing lines are Pinnacle’s last recorded pre-kick-off quote, not a guarantee of the exact market close. Club and manager ratings are dated snapshots. Manager impact is the tool’s accumulated rating measure, not a causal estimate. Goals coming soon compares recorded goals with xG over the stated sample; an xG shortfall does not guarantee a rebound.</p>
+      <p>The odds chart uses archived quotes; only the last quote’s bookmaker is identified as Pinnacle. Closing lines are Pinnacle’s last recorded pre-kick-off quote, not a guarantee of the exact market close. Club and manager ratings are dated snapshots. Manager impact is the tool’s accumulated rating measure, not a causal estimate.</p>
     </div></details>
   </div>;
 }

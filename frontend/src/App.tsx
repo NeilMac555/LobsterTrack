@@ -16,8 +16,6 @@ const MatchPredictorPage = lazy(() => import('./pages/MatchPredictorPage'));
 const SteamResultsPage = lazy(() => import('./pages/SteamResultsPage'));
 const DriftersPage = lazy(() => import('./pages/DriftersPage'));
 const DroppingOddsPage = lazy(() => import('./pages/DroppingOddsPage'));
-const GoalsComingSoonPage = lazy(() => import('./pages/GoalsComingSoonPage'));
-const JusticeTablePage = lazy(() => import('./pages/JusticeTablePage'));
 const ClosingLinesPage = lazy(() => import('./pages/ClosingLinesPage'));
 const AdminEmailsPage = lazy(() => import('./pages/AdminEmailsPage'));
 const AuthVerifyPage = lazy(() => import('./pages/AuthVerifyPage'));
@@ -51,8 +49,8 @@ function App() {
               <Route path="steam-results" element={<SteamResultsPage />} />
               <Route path="dropping-odds" element={<DroppingOddsPage />} />
               <Route path="league/:slug" element={<LeaguePage />} />
-              <Route path="goals-coming-soon" element={<GoalsComingSoonPage />} />
-              <Route path="justice-table" element={<JusticeTablePage />} />
+              <Route path="goals-coming-soon" element={<Navigate to="/tools/rolling-xg" replace />} />
+              <Route path="justice-table" element={<Navigate to="/tools/rolling-xg" replace />} />
               <Route path="drifters" element={<DriftersPage />} />
               <Route path="closing-lines" element={<ClosingLinesPage />} />
               <Route path="cl-closing-lines" element={<Navigate to="/closing-lines?league=soccer_uefa_champs_league" replace />} />

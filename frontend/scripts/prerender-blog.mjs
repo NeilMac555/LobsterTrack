@@ -353,7 +353,7 @@ ${PRO.faqs.map(([q, a]) => `<h3>${esc(q)}</h3><p>${esc(a)}</p>`).join('\n')}`,
 <p>12 tools to read the market and research a match. Explore real historical samples, with no sign-up required.</p>
 <h2>Read the market</h2><ul><li>Steam moves</li><li>Drifter records</li><li>Favourite–longshot bias</li><li>Odds movement</li><li>Closing lines</li></ul>
 <h2>Build your view</h2><ul><li>Form Lab</li><li>Rolling xG</li><li>Dixon–Coles model</li></ul>
-<h2>Go a little deeper</h2><ul><li>Team profit and loss</li><li>Club ratings</li><li>Manager ratings</li><li>Goals coming soon</li></ul>
+<h2>Go a little deeper</h2><ul><li>Team profit and loss</li><li>Club ratings</li><li>Manager ratings</li></ul>
 <p>Fixed historical samples captured on 22 October 2026, not live prices. Pro and free tools are labelled separately. Model prices are reconstructed using historical inputs, not original pre-match forecasts or a proven betting edge. Enable JavaScript to swipe through cards and try the sample controls.</p>
 <p><a href="/pro">Explore SteamWatch Pro</a>. €19.99 per month, renewing automatically.</p>`,
   },
@@ -533,7 +533,7 @@ ${sharpSideLinks.predictor}
 <h2>How the numbers are calculated</h2>
 <p>The rolling figure at any match is the plain average of the previous five or ten matches' total xG for, and separately against. To keep the window full at the start of a season, the full previous season is joined on to the front of each club's series and marked on the chart, so a five-game window on matchday two includes the last three games of the season before. Promoted clubs have no top-flight history and start from their first match. The trend line is a least-squares fit over the plotted window.</p>
 <h2>Current coverage</h2>
-<p>{{HEADLINE}} Rolling xG is a form view and feeds no odds calculation on this site. The closing prices the market set for the same matches are in the <a href="/closing-lines">closing-line archive</a>. Which clubs are scoring above or below their chances is on <a href="/goals-coming-soon">Goals Coming Soon</a>.</p>`,
+<p>{{HEADLINE}} Rolling xG is a form view and feeds no odds calculation on this site. The closing prices the market set for the same matches are in the <a href="/closing-lines">closing-line archive</a>.</p>`,
   },
   {
     path: 'drifters',
@@ -797,8 +797,6 @@ const NAV_LINKS = [
   ['/', 'Overview'],
   ['/steam-results', 'Steam Results'],
   ['/dropping-odds', 'Dropping Odds'],
-  ['/goals-coming-soon', 'Goals Coming Soon'],
-  ['/justice-table', 'Justice Table'],
   ['/closing-lines', 'Closing Lines'],
   ['/drifters', 'Drifters'],
   ['/team-pnl', 'Team P/L'],
@@ -864,7 +862,7 @@ const NAV_HTML = `<header class="pr-header"><div class="pr-wrap pr-bar">
 </div></header>`;
 
 const FOOTER_HTML = `<footer class="pr-footer"><div class="pr-cols">
-<div><h4>Data</h4>${[['/', 'Live odds & biggest movers'], ['/steam-results', 'Steam Results'], ['/dropping-odds', 'Dropping Odds'], ['/goals-coming-soon', 'Goals Coming Soon'], ['/justice-table', 'Justice Table'], ['/drifters', 'Drifters'], ['/closing-lines', 'Closing Lines'], ['/team-pnl', 'Team P/L'], ['/longshot-bias', 'Longshot Bias']].map(([h, t]) => `<a href="${h}">${t}</a>`).join('')}</div>
+<div><h4>Data</h4>${[['/', 'Live odds & biggest movers'], ['/steam-results', 'Steam Results'], ['/dropping-odds', 'Dropping Odds'], ['/drifters', 'Drifters'], ['/closing-lines', 'Closing Lines'], ['/team-pnl', 'Team P/L'], ['/longshot-bias', 'Longshot Bias']].map(([h, t]) => `<a href="${h}">${t}</a>`).join('')}</div>
 <div><h4>Leagues</h4><a href="/league/premier-league">Premier League</a><a href="/league/championship">EFL Championship</a><a href="/league/la-liga">La Liga</a><a href="/league/bundesliga">Bundesliga</a><a href="/league/ligue-1">Ligue 1</a><a href="/league/serie-a">Serie A</a><a href="/league/champions-league">Champions League</a><a href="/league/europa-league">Europa League</a><a href="/league/conference-league">Conference League</a></div>
 <div><h4>Tools</h4>${TOOL_LINKS.map(([h, t]) => `<a href="${h}">${t}</a>`).join('')}</div>
 <div><h4>Blog</h4>${POSTS.map((p) => `<a href="/blog/${p.slug}">${esc(p.title)}</a>`).join('')}<a href="/blog">All posts</a></div>

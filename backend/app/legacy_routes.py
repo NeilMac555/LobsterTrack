@@ -1,4 +1,4 @@
-"""Permanent redirects for retired public views, before static page serving."""
+"""Redirects for retired or hidden public views, before static page serving."""
 
 from urllib.parse import urlencode
 
@@ -6,6 +6,18 @@ from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 
 legacy_router = APIRouter(include_in_schema=False)
+
+
+@legacy_router.api_route("/goals-coming-soon", methods=["GET", "HEAD"])
+@legacy_router.api_route("/goals-coming-soon/", methods=["GET", "HEAD"])
+@legacy_router.api_route("/goals-coming-soon/index.html", methods=["GET", "HEAD"])
+@legacy_router.api_route("/justice-table", methods=["GET", "HEAD"])
+@legacy_router.api_route("/justice-table/", methods=["GET", "HEAD"])
+@legacy_router.api_route("/justice-table/index.html", methods=["GET", "HEAD"])
+def hidden_xg_tables():
+    # Hidden at the owner's request; keep bookmarks useful and restoration possible.
+    return RedirectResponse("/tools/rolling-xg", status_code=302,
+                            headers={"Cache-Control": "no-store"})
 
 
 @legacy_router.api_route("/cl-closing-lines", methods=["GET", "HEAD"])

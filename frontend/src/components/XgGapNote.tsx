@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { getXgClub } from '../api';
 import type { XgTableRow } from '../types';
 
@@ -32,7 +31,6 @@ export default function XgGapNote({ league, home, away }: { league: string; home
           {t} have scored {Math.abs(r.gap).toFixed(1)} goals {r.gap < 0 ? 'fewer' : 'more'} than their expected goals over the last 12 months ({r.matches} league matches).{' '}
         </span>
       ))}
-      See <Link to="/goals-coming-soon" className="text-cyan-400 hover:underline">Goals Coming Soon</Link>.
     </p>
   );
 }

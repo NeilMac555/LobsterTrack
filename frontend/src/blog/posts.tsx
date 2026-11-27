@@ -173,7 +173,7 @@ export const BLOG_POSTS: BlogPost[] = [
         <h3>Total Goals Markets</h3>
         <p>
           Over/under lines are another favourite for sharp action. Weather, team news, tactical
-          matchups, and situational factors all create edges that models can exploit. When <Link to="/goals-coming-soon" className="text-red-400 hover:text-red-300">a totals line steams</Link>, pay attention.
+          matchups, and situational factors all create edges that models can exploit. When a totals line steams, pay attention.
         </p>
 
         <h3>Match Result Markets Are Noisy</h3>

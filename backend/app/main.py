@@ -347,9 +347,7 @@ if os.path.exists(static_dir):
           2. build-time prerendered page: <path>/index.html (homepage,
              blog index, posts, static pages, static-only pages)
           3. server-rendered from the DB per request: /dropping-odds
-             (services/dropping_odds_page), /goals-coming-soon
-             (services/goals_coming_soon_page), /justice-table
-             (services/justice_table_page) and /match/<id>
+             (services/dropping_odds_page) and /match/<id>
              (services/match_page)
           4. internal + legacy-redirect routes: bare app shell (noindex)
           5. anything else: real HTTP 404 with the noindex 404 page
@@ -394,26 +392,6 @@ if os.path.exists(static_dir):
                 db.close()
             if html is None:
                 return _not_found_response()
-            return HTMLResponse(html, headers={"Cache-Control": "public, max-age=600"})
-
-        if path == "justice-table":
-            from app.models.database import SessionLocal
-            from app.services.justice_table_page import render_justice_table_page
-            db = SessionLocal()
-            try:
-                html = render_justice_table_page(db)
-            finally:
-                db.close()
-            return HTMLResponse(html, headers={"Cache-Control": "public, max-age=600"})
-
-        if path == "goals-coming-soon":
-            from app.models.database import SessionLocal
-            from app.services.goals_coming_soon_page import render_goals_coming_soon_page
-            db = SessionLocal()
-            try:
-                html = render_goals_coming_soon_page(db)
-            finally:
-                db.close()
             return HTMLResponse(html, headers={"Cache-Control": "public, max-age=600"})
 
         if path == "dropping-odds":

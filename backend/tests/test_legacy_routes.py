@@ -36,8 +36,17 @@ class LegacyRouteTests(unittest.TestCase):
             self.assertEqual(response.status_code, 301)
             self.assertEqual(response.headers["location"], "/tools/club-ratings?utm_source=bookmark")
 
+    def test_hidden_xg_tables_redirect_without_javascript_or_database(self):
+        for page in ("justice-table", "goals-coming-soon"):
+            for suffix in ("", "/", "/index.html"):
+                for method in (self.client.get, self.client.head):
+                    response = method(f"/{page}{suffix}?months=6")
+                    self.assertEqual(response.status_code, 302)
+                    self.assertEqual(response.headers["location"], "/tools/rolling-xg")
+                    self.assertEqual(response.headers["cache-control"], "no-store")
+
     def test_unrelated_routes_are_not_redirected(self):
-        for path in ("/match/example", "/league/premier-league", "/justice-table", "/goals-coming-soon"):
+        for path in ("/match/example", "/league/premier-league", "/tools/rolling-xg"):
             self.assertNotIn("location", self.client.get(path).headers)
 
 
