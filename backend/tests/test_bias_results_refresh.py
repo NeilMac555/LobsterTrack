@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.models import Base, Match, HistoricalMatch, ClosingLine, AlertResult
 from app.models.closing_line import MarketType
-from app.services.bias_results_refresh import sync_league, valid_close
+from app.services.bias_results_refresh import needs_scores, sync_league, valid_close
 
 
 class BiasRefreshTests(unittest.TestCase):
@@ -38,6 +38,23 @@ class BiasRefreshTests(unittest.TestCase):
 
     def row(self):
         return self.db.query(HistoricalMatch).one()
+
+    def test_scores_are_only_requested_while_a_recent_result_is_missing(self):
+        ask = lambda now: needs_scores(self.db, self.league, now)
+        self.assertFalse(ask(datetime(2026, 11, 1, 13)))            # before kickoff
+        self.assertFalse(ask(datetime(2026, 11, 1, 15, 30)))        # still being played
+        self.assertTrue(ask(datetime(2026, 11, 1, 15, 45)))         # could be over, no result saved
+        self.assertFalse(needs_scores(self.db, 'soccer_epl', self.now))   # another league
+        self.run_sync()
+        self.assertFalse(ask(self.now))                             # result saved, stop asking
+        self.assertFalse(ask(datetime(2026, 11, 2, 9)))
+
+    def test_scores_requests_stop_after_three_days_and_skip_postponed_matches(self):
+        self.assertTrue(needs_scores(self.db, self.league, datetime(2026, 11, 4, 13)))
+        self.assertFalse(needs_scores(self.db, self.league, datetime(2026, 11, 4, 15)))
+        from unittest.mock import patch
+        with patch('app.services.bias_results_refresh.unfinished_status', lambda m: True):
+            self.assertFalse(needs_scores(self.db, self.league, self.now))
 
     def test_confirmed_result_without_alert_is_priced_and_idempotent(self):
         self.assertEqual(self.run_sync()['inserted'], 1)

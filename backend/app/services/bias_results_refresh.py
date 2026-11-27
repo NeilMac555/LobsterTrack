@@ -114,23 +114,57 @@ def sync_league(db, league, events, now=None):
     return summary
 
 
+# A scores request costs 2 Odds API credits. Asking for all five leagues
+# every 15 minutes round the clock cost about 29,000 credits a month, most
+# of it on days with no football. The provider is now only asked while a
+# league has a recent match whose final score is not saved yet.
+SCORES_AFTER_KICKOFF = timedelta(minutes=105)   # earliest a match can be over
+SCORES_LOOKBACK = timedelta(days=3)             # the provider's own window
+
+
+def needs_scores(db, league, now=None):
+    """True while the league has a played match from the last 3 days with no saved result."""
+    now = naive_utc(now or datetime.now(timezone.utc))
+    recent = db.query(Match).filter(
+        Match.sport_key == league,
+        Match.commence_time >= now - SCORES_LOOKBACK,
+        Match.commence_time <= now - SCORES_AFTER_KICKOFF).all()
+    recent = [m for m in recent if not unfinished_status(m)]
+    if not recent:
+        return False
+    done = {(r.match_date, r.home_team, r.away_team) for r in db.query(HistoricalMatch).filter(
+        HistoricalMatch.league == league,
+        HistoricalMatch.match_date >= (now - SCORES_LOOKBACK - timedelta(days=1)).date(),
+        HistoricalMatch.fthg.isnot(None), HistoricalMatch.ftag.isnot(None))}
+    return any((m.commence_time.date(), m.home_team, m.away_team) not in done for m in recent)
+
+
 async def refresh_bias_results():
     settings = get_settings()
-    summary = {'leagues': {}, 'errors': []}
-    # Five score requests per cycle; no odds or Telegram delivery calls.
+    summary = {'leagues': {}, 'errors': [], 'score_requests': 0}
+    # At most five score requests per cycle; no odds or Telegram delivery calls.
     async with httpx.AsyncClient(timeout=30) as client:
         for league in LEAGUE_FILE_CODES:
             events = []
             try:
-                response = await client.get(f'{settings.odds_api_base_url}/sports/{league}/scores',
-                                            params={'apiKey': settings.odds_api_key, 'daysFrom': 3})
-                response.raise_for_status()
-                events = response.json()
-                if not isinstance(events, list):
-                    raise ValueError('Unexpected scores response')
-            except Exception as exc:
-                # Exception text may contain the API key in a URL.
-                summary['errors'].append(f'{league}: {type(exc).__name__}')
+                with SessionLocal() as db:
+                    wanted = needs_scores(db, league)
+            except Exception:
+                wanted = True      # if the check itself fails, behave as before
+            if wanted:
+                summary['score_requests'] += 1
+                try:
+                    response = await client.get(f'{settings.odds_api_base_url}/sports/{league}/scores',
+                                                params={'apiKey': settings.odds_api_key, 'daysFrom': 3})
+                    response.raise_for_status()
+                    events = response.json()
+                    if not isinstance(events, list):
+                        raise ValueError('Unexpected scores response')
+                except Exception as exc:
+                    # Exception text may contain the API key in a URL.
+                    summary['errors'].append(f'{league}: {type(exc).__name__}')
+            # Always run: with no provider events this still repairs prices
+            # and recovers results from scores already saved.
             with SessionLocal() as db:
                 try:
                     summary['leagues'][league] = sync_league(db, league, events)
